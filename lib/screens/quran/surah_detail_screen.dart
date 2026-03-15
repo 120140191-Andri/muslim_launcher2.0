@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../providers/app_state.dart';
+import 'quran_tajweed_text.dart';
+
 
 class SurahDetailScreen extends StatefulWidget {
   final Map<String, dynamic> surah;
@@ -141,120 +143,133 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
           final isRecording = _recordingAyahIdx == index;
           final isLastReadAyah = isLastReadSurah && index == lastReadAyahIdx;
 
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: isLastReadAyah ? Colors.teal.shade50 : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: isLastReadAyah ? Border.all(color: Colors.teal.shade200, width: 2) : null,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Ayah Header
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isLastReadAyah ? Colors.teal.shade100.withOpacity(0.5) : Colors.teal.shade50.withOpacity(0.5),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+          return RepaintBoundary(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: isLastReadAyah ? Colors.teal.shade50 : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: isLastReadAyah ? Border.all(color: Colors.teal.shade200, width: 2) : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Ayah Header
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isLastReadAyah ? Colors.teal.shade100.withOpacity(0.5) : Colors.teal.shade50.withOpacity(0.5),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: isLastReadAyah ? Colors.teal.shade900 : Colors.teal.shade800,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          "${index + 1}",
-                          style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (isLastReadAyah)
-                        Text(
-                          lang == 'en' ? 'Last Read' : 'Terakhir Dibaca',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.teal.shade900,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      const Spacer(),
-                      _MicButton(
-                        isRecording: isRecording,
-                        onPressed: () => _onAyahMicPressed(index, ayah['arabic']),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        ayah['arabic'],
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 26, 
-                          fontWeight: isLastReadAyah ? FontWeight.bold : FontWeight.w500, 
-                          height: 2.2,
-                          fontFamily: 'Amiri',
-                          color: isLastReadAyah ? Colors.teal.shade900 : Colors.black,
-                        ),
-                        textDirection: TextDirection.rtl,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        lang == 'en' ? ayah['translation_en'] : ayah['translation_id'],
-                        style: TextStyle(
-                          fontSize: 15, 
-                          color: isLastReadAyah ? Colors.teal.shade800 : Colors.grey.shade700, 
-                          fontStyle: FontStyle.italic,
-                          height: 1.5,
-                        ),
-                      ),
-                      if (isRecording && _recognizedText.isNotEmpty) ...[
-                        const SizedBox(height: 16),
+                    child: Row(
+                      children: [
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.teal.shade50,
-                            borderRadius: BorderRadius.circular(12),
+                            color: isLastReadAyah ? Colors.teal.shade900 : Colors.teal.shade800,
+                            shape: BoxShape.circle,
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.hearing_rounded, size: 16, color: Colors.teal),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _recognizedText,
-                                  style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
-                                  textDirection: TextDirection.rtl,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            "${index + 1}",
+                            style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
                           ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (isLastReadAyah)
+                          Text(
+                            lang == 'en' ? 'Last Read' : 'Terakhir Dibaca',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.teal.shade900,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        const Spacer(),
+                        _MicButton(
+                          isRecording: isRecording,
+                          onPressed: () => _onAyahMicPressed(index, ayah['arabic']),
                         ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TajweedText(
+                          text: ayah['arabic'],
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            fontSize: 26, 
+                            fontWeight: isLastReadAyah ? FontWeight.bold : FontWeight.w500, 
+                            height: 2.2,
+                            fontFamily: 'Amiri',
+                            color: isLastReadAyah ? Colors.teal.shade900 : Colors.black,
+                          ),
+                          textDirection: TextDirection.rtl,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          ayah['latin'] ?? '',
+                          style: TextStyle(
+                            fontSize: 16, 
+                            color: isLastReadAyah ? Colors.teal.shade800 : Colors.teal.shade700, 
+                            fontWeight: FontWeight.w600,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          lang == 'en' ? (ayah['translation_en'] ?? '') : (ayah['translation_id'] ?? ''),
+                          style: TextStyle(
+                            fontSize: 14, 
+                            color: isLastReadAyah ? Colors.teal.shade800 : Colors.grey.shade700, 
+                            fontStyle: FontStyle.italic,
+                            height: 1.5,
+                          ),
+                        ),
+                        if (isRecording && _recognizedText.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.teal.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.hearing_rounded, size: 16, color: Colors.teal),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _recognizedText,
+                                    style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+                                    textDirection: TextDirection.rtl,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
+
         },
       ),
     );

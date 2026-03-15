@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppState extends ChangeNotifier {
@@ -16,6 +19,9 @@ class AppState extends ChangeNotifier {
   String _lastReadAyat = '';
   String _lastReadSurah = '';
   int _lastReadAyahNumber = 0;
+  List<dynamic> _quranData = [];
+  bool _isDataLoaded = false;
+
 
   String get languageCode => _languageCode;
   bool get hasSelectedLanguage => _hasSelectedLanguage;
@@ -25,6 +31,9 @@ class AppState extends ChangeNotifier {
   String get lastReadAyat => _lastReadAyat;
   String get lastReadSurah => _lastReadSurah;
   int get lastReadAyahNumber => _lastReadAyahNumber;
+  List<dynamic> get quranData => _quranData;
+  bool get isDataLoaded => _isDataLoaded;
+
 
   void _init() {
     _languageCode = prefs.getString('languageCode') ?? 'id';
@@ -35,8 +44,29 @@ class AppState extends ChangeNotifier {
     _lastReadAyat = prefs.getString('lastReadAyat') ?? '';
     _lastReadSurah = prefs.getString('lastReadSurah') ?? '';
     _lastReadAyahNumber = prefs.getInt('lastReadAyahNumber') ?? 0;
+    
+    // Trigger heavy loading in background
+    loadQuranData();
+    
     notifyListeners();
   }
+
+  Future<void> loadQuranData() async {
+    if (_isDataLoaded) return;
+    try {
+      final String jsonString = await rootBundle.loadString('assets/quran.json');
+      _quranData = await compute(_decodeJson, jsonString);
+      _isDataLoaded = true;
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error loading central Quran data: $e");
+    }
+  }
+
+  static List<dynamic> _decodeJson(String source) {
+    return json.decode(source) as List<dynamic>;
+  }
+
 
   Future<void> setLanguage(String code) async {
     _languageCode = code;

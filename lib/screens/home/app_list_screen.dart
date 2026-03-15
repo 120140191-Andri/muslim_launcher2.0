@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
@@ -9,22 +10,21 @@ import '../quran/surah_list_screen.dart';
 class AppInfo {
   final String appName;
   final String packageName;
-  final Uint8List icon;
   final int category;
 
-  AppInfo({required this.appName, required this.packageName, required this.icon, required this.category});
+  AppInfo({required this.appName, required this.packageName, required this.category});
 
   factory AppInfo.fromMap(Map<dynamic, dynamic> map) {
     return AppInfo(
       appName: map['appName'] as String,
       packageName: map['packageName'] as String,
-      icon: map['icon'] as Uint8List,
       category: map['category'] as int? ?? -1,
     );
   }
 
   bool isNonProductive() => category == 0 || category == 1 || category == 2 || category == 4;
 }
+
 
 const _channel = MethodChannel('com.muslimlauncher/apps');
 
@@ -39,14 +39,20 @@ class AppListScreen extends StatefulWidget {
     _preloading = true;
     try {
       final List<dynamic> raw = await _channel.invokeMethod('getApps');
-      final apps = raw.map((a) => AppInfo.fromMap(a)).toList()
-        ..sort((a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()));
+      // Use compute to process large list in background
+      final List<AppInfo> apps = await compute(_processApps, raw);
       _cache = apps;
-    } catch (_) {
+    } catch (e) {
+      debugPrint("Error preloading apps: $e");
       _cache = [];
     } finally {
       _preloading = false;
     }
+  }
+
+  static List<AppInfo> _processApps(List<dynamic> raw) {
+    return raw.map((a) => AppInfo.fromMap(a as Map<dynamic, dynamic>)).toList()
+      ..sort((a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()));
   }
 
   static void invalidate() {
@@ -180,8 +186,13 @@ class _AppListScreenState extends State<AppListScreen> {
                     itemBuilder: (context, index) {
                       final app = _apps![index];
                       final blocked = app.isNonProductive();
-                      return _AppTile(app: app, blocked: blocked, onTap: () => _onAppTap(app, appState));
+                      return _AppTile(
+                        app: app, 
+                        blocked: blocked, 
+                        onTap: () => _onAppTap(app, appState)
+                      );
                     },
+
                   ),
           ),
         ],
@@ -221,7 +232,7 @@ class _AppTile extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Image.memory(app.icon, width: 44, height: 44),
+                _AppIcon(packageName: app.packageName),
                 if (blocked)
                   Positioned(
                     right: -6, top: -6,
@@ -237,6 +248,7 @@ class _AppTile extends StatelessWidget {
                   ),
               ],
             ),
+
           ),
           const SizedBox(height: 8),
           Text(
@@ -280,6 +292,65 @@ class _PointsBadge extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AppIcon extends StatefulWidget {
+
+  final String packageName;
+  const _AppIcon({required this.packageName});
+
+  static final Map<String, Uint8List> _iconCache = {};
+
+  @override
+  State<_AppIcon> createState() => _AppIconState();
+}
+
+class _AppIconState extends State<_AppIcon> {
+  Uint8List? _iconBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIcon();
+  }
+
+  Future<void> _loadIcon() async {
+    if (_AppIcon._iconCache.containsKey(widget.packageName)) {
+      if (mounted) setState(() => _iconBytes = _AppIcon._iconCache[widget.packageName]);
+      return;
+    }
+
+    try {
+      final Uint8List? bytes = await _channel.invokeMethod('getAppIcon', {'packageName': widget.packageName});
+      if (bytes != null) {
+        _AppIcon._iconCache[widget.packageName] = bytes;
+        if (mounted) setState(() => _iconBytes = bytes);
+      }
+    } catch (e) {
+      debugPrint("Error loading icon for ${widget.packageName}: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_iconBytes == null) {
+      return Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(Icons.apps_rounded, size: 20, color: Colors.grey.shade300),
+      );
+    }
+    return Image.memory(
+      _iconBytes!,
+      width: 44,
+      height: 44,
+      filterQuality: FilterQuality.low, // Pertahankan performa scroll
     );
   }
 }

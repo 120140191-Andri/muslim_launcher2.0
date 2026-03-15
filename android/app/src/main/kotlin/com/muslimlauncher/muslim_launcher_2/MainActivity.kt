@@ -21,6 +21,11 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "getApps" -> result.success(getInstalledApps())
+                    "getAppIcon" -> {
+                        val pkg = call.argument<String>("packageName")
+                        if (pkg != null) result.success(getAppIcon(pkg))
+                        else result.error("UNAVAILABLE", "Package name not provided.", null)
+                    }
                     "openApp" -> {
                         val pkg = call.argument<String>("packageName")
                         if (pkg != null) { openApp(pkg); result.success(null) }
@@ -39,26 +44,34 @@ class MainActivity : FlutterActivity() {
         }
         val resultList = mutableListOf<Map<String, Any>>()
         for (resolveInfo in pm.queryIntentActivities(intent, 0)) {
-            val packageName = resolveInfo.activityInfo.packageName
+            val activityInfo = resolveInfo.activityInfo
+            val packageName = activityInfo.packageName
             if (packageName == context.packageName) continue
 
             val appName = resolveInfo.loadLabel(pm).toString()
-            val iconBytes = drawableToByteArray(resolveInfo.loadIcon(pm)) ?: continue
-
             val category = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                resolveInfo.activityInfo.applicationInfo.category
+                activityInfo.applicationInfo.category
             else -1
 
             resultList.add(
                 mapOf(
                     "appName" to appName,
                     "packageName" to packageName,
-                    "category" to category,
-                    "icon" to iconBytes
+                    "category" to category
                 )
             )
         }
         return resultList
+    }
+
+    private fun getAppIcon(packageName: String): ByteArray? {
+        return try {
+            val pm = packageManager
+            val icon = pm.getApplicationIcon(packageName)
+            drawableToByteArray(icon)
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private fun openApp(packageName: String) {
@@ -75,15 +88,15 @@ class MainActivity : FlutterActivity() {
         val bitmap: Bitmap = when {
             drawable is BitmapDrawable -> drawable.bitmap
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && drawable is AdaptiveIconDrawable -> {
-                Bitmap.createBitmap(108, 108, Bitmap.Config.ARGB_8888).also {
+                Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888).also {
                     val canvas = Canvas(it)
-                    drawable.setBounds(0, 0, 108, 108)
+                    drawable.setBounds(0, 0, 96, 96)
                     drawable.draw(canvas)
                 }
             }
             else -> {
-                val w = drawable.intrinsicWidth.takeIf { it > 0 } ?: 108
-                val h = drawable.intrinsicHeight.takeIf { it > 0 } ?: 108
+                val w = drawable.intrinsicWidth.takeIf { it in 1..96 } ?: 96
+                val h = drawable.intrinsicHeight.takeIf { it in 1..96 } ?: 96
                 Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also {
                     val canvas = Canvas(it)
                     drawable.setBounds(0, 0, w, h)
@@ -92,7 +105,12 @@ class MainActivity : FlutterActivity() {
             }
         }
         val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 70, stream)
+        } else {
+            @Suppress("DEPRECATION")
+            bitmap.compress(Bitmap.CompressFormat.WEBP, 70, stream)
+        }
         return stream.toByteArray()
     }
 }

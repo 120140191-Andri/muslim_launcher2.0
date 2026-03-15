@@ -1,7 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../quran/surah_list_screen.dart';
@@ -18,28 +20,22 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late Timer _clockTimer;
   DateTime _now = DateTime.now();
-  List<dynamic> _surahs = [];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    AppListScreen.preload();
-    _loadSurahData();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _now = DateTime.now());
+      final now = DateTime.now();
+      if (now.minute != _now.minute || now.hour != _now.hour) {
+        if (mounted) setState(() => _now = now);
+      }
     });
-  }
 
-  Future<void> _loadSurahData() async {
-    try {
-      final String response = await rootBundle.loadString('assets/quran.json');
-      setState(() {
-        _surahs = json.decode(response);
-      });
-    } catch (e) {
-      debugPrint("Error loading Quran data: $e");
-    }
+    // Delayed preload to avoid startup peak
+    Future.delayed(const Duration(milliseconds: 500), () {
+      AppListScreen.preload();
+    });
   }
 
   @override
@@ -58,23 +54,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   String _pad(int v) => v.toString().padLeft(2, '0');
-  String get _timeString => '${_pad(_now.hour)}:${_pad(_now.minute)}';
-  String get _secondsString => _pad(_now.second);
+  String get _hourString => _pad(_now.hour);
+  String get _minuteString => _pad(_now.minute);
+
   String get _dateString {
-    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    const days   = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+    const days = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
     return '${days[_now.weekday - 1]}, ${_now.day} ${months[_now.month - 1]} ${_now.year}';
   }
 
   void _resumeReading(AppState appState) {
-    if (appState.lastReadSurah.isNotEmpty && _surahs.isNotEmpty) {
+    if (appState.lastReadSurah.isNotEmpty && appState.quranData.isNotEmpty) {
       final surahIdx = appState.currentSurahIndex;
-      if (surahIdx >= 0 && surahIdx < _surahs.length) {
+      if (surahIdx >= 0 && surahIdx < appState.quranData.length) {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => SurahDetailScreen(
-              surah: _surahs[surahIdx],
+              surah: appState.quranData[surahIdx],
               initialAyahIndex: appState.currentAyahIndex,
             ),
           ),
@@ -102,10 +120,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 bottomRight: Radius.circular(32),
               ),
             ),
-            child: _ClockWidget(
-              timeString: _timeString,
-              secondsString: _secondsString,
-              dateString: _dateString,
+            child: RepaintBoundary(
+              child: _ClockWidget(
+                hourString: _hourString,
+                minuteString: _minuteString,
+                dateString: _dateString,
+              ),
             ),
           ),
           Expanded(
@@ -113,29 +133,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  _PointsCard(points: appState.points, lang: lang),
+                  RepaintBoundary(
+                    child: _PointsCard(points: appState.points, lang: lang),
+                  ),
                   const SizedBox(height: 16),
-                  _LastAyatCard(
-                    surah: appState.lastReadSurah,
-                    ayahNumber: appState.lastReadAyahNumber,
-                    lang: lang,
-                    onTap: () => _resumeReading(appState),
+                  RepaintBoundary(
+                    child: _LastAyatCard(
+                      surah: appState.lastReadSurah,
+                      ayahNumber: appState.lastReadAyahNumber,
+                      lang: lang,
+                      onTap: () => _resumeReading(appState),
+                    ),
                   ),
                   const SizedBox(height: 32),
                   _ActionButton(
                     icon: Icons.menu_book_rounded,
                     label: lang == 'en' ? 'Read Qur\'an' : 'Baca Al-Qur\'an',
                     color: Colors.teal.shade800,
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const SurahListScreen())),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SurahListScreen(),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   _ActionButton(
                     icon: Icons.apps_rounded,
                     label: lang == 'en' ? 'All Apps' : 'Semua Aplikasi',
                     color: Colors.teal.shade600,
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const AppListScreen())),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AppListScreen()),
+                    ),
                   ),
                 ],
               ),
@@ -148,10 +178,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 }
 
 class _ClockWidget extends StatelessWidget {
-  final String timeString, secondsString, dateString;
+  final String hourString, minuteString, dateString;
   const _ClockWidget({
-    required this.timeString,
-    required this.secondsString,
+    required this.hourString,
+    required this.minuteString,
     required this.dateString,
   });
 
@@ -161,31 +191,41 @@ class _ClockWidget extends StatelessWidget {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
-              timeString,
+              hourString,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 64,
+                fontSize: 72,
                 fontWeight: FontWeight.bold,
-                letterSpacing: 2,
                 height: 1,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 6, left: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                ':$secondsString',
+                ':',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 24,
-                  fontWeight: FontWeight.w400,
+                  color: Colors.white.withOpacity(0.3),
+                  fontSize: 48,
+                  fontWeight: FontWeight.w300,
                 ),
+              ),
+            ),
+            Text(
+              minuteString,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 63,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 1,
               ),
             ),
           ],
         ),
+
         const SizedBox(height: 8),
         Text(
           dateString.toUpperCase(),
@@ -229,7 +269,11 @@ class _PointsCard extends StatelessWidget {
               color: Colors.amber.shade50,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.stars_rounded, color: Colors.amber.shade700, size: 28),
+            child: Icon(
+              Icons.stars_rounded,
+              color: Colors.amber.shade700,
+              size: 28,
+            ),
           ),
           const SizedBox(width: 16),
           Column(
@@ -267,8 +311,8 @@ class _LastAyatCard extends StatelessWidget {
   final String lang;
   final VoidCallback onTap;
   const _LastAyatCard({
-    required this.surah, 
-    required this.ayahNumber, 
+    required this.surah,
+    required this.ayahNumber,
     required this.lang,
     required this.onTap,
   });
@@ -298,10 +342,15 @@ class _LastAyatCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.auto_stories_rounded, color: Colors.teal.shade800, size: 18),
+                  Icon(
+                    Icons.auto_stories_rounded,
+                    color: Colors.teal.shade800,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Text(
-                    (lang == 'en' ? 'RESUME READING' : 'LANJUT BACA').toUpperCase(),
+                    (lang == 'en' ? 'RESUME READING' : 'LANJUT BACA')
+                        .toUpperCase(),
                     style: TextStyle(
                       color: Colors.grey.shade500,
                       fontSize: 11,
@@ -311,7 +360,11 @@ class _LastAyatCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (surah.isNotEmpty)
-                    Icon(Icons.arrow_forward_rounded, color: Colors.teal.shade200, size: 16),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.teal.shade200,
+                      size: 16,
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -344,7 +397,9 @@ class _LastAyatCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                lang == 'en' ? 'Ayah $ayahNumber' : 'Ayat $ayahNumber',
+                                lang == 'en'
+                                    ? 'Ayah $ayahNumber'
+                                    : 'Ayat $ayahNumber',
                                 style: TextStyle(
                                   color: Colors.teal.shade600,
                                   fontSize: 14,
@@ -354,7 +409,11 @@ class _LastAyatCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Icon(Icons.play_circle_fill_rounded, color: Colors.teal.shade600, size: 36),
+                        Icon(
+                          Icons.play_circle_fill_rounded,
+                          color: Colors.teal.shade600,
+                          size: 36,
+                        ),
                       ],
                     ),
             ],
@@ -371,10 +430,10 @@ class _ActionButton extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
   const _ActionButton({
-    required this.icon, 
-    required this.label, 
+    required this.icon,
+    required this.label,
     required this.color,
-    required this.onTap
+    required this.onTap,
   });
 
   @override
@@ -412,7 +471,11 @@ class _ActionButton extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Icon(Icons.arrow_forward_ios_rounded, color: Colors.teal.shade100, size: 16),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.teal.shade100,
+                size: 16,
+              ),
             ],
           ),
         ),
@@ -420,4 +483,3 @@ class _ActionButton extends StatelessWidget {
     );
   }
 }
-

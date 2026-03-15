@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import 'surah_detail_screen.dart';
@@ -13,28 +12,13 @@ class SurahListScreen extends StatefulWidget {
 }
 
 class _SurahListScreenState extends State<SurahListScreen> {
-  List<dynamic> _surahs = [];
-  bool _isLoading = true;
-
   @override
   void initState() {
     super.initState();
-    _loadSurahData();
   }
 
-  Future<void> _loadSurahData() async {
-    try {
-      final String response = await rootBundle.loadString('assets/quran.json');
-      final data = json.decode(response);
-      setState(() {
-        _surahs = data;
-        _isLoading = false;
-      });
-    } catch (e) {
-      debugPrint("Error loading surah list: $e");
-      setState(() => _isLoading = false);
-    }
-  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +51,11 @@ class _SurahListScreenState extends State<SurahListScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.menu_book_rounded, color: Colors.white70, size: 20),
+                const Icon(
+                  Icons.menu_book_rounded,
+                  color: Colors.white70,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   lang == 'en' ? '114 Surahs Available' : 'Tersedia 114 Surah',
@@ -77,27 +65,31 @@ class _SurahListScreenState extends State<SurahListScreen> {
             ),
           ),
           Expanded(
-            child: _isLoading
+            child: appState.quranData.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    itemCount: _surahs.length,
+                    itemCount: appState.quranData.length,
                     itemBuilder: (context, index) {
-                      final surah = _surahs[index];
+                      final surah = appState.quranData[index];
+
                       final isLastRead = index == lastReadIdx;
-                      
-                      return _SurahTile(
-                        surah: surah,
-                        isLastRead: isLastRead,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => SurahDetailScreen(surah: surah),
-                            ),
-                          );
-                        },
+
+                      return RepaintBoundary(
+                        child: _SurahTile(
+                          surah: surah,
+                          isLastRead: isLastRead,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SurahDetailScreen(surah: surah),
+                              ),
+                            );
+                          },
+                        ),
                       );
+
                     },
                   ),
           ),
@@ -113,9 +105,9 @@ class _SurahTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _SurahTile({
-    required this.surah, 
-    required this.isLastRead, 
-    required this.onTap
+    required this.surah,
+    required this.isLastRead,
+    required this.onTap,
   });
 
   @override
@@ -125,7 +117,9 @@ class _SurahTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: isLastRead ? Colors.teal.shade50 : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: isLastRead ? Border.all(color: Colors.teal.shade200, width: 2) : null,
+        border: isLastRead
+            ? Border.all(color: Colors.teal.shade200, width: 2)
+            : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -147,14 +141,18 @@ class _SurahTile extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     Icon(
-                      Icons.star_rounded, 
-                      size: 48, 
-                      color: isLastRead ? Colors.teal.shade200 : Colors.teal.shade50
+                      Icons.star_rounded,
+                      size: 48,
+                      color: isLastRead
+                          ? Colors.teal.shade200
+                          : Colors.teal.shade50,
                     ),
                     Text(
                       surah['surah_number'].toString(),
                       style: TextStyle(
-                        color: isLastRead ? Colors.teal.shade900 : Colors.teal.shade800,
+                        color: isLastRead
+                            ? Colors.teal.shade900
+                            : Colors.teal.shade800,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -171,24 +169,35 @@ class _SurahTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: isLastRead ? Colors.teal.shade900 : Colors.black,
+                          color: isLastRead
+                              ? Colors.teal.shade900
+                              : Colors.black,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "${surah['total_ayah']} Ayah",
+                        "${surah['total_ayah']} Ayat",
                         style: TextStyle(
                           fontSize: 12,
-                          color: isLastRead ? Colors.teal.shade700 : Colors.grey.shade600,
+                          color: isLastRead
+                              ? Colors.teal.shade700
+                              : Colors.grey.shade600,
                         ),
                       ),
                     ],
                   ),
                 ),
                 if (isLastRead)
-                  Icon(Icons.history_rounded, color: Colors.teal.shade400, size: 20)
+                  Icon(
+                    Icons.history_rounded,
+                    color: Colors.teal.shade400,
+                    size: 20,
+                  )
                 else
-                  Icon(Icons.chevron_right_rounded, color: Colors.teal.shade200),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.teal.shade200,
+                  ),
               ],
             ),
           ),
@@ -218,7 +227,11 @@ class _PointsBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             points.toString(),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
           ),
         ],
       ),

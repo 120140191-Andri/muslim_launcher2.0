@@ -22,7 +22,14 @@ class AppInfo {
     );
   }
 
-  bool isNonProductive() => category == 0 || category == 1 || category == 2 || category == 4;
+  bool isNonProductive() {
+    // Whitelist essential communication apps
+    if (packageName == 'com.whatsapp' || packageName == 'com.whatsapp.w4b') {
+      return false;
+    }
+    return category == 0 || category == 1 || category == 2 || category == 4;
+  }
+
 }
 
 

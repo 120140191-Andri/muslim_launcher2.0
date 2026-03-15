@@ -17,9 +17,6 @@ class _SurahListScreenState extends State<SurahListScreen> {
     super.initState();
   }
 
-
-
-
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -68,7 +65,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
             child: appState.quranData.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.fromLTRB(0, 12, 0, 60),
+
                     itemCount: appState.quranData.length,
                     itemBuilder: (context, index) {
                       final surah = appState.quranData[index];
@@ -89,7 +87,6 @@ class _SurahListScreenState extends State<SurahListScreen> {
                           },
                         ),
                       );
-
                     },
                   ),
           ),

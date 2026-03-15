@@ -12,7 +12,11 @@ class AppInfo {
   final String packageName;
   final int category;
 
-  AppInfo({required this.appName, required this.packageName, required this.category});
+  AppInfo({
+    required this.appName,
+    required this.packageName,
+    required this.category,
+  });
 
   factory AppInfo.fromMap(Map<dynamic, dynamic> map) {
     return AppInfo(
@@ -29,9 +33,7 @@ class AppInfo {
     }
     return category == 0 || category == 1 || category == 2 || category == 4;
   }
-
 }
-
 
 const _channel = MethodChannel('com.muslimlauncher/apps');
 
@@ -59,7 +61,9 @@ class AppListScreen extends StatefulWidget {
 
   static List<AppInfo> _processApps(List<dynamic> raw) {
     return raw.map((a) => AppInfo.fromMap(a as Map<dynamic, dynamic>)).toList()
-      ..sort((a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()));
+      ..sort(
+        (a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()),
+      );
   }
 
   static void invalidate() {
@@ -90,8 +94,11 @@ class _AppListScreenState extends State<AppListScreen> {
   }
 
   Future<void> _openApp(String packageName) async {
-    try { await _channel.invokeMethod('openApp', {'packageName': packageName}); }
-    on PlatformException catch (e) { debugPrint('Failed to open app: ${e.message}'); }
+    try {
+      await _channel.invokeMethod('openApp', {'packageName': packageName});
+    } on PlatformException catch (e) {
+      debugPrint('Failed to open app: ${e.message}');
+    }
   }
 
   void _onAppTap(AppInfo app, AppState appState) {
@@ -111,16 +118,21 @@ class _AppListScreenState extends State<AppListScreen> {
         title: Text(Translations.get(lang, 'non_productive')),
         content: Text(
           lang == 'en'
-            ? 'This is a non-productive app. Spend 50 Points to open it?'
-            : 'Aplikasi non-produktif. Gunakan 50 Poin untuk membuka?',
+              ? 'This is a non-productive app. Spend 50 Points to open it?'
+              : 'Aplikasi non-produktif. Gunakan 50 Poin untuk membuka?',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal.shade800, 
+              backgroundColor: Colors.teal.shade800,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () {
               if (appState.points >= 50) {
@@ -129,7 +141,10 @@ class _AppListScreenState extends State<AppListScreen> {
                 _openApp(app.packageName);
               } else {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SurahListScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SurahListScreen()),
+                );
               }
             },
             child: Text(appState.points >= 50 ? 'Buka (50 Poin)' : 'Cari Poin'),
@@ -169,11 +184,20 @@ class _AppListScreenState extends State<AppListScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline_rounded, color: Colors.white.withOpacity(0.6), size: 14),
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.white.withOpacity(0.6),
+                  size: 14,
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  lang == 'en' ? 'Tap an icon to launch the app' : 'Ketuk ikon untuk membuka aplikasi',
-                  style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
+                  lang == 'en'
+                      ? 'Tap an icon to launch the app'
+                      : 'Ketuk ikon untuk membuka aplikasi',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -182,24 +206,25 @@ class _AppListScreenState extends State<AppListScreen> {
             child: _apps == null
                 ? const Center(child: CircularProgressIndicator())
                 : GridView.builder(
-                    padding: const EdgeInsets.all(20),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.75,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
+
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.75,
+                        ),
                     itemCount: _apps!.length,
                     itemBuilder: (context, index) {
                       final app = _apps![index];
                       final blocked = app.isNonProductive();
                       return _AppTile(
-                        app: app, 
-                        blocked: blocked, 
-                        onTap: () => _onAppTap(app, appState)
+                        app: app,
+                        blocked: blocked,
+                        onTap: () => _onAppTap(app, appState),
                       );
                     },
-
                   ),
           ),
         ],
@@ -213,7 +238,11 @@ class _AppTile extends StatelessWidget {
   final bool blocked;
   final VoidCallback onTap;
 
-  const _AppTile({required this.app, required this.blocked, required this.onTap});
+  const _AppTile({
+    required this.app,
+    required this.blocked,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -242,7 +271,8 @@ class _AppTile extends StatelessWidget {
                 _AppIcon(packageName: app.packageName),
                 if (blocked)
                   Positioned(
-                    right: -6, top: -6,
+                    right: -6,
+                    top: -6,
                     child: Container(
                       padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
@@ -250,19 +280,22 @@ class _AppTile extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
-                      child: const Icon(Icons.lock_rounded, color: Colors.white, size: 8),
+                      child: const Icon(
+                        Icons.lock_rounded,
+                        color: Colors.white,
+                        size: 8,
+                      ),
                     ),
                   ),
               ],
             ),
-
           ),
           const SizedBox(height: 8),
           Text(
             app.appName,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 10, 
+              fontSize: 10,
               fontWeight: FontWeight.w500,
               color: Colors.teal.shade900,
             ),
@@ -295,7 +328,11 @@ class _PointsBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             points.toString(),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -304,7 +341,6 @@ class _PointsBadge extends StatelessWidget {
 }
 
 class _AppIcon extends StatefulWidget {
-
   final String packageName;
   const _AppIcon({required this.packageName});
 
@@ -325,12 +361,15 @@ class _AppIconState extends State<_AppIcon> {
 
   Future<void> _loadIcon() async {
     if (_AppIcon._iconCache.containsKey(widget.packageName)) {
-      if (mounted) setState(() => _iconBytes = _AppIcon._iconCache[widget.packageName]);
+      if (mounted)
+        setState(() => _iconBytes = _AppIcon._iconCache[widget.packageName]);
       return;
     }
 
     try {
-      final Uint8List? bytes = await _channel.invokeMethod('getAppIcon', {'packageName': widget.packageName});
+      final Uint8List? bytes = await _channel.invokeMethod('getAppIcon', {
+        'packageName': widget.packageName,
+      });
       if (bytes != null) {
         _AppIcon._iconCache[widget.packageName] = bytes;
         if (mounted) setState(() => _iconBytes = bytes);

@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../quran/surah_list_screen.dart';
 import '../quran/surah_detail_screen.dart';
+import '../quran/reading_history_screen.dart';
 import 'app_list_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -166,34 +168,58 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ],
                           ),
 
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.stars_rounded,
-                                  color: Colors.amber,
-                                  size: 16,
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const ReadingHistoryScreen()),
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  appState.points.toString(),
-                                  style: const TextStyle(
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.history_rounded,
                                     color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
+                                    size: 18,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.stars_rounded,
+                                      color: Colors.amber,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      appState.points.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
+
                         ],
                       ),
                       const SizedBox(height: 32),

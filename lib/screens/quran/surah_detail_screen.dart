@@ -91,10 +91,19 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
 
   void _onSuccess(int index, String arabic) {
     final appState = Provider.of<AppState>(context, listen: false);
-    appState.addPoints(10);
-    appState.setLastReadAyat(arabic);
+    
+    // Check if point should be awarded based on strict progression
+    final int surahNumber = widget.surah['surah_number'];
+    final bool getsPoints = appState.canEarnPoints(surahNumber - 1, index);
+
+    if (getsPoints) {
+      appState.addPoints(10);
+      appState.setLastReadAyat(arabic);
+    }
+
+    // saveProgress handles history internally and only updates "Last Read" if it's new progress
     appState.saveProgress(
-      widget.surah['surah_number'] - 1,
+      surahNumber - 1,
       index,
       widget.surah['surah_name'],
       index + 1,
@@ -105,13 +114,16 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
-          children: const [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 12),
-            Text("Masha Allah! +10 Poin"),
+          children: [
+            Icon(
+              getsPoints ? Icons.check_circle : Icons.history_rounded,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Text(getsPoints ? "Masha Allah! +10 Poin" : "Riwayat Bacaan Tersimpan"),
           ],
         ),
-        backgroundColor: Colors.teal.shade700,
+        backgroundColor: getsPoints ? Colors.teal.shade700 : Colors.blueGrey.shade700,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),
@@ -119,15 +131,17 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final ayahs = widget.surah['ayahs'] as List<dynamic>;
     final lang = appState.languageCode;
 
-    // Check if this surah is the last read surah to highlight the specific ayah
-    final bool isLastReadSurah =
-        (widget.surah['surah_number'] - 1) == appState.currentSurahIndex;
+    // Check progress
+    final int surahIndex = widget.surah['surah_number'] - 1;
+
+    final bool isLastReadSurah = surahIndex == appState.currentSurahIndex;
     final int lastReadAyahIdx = appState.currentAyahIndex;
 
     return Scaffold(
@@ -143,21 +157,29 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
         ],
       ),
       body: ScrollablePositionedList.builder(
-        itemCount: ayahs.length,
+        itemCount: ayahs.length + (appState.highestSurahIndex >= surahIndex && appState.highestAyahIndex == ayahs.length - 1 && surahIndex < appState.quranData.length - 1 ? 1 : 0),
         itemScrollController: _itemScrollController,
         itemPositionsListener: _itemPositionsListener,
         padding: const EdgeInsets.only(top: 8, bottom: 64),
 
         itemBuilder: (context, index) {
+          if (index == ayahs.length) {
+            return _buildNextSurahButton(context, appState, surahIndex);
+          }
+
           final ayah = ayahs[index];
           final isRecording = _recordingAyahIdx == index;
           final isLastReadAyah = isLastReadSurah && index == lastReadAyahIdx;
+          
+          final bool isDone = appState.isAyahReached(surahIndex, index);
+          final bool isNext = appState.isNextAyah(surahIndex, index);
+          final bool isFuture = !isDone && !isNext;
 
           return RepaintBoundary(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isLastReadAyah ? Colors.teal.shade50 : Colors.white,
+                color: isDone ? Colors.teal.shade50 : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: isLastReadAyah
                     ? Border.all(color: Colors.teal.shade200, width: 2)
@@ -170,8 +192,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: Opacity(
+                opacity: isFuture && !isNext && !isRecording ? 0.6 : 1.0,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Ayah Header
                   Container(
@@ -180,7 +204,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: isLastReadAyah
+                      color: isDone
                           ? Colors.teal.shade100.withOpacity(0.5)
                           : Colors.teal.shade50.withOpacity(0.5),
                       borderRadius: const BorderRadius.only(
@@ -193,7 +217,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: isLastReadAyah
+                            color: isDone
                                 ? Colors.teal.shade900
                                 : Colors.teal.shade800,
                             shape: BoxShape.circle,
@@ -216,6 +240,15 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                               color: Colors.teal.shade900,
                               fontWeight: FontWeight.bold,
                             ),
+                          )
+                        else if (isNext)
+                          Text(
+                            lang == 'en' ? 'Next' : 'Berikutnya',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.teal.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         const Spacer(),
                         _MicButton(
@@ -236,12 +269,12 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                           textAlign: TextAlign.right,
                           style: TextStyle(
                             fontSize: 26,
-                            fontWeight: isLastReadAyah
+                            fontWeight: isDone
                                 ? FontWeight.bold
                                 : FontWeight.w500,
                             height: 2.2,
                             fontFamily: 'Amiri',
-                            color: isLastReadAyah
+                            color: isDone
                                 ? Colors.teal.shade900
                                 : Colors.black,
                           ),
@@ -252,7 +285,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                           ayah['latin'] ?? '',
                           style: TextStyle(
                             fontSize: 16,
-                            color: isLastReadAyah
+                            color: isDone
                                 ? Colors.teal.shade800
                                 : Colors.teal.shade700,
                             fontWeight: FontWeight.w600,
@@ -266,9 +299,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                               : (ayah['translation_id'] ?? ''),
                           style: TextStyle(
                             fontSize: 14,
-                            color: isLastReadAyah
+                            color: isDone
                                 ? Colors.teal.shade800
-                                : Colors.grey.shade700,
+                                : isFuture ? Colors.grey.shade500 : Colors.grey.shade700,
                             fontStyle: FontStyle.italic,
                             height: 1.5,
                           ),
@@ -306,7 +339,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                           : FontStyle.normal,
                                     ),
                                     textDirection: TextDirection.rtl,
-                                  ),
+                                   ),
                                 ),
                               ],
                             ),
@@ -318,8 +351,46 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                 ],
               ),
             ),
+          ),
+        );
+      },
+    ),
+  );
+  }
+
+  Widget _buildNextSurahButton(BuildContext context, AppState appState, int currentSurahIdx) {
+    if (currentSurahIdx >= appState.quranData.length - 1) return const SizedBox.shrink();
+    
+    final nextSurah = appState.quranData[currentSurahIdx + 1];
+    final lang = appState.languageCode;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.teal.shade800,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 4,
+          shadowColor: Colors.teal.withOpacity(0.3),
+        ),
+        onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SurahDetailScreen(surah: nextSurah),
+            ),
           );
         },
+        icon: const Icon(Icons.arrow_forward_rounded),
+        label: Text(
+          lang == 'en' 
+            ? "Next Surah: ${nextSurah['surah_name']}"
+            : "Surah Selanjutnya: ${nextSurah['surah_name']}",
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }

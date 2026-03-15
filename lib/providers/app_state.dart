@@ -15,11 +15,16 @@ class AppState extends ChangeNotifier {
   bool _hasCompletedOnboarding = false;
   int _points = 0;
   List<String> _blockedApps = [];
+  int _highestSurahIndex = 0;
+  int _highestAyahIndex = -1; // -1 means no progress yet
+  List<Map<String, dynamic>> _readingHistory = [];
+
   String _lastReadAyat = '';
   String _lastReadSurah = '';
   int _lastReadAyahNumber = 0;
   List<dynamic> _quranData = [];
   bool _isDataLoaded = false;
+
 
   String get languageCode => _languageCode;
   bool get hasSelectedLanguage => _hasSelectedLanguage;
@@ -31,20 +36,30 @@ class AppState extends ChangeNotifier {
   int get lastReadAyahNumber => _lastReadAyahNumber;
   List<dynamic> get quranData => _quranData;
   bool get isDataLoaded => _isDataLoaded;
+  List<Map<String, dynamic>> get readingHistory => _readingHistory;
 
   void _init() {
     _languageCode = prefs.getString('languageCode') ?? 'id';
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
     _points = prefs.getInt('points') ?? 0;
-    _blockedApps = prefs.getStringList('blockedApps') ?? [];
+    _blockedApps = (prefs.getStringList('blockedApps') ?? []).toList();
     _lastReadAyat = prefs.getString('lastReadAyat') ?? '';
     _lastReadSurah = prefs.getString('lastReadSurah') ?? '';
     _lastReadAyahNumber = prefs.getInt('lastReadAyahNumber') ?? 0;
+    
+    _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
+    _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
+    
+    final historyJson = prefs.getString('readingHistory') ?? '[]';
+    try {
+      final decoded = json.decode(historyJson) as List;
+      _readingHistory = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+    } catch (e) {
+      _readingHistory = [];
+    }
 
-    // Trigger heavy loading in background
     loadQuranData();
-
     notifyListeners();
   }
 
@@ -121,18 +136,115 @@ class AppState extends ChangeNotifier {
     String surahName,
     int ayahNumber,
   ) async {
-    await prefs.setInt('currentSurahIndex', surahIndex);
-    await prefs.setInt('currentAyahIndex', ayahIndex);
+    // Determine if this is the EXACT next sequential step (+1 ayah)
+    bool isNextStep = false;
+    
+    // Check if same surah and next ayah
+    if (surahIndex == _highestSurahIndex && ayahIndex == _highestAyahIndex + 1) {
+      isNextStep = true;
+    } 
+    // Check if next surah and first ayah, but only if current surah is finished
+    else if (surahIndex == _highestSurahIndex + 1 && ayahIndex == 0) {
+      if (_highestSurahIndex < _quranData.length) {
+        final currentSurah = _quranData[_highestSurahIndex];
+        final totalAyahs = currentSurah['total_ayah'] as int;
+        if (_highestAyahIndex == totalAyahs - 1) {
+          isNextStep = true;
+        }
+      }
+    }
 
-    _lastReadSurah = surahName;
-    _lastReadAyahNumber = ayahNumber;
-    await prefs.setString('lastReadSurah', surahName);
-    await prefs.setInt('lastReadAyahNumber', ayahNumber);
+    if (isNextStep) {
+      _highestSurahIndex = surahIndex;
+      _highestAyahIndex = ayahIndex;
+      await prefs.setInt('highestSurahIndex', surahIndex);
+      await prefs.setInt('highestAyahIndex', ayahIndex);
+      
+      // Update last read only on sequential progress
+      _lastReadSurah = surahName;
+      _lastReadAyahNumber = ayahNumber;
+      await prefs.setString('lastReadSurah', surahName);
+      await prefs.setInt('lastReadAyahNumber', ayahNumber);
+      await prefs.setInt('currentSurahIndex', surahIndex);
+      await prefs.setInt('currentAyahIndex', ayahIndex);
+    }
 
+    // Always add to history regardless of sequential progress
+    _addToHistory(surahName, ayahNumber);
+    
     notifyListeners();
+  }
+
+  bool canEarnPoints(int surahIndex, int ayahIndex) {
+    // Points are earned ONLY if it's the exact next step
+    if (surahIndex == _highestSurahIndex && ayahIndex == _highestAyahIndex + 1) {
+      return true;
+    }
+    
+    if (surahIndex == _highestSurahIndex + 1 && ayahIndex == 0) {
+      if (_highestSurahIndex < _quranData.length) {
+        final currentSurah = _quranData[_highestSurahIndex];
+        final totalAyahs = currentSurah['total_ayah'] as int;
+        return _highestAyahIndex == totalAyahs - 1;
+      }
+    }
+    
+    return false;
+  }
+
+  // Helper getters to help UI determine if an ayah/surah is "beyond" current progress
+  int get highestSurahIndex => _highestSurahIndex;
+  int get highestAyahIndex => _highestAyahIndex;
+
+  bool isSurahUnlocked(int index) {
+    if (index <= _highestSurahIndex) return true;
+    if (index == _highestSurahIndex + 1) {
+      // Unlocked if previous surah is finished
+      if (_highestSurahIndex < _quranData.length) {
+        final prevSurah = _quranData[_highestSurahIndex];
+        final totalAyahs = prevSurah['total_ayah'] as int;
+        return _highestAyahIndex == totalAyahs - 1;
+      }
+    }
+    return false;
+  }
+
+  bool isNextAyah(int surahIndex, int ayahIndex) {
+    // Exact same logic as point earning
+    if (surahIndex == _highestSurahIndex && ayahIndex == _highestAyahIndex + 1) {
+      return true;
+    }
+    if (surahIndex == _highestSurahIndex + 1 && ayahIndex == 0) {
+      if (_highestSurahIndex < _quranData.length) {
+        final currentSurah = _quranData[_highestSurahIndex];
+        final totalAyahs = currentSurah['total_ayah'] as int;
+        return _highestAyahIndex == totalAyahs - 1;
+      }
+    }
+    return false;
+  }
+
+  bool isAyahReached(int surahIdx, int ayahIdx) {
+    if (surahIdx < _highestSurahIndex) return true;
+    if (surahIdx == _highestSurahIndex) return ayahIdx <= _highestAyahIndex;
+    return false;
+  }
+
+  void _addToHistory(String surahName, int ayahNumber) {
+    final entry = {
+      'surah': surahName,
+      'ayah': ayahNumber,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+    
+    _readingHistory.insert(0, entry); // Newest first
+    if (_readingHistory.length > 50) _readingHistory.removeLast(); // Keep last 50
+    
+    prefs.setString('readingHistory', json.encode(_readingHistory));
   }
 
   bool isAppBlocked(String packageName) {
     return _blockedApps.contains(packageName);
   }
 }
+

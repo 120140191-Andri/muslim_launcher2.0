@@ -72,12 +72,16 @@ class _SurahListScreenState extends State<SurahListScreen> {
                       final surah = appState.quranData[index];
 
                       final isLastRead = index == lastReadIdx;
+                      final isFuture = !appState.isSurahUnlocked(index);
 
                       return RepaintBoundary(
-                        child: _SurahTile(
-                          surah: surah,
-                          isLastRead: isLastRead,
-                          onTap: () {
+                        child: Opacity(
+                          opacity: isFuture ? 0.5 : 1.0,
+                          child: _SurahTile(
+                            surah: surah,
+                            isLastRead: isLastRead,
+                            isFuture: isFuture,
+                            onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -86,7 +90,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
                             );
                           },
                         ),
-                      );
+                      ),
+                    );
                     },
                   ),
           ),
@@ -99,11 +104,13 @@ class _SurahListScreenState extends State<SurahListScreen> {
 class _SurahTile extends StatelessWidget {
   final dynamic surah;
   final bool isLastRead;
+  final bool isFuture;
   final VoidCallback onTap;
 
   const _SurahTile({
     required this.surah,
     required this.isLastRead,
+    required this.isFuture,
     required this.onTap,
   });
 
@@ -137,6 +144,7 @@ class _SurahTile extends StatelessWidget {
                 _SurahNumberShape(
                   number: surah['surah_number'].toString(),
                   isLastRead: isLastRead,
+                  isFuture: isFuture,
                 ),
 
                 const SizedBox(width: 16),
@@ -171,6 +179,12 @@ class _SurahTile extends StatelessWidget {
                   Icon(
                     Icons.history_rounded,
                     color: Colors.teal.shade400,
+                    size: 20,
+                  )
+                else if (isFuture)
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    color: Colors.teal.shade100,
                     size: 20,
                   )
                 else
@@ -221,13 +235,23 @@ class _PointsBadge extends StatelessWidget {
 class _SurahNumberShape extends StatelessWidget {
   final String number;
   final bool isLastRead;
+  final bool isFuture;
 
-  const _SurahNumberShape({required this.number, required this.isLastRead});
+  const _SurahNumberShape({
+    required this.number,
+    required this.isLastRead,
+    required this.isFuture,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final color = isLastRead ? Colors.teal.shade200 : Colors.teal.shade50;
-    final textColor = isLastRead ? Colors.teal.shade900 : Colors.teal.shade800;
+    Color color = isLastRead ? Colors.teal.shade200 : Colors.teal.shade50;
+    Color textColor = isLastRead ? Colors.teal.shade900 : Colors.teal.shade800;
+
+    if (isFuture) {
+      color = Colors.grey.shade200;
+      textColor = Colors.grey.shade400;
+    }
 
     return SizedBox(
       width: 44,

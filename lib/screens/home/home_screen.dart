@@ -9,7 +9,6 @@ import '../quran/surah_detail_screen.dart';
 import '../quran/reading_history_screen.dart';
 import 'app_list_screen.dart';
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -109,6 +108,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return lang == 'en' ? 'Good Night' : 'Selamat Malam';
   }
 
+  Widget _buildHeaderBadge({
+    required IconData icon,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 12),
+          const SizedBox(width: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -173,7 +201,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               GestureDetector(
                                 onTap: () => Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const ReadingHistoryScreen()),
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const ReadingHistoryScreen(),
+                                  ),
                                 ),
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
@@ -189,37 +220,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.stars_rounded,
-                                      color: Colors.amber,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      appState.points.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              _buildHeaderBadge(
+                                icon: Icons.stars_rounded,
+                                value: appState.points.toString(),
+                                color: Colors.amber,
                               ),
                             ],
                           ),
-
                         ],
                       ),
                       const SizedBox(height: 32),
@@ -284,6 +291,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   totalAyahs: totalAyahs,
                                   currentSurahIdx: appState.currentSurahIndex,
                                   lang: lang,
+                                  khatmCount: appState.khatmCount,
                                   onTap: () => _resumeReading(appState),
                                 );
                               },
@@ -469,6 +477,7 @@ class _LastAyatCard extends StatelessWidget {
   final int totalAyahs;
   final int currentSurahIdx;
   final String lang;
+  final int khatmCount;
   final VoidCallback onTap;
 
   const _LastAyatCard({
@@ -477,6 +486,7 @@ class _LastAyatCard extends StatelessWidget {
     required this.totalAyahs,
     required this.currentSurahIdx,
     required this.lang,
+    required this.khatmCount,
     required this.onTap,
   });
 
@@ -501,8 +511,7 @@ class _LastAyatCard extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: surah.isEmpty ? null : onTap,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Stack(
               children: [
                 Padding(
                   padding: const EdgeInsets.all(20),
@@ -532,6 +541,9 @@ class _LastAyatCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Add extra padding at the top for the badge if needed,
+                            // but let's see if we can just push the text down a bit
+                            const SizedBox(height: 8),
                             Text(
                               surah.isEmpty
                                   ? (lang == 'en'
@@ -603,14 +615,59 @@ class _LastAyatCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (surah.isNotEmpty && totalAyahs > 0)
-                  LinearProgressIndicator(
-                    value: ayahNumber / totalAyahs,
-                    backgroundColor: Colors.teal.shade50,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.teal.shade300,
+
+                // Khatm Badge Overlay
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
                     ),
-                    minHeight: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade400,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: Color(0xFF5D4037),
+                          size: 10,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "Khatm: ${khatmCount}x",
+                          style: const TextStyle(
+                            color: Color(0xFF5D4037),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Progress Indicator at Bottom
+                if (surah.isNotEmpty && totalAyahs > 0)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: LinearProgressIndicator(
+                      value: ayahNumber / totalAyahs,
+                      backgroundColor: Colors.teal.shade50,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.teal.shade300,
+                      ),
+                      minHeight: 4,
+                    ),
                   ),
               ],
             ),

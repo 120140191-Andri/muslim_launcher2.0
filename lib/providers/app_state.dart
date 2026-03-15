@@ -17,6 +17,7 @@ class AppState extends ChangeNotifier {
   List<String> _blockedApps = [];
   int _highestSurahIndex = 0;
   int _highestAyahIndex = -1; // -1 means no progress yet
+  int _khatmCount = 0;
   List<Map<String, dynamic>> _readingHistory = [];
 
   String _lastReadAyat = '';
@@ -36,6 +37,7 @@ class AppState extends ChangeNotifier {
   int get lastReadAyahNumber => _lastReadAyahNumber;
   List<dynamic> get quranData => _quranData;
   bool get isDataLoaded => _isDataLoaded;
+  int get khatmCount => _khatmCount;
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
 
   void _init() {
@@ -50,6 +52,7 @@ class AppState extends ChangeNotifier {
     
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
+    _khatmCount = prefs.getInt('khatmCount') ?? 0;
     
     final historyJson = prefs.getString('readingHistory') ?? '[]';
     try {
@@ -167,6 +170,24 @@ class AppState extends ChangeNotifier {
       await prefs.setInt('lastReadAyahNumber', ayahNumber);
       await prefs.setInt('currentSurahIndex', surahIndex);
       await prefs.setInt('currentAyahIndex', ayahIndex);
+
+      // CHECK FOR KHATM (FULL COMPLETION)
+      // Surah 114 (index 113) is An-Nas
+      if (surahIndex == 113) {
+        final lastSurah = _quranData[113];
+        final totalAyahs = lastSurah['total_ayah'] as int;
+        if (ayahIndex == totalAyahs - 1) {
+          // KHATM ACHIEVED!
+          _khatmCount++;
+          await prefs.setInt('khatmCount', _khatmCount);
+          
+          // Reset progress for new cycle
+          _highestSurahIndex = 0;
+          _highestAyahIndex = -1;
+          await prefs.setInt('highestSurahIndex', 0);
+          await prefs.setInt('highestAyahIndex', -1);
+        }
+      }
     }
 
     // Always add to history regardless of sequential progress

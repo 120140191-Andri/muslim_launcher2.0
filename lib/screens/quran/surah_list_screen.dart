@@ -31,8 +31,11 @@ class _SurahListScreenState extends State<SurahListScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          _PointsBadge(points: appState.points),
-          const SizedBox(width: 8),
+          _PointsBadge(
+            points: appState.points,
+            khatmCount: appState.khatmCount,
+          ),
+          const SizedBox(width: 12),
         ],
       ),
       body: Column(
@@ -55,7 +58,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  lang == 'en' ? '114 Surahs Available' : 'Tersedia 114 Surah',
+                  lang == 'en' ? '114 Surahs' : 'Total 114 Surah',
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
@@ -82,16 +85,17 @@ class _SurahListScreenState extends State<SurahListScreen> {
                             isLastRead: isLastRead,
                             isFuture: isFuture,
                             onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SurahDetailScreen(surah: surah),
-                              ),
-                            );
-                          },
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      SurahDetailScreen(surah: surah),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    );
+                      );
                     },
                   ),
           ),
@@ -189,8 +193,9 @@ class _SurahTile extends StatelessWidget {
                   )
                 else
                   Icon(
-                    Icons.chevron_right_rounded,
-                    color: Colors.teal.shade200,
+                    Icons.check_circle_rounded,
+                    color: Colors.teal.shade300,
+                    size: 20,
                   ),
               ],
             ),
@@ -203,35 +208,71 @@ class _SurahTile extends StatelessWidget {
 
 class _PointsBadge extends StatelessWidget {
   final int points;
-  const _PointsBadge({required this.points});
+  final int khatmCount;
+  const _PointsBadge({required this.points, required this.khatmCount});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.stars_rounded, color: Colors.amber, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            points.toString(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.amber,
+                size: 10,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                "Khatm $khatmCount'x",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.stars_rounded, color: Colors.amber, size: 10),
+              const SizedBox(width: 4),
+              Text(
+                points.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
+
 class _SurahNumberShape extends StatelessWidget {
   final String number;
   final bool isLastRead;

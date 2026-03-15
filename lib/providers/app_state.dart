@@ -78,9 +78,12 @@ class AppState extends ChangeNotifier {
 
   Future<void> completeOnboarding() async {
     _hasCompletedOnboarding = true;
+    _hasSelectedLanguage = true; // Safety check
     await prefs.setBool('hasCompletedOnboarding', true);
+    await prefs.setBool('hasSelectedLanguage', true); // Consistent state
     notifyListeners();
   }
+
 
   Future<void> addPoints(int amount) async {
     _points += amount;

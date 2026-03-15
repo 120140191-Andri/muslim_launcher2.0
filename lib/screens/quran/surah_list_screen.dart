@@ -134,28 +134,11 @@ class _SurahTile extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      Icons.star_rounded,
-                      size: 48,
-                      color: isLastRead
-                          ? Colors.teal.shade200
-                          : Colors.teal.shade50,
-                    ),
-                    Text(
-                      surah['surah_number'].toString(),
-                      style: TextStyle(
-                        color: isLastRead
-                            ? Colors.teal.shade900
-                            : Colors.teal.shade800,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+                _SurahNumberShape(
+                  number: surah['surah_number'].toString(),
+                  isLastRead: isLastRead,
                 ),
+
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -228,6 +211,59 @@ class _PointsBadge extends StatelessWidget {
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+class _SurahNumberShape extends StatelessWidget {
+  final String number;
+  final bool isLastRead;
+
+  const _SurahNumberShape({required this.number, required this.isLastRead});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isLastRead ? Colors.teal.shade200 : Colors.teal.shade50;
+    final textColor = isLastRead ? Colors.teal.shade900 : Colors.teal.shade800;
+
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // The 8-pointed star (Rub el Hizb)
+          Transform.rotate(
+            angle: 0,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          Transform.rotate(
+            angle: 0.785, // 45 degrees in radians
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          Text(
+            number,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
             ),
           ),
         ],

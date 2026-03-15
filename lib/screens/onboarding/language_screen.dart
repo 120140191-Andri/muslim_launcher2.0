@@ -75,12 +75,17 @@ class LanguageScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SetupLauncherScreen()),
-                    );
+                  onPressed: () async {
+                    // Ensure language is officially saved before moving forward
+                    await appState.setLanguage(lang);
+                    if (context.mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SetupLauncherScreen()),
+                      );
+                    }
                   },
+
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal.shade800,
                     foregroundColor: Colors.white,

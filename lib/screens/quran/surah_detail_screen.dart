@@ -5,13 +5,12 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../providers/app_state.dart';
 import 'quran_tajweed_text.dart';
 
-
 class SurahDetailScreen extends StatefulWidget {
   final Map<String, dynamic> surah;
   final int? initialAyahIndex;
-  
+
   const SurahDetailScreen({
-    super.key, 
+    super.key,
     required this.surah,
     this.initialAyahIndex,
   });
@@ -23,8 +22,9 @@ class SurahDetailScreen extends StatefulWidget {
 class _SurahDetailScreenState extends State<SurahDetailScreen> {
   final stt.SpeechToText _speech = stt.SpeechToText();
   final ItemScrollController _itemScrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
-  
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
+
   int? _recordingAyahIdx;
   String _recognizedText = "";
 
@@ -32,7 +32,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   void initState() {
     super.initState();
     _initSpeech();
-    
+
     // Auto-scroll to initial ayah if provided
     if (widget.initialAyahIndex != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -43,8 +43,16 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
 
   void _initSpeech() async {
     await _speech.initialize(
-      onError: (val) => debugPrint('onError: $val'),
-      onStatus: (val) => debugPrint('onStatus: $val'),
+      onError: (val) {
+        debugPrint('onError: $val');
+        if (mounted) setState(() => _recordingAyahIdx = null);
+      },
+      onStatus: (val) {
+        debugPrint('onStatus: $val');
+        if (val == 'done' || val == 'notListening') {
+          if (mounted) setState(() => _recordingAyahIdx = null);
+        }
+      },
     );
   }
 
@@ -53,14 +61,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       _stopListening();
     } else {
       if (_recordingAyahIdx != null) _speech.stop();
-      
+
       bool available = await _speech.initialize();
       if (available) {
         setState(() {
           _recordingAyahIdx = index;
           _recognizedText = "";
         });
-        
+
         _speech.listen(
           onResult: (val) {
             setState(() {
@@ -86,14 +94,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     appState.addPoints(10);
     appState.setLastReadAyat(arabic);
     appState.saveProgress(
-      widget.surah['surah_number'] - 1, 
-      index, 
-      widget.surah['surah_name'], 
-      index + 1
+      widget.surah['surah_number'] - 1,
+      index,
+      widget.surah['surah_name'],
+      index + 1,
     );
-    
+
     _stopListening();
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -116,9 +124,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     final appState = Provider.of<AppState>(context);
     final ayahs = widget.surah['ayahs'] as List<dynamic>;
     final lang = appState.languageCode;
-    
+
     // Check if this surah is the last read surah to highlight the specific ayah
-    final bool isLastReadSurah = (widget.surah['surah_number'] - 1) == appState.currentSurahIndex;
+    final bool isLastReadSurah =
+        (widget.surah['surah_number'] - 1) == appState.currentSurahIndex;
     final int lastReadAyahIdx = appState.currentAyahIndex;
 
     return Scaffold(
@@ -137,7 +146,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
         itemCount: ayahs.length,
         itemScrollController: _itemScrollController,
         itemPositionsListener: _itemPositionsListener,
-        padding: const EdgeInsets.only(top: 8, bottom: 24),
+        padding: const EdgeInsets.only(top: 8, bottom: 64),
+
         itemBuilder: (context, index) {
           final ayah = ayahs[index];
           final isRecording = _recordingAyahIdx == index;
@@ -149,7 +159,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
               decoration: BoxDecoration(
                 color: isLastReadAyah ? Colors.teal.shade50 : Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: isLastReadAyah ? Border.all(color: Colors.teal.shade200, width: 2) : null,
+                border: isLastReadAyah
+                    ? Border.all(color: Colors.teal.shade200, width: 2)
+                    : null,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.03),
@@ -163,9 +175,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                 children: [
                   // Ayah Header
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: isLastReadAyah ? Colors.teal.shade100.withOpacity(0.5) : Colors.teal.shade50.withOpacity(0.5),
+                      color: isLastReadAyah
+                          ? Colors.teal.shade100.withOpacity(0.5)
+                          : Colors.teal.shade50.withOpacity(0.5),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -176,12 +193,18 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: isLastReadAyah ? Colors.teal.shade900 : Colors.teal.shade800,
+                            color: isLastReadAyah
+                                ? Colors.teal.shade900
+                                : Colors.teal.shade800,
                             shape: BoxShape.circle,
                           ),
                           child: Text(
                             "${index + 1}",
-                            style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -197,7 +220,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         const Spacer(),
                         _MicButton(
                           isRecording: isRecording,
-                          onPressed: () => _onAyahMicPressed(index, ayah['arabic']),
+                          onPressed: () =>
+                              _onAyahMicPressed(index, ayah['arabic']),
                         ),
                       ],
                     ),
@@ -211,11 +235,15 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                           text: ayah['arabic'],
                           textAlign: TextAlign.right,
                           style: TextStyle(
-                            fontSize: 26, 
-                            fontWeight: isLastReadAyah ? FontWeight.bold : FontWeight.w500, 
+                            fontSize: 26,
+                            fontWeight: isLastReadAyah
+                                ? FontWeight.bold
+                                : FontWeight.w500,
                             height: 2.2,
                             fontFamily: 'Amiri',
-                            color: isLastReadAyah ? Colors.teal.shade900 : Colors.black,
+                            color: isLastReadAyah
+                                ? Colors.teal.shade900
+                                : Colors.black,
                           ),
                           textDirection: TextDirection.rtl,
                         ),
@@ -223,23 +251,29 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         Text(
                           ayah['latin'] ?? '',
                           style: TextStyle(
-                            fontSize: 16, 
-                            color: isLastReadAyah ? Colors.teal.shade800 : Colors.teal.shade700, 
+                            fontSize: 16,
+                            color: isLastReadAyah
+                                ? Colors.teal.shade800
+                                : Colors.teal.shade700,
                             fontWeight: FontWeight.w600,
                             height: 1.5,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          lang == 'en' ? (ayah['translation_en'] ?? '') : (ayah['translation_id'] ?? ''),
+                          lang == 'en'
+                              ? (ayah['translation_en'] ?? '')
+                              : (ayah['translation_id'] ?? ''),
                           style: TextStyle(
-                            fontSize: 14, 
-                            color: isLastReadAyah ? Colors.teal.shade800 : Colors.grey.shade700, 
+                            fontSize: 14,
+                            color: isLastReadAyah
+                                ? Colors.teal.shade800
+                                : Colors.grey.shade700,
                             fontStyle: FontStyle.italic,
                             height: 1.5,
                           ),
                         ),
-                        if (isRecording && _recognizedText.isNotEmpty) ...[
+                        if (isRecording) ...[
                           const SizedBox(height: 16),
                           Container(
                             padding: const EdgeInsets.all(12),
@@ -249,12 +283,28 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.hearing_rounded, size: 16, color: Colors.teal),
+                                Icon(
+                                  _recognizedText.isEmpty
+                                      ? Icons.mic_none_rounded
+                                      : Icons.hearing_rounded,
+                                  size: 16,
+                                  color: Colors.teal,
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    _recognizedText,
-                                    style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+                                    _recognizedText.isEmpty
+                                        ? (lang == 'en'
+                                              ? 'Listening...'
+                                              : 'Mendengarkan...')
+                                        : _recognizedText,
+                                    style: TextStyle(
+                                      color: Colors.teal.shade800,
+                                      fontWeight: FontWeight.bold,
+                                      fontStyle: _recognizedText.isEmpty
+                                          ? FontStyle.italic
+                                          : FontStyle.normal,
+                                    ),
                                     textDirection: TextDirection.rtl,
                                   ),
                                 ),
@@ -269,7 +319,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
               ),
             ),
           );
-
         },
       ),
     );
@@ -322,7 +371,11 @@ class _PointsBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             points.toString(),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
           ),
         ],
       ),

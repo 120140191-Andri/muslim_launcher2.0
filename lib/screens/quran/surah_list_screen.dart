@@ -1,0 +1,227 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../providers/app_state.dart';
+import 'surah_detail_screen.dart';
+
+class SurahListScreen extends StatefulWidget {
+  const SurahListScreen({super.key});
+
+  @override
+  State<SurahListScreen> createState() => _SurahListScreenState();
+}
+
+class _SurahListScreenState extends State<SurahListScreen> {
+  List<dynamic> _surahs = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSurahData();
+  }
+
+  Future<void> _loadSurahData() async {
+    try {
+      final String response = await rootBundle.loadString('assets/quran.json');
+      final data = json.decode(response);
+      setState(() {
+        _surahs = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Error loading surah list: $e");
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final lang = appState.languageCode;
+    final lastReadIdx = appState.currentSurahIndex;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F4F4),
+      appBar: AppBar(
+        title: Text(lang == 'en' ? 'Select Surah' : 'Pilih Surah'),
+        backgroundColor: Colors.teal.shade800,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          _PointsBadge(points: appState.points),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.teal.shade800,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.menu_book_rounded, color: Colors.white70, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  lang == 'en' ? '114 Surahs Available' : 'Tersedia 114 Surah',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    itemCount: _surahs.length,
+                    itemBuilder: (context, index) {
+                      final surah = _surahs[index];
+                      final isLastRead = index == lastReadIdx;
+                      
+                      return _SurahTile(
+                        surah: surah,
+                        isLastRead: isLastRead,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SurahDetailScreen(surah: surah),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SurahTile extends StatelessWidget {
+  final dynamic surah;
+  final bool isLastRead;
+  final VoidCallback onTap;
+
+  const _SurahTile({
+    required this.surah, 
+    required this.isLastRead, 
+    required this.onTap
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: isLastRead ? Colors.teal.shade50 : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: isLastRead ? Border.all(color: Colors.teal.shade200, width: 2) : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.star_rounded, 
+                      size: 48, 
+                      color: isLastRead ? Colors.teal.shade200 : Colors.teal.shade50
+                    ),
+                    Text(
+                      surah['surah_number'].toString(),
+                      style: TextStyle(
+                        color: isLastRead ? Colors.teal.shade900 : Colors.teal.shade800,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        surah['surah_name'],
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isLastRead ? Colors.teal.shade900 : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "${surah['total_ayah']} Ayah",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isLastRead ? Colors.teal.shade700 : Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isLastRead)
+                  Icon(Icons.history_rounded, color: Colors.teal.shade400, size: 20)
+                else
+                  Icon(Icons.chevron_right_rounded, color: Colors.teal.shade200),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PointsBadge extends StatelessWidget {
+  final int points;
+  const _PointsBadge({required this.points});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.stars_rounded, color: Colors.amber, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            points.toString(),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+}

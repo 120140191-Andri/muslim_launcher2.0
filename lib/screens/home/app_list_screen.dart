@@ -57,7 +57,7 @@ class AppListScreen extends StatefulWidget {
       final List<AppInfo> apps = await compute(_processApps, raw);
       _cache = apps;
     } catch (e) {
-      debugPrint("Error preloading apps: $e");
+      // Error preloading apps
       _cache = [];
     } finally {
       _preloading = false;
@@ -122,8 +122,8 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
   Future<void> _openApp(String packageName) async {
     try {
       await _channel.invokeMethod('openApp', {'packageName': packageName});
-    } on PlatformException catch (e) {
-      debugPrint('Failed to open app: ${e.message}');
+    } catch (_) {
+      // Failed to open app
     }
   }
 
@@ -146,7 +146,7 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
       AppListScreen.invalidate();
     } catch (e) {
 
-      debugPrint('Failed to uninstall app: $e');
+      // Failed to uninstall app
     }
   }
 
@@ -302,7 +302,7 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
           textAlignVertical: TextAlignVertical.center,
           decoration: InputDecoration(
             hintText: lang == 'en' ? 'Search Apps...' : 'Cari Aplikasi...',
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
             border: InputBorder.none,
             isDense: true,
             contentPadding: EdgeInsets.zero,
@@ -350,7 +350,7 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
               children: [
                 Icon(
                   Icons.info_outline_rounded,
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                   size: 14,
                 ),
                 const SizedBox(width: 8),
@@ -359,7 +359,7 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
                       ? 'Tap an icon to launch the app'
                       : 'Ketuk ikon untuk membuka aplikasi',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 11,
                   ),
                 ),
@@ -517,7 +517,7 @@ class _PointsBadge extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -577,7 +577,7 @@ class _AppIconState extends State<_AppIcon> {
         if (mounted) setState(() => _iconBytes = bytes);
       }
     } catch (e) {
-      debugPrint("Error loading icon for ${widget.packageName}: $e");
+      // Error loading icon
     }
   }
 
@@ -588,7 +588,7 @@ class _AppIconState extends State<_AppIcon> {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.teal.shade50.withOpacity(0.5),
+          color: Colors.teal.shade50.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(Icons.apps_rounded, size: 20, color: Colors.teal.shade200),

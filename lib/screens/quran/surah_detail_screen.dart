@@ -44,11 +44,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   void _initSpeech() async {
     await _speech.initialize(
       onError: (val) {
-        debugPrint('onError: $val');
+        // onError
         if (mounted) setState(() => _recordingAyahIdx = null);
       },
       onStatus: (val) {
-        debugPrint('onStatus: $val');
+        // onStatus
         if (val == 'done' || val == 'notListening') {
           if (mounted) setState(() => _recordingAyahIdx = null);
         }
@@ -175,9 +175,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -287,7 +287,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                     : null,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -306,8 +306,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isDone
-                            ? Colors.teal.shade100.withOpacity(0.5)
-                            : Colors.teal.shade50.withOpacity(0.5),
+                            ? Colors.teal.shade100.withValues(alpha: 0.5)
+                            : Colors.teal.shade50.withValues(alpha: 0.5),
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(20),
                           topRight: Radius.circular(20),
@@ -466,8 +466,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     AppState appState,
     int currentSurahIdx,
   ) {
-    if (currentSurahIdx >= appState.quranData.length - 1)
+    if (currentSurahIdx >= appState.quranData.length - 1) {
       return const SizedBox.shrink();
+    }
 
     final nextSurah = appState.quranData[currentSurahIdx + 1];
     final lang = appState.languageCode;
@@ -484,7 +485,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 4,
-          shadowColor: Colors.teal.withOpacity(0.3),
+          shadowColor: Colors.teal.withValues(alpha: 0.3),
         ),
         onPressed: () {
           Navigator.pushReplacement(
@@ -546,9 +547,9 @@ class _PointsBadge extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
+            color: Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -574,9 +575,9 @@ class _PointsBadge extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
+            color: Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

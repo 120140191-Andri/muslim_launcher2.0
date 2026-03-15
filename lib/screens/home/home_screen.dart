@@ -116,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -177,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               Text(
                                 _getTimeGreeting(lang),
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -209,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.15),
+                                    color: Colors.white.withValues(alpha: 0.15),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
@@ -263,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     : 'LANJUTKAN PERJALANAN')
                                 .toUpperCase(),
                             style: TextStyle(
-                              color: Colors.teal.shade900.withOpacity(0.5),
+                              color: Colors.teal.shade900.withValues(alpha: 0.5),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,
@@ -305,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             (lang == 'en' ? 'QUICK ACTIONS' : 'AKSES CEPAT')
                                 .toUpperCase(),
                             style: TextStyle(
-                              color: Colors.teal.shade900.withOpacity(0.5),
+                              color: Colors.teal.shade900.withValues(alpha: 0.5),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,
@@ -432,7 +432,7 @@ class _ClockWidget extends StatelessWidget {
               child: Text(
                 ':',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.white.withValues(alpha: 0.4),
                   fontSize: 54,
                   fontWeight: FontWeight.w200,
                 ),
@@ -441,7 +441,7 @@ class _ClockWidget extends StatelessWidget {
             Text(
               minuteString,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 72,
                 fontWeight: FontWeight.w300,
                 height: 1,
@@ -453,13 +453,13 @@ class _ClockWidget extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             dateString.toUpperCase(),
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 2,
@@ -499,7 +499,7 @@ class _LastAyatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.teal.shade900.withOpacity(0.05),
+            color: Colors.teal.shade900.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -702,7 +702,7 @@ class _GridAction extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.08),
+            color: color.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -721,7 +721,7 @@ class _GridAction extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icon, color: color, size: 28),
@@ -826,7 +826,7 @@ class _DailyInspiration extends StatelessWidget {
           Text(
             hasLastRead ? 'QS. $surah: $ayahNumber' : 'QS. Al-Insyirah: 5',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 12,
               fontWeight: FontWeight.bold,
             ),

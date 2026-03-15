@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 void main() async {
-  print("Loading datasets...");
+  // print("Loading datasets...");
   
   List<String> loadLines(String filepath) {
     var file = File(filepath);
     if (!file.existsSync()) {
-      print("File not found: $filepath");
+      // print("File not found: $filepath");
       return [];
     }
     return file.readAsLinesSync().where((line) {
@@ -21,9 +21,9 @@ void main() async {
   var idTransLines = loadLines('d:/Coding/Flutter/Muslim Launcher 2/data_temp/id.indonesian.txt');
   var enTransLines = loadLines('d:/Coding/Flutter/Muslim Launcher 2/data_temp/en.sahih.txt');
 
-  print("Lines found: Arabic(${arabicLines.length}), Latin(${latinLines.length}), ID Trans(${idTransLines.length}), EN Trans(${enTransLines.length})");
+  // print("Lines found: Arabic(${arabicLines.length}), Latin(${latinLines.length}), ID Trans(${idTransLines.length}), EN Trans(${enTransLines.length})");
 
-  print("Extracting metadata from existing quran.json...");
+  // print("Extracting metadata from existing quran.json...");
   var surahMeta = <int, Map<String, dynamic>>{};
   var quranFile = File('d:/Coding/Flutter/Muslim Launcher 2/assets/quran.json');
   if (quranFile.existsSync()) {
@@ -38,7 +38,7 @@ void main() async {
     }
   }
 
-  print("Merging data into new structure...");
+  // print("Merging data into new structure...");
   var newQuran = [];
   
   int lineIndex = 0;
@@ -67,13 +67,13 @@ void main() async {
     newQuran.add(surahInfo);
   }
 
-  print("Total processed lines: $lineIndex");
+  // print("Total processed lines: $lineIndex");
 
-  print("Writing to assets/quran.json...");
+  // print("Writing to assets/quran.json...");
   var encoder = JsonEncoder.withIndent(null); // Compact formatting
   var encodedJson = encoder.convert(newQuran);
   quranFile.writeAsStringSync(encodedJson);
   
-  print("Done! File size: ${quranFile.lengthSync()} bytes.");
+  // print("Done! File size: ${quranFile.lengthSync()} bytes.");
 }
 

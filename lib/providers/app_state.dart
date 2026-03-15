@@ -76,7 +76,7 @@ class AppState extends ChangeNotifier {
       _isDataLoaded = true;
       notifyListeners();
     } catch (e) {
-      debugPrint("Error loading central Quran data: $e");
+      // Error loading central Quran data
     }
   }
 

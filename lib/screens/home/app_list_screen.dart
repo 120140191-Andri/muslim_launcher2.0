@@ -28,9 +28,14 @@ class AppInfo {
 
   bool isNonProductive() {
     // Whitelist essential communication apps
-    if (packageName == 'com.whatsapp' || packageName == 'com.whatsapp.w4b') {
+    if (packageName == 'com.whatsapp' || 
+        packageName == 'com.whatsapp.w4b' ||
+        packageName == 'com.android.chrome' ||
+        packageName == 'com.google.android.gm') {
       return false;
     }
+
+
     return category == 0 || category == 1 || category == 2 || category == 4;
   }
 }
@@ -457,22 +462,23 @@ class _AppTile extends StatelessWidget {
                 _AppIcon(
                   key: ValueKey('icon_${app.packageName}'),
                   packageName: app.packageName,
+                  grayscale: blocked,
                 ),
                 if (blocked)
                   Positioned(
-                    right: -4,
-                    top: -4,
+                    right: -6,
+                    top: -6,
                     child: Container(
-                      padding: const EdgeInsets.all(2),
+                      padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: Colors.red.shade600,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: const Icon(
                         Icons.lock_rounded,
                         color: Colors.white,
-                        size: 8,
+                        size: 14,
                       ),
                     ),
                   ),
@@ -487,12 +493,13 @@ class _AppTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: Colors.teal.shade900,
+                  color: blocked ? Colors.grey.shade500 : Colors.teal.shade900,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+
           ],
         ),
       ),
@@ -534,7 +541,9 @@ class _PointsBadge extends StatelessWidget {
 
 class _AppIcon extends StatefulWidget {
   final String packageName;
-  const _AppIcon({super.key, required this.packageName});
+  final bool grayscale;
+  const _AppIcon({super.key, required this.packageName, this.grayscale = false});
+
 
   static final Map<String, Uint8List> _iconCache = {};
 
@@ -585,13 +594,26 @@ class _AppIconState extends State<_AppIcon> {
         child: Icon(Icons.apps_rounded, size: 20, color: Colors.teal.shade200),
       );
     }
-    return Image.memory(
+    Widget image = Image.memory(
       _iconBytes!,
-      width: 44,
-      height: 44,
+      width: 48,
+      height: 48,
       fit: BoxFit.contain,
-      filterQuality: FilterQuality.none, // Fastest rendering
-      gaplessPlayback: true, // Prevent flickering during search
+      gaplessPlayback: true,
     );
+
+    if (widget.grayscale) {
+      image = ColorFiltered(
+        colorFilter: const ColorFilter.matrix(<double>[
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0,      0,      0,      1, 0,
+        ]),
+        child: image,
+      );
+    }
+
+    return image;
   }
 }

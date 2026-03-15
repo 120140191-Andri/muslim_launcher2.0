@@ -10,7 +10,9 @@ import android.os.Build
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import android.net.Uri
 import java.io.ByteArrayOutputStream
+
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.muslimlauncher/apps"
@@ -20,20 +22,44 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "getApps" -> result.success(getInstalledApps())
+                    "getApps" -> {
+                        println("DEBUG: getApps called")
+                        result.success(getInstalledApps())
+                    }
                     "getAppIcon" -> {
                         val pkg = call.argument<String>("packageName")
+                        println("DEBUG: getAppIcon called for $pkg")
                         if (pkg != null) result.success(getAppIcon(pkg))
                         else result.error("UNAVAILABLE", "Package name not provided.", null)
                     }
                     "openApp" -> {
                         val pkg = call.argument<String>("packageName")
+                        println("DEBUG: openApp called for $pkg")
                         if (pkg != null) { openApp(pkg); result.success(null) }
                         else result.error("UNAVAILABLE", "Package name not provided.", null)
                     }
-                    "isDefaultLauncher" -> result.success(isDefaultLauncher())
-                    else -> result.notImplemented()
+                    "openAppSettings" -> {
+                        val pkg = call.argument<String>("packageName")
+                        println("DEBUG: openAppSettings called for $pkg")
+                        if (pkg != null) { openAppSettings(pkg); result.success(null) }
+                        else result.error("UNAVAILABLE", "Package name not provided.", null)
+                    }
+                    "uninstallApp" -> {
+                        val pkg = call.argument<String>("packageName")
+                        println("DEBUG: uninstallApp called for $pkg")
+                        if (pkg != null) { uninstallApp(pkg); result.success(null) }
+                        else result.error("UNAVAILABLE", "Package name not provided.", null)
+                    }
+                    "isDefaultLauncher" -> {
+                        println("DEBUG: isDefaultLauncher called")
+                        result.success(isDefaultLauncher())
+                    }
+                    else -> {
+                        println("DEBUG: Unknown method called: ${call.method}")
+                        result.notImplemented()
+                    }
                 }
+
             }
     }
 
@@ -77,6 +103,23 @@ class MainActivity : FlutterActivity() {
     private fun openApp(packageName: String) {
         packageManager.getLaunchIntentForPackage(packageName)?.let { startActivity(it) }
     }
+
+    private fun openAppSettings(packageName: String) {
+        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = android.net.Uri.fromParts("package", packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
+    }
+
+    private fun uninstallApp(packageName: String) {
+        val intent = Intent(Intent.ACTION_DELETE).apply {
+            data = android.net.Uri.fromParts("package", packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
+    }
+
 
     private fun isDefaultLauncher(): Boolean {
         val intent = Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }

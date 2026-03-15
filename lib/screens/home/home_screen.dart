@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
@@ -695,18 +693,8 @@ class _DailyInspiration extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        image: DecorationImage(
-          image: const NetworkImage(
-            'https://www.transparenttextures.com/patterns/islamic-art.png',
-          ),
-          opacity: 0.1,
-          repeat: ImageRepeat.repeat,
-          colorFilter: ColorFilter.mode(
-            Colors.teal.shade900,
-            BlendMode.srcATop,
-          ),
-        ),
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

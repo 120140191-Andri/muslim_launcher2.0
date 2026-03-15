@@ -75,18 +75,39 @@ class AppListScreen extends StatefulWidget {
   State<AppListScreen> createState() => _AppListScreenState();
 }
 
-class _AppListScreenState extends State<AppListScreen> {
+class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserver {
   List<AppInfo>? _apps;
+  String _searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (AppListScreen._cache != null) {
       _apps = AppListScreen._cache;
     } else {
       _fetchAndSet();
     }
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh list whenever we return to the app
+      // This catches uninstalls/installs that happened while we were in background
+      AppListScreen.invalidate();
+      _fetchAndSet();
+    }
+  }
+
 
   Future<void> _fetchAndSet() async {
     await AppListScreen.preload();
@@ -107,6 +128,113 @@ class _AppListScreenState extends State<AppListScreen> {
     } else {
       _openApp(app.packageName);
     }
+  }
+
+  void _onAppLongPress(AppInfo app, AppState appState) {
+    _showAppOptions(app, appState);
+  }
+
+  Future<void> _uninstallApp(String packageName) async {
+    try {
+      await _channel.invokeMethod('uninstallApp', {'packageName': packageName});
+      // Invalidate cache so next fetch gets fresh list
+      AppListScreen.invalidate();
+    } catch (e) {
+
+      debugPrint('Failed to uninstall app: $e');
+    }
+  }
+
+  void _showAppOptions(AppInfo app, AppState appState) {
+    final lang = appState.languageCode;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.delete_sweep_rounded,
+                      color: Colors.red.shade700,
+                      size: 28,
+                    ),
+                  ),
+                  title: Text(
+                    lang == 'en' ? 'Uninstall App' : 'Hapus Aplikasi',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Colors.red.shade900,
+                    ),
+                  ),
+                  subtitle: Text(
+                    app.appName,
+                    style: TextStyle(color: Colors.red.shade700),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _confirmUninstall(app, lang);
+                  },
+                ),
+                // Extra margin for system navbar
+                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmUninstall(AppInfo app, String lang) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(lang == 'en' ? 'Uninstall App?' : 'Hapus Aplikasi?'),
+        content: Text(
+          lang == 'en'
+              ? 'Are you sure you want to uninstall ${app.appName}?'
+              : 'Apakah Anda yakin ingin menghapus ${app.appName}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(lang == 'en' ? 'Cancel' : 'Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _uninstallApp(app.packageName);
+            },
+            child: Text(lang == 'en' ? 'Uninstall' : 'Hapus'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showBlockedDialog(AppInfo app, AppState appState) {
@@ -162,7 +290,37 @@ class _AppListScreenState extends State<AppListScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F4),
       appBar: AppBar(
-        title: Text(lang == 'en' ? 'All Apps' : 'Semua Aplikasi'),
+        title: TextField(
+          controller: _searchController,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+          cursorColor: Colors.white,
+          textAlignVertical: TextAlignVertical.center,
+          decoration: InputDecoration(
+            hintText: lang == 'en' ? 'Search Apps...' : 'Cari Aplikasi...',
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+            border: InputBorder.none,
+            isDense: true,
+            contentPadding: EdgeInsets.zero,
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    iconSize: 20,
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = "");
+                    },
+                  )
+                : const Icon(
+                    Icons.search_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+          ),
+          onChanged: (val) {
+            setState(() => _searchQuery = val.toLowerCase());
+          },
+        ),
+
         backgroundColor: Colors.teal.shade800,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -171,6 +329,7 @@ class _AppListScreenState extends State<AppListScreen> {
           const SizedBox(width: 8),
         ],
       ),
+
       body: Column(
         children: [
           Container(
@@ -205,24 +364,59 @@ class _AppListScreenState extends State<AppListScreen> {
           Expanded(
             child: _apps == null
                 ? const Center(child: CircularProgressIndicator())
-                : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
+                : Builder(
+                    builder: (context) {
+                      final filtered = _apps!
+                          .where(
+                            (a) =>
+                                a.appName.toLowerCase().contains(_searchQuery),
+                          )
+                          .toList();
 
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.75,
-                        ),
-                    itemCount: _apps!.length,
-                    itemBuilder: (context, index) {
-                      final app = _apps![index];
-                      final blocked = app.isNonProductive();
-                      return _AppTile(
-                        app: app,
-                        blocked: blocked,
-                        onTap: () => _onAppTap(app, appState),
+                      if (filtered.isEmpty && _searchQuery.isNotEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.search_off_rounded,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                lang == 'en'
+                                    ? 'No apps found'
+                                    : 'Aplikasi tidak ditemukan',
+                                style: TextStyle(color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.75,
+                            ),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final app = filtered[index];
+                          final blocked = app.isNonProductive();
+                          return RepaintBoundary(
+                            child: _AppTile(
+                              app: app,
+                              blocked: blocked,
+                              onTap: () => _onAppTap(app, appState),
+                              onLongPress: () => _onAppLongPress(app, appState),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
@@ -237,48 +431,43 @@ class _AppTile extends StatelessWidget {
   final AppInfo app;
   final bool blocked;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   const _AppTile({
     required this.app,
     required this.blocked,
     required this.onTap,
+    required this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Stack(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
               clipBehavior: Clip.none,
               children: [
-                _AppIcon(packageName: app.packageName),
+                _AppIcon(
+                  key: ValueKey('icon_${app.packageName}'),
+                  packageName: app.packageName,
+                ),
                 if (blocked)
                   Positioned(
-                    right: -6,
-                    top: -6,
+                    right: -4,
+                    top: -4,
                     child: Container(
-                      padding: const EdgeInsets.all(3),
+                      padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
                         color: Colors.red.shade600,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: const Icon(
                         Icons.lock_rounded,
@@ -289,20 +478,23 @@ class _AppTile extends StatelessWidget {
                   ),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            app.appName,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: Colors.teal.shade900,
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                app.appName,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.teal.shade900,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -342,7 +534,7 @@ class _PointsBadge extends StatelessWidget {
 
 class _AppIcon extends StatefulWidget {
   final String packageName;
-  const _AppIcon({required this.packageName});
+  const _AppIcon({super.key, required this.packageName});
 
   static final Map<String, Uint8List> _iconCache = {};
 
@@ -361,8 +553,9 @@ class _AppIconState extends State<_AppIcon> {
 
   Future<void> _loadIcon() async {
     if (_AppIcon._iconCache.containsKey(widget.packageName)) {
-      if (mounted)
+      if (mounted) {
         setState(() => _iconBytes = _AppIcon._iconCache[widget.packageName]);
+      }
       return;
     }
 
@@ -386,17 +579,19 @@ class _AppIconState extends State<_AppIcon> {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(8),
+          color: Colors.teal.shade50.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(Icons.apps_rounded, size: 20, color: Colors.grey.shade300),
+        child: Icon(Icons.apps_rounded, size: 20, color: Colors.teal.shade200),
       );
     }
     return Image.memory(
       _iconBytes!,
       width: 44,
       height: 44,
-      filterQuality: FilterQuality.low, // Pertahankan performa scroll
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.none, // Fastest rendering
+      gaplessPlayback: true, // Prevent flickering during search
     );
   }
 }

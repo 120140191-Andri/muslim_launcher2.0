@@ -23,7 +23,8 @@ class SurahDetailScreen extends StatefulWidget {
   State<SurahDetailScreen> createState() => _SurahDetailScreenState();
 }
 
-class _SurahDetailScreenState extends State<SurahDetailScreen> with WidgetsBindingObserver {
+class _SurahDetailScreenState extends State<SurahDetailScreen>
+    with WidgetsBindingObserver {
   final stt.SpeechToText _speech = stt.SpeechToText();
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
@@ -118,13 +119,15 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> with WidgetsBindi
 
     // Stop microphone if active
     _stopListening();
-    
+
     // Request permission
     final status = await Permission.camera.request();
     if (status != PermissionStatus.granted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Izin kamera diperlukan untuk deteksi mata")),
+          const SnackBar(
+            content: Text("Izin kamera diperlukan untuk deteksi mata"),
+          ),
         );
       }
       return;
@@ -138,8 +141,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> with WidgetsBindi
 
     await _eyeTrackerService.initialize();
     if (!mounted) return;
-    
-    _eyeFocusSubscription = _eyeTrackerService.focusStream.listen((focused) {
+
+    _eyeFocusSubscription = _eyeTrackerService.focusStream?.listen((focused) {
       if (mounted) {
         setState(() => _isEyeFocused = focused);
         _handleEyeTimer(focused, arabic);
@@ -154,8 +157,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> with WidgetsBindi
     if (focused && _eyeReadingAyahIdx != null) {
       // Calculate target duration: 1.2s per word (roughly)
       final wordCount = arabic.split(RegExp(r'\s+')).length;
-      final targetSeconds = wordCount * 1.2;
-      
+      final targetSeconds = wordCount * 1.5;
+
       _eyeTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
         if (!mounted) {
           timer.cancel();
@@ -222,7 +225,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> with WidgetsBindi
             ),
             const SizedBox(width: 12),
             Text(
-              getsPoints ? "Masha Allah! +$pointsEarned Poin" : "Riwayat Bacaan Tersimpan",
+              getsPoints
+                  ? "Masha Allah! +$pointsEarned Poin"
+                  : "Riwayat Bacaan Tersimpan",
             ),
           ],
         ),
@@ -504,11 +509,15 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> with WidgetsBindi
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _isEyeFocused ? "Mata Terdeteksi: Membaca..." : "Tatap Ayat untuk Membaca",
+                              _isEyeFocused
+                                  ? "Mata Terdeteksi: Membaca..."
+                                  : "Tatap Ayat untuk Membaca",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 10,
-                                color: _isEyeFocused ? Colors.green.shade800 : Colors.grey.shade600,
+                                color: _isEyeFocused
+                                    ? Colors.green.shade800
+                                    : Colors.grey.shade600,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -622,9 +631,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> with WidgetsBindi
         onPressed: () {
           Navigator.pushReplacement(
             context,
-            AppPageRoute(
-              child: SurahDetailScreen(surah: nextSurah),
-            ),
+            AppPageRoute(child: SurahDetailScreen(surah: nextSurah)),
           );
         },
         icon: const Icon(Icons.arrow_forward_rounded),
@@ -640,7 +647,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> with WidgetsBindi
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _stopEyeReading();
       _stopListening();
     }
@@ -766,11 +774,15 @@ class _EyeButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isActive ? (isFocused ? Colors.green : Colors.orange) : Colors.teal.shade100,
+          color: isActive
+              ? (isFocused ? Colors.green : Colors.orange)
+              : Colors.teal.shade100,
           shape: BoxShape.circle,
         ),
         child: Icon(
-          isActive ? (isFocused ? Icons.visibility : Icons.visibility_off) : Icons.remove_red_eye_rounded,
+          isActive
+              ? (isFocused ? Icons.visibility : Icons.visibility_off)
+              : Icons.remove_red_eye_rounded,
           color: isActive ? Colors.white : Colors.teal.shade800,
           size: 20,
         ),

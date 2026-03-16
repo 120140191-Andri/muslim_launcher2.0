@@ -9,12 +9,20 @@ class EyeTrackerService {
   FaceDetector? _faceDetector;
   bool _isBusy = false;
   bool _isFocused = false;
-  final _focusController = StreamController<bool>.broadcast();
+  StreamController<bool>? _focusController;
 
-  Stream<bool> get focusStream => _focusController.stream;
+  Stream<bool>? get focusStream => _focusController?.stream;
   bool get isFocused => _isFocused;
 
   Future<void> initialize() async {
+    // Reset state for new session
+    _isBusy = false;
+    _isFocused = false;
+    
+    // Close existing if any
+    await _focusController?.close();
+    _focusController = StreamController<bool>.broadcast();
+
     final cameras = await availableCameras();
     final frontCam = cameras.firstWhere(
       (cam) => cam.lensDirection == CameraLensDirection.front,
@@ -41,7 +49,7 @@ class EyeTrackerService {
   }
 
   void _processCameraImage(CameraImage image) async {
-    if (_isBusy) return;
+    if (_isBusy || _focusController == null || _focusController!.isClosed) return;
     _isBusy = true;
 
     final WriteBuffer allBytes = WriteBuffer();
@@ -65,24 +73,26 @@ class EyeTrackerService {
       final faces = await _faceDetector?.processImage(inputImage);
       if (faces != null && faces.isNotEmpty) {
         final face = faces.first;
-        // Simple heuristic: Euler Y (horizontal rotation) near 0 means looking forward
-        // Stricter heuristic: Euler Y (horizontal) and Z (tilt) < 12 degrees
-        final double? eulerY = face.headEulerAngleY; // Rotation around Y axis
-        final double? eulerZ = face.headEulerAngleZ; // Tilt around Z axis
+        final double? eulerY = face.headEulerAngleY;
+        final double? eulerZ = face.headEulerAngleZ;
 
+        // Current sensitivity threshold: 12 degrees
         final bool currentlyFocused =
-            (eulerY != null && eulerY.abs() < 5) &&
-            (eulerZ != null && eulerZ.abs() < 5);
+            (eulerY != null && eulerY.abs() < 12) &&
+            (eulerZ != null && eulerZ.abs() < 12);
 
         if (_isFocused != currentlyFocused) {
           _isFocused = currentlyFocused;
-          _focusController.add(_isFocused);
+          if (_focusController != null && !_focusController!.isClosed) {
+            _focusController!.add(_isFocused);
+          }
         }
       } else {
-        // No face detected at all
         if (_isFocused) {
           _isFocused = false;
-          _focusController.add(false);
+          if (_focusController != null && !_focusController!.isClosed) {
+            _focusController!.add(false);
+          }
         }
       }
     } catch (e) {
@@ -98,6 +108,12 @@ class EyeTrackerService {
     }
     await _cameraController?.dispose();
     await _faceDetector?.close();
-    await _focusController.close();
+    await _focusController?.close();
+    
+    _cameraController = null;
+    _faceDetector = null;
+    _focusController = null;
+    _isFocused = false;
+    _isBusy = false;
   }
 }

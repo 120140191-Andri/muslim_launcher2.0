@@ -40,6 +40,9 @@ dependencies:
   android_intent_plus: ^6.0.0
   scrollable_positioned_list: ^0.3.8
   intl: ^0.20.2
+  camera: ^0.11.0+2
+  google_mlkit_face_detection: ^0.11.0
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

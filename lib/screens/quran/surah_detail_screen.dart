@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -5,6 +6,8 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../providers/app_state.dart';
 import 'quran_tajweed_text.dart';
 import '../../utils/page_transitions.dart';
+import '../../services/eye_tracker_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SurahDetailScreen extends StatefulWidget {
   final Map<String, dynamic> surah;
@@ -20,7 +23,7 @@ class SurahDetailScreen extends StatefulWidget {
   State<SurahDetailScreen> createState() => _SurahDetailScreenState();
 }
 
-class _SurahDetailScreenState extends State<SurahDetailScreen> {
+class _SurahDetailScreenState extends State<SurahDetailScreen> with WidgetsBindingObserver {
   final stt.SpeechToText _speech = stt.SpeechToText();
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
@@ -29,9 +32,18 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   int? _recordingAyahIdx;
   String _recognizedText = "";
 
+  // Eye Focus Mode
+  final EyeTrackerService _eyeTrackerService = EyeTrackerService();
+  int? _eyeReadingAyahIdx;
+  double _eyeReadingProgress = 0.0;
+  bool _isEyeFocused = false;
+  Timer? _eyeTimer;
+  StreamSubscription? _eyeFocusSubscription;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initSpeech();
 
     // Auto-scroll to initial ayah if provided
@@ -64,7 +76,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       if (_recordingAyahIdx != null) _speech.stop();
 
       bool available = await _speech.initialize();
-      if (available) {
+      if (available && mounted) {
         setState(() {
           _recordingAyahIdx = index;
           _recognizedText = "";
@@ -72,12 +84,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
 
         _speech.listen(
           onResult: (val) {
-            setState(() {
-              _recognizedText = val.recognizedWords;
-              if (val.hasConfidenceRating && val.confidence > 0.1) {
-                _onSuccess(index, arabic);
-              }
-            });
+            if (mounted) {
+              setState(() {
+                _recognizedText = val.recognizedWords;
+                if (val.hasConfidenceRating && val.confidence > 0.1) {
+                  _onSuccess(index, arabic);
+                }
+              });
+            }
           },
           localeId: 'ar_SA',
         );
@@ -88,6 +102,87 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   void _stopListening() {
     setState(() => _recordingAyahIdx = null);
     _speech.stop();
+  }
+
+  void _onEyeReadingPressed(int index, String arabic) async {
+    // If clicking the same one, just stop
+    if (_eyeReadingAyahIdx == index) {
+      _stopEyeReading();
+      return;
+    }
+
+    // If another one was active, stop it first to release camera
+    if (_eyeReadingAyahIdx != null) {
+      _stopEyeReading();
+    }
+
+    // Stop microphone if active
+    _stopListening();
+    
+    // Request permission
+    final status = await Permission.camera.request();
+    if (status != PermissionStatus.granted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Izin kamera diperlukan untuk deteksi mata")),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _eyeReadingAyahIdx = index;
+      _eyeReadingProgress = 0.0;
+      _isEyeFocused = false;
+    });
+
+    await _eyeTrackerService.initialize();
+    if (!mounted) return;
+    
+    _eyeFocusSubscription = _eyeTrackerService.focusStream.listen((focused) {
+      if (mounted) {
+        setState(() => _isEyeFocused = focused);
+        _handleEyeTimer(focused, arabic);
+      }
+    });
+
+    _handleEyeTimer(_eyeTrackerService.isFocused, arabic);
+  }
+
+  void _handleEyeTimer(bool focused, String arabic) {
+    _eyeTimer?.cancel();
+    if (focused && _eyeReadingAyahIdx != null) {
+      // Calculate target duration: 1.2s per word (roughly)
+      final wordCount = arabic.split(RegExp(r'\s+')).length;
+      final targetSeconds = wordCount * 1.2;
+      
+      _eyeTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        setState(() {
+          _eyeReadingProgress += 0.1 / targetSeconds;
+          if (_eyeReadingProgress >= 1.0) {
+            _eyeReadingProgress = 1.0;
+            _eyeTimer?.cancel();
+            _onSuccess(_eyeReadingAyahIdx!, arabic);
+            _stopEyeReading();
+          }
+        });
+      });
+    }
+  }
+
+  void _stopEyeReading() {
+    _eyeTimer?.cancel();
+    _eyeFocusSubscription?.cancel();
+    _eyeTrackerService.dispose();
+    setState(() {
+      _eyeReadingAyahIdx = null;
+      _eyeReadingProgress = 0.0;
+      _isEyeFocused = false;
+    });
   }
 
   void _onSuccess(int index, String arabic) {
@@ -363,6 +458,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                             onPressed: () =>
                                 _onAyahMicPressed(index, ayah['arabic']),
                           ),
+                          const SizedBox(width: 8),
+                          _EyeButton(
+                            isActive: _eyeReadingAyahIdx == index,
+                            isFocused: _isEyeFocused,
+                            onPressed: () =>
+                                _onEyeReadingPressed(index, ayah['arabic']),
+                          ),
                         ],
                       ),
                     ),
@@ -387,6 +489,30 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                             ),
                             textDirection: TextDirection.rtl,
                           ),
+                          if (_eyeReadingAyahIdx == index) ...[
+                            const SizedBox(height: 12),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: _eyeReadingProgress,
+                                minHeight: 4,
+                                backgroundColor: Colors.teal.shade100,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  _isEyeFocused ? Colors.green : Colors.grey,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _isEyeFocused ? "Mata Terdeteksi: Membaca..." : "Tatap Ayat untuk Membaca",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: _isEyeFocused ? Colors.green.shade800 : Colors.grey.shade600,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           Text(
                             ayah['latin'] ?? '',
@@ -511,6 +637,22 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       ),
     );
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _stopEyeReading();
+      _stopListening();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stopListening();
+    _stopEyeReading();
+    super.dispose();
+  }
 }
 
 class _MicButton extends StatelessWidget {
@@ -602,6 +744,37 @@ class _PointsBadge extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _EyeButton extends StatelessWidget {
+  final bool isActive;
+  final bool isFocused;
+  final VoidCallback onPressed;
+
+  const _EyeButton({
+    required this.isActive,
+    required this.isFocused,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isActive ? (isFocused ? Colors.green : Colors.orange) : Colors.teal.shade100,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          isActive ? (isFocused ? Icons.visibility : Icons.visibility_off) : Icons.remove_red_eye_rounded,
+          color: isActive ? Colors.white : Colors.teal.shade800,
+          size: 20,
+        ),
+      ),
     );
   }
 }

@@ -77,6 +77,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
 
                       final isLastRead = index == lastReadIdx;
                       final isFuture = !appState.isSurahUnlocked(index);
+                      final isFinished = appState.isSurahFinished(index);
 
                       return RepaintBoundary(
                         child: Opacity(
@@ -84,6 +85,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                           child: _SurahTile(
                             surah: surah,
                             isLastRead: isLastRead,
+                            isFinished: isFinished,
                             isFuture: isFuture,
                             onTap: () {
                               Navigator.push(
@@ -108,12 +110,14 @@ class _SurahListScreenState extends State<SurahListScreen> {
 class _SurahTile extends StatelessWidget {
   final dynamic surah;
   final bool isLastRead;
+  final bool isFinished;
   final bool isFuture;
   final VoidCallback onTap;
 
   const _SurahTile({
     required this.surah,
     required this.isLastRead,
+    required this.isFinished,
     required this.isFuture,
     required this.onTap,
   });
@@ -179,7 +183,13 @@ class _SurahTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (isLastRead)
+                if (isFinished)
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.teal.shade400,
+                    size: 20,
+                  )
+                else if (isLastRead)
                   Icon(
                     Icons.history_rounded,
                     color: Colors.teal.shade400,
@@ -193,9 +203,9 @@ class _SurahTile extends StatelessWidget {
                   )
                 else
                   Icon(
-                    Icons.check_circle_rounded,
+                    Icons.arrow_forward_ios_rounded,
                     color: Colors.teal.shade300,
-                    size: 20,
+                    size: 16,
                   ),
               ],
             ),

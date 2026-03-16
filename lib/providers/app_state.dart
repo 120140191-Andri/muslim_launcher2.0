@@ -230,6 +230,18 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
+  bool isSurahFinished(int index) {
+    if (index < _highestSurahIndex) return true;
+    if (index == _highestSurahIndex) {
+      if (index >= 0 && index < _quranData.length) {
+        final surah = _quranData[index];
+        final totalAyahs = surah['total_ayah'] as int;
+        return _highestAyahIndex == totalAyahs - 1;
+      }
+    }
+    return false;
+  }
+
   bool isNextAyah(int surahIndex, int ayahIndex) {
     // Exact same logic as point earning
     if (surahIndex == _highestSurahIndex && ayahIndex == _highestAyahIndex + 1) {

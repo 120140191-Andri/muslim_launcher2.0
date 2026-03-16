@@ -190,8 +190,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         // Initial vibration
         HapticFeedback.vibrate();
         // Repeat every 1.2 seconds
-        _vibrationTimer =
-            Timer.periodic(const Duration(milliseconds: 1200), (timer) {
+        _vibrationTimer = Timer.periodic(const Duration(milliseconds: 1000), (
+          timer,
+        ) {
           HapticFeedback.vibrate();
         });
       }

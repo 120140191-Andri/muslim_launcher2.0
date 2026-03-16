@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -39,6 +40,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   double _eyeReadingProgress = 0.0;
   bool _isEyeFocused = false;
   Timer? _eyeTimer;
+  Timer? _vibrationTimer;
   StreamSubscription? _eyeFocusSubscription;
 
   @override
@@ -154,35 +156,56 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
   void _handleEyeTimer(bool focused, String arabic) {
     _eyeTimer?.cancel();
-    if (focused && _eyeReadingAyahIdx != null) {
-      // Calculate target duration: 1.2s per word (roughly)
-      final wordCount = arabic.split(RegExp(r'\s+')).length;
-      final targetSeconds = wordCount * 1.5;
+    _eyeTimer = null;
 
-      _eyeTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-        setState(() {
-          _eyeReadingProgress += 0.1 / targetSeconds;
-          if (_eyeReadingProgress >= 1.0) {
-            _eyeReadingProgress = 1.0;
-            _eyeTimer?.cancel();
-            _onSuccess(_eyeReadingAyahIdx!, arabic);
-            _stopEyeReading();
+    if (focused) {
+      // Stop vibration if focused
+      _vibrationTimer?.cancel();
+      _vibrationTimer = null;
+
+      if (_eyeReadingAyahIdx != null) {
+        // Calculate target duration: 1.2s per word (roughly)
+        final wordCount = arabic.split(RegExp(r'\s+')).length;
+        final targetSeconds = wordCount * 1.5;
+
+        _eyeTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+          if (!mounted) {
+            timer.cancel();
+            return;
           }
+          setState(() {
+            _eyeReadingProgress += 0.1 / targetSeconds;
+            if (_eyeReadingProgress >= 1.0) {
+              _eyeReadingProgress = 1.0;
+              _eyeTimer?.cancel();
+              _onSuccess(_eyeReadingAyahIdx!, arabic);
+              _stopEyeReading();
+            }
+          });
         });
-      });
+      }
+    } else {
+      // Start repeating vibration if not focused and reading is active
+      if (_eyeReadingAyahIdx != null && _vibrationTimer == null) {
+        // Initial vibration
+        HapticFeedback.vibrate();
+        // Repeat every 1.2 seconds
+        _vibrationTimer =
+            Timer.periodic(const Duration(milliseconds: 1200), (timer) {
+          HapticFeedback.vibrate();
+        });
+      }
     }
   }
 
   void _stopEyeReading() {
     _eyeTimer?.cancel();
+    _vibrationTimer?.cancel();
     _eyeFocusSubscription?.cancel();
     _eyeTrackerService.dispose();
     setState(() {
       _eyeReadingAyahIdx = null;
+      _vibrationTimer = null;
       _eyeReadingProgress = 0.0;
       _isEyeFocused = false;
     });
@@ -511,13 +534,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                             Text(
                               _isEyeFocused
                                   ? "Mata Terdeteksi: Membaca..."
-                                  : "Tatap Ayat untuk Membaca",
+                                  : "TIDAK FOKUS: Tatap Ayat untuk Membaca",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 10,
                                 color: _isEyeFocused
                                     ? Colors.green.shade800
-                                    : Colors.grey.shade600,
+                                    : Colors.red.shade700,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

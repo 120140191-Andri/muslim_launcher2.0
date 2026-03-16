@@ -38,7 +38,7 @@ class EyeTrackerService {
 
     _faceDetector = FaceDetector(
       options: FaceDetectorOptions(
-        enableClassification: false,
+        enableClassification: true,
         enableTracking: false,
         performanceMode: FaceDetectorMode.fast,
       ),
@@ -75,11 +75,17 @@ class EyeTrackerService {
         final face = faces.first;
         final double? eulerY = face.headEulerAngleY;
         final double? eulerZ = face.headEulerAngleZ;
+        
+        final double leftEyeOpenProb = face.leftEyeOpenProbability ?? 1.0;
+        final double rightEyeOpenProb = face.rightEyeOpenProbability ?? 1.0;
 
-        // Current sensitivity threshold: 12 degrees
+        // Currently focused if:
+        // 1. Face orientation is within 12 degrees (Yaw & Roll)
+        // 2. Both eyes are open (Probability > 0.4)
         final bool currentlyFocused =
             (eulerY != null && eulerY.abs() < 12) &&
-            (eulerZ != null && eulerZ.abs() < 12);
+            (eulerZ != null && eulerZ.abs() < 12) &&
+            (leftEyeOpenProb > 0.4 && rightEyeOpenProb > 0.4);
 
         if (_isFocused != currentlyFocused) {
           _isFocused = currentlyFocused;

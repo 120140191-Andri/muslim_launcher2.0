@@ -16,12 +16,13 @@ class AppState extends ChangeNotifier {
   String _languageCode = 'id';
   bool _hasSelectedLanguage = false;
   bool _hasCompletedOnboarding = false;
-  int _points = 999999; // Load default high points for Dev
+  int _points = 0; // Starting points for production
   List<String> _blockedApps = [];
   int _highestSurahIndex = 0;
   int _highestAyahIndex = -1; // -1 means no progress yet
   int _khatmCount = 0;
   List<Map<String, dynamic>> _readingHistory = [];
+  Map<String, int> _unlockedExpirations = {};
   String? _lastAttemptedBlockedPackage;
   bool _isAccessibilityEnabled = false;
   bool _hasSeenAccessibilitySetup = false;
@@ -58,7 +59,7 @@ class AppState extends ChangeNotifier {
     _languageCode = prefs.getString('languageCode') ?? 'id';
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
-    _points = prefs.getInt('points') ?? 999999;
+    _points = prefs.getInt('points') ?? 0;
     _blockedApps = (prefs.getStringList('blockedApps') ?? []).toList();
     _lastReadAyat = prefs.getString('lastReadAyat') ?? '';
     _lastReadSurah = prefs.getString('lastReadSurah') ?? '';
@@ -75,6 +76,14 @@ class AppState extends ChangeNotifier {
       _readingHistory = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
     } catch (e) {
       _readingHistory = [];
+    }
+    
+    final unlockedJson = prefs.getString('unlockedExpirations') ?? '{}';
+    try {
+      final decoded = json.decode(unlockedJson) as Map<String, dynamic>;
+      _unlockedExpirations = decoded.map((key, value) => MapEntry(key, value as int));
+    } catch (e) {
+      _unlockedExpirations = {};
     }
 
     loadQuranData();
@@ -101,7 +110,27 @@ class AppState extends ChangeNotifier {
         _isAccessibilityEnabled = enabled;
         notifyListeners();
       }
+      
+      // Also cleanup expired unlocks and notify for UI timer updates
+      _cleanupExpiredUnlocks();
     });
+  }
+
+  void _cleanupExpiredUnlocks() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    bool changed = false;
+    _unlockedExpirations.removeWhere((pkg, expiry) {
+      if (now >= expiry) {
+        changed = true;
+        return true;
+      }
+      return false;
+    });
+    
+    if (changed) {
+      prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
+    }
+    notifyListeners(); // Keep UI timers updated even if none expired
   }
 
   Future<void> loadQuranData() async {
@@ -222,6 +251,28 @@ class AppState extends ChangeNotifier {
   void clearBlockedApp() {
     _lastAttemptedBlockedPackage = null;
     notifyListeners();
+  }
+
+  Future<void> allowAppTemporarily(String packageName, {int durationMinutes = 60}) async {
+    final pkg = packageName.toLowerCase();
+    final expiry = DateTime.now().millisecondsSinceEpoch + (durationMinutes * 60 * 1000);
+    
+    _unlockedExpirations[pkg] = expiry;
+    await prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
+    
+    await _appBlockService.allowAppTemporarily(pkg, durationMinutes: durationMinutes);
+    notifyListeners();
+  }
+
+  int getUnlockRemainingMinutes(String packageName) {
+    final pkg = packageName.toLowerCase();
+    final expiry = _unlockedExpirations[pkg];
+    if (expiry == null) return 0;
+    
+    final diff = expiry - DateTime.now().millisecondsSinceEpoch;
+    if (diff <= 0) return 0;
+    
+    return (diff / (60 * 1000)).ceil();
   }
 
   Future<void> setHasSeenAccessibilitySetup(bool value) async {
@@ -385,7 +436,14 @@ class AppState extends ChangeNotifier {
   }
 
   bool isAppBlocked(String packageName) {
-    return _blockedApps.contains(packageName);
+    if (!_blockedApps.contains(packageName)) return false;
+    
+    // Check if temporarily allowed
+    final expiry = _unlockedExpirations[packageName.toLowerCase()];
+    if (expiry != null && DateTime.now().millisecondsSinceEpoch < expiry) {
+      return false;
+    }
+    
+    return true;
   }
 }
-

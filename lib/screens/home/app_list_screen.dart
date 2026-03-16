@@ -362,7 +362,7 @@ class _AppListScreenState extends State<AppListScreen>
             onPressed: () async {
               if (appState.points >= 50) {
                 await appState.deductPoints(50);
-                await appState.appBlockService.allowAppTemporarily(app.packageName);
+                await appState.allowAppTemporarily(app.packageName);
                 Navigator.pop(ctx);
                 // Give a small delay for native service to sync bypass (1s is safer)
                 await Future.delayed(const Duration(milliseconds: 1000));
@@ -583,6 +583,34 @@ class _AppTile extends StatelessWidget {
                       ),
                     ),
                   ),
+                // Timer badge
+                Consumer<AppState>(
+                  builder: (context, state, child) {
+                    final remaining = state.getUnlockRemainingMinutes(app.packageName);
+                    if (remaining <= 0) return const SizedBox.shrink();
+                    
+                    return Positioned(
+                      left: -4,
+                      bottom: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: Text(
+                          "${remaining}m",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 10),

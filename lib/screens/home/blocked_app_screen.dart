@@ -94,7 +94,7 @@ class BlockedAppScreen extends StatelessWidget {
                   onPressed: appState.points >= 50 
                     ? () async {
                         await appState.deductPoints(50);
-                        await appState.appBlockService.allowAppTemporarily(packageName);
+                        await appState.allowAppTemporarily(packageName);
                         // Give a small delay for native service to sync bypass (1s for safety)
                         await Future.delayed(const Duration(milliseconds: 1000));
                         // Automatically launch the app after unlocking

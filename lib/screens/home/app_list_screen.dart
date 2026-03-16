@@ -310,8 +310,8 @@ class _AppListScreenState extends State<AppListScreen>
         title: Text(Translations.get(lang, 'non_productive')),
         content: Text(
           lang == 'en'
-              ? 'This is a non-productive app. Spend 50 Points to open it?'
-              : 'Aplikasi non-produktif. Gunakan 50 Poin untuk membuka?',
+              ? 'This is a non-productive app. Spend 150 Points to open it?'
+              : 'Aplikasi non-produktif. Gunakan 150 Poin untuk membuka?',
         ),
         actions: [
           TextButton(
@@ -327,8 +327,8 @@ class _AppListScreenState extends State<AppListScreen>
               ),
             ),
             onPressed: () {
-              if (appState.points >= 50) {
-                appState.deductPoints(50);
+              if (appState.points >= 150) {
+                appState.deductPoints(150);
                 Navigator.pop(ctx);
                 _openApp(app.packageName);
               } else {
@@ -339,7 +339,7 @@ class _AppListScreenState extends State<AppListScreen>
                 );
               }
             },
-            child: Text(appState.points >= 50 ? 'Buka (50 Poin)' : 'Cari Poin'),
+            child: Text(appState.points >= 150 ? 'Buka (150 Poin)' : 'Cari Poin'),
           ),
         ],
       ),

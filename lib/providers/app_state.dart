@@ -138,6 +138,7 @@ class AppState extends ChangeNotifier {
     int ayahIndex,
     String surahName,
     int ayahNumber,
+    int pointsEarned,
   ) async {
     // Determine if this is the EXACT next sequential step (+1 ayah)
     bool isNextStep = false;
@@ -191,7 +192,7 @@ class AppState extends ChangeNotifier {
     }
 
     // Always add to history regardless of sequential progress
-    _addToHistory(surahName, ayahNumber);
+    _addToHistory(surahName, ayahNumber, pointsEarned);
     
     notifyListeners();
   }
@@ -263,10 +264,11 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
-  void _addToHistory(String surahName, int ayahNumber) {
+  void _addToHistory(String surahName, int ayahNumber, int pointsEarned) {
     final entry = {
       'surah': surahName,
       'ayah': ayahNumber,
+      'points': pointsEarned,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
     

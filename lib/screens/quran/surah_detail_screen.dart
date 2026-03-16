@@ -97,8 +97,12 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
     final int surahNumber = widget.surah['surah_number'];
     final bool getsPoints = appState.canEarnPoints(surahNumber - 1, index);
 
+    int pointsEarned = 0;
     if (getsPoints) {
-      appState.addPoints(10);
+      // Dynamic point calculation: 10 base points + bonus based on length
+      // Every 25 characters of Arabic (roughly a line) adds 1 point.
+      pointsEarned = 10 + (arabic.length ~/ 25);
+      appState.addPoints(pointsEarned);
       appState.setLastReadAyat(arabic);
     }
 
@@ -108,6 +112,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       index,
       widget.surah['surah_name'],
       index + 1,
+      pointsEarned,
     );
 
     _stopListening();
@@ -122,7 +127,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              getsPoints ? "Masha Allah! +10 Poin" : "Riwayat Bacaan Tersimpan",
+              getsPoints ? "Masha Allah! +$pointsEarned Poin" : "Riwayat Bacaan Tersimpan",
             ),
           ],
         ),

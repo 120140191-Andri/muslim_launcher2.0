@@ -69,6 +69,31 @@ class ReadingHistoryScreen extends StatelessWidget {
                         style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                       ),
                     ),
+                    trailing: entry['points'] != null && entry['points'] > 0
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.amber.shade200),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.stars_rounded, color: Colors.amber.shade700, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "+${entry['points']}",
+                                  style: TextStyle(
+                                    color: Colors.amber.shade900,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : null,
                   ),
                 );
               },

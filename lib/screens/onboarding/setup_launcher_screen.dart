@@ -5,6 +5,7 @@ import 'package:android_intent_plus/android_intent.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
 import '../home/home_screen.dart';
+import '../../utils/page_transitions.dart';
 
 class SetupLauncherScreen extends StatefulWidget {
   const SetupLauncherScreen({super.key});
@@ -56,7 +57,7 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
     Provider.of<AppState>(context, listen: false).completeOnboarding();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      AppPageRoute(child: const HomeScreen()),
     );
   }
 

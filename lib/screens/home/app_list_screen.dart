@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
 import '../quran/surah_list_screen.dart';
+import '../../utils/page_transitions.dart';
 
 // ── AppInfo model ────────────────────────────────────────────────────────────
 class AppInfo {
@@ -27,15 +28,12 @@ class AppInfo {
   }
 
   bool isNonProductive() {
-    // Whitelist essential communication apps
-    if (packageName == 'com.whatsapp' || 
+    if (packageName == 'com.whatsapp' ||
         packageName == 'com.whatsapp.w4b' ||
         packageName == 'com.android.chrome' ||
         packageName == 'com.google.android.gm') {
       return false;
     }
-
-
     return category == 0 || category == 1 || category == 2 || category == 4;
   }
 }
@@ -45,20 +43,40 @@ const _channel = MethodChannel('com.muslimlauncher/apps');
 class AppListScreen extends StatefulWidget {
   const AppListScreen({super.key});
 
+  // ── Static caches ─────────────────────────────────────────────────────────
   static List<AppInfo>? _cache;
   static bool _preloading = false;
 
+  /// Icon cache: packageName → raw bytes. Persists for the lifetime of the app.
+  static final Map<String, Uint8List> iconCache = {};
+
+  // ── Preload ───────────────────────────────────────────────────────────────
   static Future<void> preload() async {
     if (_cache != null || _preloading) return;
     _preloading = true;
     try {
+      // 1) Fetch app list
       final List<dynamic> raw = await _channel.invokeMethod('getApps');
-      // Use compute to process large list in background
       final List<AppInfo> apps = await compute(_processApps, raw);
       _cache = apps;
-    } catch (e) {
-      // Error preloading apps
-      _cache = [];
+
+      // 2) Batch-load all icons that are not yet cached
+      final missing = apps
+          .map((a) => a.packageName)
+          .where((pkg) => !iconCache.containsKey(pkg))
+          .toList();
+
+      if (missing.isNotEmpty) {
+        final Map<dynamic, dynamic> icons = await _channel.invokeMethod(
+          'getAllAppIcons',
+          {'packages': missing},
+        );
+        icons.forEach((pkg, bytes) {
+          iconCache[pkg as String] = bytes as Uint8List;
+        });
+      }
+    } catch (_) {
+      _cache ??= [];
     } finally {
       _preloading = false;
     }
@@ -66,23 +84,32 @@ class AppListScreen extends StatefulWidget {
 
   static List<AppInfo> _processApps(List<dynamic> raw) {
     return raw.map((a) => AppInfo.fromMap(a as Map<dynamic, dynamic>)).toList()
-      ..sort(
-        (a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()),
-      );
+      ..sort((a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()));
   }
 
-  static void invalidate() {
+  /// Invalidate only the app list. Icon cache is kept intact.
+  static void invalidateAppsOnly() {
     _cache = null;
     _preloading = false;
+  }
+
+  /// Full invalidation (e.g. after install/uninstall where icons may change).
+  static void invalidateFull() {
+    _cache = null;
+    _preloading = false;
+    iconCache.clear();
   }
 
   @override
   State<AppListScreen> createState() => _AppListScreenState();
 }
 
-class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserver {
+// ── State ────────────────────────────────────────────────────────────────────
+class _AppListScreenState extends State<AppListScreen>
+    with WidgetsBindingObserver {
   List<AppInfo>? _apps;
-  String _searchQuery = "";
+  List<AppInfo> _filtered = [];
+  String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -91,6 +118,7 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
     WidgetsBinding.instance.addObserver(this);
     if (AppListScreen._cache != null) {
       _apps = AppListScreen._cache;
+      _filtered = _apps!;
     } else {
       _fetchAndSet();
     }
@@ -106,25 +134,49 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Refresh list whenever we return to the app
-      // This catches uninstalls/installs that happened while we were in background
-      AppListScreen.invalidate();
+      // Only invalidate app list; keep icon cache so icons don't reload.
+      AppListScreen.invalidateAppsOnly();
       _fetchAndSet();
     }
   }
 
-
   Future<void> _fetchAndSet() async {
     await AppListScreen.preload();
-    if (mounted) setState(() => _apps = AppListScreen._cache);
+    if (mounted) {
+      // Pre-decode all icons into Flutter's image cache in background
+      // This eliminates even the smallest jank when an icon first appears.
+      for (var app in AppListScreen._cache!) {
+        final bytes = AppListScreen.iconCache[app.packageName];
+        if (bytes != null) {
+          precacheImage(MemoryImage(bytes), context);
+        }
+      }
+
+      setState(() {
+        _apps = AppListScreen._cache;
+        _updateFilter();
+      });
+    }
+  }
+
+  void _updateFilter() {
+    if (_apps == null) {
+      _filtered = [];
+      return;
+    }
+    if (_searchQuery.isEmpty) {
+      _filtered = _apps!;
+    } else {
+      _filtered = _apps!
+          .where((a) => a.appName.toLowerCase().contains(_searchQuery))
+          .toList();
+    }
   }
 
   Future<void> _openApp(String packageName) async {
     try {
       await _channel.invokeMethod('openApp', {'packageName': packageName});
-    } catch (_) {
-      // Failed to open app
-    }
+    } catch (_) {}
   }
 
   void _onAppTap(AppInfo app, AppState appState) {
@@ -135,23 +187,19 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
     }
   }
 
-  void _onAppLongPress(AppInfo app, AppState appState) {
-    _showAppOptions(app, appState);
+  void _onAppLongPress(AppInfo app) {
+    _showAppOptions(app);
   }
 
   Future<void> _uninstallApp(String packageName) async {
     try {
       await _channel.invokeMethod('uninstallApp', {'packageName': packageName});
-      // Invalidate cache so next fetch gets fresh list
-      AppListScreen.invalidate();
-    } catch (e) {
-
-      // Failed to uninstall app
-    }
+      AppListScreen.invalidateFull();
+    } catch (_) {}
   }
 
-  void _showAppOptions(AppInfo app, AppState appState) {
-    final lang = appState.languageCode;
+  void _showAppOptions(AppInfo app) {
+    final lang = context.read<AppState>().languageCode;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -197,7 +245,6 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
                     _confirmUninstall(app, lang);
                   },
                 ),
-                // Extra margin for system navbar
                 SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
               ],
             ),
@@ -276,7 +323,7 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
                 Navigator.pop(ctx);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const SurahListScreen()),
+                  AppPageRoute(child: const SurahListScreen()),
                 );
               }
             },
@@ -287,10 +334,11 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
     );
   }
 
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    final lang = appState.languageCode;
+    // Only read language from AppState here; points badge uses Selector below.
+    final lang = context.select<AppState, String>((s) => s.languageCode);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F4),
@@ -312,7 +360,10 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
                     icon: const Icon(Icons.close_rounded, color: Colors.white),
                     onPressed: () {
                       _searchController.clear();
-                      setState(() => _searchQuery = "");
+                      setState(() {
+                        _searchQuery = '';
+                        _updateFilter();
+                      });
                     },
                   )
                 : const Icon(
@@ -322,19 +373,24 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
                   ),
           ),
           onChanged: (val) {
-            setState(() => _searchQuery = val.toLowerCase());
+            setState(() {
+              _searchQuery = val.toLowerCase();
+              _updateFilter();
+            });
           },
         ),
-
         backgroundColor: Colors.teal.shade800,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          _PointsBadge(points: appState.points),
+          // Only this widget rebuilds when points change
+          Selector<AppState, int>(
+            selector: (_, s) => s.points,
+            builder: (_, pts, __) => _PointsBadge(points: pts),
+          ),
           const SizedBox(width: 8),
         ],
       ),
-
       body: Column(
         children: [
           Container(
@@ -369,84 +425,73 @@ class _AppListScreenState extends State<AppListScreen> with WidgetsBindingObserv
           Expanded(
             child: _apps == null
                 ? const Center(child: CircularProgressIndicator())
-                : Builder(
-                    builder: (context) {
-                      final filtered = _apps!
-                          .where(
-                            (a) =>
-                                a.appName.toLowerCase().contains(_searchQuery),
-                          )
-                          .toList();
-
-                      if (filtered.isEmpty && _searchQuery.isNotEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.search_off_rounded,
-                                size: 64,
-                                color: Colors.grey.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                lang == 'en'
-                                    ? 'No apps found'
-                                    : 'Aplikasi tidak ditemukan',
-                                style: TextStyle(color: Colors.grey.shade600),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.75,
-                            ),
-                        itemCount: filtered.length,
-                        itemBuilder: (context, index) {
-                          final app = filtered[index];
-                          final blocked = app.isNonProductive();
-                          return RepaintBoundary(
-                            child: _AppTile(
-                              app: app,
-                              blocked: blocked,
-                              onTap: () => _onAppTap(app, appState),
-                              onLongPress: () => _onAppLongPress(app, appState),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                : _buildGrid(lang),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildGrid(String lang) {
+    if (_filtered.isEmpty && _searchQuery.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              lang == 'en' ? 'No apps found' : 'Aplikasi tidak ditemukan',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
+      physics: const BouncingScrollPhysics(),
+      addAutomaticKeepAlives: false,
+      addRepaintBoundaries: false,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: _filtered.length,
+      itemBuilder: (context, index) {
+        final app = _filtered[index];
+        return RepaintBoundary(
+          child: _AppTile(
+            key: ValueKey(app.packageName),
+            app: app,
+            onTap: () => _onAppTap(app, context.read<AppState>()),
+            onLongPress: () => _onAppLongPress(app),
+          ),
+        );
+      },
+    );
+  }
 }
 
+// ── _AppTile ─────────────────────────────────────────────────────────────────
 class _AppTile extends StatelessWidget {
   final AppInfo app;
-  final bool blocked;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
   const _AppTile({
+    super.key,
     required this.app,
-    required this.blocked,
     required this.onTap,
     required this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
+    final blocked = app.isNonProductive();
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -459,11 +504,7 @@ class _AppTile extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                _AppIcon(
-                  key: ValueKey('icon_${app.packageName}'),
-                  packageName: app.packageName,
-                  grayscale: blocked,
-                ),
+                _AppIcon(packageName: app.packageName, grayscale: blocked),
                 if (blocked)
                   Positioned(
                     right: -6,
@@ -499,7 +540,6 @@ class _AppTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-
           ],
         ),
       ),
@@ -507,6 +547,55 @@ class _AppTile extends StatelessWidget {
   }
 }
 
+// ── _AppIcon (StatelessWidget – reads from static cache, no async setState) ──
+class _AppIcon extends StatelessWidget {
+  final String packageName;
+  final bool grayscale;
+
+  const _AppIcon({required this.packageName, this.grayscale = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = AppListScreen.iconCache[packageName];
+
+    if (bytes == null) {
+      // Fallback placeholder (rare: only if preload missed this package)
+      return Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.teal.shade50.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(Icons.apps_rounded, size: 20, color: Colors.teal.shade200),
+      );
+    }
+
+    Widget img = Image.memory(
+      bytes,
+      width: 48,
+      height: 48,
+      fit: BoxFit.contain,
+      gaplessPlayback: true,
+    );
+
+    if (grayscale) {
+      img = ColorFiltered(
+        colorFilter: const ColorFilter.matrix(<double>[
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0,      0,      0,      1, 0,
+        ]),
+        child: img,
+      );
+    }
+
+    return img;
+  }
+}
+
+// ── _PointsBadge ─────────────────────────────────────────────────────────────
 class _PointsBadge extends StatelessWidget {
   final int points;
   const _PointsBadge({required this.points});
@@ -536,84 +625,5 @@ class _PointsBadge extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _AppIcon extends StatefulWidget {
-  final String packageName;
-  final bool grayscale;
-  const _AppIcon({super.key, required this.packageName, this.grayscale = false});
-
-
-  static final Map<String, Uint8List> _iconCache = {};
-
-  @override
-  State<_AppIcon> createState() => _AppIconState();
-}
-
-class _AppIconState extends State<_AppIcon> {
-  Uint8List? _iconBytes;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadIcon();
-  }
-
-  Future<void> _loadIcon() async {
-    if (_AppIcon._iconCache.containsKey(widget.packageName)) {
-      if (mounted) {
-        setState(() => _iconBytes = _AppIcon._iconCache[widget.packageName]);
-      }
-      return;
-    }
-
-    try {
-      final Uint8List? bytes = await _channel.invokeMethod('getAppIcon', {
-        'packageName': widget.packageName,
-      });
-      if (bytes != null) {
-        _AppIcon._iconCache[widget.packageName] = bytes;
-        if (mounted) setState(() => _iconBytes = bytes);
-      }
-    } catch (e) {
-      // Error loading icon
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_iconBytes == null) {
-      return Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.teal.shade50.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(Icons.apps_rounded, size: 20, color: Colors.teal.shade200),
-      );
-    }
-    Widget image = Image.memory(
-      _iconBytes!,
-      width: 48,
-      height: 48,
-      fit: BoxFit.contain,
-      gaplessPlayback: true,
-    );
-
-    if (widget.grayscale) {
-      image = ColorFiltered(
-        colorFilter: const ColorFilter.matrix(<double>[
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0,      0,      0,      1, 0,
-        ]),
-        child: image,
-      );
-    }
-
-    return image;
   }
 }

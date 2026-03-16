@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import 'surah_detail_screen.dart';
+import '../../utils/page_transitions.dart';
 
 class SurahListScreen extends StatefulWidget {
   const SurahListScreen({super.key});
@@ -87,9 +88,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      SurahDetailScreen(surah: surah),
+                                AppPageRoute(
+                                  child: SurahDetailScreen(surah: surah),
                                 ),
                               );
                             },

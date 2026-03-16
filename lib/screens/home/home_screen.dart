@@ -8,6 +8,7 @@ import '../quran/surah_list_screen.dart';
 import '../quran/surah_detail_screen.dart';
 import '../quran/reading_history_screen.dart';
 import 'app_list_screen.dart';
+import '../../utils/page_transitions.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,7 +41,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      AppListScreen.invalidate();
+      // Only invalidate app list, keep icon cache intact for smooth re-entry
+      AppListScreen.invalidateAppsOnly();
       AppListScreen.preload();
     }
   }
@@ -89,8 +91,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (surahIdx >= 0 && surahIdx < appState.quranData.length) {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => SurahDetailScreen(
+          AppPageRoute(
+            child: SurahDetailScreen(
               surah: appState.quranData[surahIdx],
               initialAyahIndex: appState.currentAyahIndex,
             ),
@@ -201,9 +203,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               GestureDetector(
                                 onTap: () => Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const ReadingHistoryScreen(),
+                                  AppPageRoute(
+                                    child: const ReadingHistoryScreen(),
                                   ),
                                 ),
                                 child: Container(
@@ -326,8 +327,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   color: Colors.teal.shade700,
                                   onTap: () => Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const SurahListScreen(),
+                                    AppPageRoute(
+                                      child: const SurahListScreen(),
                                     ),
                                   ),
                                 ),
@@ -345,8 +346,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   color: Colors.amber.shade800,
                                   onTap: () => Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const AppListScreen(),
+                                    AppPageRoute(
+                                      child: const AppListScreen(),
                                     ),
                                   ),
                                 ),

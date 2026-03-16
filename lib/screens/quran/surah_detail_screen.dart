@@ -4,6 +4,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../providers/app_state.dart';
 import 'quran_tajweed_text.dart';
+import '../../utils/page_transitions.dart';
 
 class SurahDetailScreen extends StatefulWidget {
   final Map<String, dynamic> surah;
@@ -490,8 +491,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
         onPressed: () {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => SurahDetailScreen(surah: nextSurah),
+            AppPageRoute(
+              child: SurahDetailScreen(surah: nextSurah),
             ),
           );
         },

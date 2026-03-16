@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
 import 'setup_launcher_screen.dart';
+import '../../utils/page_transitions.dart';
 
 class LanguageScreen extends StatelessWidget {
   const LanguageScreen({super.key});
@@ -81,7 +82,7 @@ class LanguageScreen extends StatelessWidget {
                     if (context.mounted) {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (_) => const SetupLauncherScreen()),
+                        AppPageRoute(child: const SetupLauncherScreen()),
                       );
                     }
                   },

@@ -12,55 +12,70 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.net.Uri
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.Executors
 
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.muslimlauncher/apps"
+    private val executor = Executors.newSingleThreadExecutor()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
-            .setMethodCallHandler { call, result ->
-                when (call.method) {
-                    "getApps" -> {
-                        println("DEBUG: getApps called")
-                        result.success(getInstalledApps())
-                    }
-                    "getAppIcon" -> {
-                        val pkg = call.argument<String>("packageName")
-                        println("DEBUG: getAppIcon called for $pkg")
-                        if (pkg != null) result.success(getAppIcon(pkg))
-                        else result.error("UNAVAILABLE", "Package name not provided.", null)
-                    }
-                    "openApp" -> {
-                        val pkg = call.argument<String>("packageName")
-                        println("DEBUG: openApp called for $pkg")
-                        if (pkg != null) { openApp(pkg); result.success(null) }
-                        else result.error("UNAVAILABLE", "Package name not provided.", null)
-                    }
-                    "openAppSettings" -> {
-                        val pkg = call.argument<String>("packageName")
-                        println("DEBUG: openAppSettings called for $pkg")
-                        if (pkg != null) { openAppSettings(pkg); result.success(null) }
-                        else result.error("UNAVAILABLE", "Package name not provided.", null)
-                    }
-                    "uninstallApp" -> {
-                        val pkg = call.argument<String>("packageName")
-                        println("DEBUG: uninstallApp called for $pkg")
-                        if (pkg != null) { uninstallApp(pkg); result.success(null) }
-                        else result.error("UNAVAILABLE", "Package name not provided.", null)
-                    }
-                    "isDefaultLauncher" -> {
-                        println("DEBUG: isDefaultLauncher called")
-                        result.success(isDefaultLauncher())
-                    }
-                    else -> {
-                        println("DEBUG: Unknown method called: ${call.method}")
-                        result.notImplemented()
+        val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        channel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getApps" -> {
+                    // Run on background thread to avoid blocking UI
+                    executor.execute {
+                        val apps = getInstalledApps()
+                        runOnUiThread { result.success(apps) }
                     }
                 }
-
+                "getAllAppIcons" -> {
+                    // Batch load all icons in one call on background thread
+                    val packages = call.argument<List<String>>("packages")
+                    if (packages != null) {
+                        executor.execute {
+                            val iconMap = mutableMapOf<String, ByteArray>()
+                            for (pkg in packages) {
+                                try {
+                                    getAppIcon(pkg)?.let { iconMap[pkg] = it }
+                                } catch (_: Exception) {}
+                            }
+                            runOnUiThread { result.success(iconMap) }
+                        }
+                    } else {
+                        result.error("UNAVAILABLE", "Packages not provided.", null)
+                    }
+                }
+                "getAppIcon" -> {
+                    val pkg = call.argument<String>("packageName")
+                    if (pkg != null) result.success(getAppIcon(pkg))
+                    else result.error("UNAVAILABLE", "Package name not provided.", null)
+                }
+                "openApp" -> {
+                    val pkg = call.argument<String>("packageName")
+                    if (pkg != null) { openApp(pkg); result.success(null) }
+                    else result.error("UNAVAILABLE", "Package name not provided.", null)
+                }
+                "openAppSettings" -> {
+                    val pkg = call.argument<String>("packageName")
+                    if (pkg != null) { openAppSettings(pkg); result.success(null) }
+                    else result.error("UNAVAILABLE", "Package name not provided.", null)
+                }
+                "uninstallApp" -> {
+                    val pkg = call.argument<String>("packageName")
+                    if (pkg != null) { uninstallApp(pkg); result.success(null) }
+                    else result.error("UNAVAILABLE", "Package name not provided.", null)
+                }
+                "isDefaultLauncher" -> {
+                    result.success(isDefaultLauncher())
+                }
+                else -> {
+                    result.notImplemented()
+                }
             }
+        }
     }
 
     private fun getInstalledApps(): List<Map<String, Any>> {

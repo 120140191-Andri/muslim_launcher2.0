@@ -10,6 +10,12 @@ import 'screens/onboarding/setup_launcher_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Increase image cache limits for smoother launcher experience
+  // 100MB maximum size and 500 images count to keep all app icons in memory
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 100 * 1024 * 1024;
+  PaintingBinding.instance.imageCache.maximumSize = 500;
+
   final prefs = await SharedPreferences.getInstance();
   
   runApp(

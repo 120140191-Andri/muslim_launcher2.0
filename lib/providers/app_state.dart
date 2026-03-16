@@ -95,7 +95,7 @@ class AppState extends ChangeNotifier {
 
   void _startStatusTimer() {
     _statusTimer?.cancel();
-    _statusTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+    _statusTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       final enabled = await _appBlockService.isAccessibilityEnabled();
       if (enabled != _isAccessibilityEnabled) {
         _isAccessibilityEnabled = enabled;
@@ -176,56 +176,39 @@ class AppState extends ChangeNotifier {
 
   /// Automatically blocks apps based on categories
   Future<void> syncAppsWithCategories(List<dynamic> apps) async {
-    bool changed = false;
-    
-    // Comprehensive non-productive keywords for package names
-    final nonProductiveKeywords = [
+    // Optimization: Use a Set for faster keyword contains check
+    final nonProductiveKeywords = {
       'game', 'social', 'video', 'player', 'tiktok', 'instagram', 'facebook', 
       'twitter', 'netflix', 'disney', 'mobile.legend', 'freefire', 'pubg', 'genshin',
       'youtube', 'vimeo', 'hulu', 'twitch', 'discord', 'telegram', 'snapchat', 
       'reddit', 'pinterest', 'linkedin', 'arcade', 'puzzle', 'racing', 'simulation',
       'entertainment', 'shotcut', 'capcut', 'snackvideo', 'kwaiviral', 'wattpad'
-    ];
+    };
 
-    debugPrint('Syncing categories for ${apps.length} apps...');
+    final whitelist = {
+      'com.whatsapp', 'com.whatsapp.w4b', 'com.android.chrome', 
+      'com.google.android.gm', 'com.android.settings', 'com.android.vending'
+    };
 
+    bool changed = false;
     for (var app in apps) {
       if (app == null) continue;
       final pkg = (app['packageName'] as String? ?? '').toLowerCase();
       final name = (app['appName'] as String? ?? '').toLowerCase();
       final cat = app['category'] as int? ?? -1;
       
-      if (pkg.isEmpty) continue;
+      if (pkg.isEmpty || whitelist.any((w) => pkg.contains(w) || pkg == w)) continue;
 
-      // 1. Check by Official Category
-      // Category 0: Game, 1: Audio, 2: Video, 4: Social
+      // Check category: 0: Game, 1: Audio, 2: Video, 4: Social
       bool isNonProductive = (cat == 0 || cat == 1 || cat == 2 || cat == 4);
       
-      // 2. Check by Package Name or App Name Keywords
       if (!isNonProductive) {
-        for (var keyword in nonProductiveKeywords) {
-          if (pkg.contains(keyword) || name.contains(keyword)) {
-            isNonProductive = true;
-            break;
-          }
-        }
+        isNonProductive = nonProductiveKeywords.any((k) => pkg.contains(k) || name.contains(k));
       }
 
-      // 3. Exception Whitelist - CRITICAL: Never block launcher or core tools
-      if (pkg == 'com.whatsapp' || pkg == 'com.whatsapp.w4b' || 
-          pkg == 'com.android.chrome' || pkg == 'com.google.android.gm' ||
-          pkg.contains('com.muslimlauncher') || 
-          pkg.contains('com.android.settings') ||
-          pkg.contains('com.android.vending')) { // Keep Play Store open for updates/installs
-        isNonProductive = false;
-      }
-
-      if (isNonProductive) {
-        if (!_blockedApps.contains(pkg)) {
-          _blockedApps.add(pkg);
-          changed = true;
-          debugPrint('AUTO-BLOCKED: $name ($pkg) | Category: $cat');
-        }
+      if (isNonProductive && !_blockedApps.contains(pkg)) {
+        _blockedApps.add(pkg);
+        changed = true;
       }
     }
 
@@ -233,7 +216,6 @@ class AppState extends ChangeNotifier {
       await prefs.setStringList('blockedApps', _blockedApps);
       await _appBlockService.setBlockedApps(_blockedApps);
       notifyListeners();
-      debugPrint('Sync complete. Total blocked apps: ${_blockedApps.length}');
     }
   }
 

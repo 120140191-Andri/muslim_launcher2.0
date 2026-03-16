@@ -109,10 +109,15 @@ class AppBlockService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event == null) return
+        
+        // OPTIMIZATION: Only process window state changes (app switches)
+        // This avoids processing every click, scroll, or focus event.
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+
         try {
-            // Source of truth during runtime is the static maps updated by Flutter
-            
-            val eventPackage = event?.packageName?.toString()?.trim()?.lowercase()
+            val eventPackage = event.packageName?.toString()?.trim()?.lowercase()
+            // rootInActiveWindow is more reliable for the current foreground app
             val activePackage = rootInActiveWindow?.packageName?.toString()?.trim()?.lowercase()
             
             val packageName = activePackage ?: eventPackage ?: return
@@ -123,9 +128,8 @@ class AppBlockService : AccessibilityService() {
             val now = System.currentTimeMillis()
 
             // 1. TRANSITION SHIELD (Highest Priority)
-            // Provides a 10-second immunity for just-unlocked apps
+            // Immunity period for recently unlocked apps
             if (packageName == lastBypassPackage && (now - lastBypassTime) < 10000) {
-                Log.d("AppBlockService", "SHIELD ACTIVE: Bypassing $packageName")
                 return 
             }
 

@@ -517,12 +517,17 @@ class _AppListScreenState extends State<AppListScreen>
       itemBuilder: (context, index) {
         final app = _filtered[index];
         return RepaintBoundary(
-          child: _AppTile(
-            key: ValueKey(app.packageName),
-            app: app,
-            isBlocked: context.watch<AppState>().isAppBlocked(app.packageName),
-            onTap: () => _onAppTap(app, context.read<AppState>()),
-            onLongPress: () => _onAppLongPress(app),
+          child: Selector<AppState, bool>(
+            selector: (context, state) => state.isAppBlocked(app.packageName),
+            builder: (context, isBlocked, child) {
+              return _AppTile(
+                key: ValueKey(app.packageName),
+                app: app,
+                isBlocked: isBlocked,
+                onTap: () => _onAppTap(app, context.read<AppState>()),
+                onLongPress: () => _onAppLongPress(app),
+              );
+            },
           ),
         );
       },

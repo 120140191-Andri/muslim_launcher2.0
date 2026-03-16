@@ -45,7 +45,7 @@ class MuslimLauncherApp extends StatelessWidget {
           builder: (context, child) {
             return Stack(
               children: [
-                ?child,
+                if (child != null) child,
                 if (appState.lastAttemptedBlockedPackage != null &&
                     appState.lastAttemptedBlockedPackage!.isNotEmpty)
                   BlockedAppScreen(

@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/app_block_service.dart';
 
 class AppState extends ChangeNotifier {
   final SharedPreferences prefs;
@@ -13,12 +16,19 @@ class AppState extends ChangeNotifier {
   String _languageCode = 'id';
   bool _hasSelectedLanguage = false;
   bool _hasCompletedOnboarding = false;
-  int _points = 0;
+  int _points = 999999; // Load default high points for Dev
   List<String> _blockedApps = [];
   int _highestSurahIndex = 0;
   int _highestAyahIndex = -1; // -1 means no progress yet
   int _khatmCount = 0;
   List<Map<String, dynamic>> _readingHistory = [];
+  String? _lastAttemptedBlockedPackage;
+  bool _isAccessibilityEnabled = false;
+  bool _hasSeenAccessibilitySetup = false;
+  final AppBlockService _appBlockService = AppBlockService();
+  Timer? _statusTimer;
+  
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   String _lastReadAyat = '';
   String _lastReadSurah = '';
@@ -39,16 +49,21 @@ class AppState extends ChangeNotifier {
   bool get isDataLoaded => _isDataLoaded;
   int get khatmCount => _khatmCount;
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
+  String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
+  bool get isAccessibilityEnabled => _isAccessibilityEnabled;
+  bool get hasSeenAccessibilitySetup => _hasSeenAccessibilitySetup;
+  AppBlockService get appBlockService => _appBlockService;
 
   void _init() {
     _languageCode = prefs.getString('languageCode') ?? 'id';
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
-    _points = prefs.getInt('points') ?? 0;
+    _points = prefs.getInt('points') ?? 999999;
     _blockedApps = (prefs.getStringList('blockedApps') ?? []).toList();
     _lastReadAyat = prefs.getString('lastReadAyat') ?? '';
     _lastReadSurah = prefs.getString('lastReadSurah') ?? '';
     _lastReadAyahNumber = prefs.getInt('lastReadAyahNumber') ?? 0;
+    _hasSeenAccessibilitySetup = prefs.getBool('hasSeenAccessibilitySetup') ?? false;
     
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
@@ -63,7 +78,30 @@ class AppState extends ChangeNotifier {
     }
 
     loadQuranData();
+    
+    // Initialize App Block Service
+    _appBlockService.init(onAppBlocked: (pkg) {
+      if (pkg.trim().isNotEmpty) {
+        _lastAttemptedBlockedPackage = pkg.toLowerCase();
+        notifyListeners();
+      }
+    });
+    _appBlockService.setBlockedApps(_blockedApps);
+    
+    _startStatusTimer();
+    
     notifyListeners();
+  }
+
+  void _startStatusTimer() {
+    _statusTimer?.cancel();
+    _statusTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      final enabled = await _appBlockService.isAccessibilityEnabled();
+      if (enabled != _isAccessibilityEnabled) {
+        _isAccessibilityEnabled = enabled;
+        notifyListeners();
+      }
+    });
   }
 
   Future<void> loadQuranData() async {
@@ -114,13 +152,99 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> toggleAppBlockedStatus(String packageName) async {
-    if (_blockedApps.contains(packageName)) {
-      _blockedApps.remove(packageName);
-    } else {
-      _blockedApps.add(packageName);
+  Future<void> toggleAppBlockedStatus(String packageName, {int? category}) async {
+    final pkg = packageName.toLowerCase();
+    // Strict Mode: Only allow blocking, not unblocking manually
+    if (!_blockedApps.contains(pkg)) {
+      _blockedApps.add(pkg);
+      await prefs.setStringList('blockedApps', _blockedApps);
+      // Sync with Native Service
+      await _appBlockService.setBlockedApps(_blockedApps);
+      notifyListeners();
     }
-    await prefs.setStringList('blockedApps', _blockedApps);
+  }
+
+  Future<void> openApp(String packageName) async {
+    final pkg = packageName.toLowerCase();
+    const appsChannel = MethodChannel('com.muslimlauncher/apps');
+    try {
+      await appsChannel.invokeMethod('openApp', {'packageName': pkg});
+    } catch (e) {
+      debugPrint("Failed to open app $pkg: $e");
+    }
+  }
+
+  /// Automatically blocks apps based on categories
+  Future<void> syncAppsWithCategories(List<dynamic> apps) async {
+    bool changed = false;
+    
+    // Comprehensive non-productive keywords for package names
+    final nonProductiveKeywords = [
+      'game', 'social', 'video', 'player', 'tiktok', 'instagram', 'facebook', 
+      'twitter', 'netflix', 'disney', 'mobile.legend', 'freefire', 'pubg', 'genshin',
+      'youtube', 'vimeo', 'hulu', 'twitch', 'discord', 'telegram', 'snapchat', 
+      'reddit', 'pinterest', 'linkedin', 'arcade', 'puzzle', 'racing', 'simulation',
+      'entertainment', 'shotcut', 'capcut', 'snackvideo', 'kwaiviral', 'wattpad'
+    ];
+
+    debugPrint('Syncing categories for ${apps.length} apps...');
+
+    for (var app in apps) {
+      if (app == null) continue;
+      final pkg = (app['packageName'] as String? ?? '').toLowerCase();
+      final name = (app['appName'] as String? ?? '').toLowerCase();
+      final cat = app['category'] as int? ?? -1;
+      
+      if (pkg.isEmpty) continue;
+
+      // 1. Check by Official Category
+      // Category 0: Game, 1: Audio, 2: Video, 4: Social
+      bool isNonProductive = (cat == 0 || cat == 1 || cat == 2 || cat == 4);
+      
+      // 2. Check by Package Name or App Name Keywords
+      if (!isNonProductive) {
+        for (var keyword in nonProductiveKeywords) {
+          if (pkg.contains(keyword) || name.contains(keyword)) {
+            isNonProductive = true;
+            break;
+          }
+        }
+      }
+
+      // 3. Exception Whitelist - CRITICAL: Never block launcher or core tools
+      if (pkg == 'com.whatsapp' || pkg == 'com.whatsapp.w4b' || 
+          pkg == 'com.android.chrome' || pkg == 'com.google.android.gm' ||
+          pkg.contains('com.muslimlauncher') || 
+          pkg.contains('com.android.settings') ||
+          pkg.contains('com.android.vending')) { // Keep Play Store open for updates/installs
+        isNonProductive = false;
+      }
+
+      if (isNonProductive) {
+        if (!_blockedApps.contains(pkg)) {
+          _blockedApps.add(pkg);
+          changed = true;
+          debugPrint('AUTO-BLOCKED: $name ($pkg) | Category: $cat');
+        }
+      }
+    }
+
+    if (changed) {
+      await prefs.setStringList('blockedApps', _blockedApps);
+      await _appBlockService.setBlockedApps(_blockedApps);
+      notifyListeners();
+      debugPrint('Sync complete. Total blocked apps: ${_blockedApps.length}');
+    }
+  }
+
+  void clearBlockedApp() {
+    _lastAttemptedBlockedPackage = null;
+    notifyListeners();
+  }
+
+  Future<void> setHasSeenAccessibilitySetup(bool value) async {
+    _hasSeenAccessibilitySetup = value;
+    await prefs.setBool('hasSeenAccessibilitySetup', value);
     notifyListeners();
   }
 

@@ -9,6 +9,7 @@ import '../quran/surah_list_screen.dart';
 import '../quran/surah_detail_screen.dart';
 import '../quran/reading_history_screen.dart';
 import 'app_list_screen.dart';
+import 'accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -33,12 +34,76 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     });
 
-    // Delayed preload to avoid startup peak (Reduced to 50ms for near-instant load)
+    // Delayed preload to avoid startup peak
     Future.delayed(const Duration(milliseconds: 50), () {
       AppListScreen.preload().then((_) {
-        if (mounted) setState(() {});
+        if (mounted) {
+          setState(() {});
+          _checkAccessibilityStatus();
+          
+          // PROACTIVE SYNC: Force category-based blocking on startup
+          final appState = Provider.of<AppState>(context, listen: false);
+          const MethodChannel('com.muslimlauncher/apps').invokeMethod('getApps').then((raw) {
+            appState.syncAppsWithCategories(raw);
+          });
+        }
       });
     });
+  }
+
+  Future<void> _checkAccessibilityStatus() async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    // Show if apps are blocked OR if it's the first time and service is not enabled
+    final shouldShow = (appState.blockedApps.isNotEmpty || !appState.hasSeenAccessibilitySetup) && 
+                       !appState.isAccessibilityEnabled;
+    
+    if (shouldShow && mounted) {
+      _showAccessibilitySetupPrompt();
+    }
+  }
+
+  void _showAccessibilitySetupPrompt() {
+    final appState = Provider.of<AppState>(context, listen: false);
+    appState.setHasSeenAccessibilitySetup(true);
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Icon(Icons.security_rounded, color: Colors.teal),
+            SizedBox(width: 12),
+            Text('Aktifkan Blokir'),
+          ],
+        ),
+        content: const Text(
+          'Beberapa aplikasi telah Anda blokir. Agar pemblokiran bekerja di seluruh sistem (termasuk via Play Store), Anda perlu mengaktifkan Layanan Aksesibilitas.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Nanti Saja'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                AppPageRoute(child: const AccessibilitySetupScreen()),
+              );
+            },
+            child: const Text('Setup Sekarang'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -275,6 +340,59 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Accessibility Warning Banner
+                          if (appState.blockedApps.isNotEmpty && !appState.isAccessibilityEnabled)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 24),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade50,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.red.shade100),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.warning_amber_rounded, color: Colors.red.shade800),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            lang == 'en' 
+                                              ? 'Accessibility service is required for global app blocking.'
+                                              : 'Layanan aksesibilitas diperlukan agar fitur blokir bekerja di luar Launcher.',
+                                            style: TextStyle(
+                                              color: Colors.red.shade900,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          AppPageRoute(child: const AccessibilitySetupScreen()),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red.shade700,
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                        child: Text(lang == 'en' ? 'Setup Now' : 'Atur Sekarang'),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
                           // Resume Section
                           Text(
                             (lang == 'en'

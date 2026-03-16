@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
 import '../quran/surah_list_screen.dart';
+import 'accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
 
 // ── AppInfo model ────────────────────────────────────────────────────────────
@@ -168,6 +169,11 @@ class _AppListScreenState extends State<AppListScreen>
         _apps = AppListScreen.cachedApps;
         _updateFilter();
       });
+
+      // Sync categories for auto-blocking
+      final appState = Provider.of<AppState>(context, listen: false);
+      final rawApps = await _channel.invokeMethod('getApps');
+      appState.syncAppsWithCategories(rawApps);
     }
   }
 
@@ -192,7 +198,7 @@ class _AppListScreenState extends State<AppListScreen>
   }
 
   void _onAppTap(AppInfo app, AppState appState) {
-    if (app.isNonProductive()) {
+    if (appState.isAppBlocked(app.packageName)) {
       _showBlockedDialog(app, appState);
     } else {
       _openApp(app.packageName);
@@ -257,6 +263,33 @@ class _AppListScreenState extends State<AppListScreen>
                     _confirmUninstall(app, lang);
                   },
                 ),
+                if (!context.read<AppState>().isAppBlocked(app.packageName))
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        Icons.lock_outline_rounded,
+                        color: Colors.teal.shade700,
+                        size: 28,
+                      ),
+                    ),
+                    title: Text(
+                      lang == 'en' ? 'Block App' : 'Blokir Aplikasi',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.teal.shade900,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      context.read<AppState>().toggleAppBlockedStatus(app.packageName);
+                    },
+                  ),
                 SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
               ],
             ),
@@ -310,8 +343,8 @@ class _AppListScreenState extends State<AppListScreen>
         title: Text(Translations.get(lang, 'non_productive')),
         content: Text(
           lang == 'en'
-              ? 'This is a non-productive app. Spend 150 Points to open it?'
-              : 'Aplikasi non-produktif. Gunakan 150 Poin untuk membuka?',
+              ? 'This is a non-productive app. Spend 50 Points to open it?'
+              : 'Aplikasi non-produktif. Gunakan 50 Poin untuk membuka?',
         ),
         actions: [
           TextButton(
@@ -326,10 +359,13 @@ class _AppListScreenState extends State<AppListScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onPressed: () {
-              if (appState.points >= 150) {
-                appState.deductPoints(150);
+            onPressed: () async {
+              if (appState.points >= 50) {
+                await appState.deductPoints(50);
+                await appState.appBlockService.allowAppTemporarily(app.packageName);
                 Navigator.pop(ctx);
+                // Give a small delay for native service to sync bypass (1s is safer)
+                await Future.delayed(const Duration(milliseconds: 1000));
                 _openApp(app.packageName);
               } else {
                 Navigator.pop(ctx);
@@ -339,7 +375,7 @@ class _AppListScreenState extends State<AppListScreen>
                 );
               }
             },
-            child: Text(appState.points >= 150 ? 'Buka (150 Poin)' : 'Cari Poin'),
+            child: Text(appState.points >= 50 ? (lang == 'en' ? 'Unlock (50 Pts)' : 'Buka (50 Poin)') : (lang == 'en' ? 'Read Quran' : 'Baca Quran')),
           ),
         ],
       ),
@@ -395,6 +431,11 @@ class _AppListScreenState extends State<AppListScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.security_rounded),
+            onPressed: () => Navigator.push(context, AppPageRoute(child: const AccessibilitySetupScreen())),
+            tooltip: lang == 'en' ? 'App Blocker Setup' : 'Setup Blokir',
+          ),
           // Only this widget rebuilds when points change
           Selector<AppState, int>(
             selector: (_, s) => s.points,
@@ -479,6 +520,7 @@ class _AppListScreenState extends State<AppListScreen>
           child: _AppTile(
             key: ValueKey(app.packageName),
             app: app,
+            isBlocked: context.watch<AppState>().isAppBlocked(app.packageName),
             onTap: () => _onAppTap(app, context.read<AppState>()),
             onLongPress: () => _onAppLongPress(app),
           ),
@@ -491,19 +533,20 @@ class _AppListScreenState extends State<AppListScreen>
 // ── _AppTile ─────────────────────────────────────────────────────────────────
 class _AppTile extends StatelessWidget {
   final AppInfo app;
+  final bool isBlocked;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
   const _AppTile({
     super.key,
     required this.app,
+    required this.isBlocked,
     required this.onTap,
     required this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
-    final blocked = app.isNonProductive();
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -516,8 +559,8 @@ class _AppTile extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                _AppIcon(packageName: app.packageName, grayscale: blocked),
-                if (blocked)
+                _AppIcon(packageName: app.packageName, grayscale: isBlocked),
+                if (isBlocked)
                   Positioned(
                     right: -6,
                     top: -6,
@@ -546,7 +589,7 @@ class _AppTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: blocked ? Colors.grey.shade500 : Colors.teal.shade900,
+                  color: isBlocked ? Colors.grey.shade500 : Colors.teal.shade900,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

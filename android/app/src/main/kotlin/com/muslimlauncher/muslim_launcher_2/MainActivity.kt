@@ -10,14 +10,26 @@ import android.os.Build
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import android.util.Log
 import android.net.Uri
+import android.provider.Settings
+import android.text.TextUtils
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.muslimlauncher/apps"
+    private val BLOCK_CHANNEL = "com.muslimlauncher/block"
     private val executor = Executors.newSingleThreadExecutor()
+
+    companion object {
+        private var blockChannel: MethodChannel? = null
+        
+        fun notifyAppBlocked(packageName: String) {
+            blockChannel?.invokeMethod("onAppBlocked", mapOf("packageName" to packageName))
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -76,6 +88,85 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+
+        val bc = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BLOCK_CHANNEL)
+        bc.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setBlockedApps" -> {
+                    val apps = call.argument<List<String>>("packages") ?: emptyList()
+                    Log.d("MainActivity", "Syncing blocked apps: ${apps.joinToString(", ")}")
+                    AppBlockService.updateBlockedPackages(this, apps)
+                    result.success(true)
+                }
+                "isAccessibilityServiceEnabled" -> {
+                    result.success(isAccessibilityServiceEnabled())
+                }
+                "openAccessibilitySettings" -> {
+                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(intent)
+                    result.success(true)
+                }
+                "allowAppTemporarily" -> {
+                    val args = call.arguments as? Map<*, *>
+                    val pkg = args?.get("packageName") as? String
+                    val durationRaw = args?.get("durationMillis")
+                    val duration = when (durationRaw) {
+                        is Number -> durationRaw.toLong()
+                        else -> 3600000L
+                    }
+
+                    if (pkg != null) {
+                        AppBlockService.allowTemporarily(this, pkg, duration)
+                        
+                        // Send instant broadcast to active service
+                        val intent = Intent("com.muslimlauncher.ALLOW_PACKAGE").apply {
+                            setPackage(packageName)
+                            putExtra("packageName", pkg)
+                            putExtra("durationMillis", duration)
+                        }
+                        sendBroadcast(intent)
+                        
+                        result.success(true)
+                    } else {
+                        result.error("ERROR", "Package name missing", null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+        MainActivity.blockChannel = bc
+        
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        if (intent.getBooleanExtra("triggerBlockScreen", false)) {
+            val blockedPackage = intent.getStringExtra("blockedPackageName") ?: ""
+            notifyAppBlocked(blockedPackage)
+        }
+    }
+
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        val service = "$packageName/${AppBlockService::class.java.canonicalName}"
+        val enabled = Settings.Secure.getInt(contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0)
+        if (enabled == 1) {
+            val settingValue = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+            if (settingValue != null) {
+                val splitter = TextUtils.SimpleStringSplitter(':')
+                splitter.setString(settingValue)
+                while (splitter.hasNext()) {
+                    if (splitter.next().equals(service, ignoreCase = true)) return true
+                }
+            }
+        }
+        return false
     }
 
     private fun getInstalledApps(): List<Map<String, Any>> {
@@ -116,7 +207,10 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun openApp(packageName: String) {
-        packageManager.getLaunchIntentForPackage(packageName)?.let { startActivity(it) }
+        packageManager.getLaunchIntentForPackage(packageName)?.let { 
+            it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(it) 
+        }
     }
 
     private fun openAppSettings(packageName: String) {

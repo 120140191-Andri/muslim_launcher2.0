@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
-import '../home/home_screen.dart';
+import '../home/accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
 
 class SetupLauncherScreen extends StatefulWidget {
@@ -43,7 +43,7 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
       final bool isDefault = await _platform.invokeMethod('isDefaultLauncher');
       if (mounted) setState(() => _isDefaultLauncher = isDefault);
       if (isDefault) {
-        _finishOnboarding();
+        _goToNextStep();
       }
     } catch (_) {}
   }
@@ -53,11 +53,10 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
     intent.launch();
   }
 
-  void _finishOnboarding() {
-    Provider.of<AppState>(context, listen: false).completeOnboarding();
-    Navigator.pushReplacement(
+  void _goToNextStep() {
+    Navigator.push(
       context,
-      AppPageRoute(child: const HomeScreen()),
+      AppPageRoute(child: const AccessibilitySetupScreen(isOnboarding: true)),
     );
   }
 
@@ -120,6 +119,7 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                 ),
               ),
               const SizedBox(height: 60),
+              
               if (!_isDefaultLauncher)
                 SizedBox(
                   width: double.infinity,
@@ -141,16 +141,22 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                     ),
                   ),
                 ),
+              
+              const SizedBox(height: 24),
+              
               const Spacer(),
-              TextButton(
-                onPressed: () => _finishOnboarding(),
-                child: Text(
-                  Translations.get(lang, 'done').toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.teal.shade800,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: _isDefaultLauncher ? _goToNextStep : null,
+                  child: Text(
+                    (lang == 'en' ? 'NEXT' : 'LANJUT').toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _isDefaultLauncher ? Colors.teal.shade800 : Colors.grey.shade400,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
                   ),
                 ),
               ),

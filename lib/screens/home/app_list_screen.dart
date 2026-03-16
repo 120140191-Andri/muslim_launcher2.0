@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
@@ -46,14 +47,19 @@ class AppListScreen extends StatefulWidget {
   // ── Static caches ─────────────────────────────────────────────────────────
   static List<AppInfo>? _cache;
   static bool _preloading = false;
+  static Completer<void>? _preloadCompleter;
 
   /// Icon cache: packageName → raw bytes. Persists for the lifetime of the app.
   static final Map<String, Uint8List> iconCache = {};
 
   // ── Preload ───────────────────────────────────────────────────────────────
   static Future<void> preload() async {
-    if (_cache != null || _preloading) return;
+    if (_cache != null) return;
+    if (_preloading) return _preloadCompleter?.future;
+
     _preloading = true;
+    _preloadCompleter = Completer<void>();
+
     try {
       // 1) Fetch app list
       final List<dynamic> raw = await _channel.invokeMethod('getApps');
@@ -79,6 +85,8 @@ class AppListScreen extends StatefulWidget {
       _cache ??= [];
     } finally {
       _preloading = false;
+      _preloadCompleter?.complete();
+      _preloadCompleter = null;
     }
   }
 
@@ -99,6 +107,8 @@ class AppListScreen extends StatefulWidget {
     _preloading = false;
     iconCache.clear();
   }
+
+  static List<AppInfo>? get cachedApps => _cache;
 
   @override
   State<AppListScreen> createState() => _AppListScreenState();
@@ -143,17 +153,19 @@ class _AppListScreenState extends State<AppListScreen>
   Future<void> _fetchAndSet() async {
     await AppListScreen.preload();
     if (mounted) {
-      // Pre-decode all icons into Flutter's image cache in background
-      // This eliminates even the smallest jank when an icon first appears.
-      for (var app in AppListScreen._cache!) {
-        final bytes = AppListScreen.iconCache[app.packageName];
-        if (bytes != null) {
-          precacheImage(MemoryImage(bytes), context);
+      final cache = AppListScreen.cachedApps;
+      if (cache != null) {
+        // Pre-decode all icons into Flutter's image cache in background
+        for (var app in cache) {
+          final bytes = AppListScreen.iconCache[app.packageName];
+          if (bytes != null) {
+            precacheImage(MemoryImage(bytes), context);
+          }
         }
       }
 
       setState(() {
-        _apps = AppListScreen._cache;
+        _apps = AppListScreen.cachedApps;
         _updateFilter();
       });
     }
@@ -165,9 +177,9 @@ class _AppListScreenState extends State<AppListScreen>
       return;
     }
     if (_searchQuery.isEmpty) {
-      _filtered = _apps!;
+      _filtered = _apps ?? [];
     } else {
-      _filtered = _apps!
+      _filtered = (_apps ?? [])
           .where((a) => a.appName.toLowerCase().contains(_searchQuery))
           .toList();
     }
@@ -386,7 +398,7 @@ class _AppListScreenState extends State<AppListScreen>
           // Only this widget rebuilds when points change
           Selector<AppState, int>(
             selector: (_, s) => s.points,
-            builder: (_, pts, __) => _PointsBadge(points: pts),
+            builder: (_, pts, child) => _PointsBadge(points: pts),
           ),
           const SizedBox(width: 8),
         ],

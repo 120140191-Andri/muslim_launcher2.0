@@ -103,7 +103,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   }
 
   void _stopListening() {
-    setState(() => _recordingAyahIdx = null);
+    if (mounted) {
+      setState(() => _recordingAyahIdx = null);
+    }
     _speech.stop();
   }
 
@@ -166,7 +168,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       if (_eyeReadingAyahIdx != null) {
         // Calculate target duration: 1.2s per word (roughly)
         final wordCount = arabic.split(RegExp(r'\s+')).length;
-        final targetSeconds = wordCount * 1.5;
+        final targetSeconds = wordCount * 2.0;
 
         _eyeTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
           if (!mounted) {
@@ -204,12 +206,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     _vibrationTimer?.cancel();
     _eyeFocusSubscription?.cancel();
     _eyeTrackerService.dispose();
-    setState(() {
-      _eyeReadingAyahIdx = null;
-      _vibrationTimer = null;
-      _eyeReadingProgress = 0.0;
-      _isEyeFocused = false;
-    });
+    if (mounted) {
+      setState(() {
+        _eyeReadingAyahIdx = null;
+        _vibrationTimer = null;
+        _eyeReadingProgress = 0.0;
+        _isEyeFocused = false;
+      });
+    }
   }
 
   void _onSuccess(int index, String arabic) {
@@ -239,6 +243,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     _stopListening();
 
+    if (!context.mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -267,11 +273,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     // Celebration for Khatm
     final totalAyahsInSurah = (widget.surah['ayahs'] as List).length;
     if (surahNumber == 114 && index == totalAyahsInSurah - 1 && getsPoints) {
-      _showKhatmCelebration(context, appState.khatmCount);
+      if (context.mounted) {
+        _showKhatmCelebration(context, appState.khatmCount);
+      }
     }
   }
 
   void _showKhatmCelebration(BuildContext context, int khatmCount) {
+    if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -520,18 +529,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                           ),
                           if (_eyeReadingAyahIdx == index) ...[
                             const SizedBox(height: 12),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: _eyeReadingProgress,
-                                minHeight: 4,
-                                backgroundColor: Colors.teal.shade100,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  _isEyeFocused ? Colors.green : Colors.grey,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
+                            // Progress bar hidden based on user request for cleaner UI
+                            const SizedBox(height: 8),
                             Text(
                               _isEyeFocused
                                   ? "Mata Terdeteksi: Membaca..."

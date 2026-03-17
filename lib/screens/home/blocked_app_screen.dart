@@ -14,8 +14,8 @@ class BlockedAppScreen extends StatelessWidget {
     final appState = Provider.of<AppState>(context);
     final lang = appState.languageCode;
 
-    return WillPopScope(
-      onWillPop: () async => false, // Prevent back button
+    return PopScope(
+      canPop: false, // Prevent back button
       child: Material(
         type: MaterialType.transparency,
         child: Scaffold(

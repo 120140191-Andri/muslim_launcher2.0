@@ -7,13 +7,14 @@ import 'screens/home/home_screen.dart';
 import 'screens/onboarding/language_screen.dart';
 import 'screens/onboarding/setup_launcher_screen.dart';
 import 'screens/home/blocked_app_screen.dart';
+import 'screens/home/permission_blocked_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Increase image cache limits for smoother launcher experience
-  // 100MB maximum size and 500 images count to keep all app icons in memory
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 100 * 1024 * 1024;
+  // 50MB maximum size and 500 images count to keep all app icons in memory
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024;
   PaintingBinding.instance.imageCache.maximumSize = 500;
 
   final prefs = await SharedPreferences.getInstance();
@@ -43,15 +44,21 @@ class MuslimLauncherApp extends StatelessWidget {
           ),
           home: _determineHome(appState),
           builder: (context, child) {
-            return Stack(
-              children: [
-                if (child != null) child,
-                if (appState.lastAttemptedBlockedPackage != null &&
-                    appState.lastAttemptedBlockedPackage!.isNotEmpty)
-                  BlockedAppScreen(
-                    packageName: appState.lastAttemptedBlockedPackage!,
+            return Consumer<AppState>(
+              builder: (context, state, _) {
+                return PermissionBlockedOverlay(
+                  appState: state,
+                  child: Stack(
+                    children: [
+                      child ?? const SizedBox.shrink(),
+                      if (state.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
+                        BlockedAppScreen(
+                          packageName: state.lastAttemptedBlockedPackage!,
+                        ),
+                    ],
                   ),
-              ],
+                );
+              },
             );
           },
         );

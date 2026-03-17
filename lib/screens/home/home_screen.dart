@@ -93,11 +93,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
+              appState.setIgnorePermissionGuard(true);
               Navigator.pop(ctx);
               Navigator.push(
                 context,
                 AppPageRoute(child: const AccessibilitySetupScreen()),
-              );
+              ).then((_) => appState.setIgnorePermissionGuard(false));
             },
             child: const Text('Setup Sekarang'),
           ),
@@ -375,10 +376,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton(
-                                        onPressed: () => Navigator.push(
-                                          context,
-                                          AppPageRoute(child: const AccessibilitySetupScreen()),
-                                        ),
+                                        onPressed: () {
+                                          appState.setIgnorePermissionGuard(true);
+                                          Navigator.push(
+                                            context,
+                                            AppPageRoute(child: const AccessibilitySetupScreen()),
+                                          ).then((_) => appState.setIgnorePermissionGuard(false));
+                                        },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.red.shade700,
                                           foregroundColor: Colors.white,

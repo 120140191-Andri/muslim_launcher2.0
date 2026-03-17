@@ -16,8 +16,8 @@ class AppState extends ChangeNotifier {
   String _languageCode = 'id';
   bool _hasSelectedLanguage = false;
   bool _hasCompletedOnboarding = false;
-  int _points = 0; // Starting points for production
-  List<String> _blockedApps = [];
+  int _points = 0;
+  Set<String> _blockedApps = {};
   int _highestSurahIndex = 0;
   int _highestAyahIndex = -1; // -1 means no progress yet
   int _khatmCount = 0;
@@ -25,7 +25,11 @@ class AppState extends ChangeNotifier {
   Map<String, int> _unlockedExpirations = {};
   String? _lastAttemptedBlockedPackage;
   bool _isAccessibilityEnabled = false;
+  bool _isDefaultLauncher = false;
   bool _hasSeenAccessibilitySetup = false;
+  String _manufacturer = '';
+  String _deviceModel = '';
+  bool _ignorePermissionGuard = false;
   final AppBlockService _appBlockService = AppBlockService();
   Timer? _statusTimer;
   
@@ -42,7 +46,7 @@ class AppState extends ChangeNotifier {
   bool get hasSelectedLanguage => _hasSelectedLanguage;
   bool get hasCompletedOnboarding => _hasCompletedOnboarding;
   int get points => _points;
-  List<String> get blockedApps => _blockedApps;
+  Set<String> get blockedApps => _blockedApps;
   String get lastReadAyat => _lastReadAyat;
   String get lastReadSurah => _lastReadSurah;
   int get lastReadAyahNumber => _lastReadAyahNumber;
@@ -52,7 +56,11 @@ class AppState extends ChangeNotifier {
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
   String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
   bool get isAccessibilityEnabled => _isAccessibilityEnabled;
+  bool get isDefaultLauncher => _isDefaultLauncher;
   bool get hasSeenAccessibilitySetup => _hasSeenAccessibilitySetup;
+  String get manufacturer => _manufacturer;
+  String get deviceModel => _deviceModel;
+  bool get ignorePermissionGuard => _ignorePermissionGuard;
   AppBlockService get appBlockService => _appBlockService;
 
   void _init() {
@@ -60,7 +68,7 @@ class AppState extends ChangeNotifier {
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
     _points = prefs.getInt('points') ?? 0;
-    _blockedApps = (prefs.getStringList('blockedApps') ?? []).toList();
+    _blockedApps = (prefs.getStringList('blockedApps') ?? []).toSet();
     _lastReadAyat = prefs.getString('lastReadAyat') ?? '';
     _lastReadSurah = prefs.getString('lastReadSurah') ?? '';
     _lastReadAyahNumber = prefs.getInt('lastReadAyahNumber') ?? 0;
@@ -87,6 +95,7 @@ class AppState extends ChangeNotifier {
     }
 
     loadQuranData();
+    _fetchDeviceInfo();
     
     // Initialize App Block Service
     _appBlockService.init(onAppBlocked: (pkg) {
@@ -95,7 +104,7 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       }
     });
-    _appBlockService.setBlockedApps(_blockedApps);
+    _appBlockService.setBlockedApps(_blockedApps.toList());
     
     _startStatusTimer();
     
@@ -104,16 +113,47 @@ class AppState extends ChangeNotifier {
 
   void _startStatusTimer() {
     _statusTimer?.cancel();
-    _statusTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      final enabled = await _appBlockService.isAccessibilityEnabled();
-      if (enabled != _isAccessibilityEnabled) {
-        _isAccessibilityEnabled = enabled;
+    _statusTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
+      // 1. Accessibility Check
+      final accEnabled = await _appBlockService.isAccessibilityEnabled();
+      if (accEnabled != _isAccessibilityEnabled) {
+        _isAccessibilityEnabled = accEnabled;
         notifyListeners();
       }
       
-      // Also cleanup expired unlocks and notify for UI timer updates
+      // 2. Default Launcher Check
+      try {
+        const appsChannel = MethodChannel('com.muslimlauncher/apps');
+        final bool defEnabled = await appsChannel.invokeMethod('isDefaultLauncher');
+        if (defEnabled != _isDefaultLauncher) {
+          _isDefaultLauncher = defEnabled;
+          notifyListeners();
+        }
+      } catch (_) {}
+      
+      // 3. Cleanup & Unlock Expiry
       _cleanupExpiredUnlocks();
     });
+  }
+
+  @override
+  void dispose() {
+    _statusTimer?.cancel();
+    super.dispose();
+  }
+  
+  Future<void> _fetchDeviceInfo() async {
+    const appsChannel = MethodChannel('com.muslimlauncher/apps');
+    try {
+      final Map<dynamic, dynamic>? info = await appsChannel.invokeMethod('getDeviceInfo');
+      if (info != null) {
+        _manufacturer = (info['manufacturer'] as String? ?? '').toLowerCase();
+        _deviceModel = (info['model'] as String? ?? '').toLowerCase();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Failed to fetch device info: $e");
+    }
   }
 
   void _cleanupExpiredUnlocks() {
@@ -129,8 +169,11 @@ class AppState extends ChangeNotifier {
     
     if (changed) {
       prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
+      notifyListeners();
+    } else if (_unlockedExpirations.isNotEmpty) {
+      // Still have active timers, keep UI updated for the countdown
+      notifyListeners();
     }
-    notifyListeners(); // Keep UI timers updated even if none expired
   }
 
   Future<void> loadQuranData() async {
@@ -186,9 +229,9 @@ class AppState extends ChangeNotifier {
     // Strict Mode: Only allow blocking, not unblocking manually
     if (!_blockedApps.contains(pkg)) {
       _blockedApps.add(pkg);
-      await prefs.setStringList('blockedApps', _blockedApps);
+      await prefs.setStringList('blockedApps', _blockedApps.toList());
       // Sync with Native Service
-      await _appBlockService.setBlockedApps(_blockedApps);
+      await _appBlockService.setBlockedApps(_blockedApps.toList());
       notifyListeners();
     }
   }
@@ -242,8 +285,8 @@ class AppState extends ChangeNotifier {
     }
 
     if (changed) {
-      await prefs.setStringList('blockedApps', _blockedApps);
-      await _appBlockService.setBlockedApps(_blockedApps);
+      await prefs.setStringList('blockedApps', _blockedApps.toList());
+      await _appBlockService.setBlockedApps(_blockedApps.toList());
       notifyListeners();
     }
   }
@@ -253,15 +296,23 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> allowAppTemporarily(String packageName, {int durationMinutes = 60}) async {
+  Future<bool> allowAppTemporarily(String packageName, {int durationMinutes = 60}) async {
     final pkg = packageName.toLowerCase();
     final expiry = DateTime.now().millisecondsSinceEpoch + (durationMinutes * 60 * 1000);
     
     _unlockedExpirations[pkg] = expiry;
-    await prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
+    bool success = true;
     
-    await _appBlockService.allowAppTemporarily(pkg, durationMinutes: durationMinutes);
+    try {
+      await _appBlockService.allowAppTemporarily(pkg, durationMinutes: durationMinutes);
+      await prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
+    } catch (e) {
+      _unlockedExpirations.remove(pkg); // Rollback locally if native fails
+      success = false;
+    }
+    
     notifyListeners();
+    return success;
   }
 
   int getUnlockRemainingMinutes(String packageName) {
@@ -278,6 +329,11 @@ class AppState extends ChangeNotifier {
   Future<void> setHasSeenAccessibilitySetup(bool value) async {
     _hasSeenAccessibilitySetup = value;
     await prefs.setBool('hasSeenAccessibilitySetup', value);
+    notifyListeners();
+  }
+
+  void setIgnorePermissionGuard(bool value) {
+    _ignorePermissionGuard = value;
     notifyListeners();
   }
 

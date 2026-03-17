@@ -30,8 +30,8 @@ class AppBlockService {
   Future<void> setBlockedApps(List<String> packages) async {
     try {
       await _channel.invokeMethod('setBlockedApps', {'packages': packages});
-    } on PlatformException catch (e) {
-      print("Failed to sync blocked apps: ${e.message}");
+    } on PlatformException catch (_) {
+      // Failed to sync
     }
   }
 
@@ -46,8 +46,8 @@ class AppBlockService {
   Future<void> openAccessibilitySettings() async {
     try {
       await _channel.invokeMethod('openAccessibilitySettings');
-    } on PlatformException catch (e) {
-      print("Failed to open settings: ${e.message}");
+    } on PlatformException catch (_) {
+      // Failed to open settings
     }
   }
 
@@ -57,8 +57,8 @@ class AppBlockService {
         'packageName': packageName,
         'durationMillis': durationMinutes * 60 * 1000,
       });
-    } on PlatformException catch (e) {
-      print("Failed to allow app: ${e.message}");
+    } on PlatformException catch (_) {
+      // Failed to allow app
     }
   }
 }

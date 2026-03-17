@@ -83,6 +83,15 @@ class MainActivity : FlutterActivity() {
                 "isDefaultLauncher" -> {
                     result.success(isDefaultLauncher())
                 }
+                "getDeviceInfo" -> {
+                    result.success(
+                        mapOf(
+                            "manufacturer" to Build.MANUFACTURER,
+                            "model" to Build.MODEL,
+                            "sdkInt" to Build.VERSION.SDK_INT
+                        )
+                    )
+                }
                 else -> {
                     result.notImplemented()
                 }

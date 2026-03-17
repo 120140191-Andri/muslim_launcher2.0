@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
 import '../quran/surah_list_screen.dart';
-import 'accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
 
 // ── AppInfo model ────────────────────────────────────────────────────────────
@@ -160,7 +159,13 @@ class _AppListScreenState extends State<AppListScreen>
         for (var app in cache) {
           final bytes = AppListScreen.iconCache[app.packageName];
           if (bytes != null) {
-            precacheImage(MemoryImage(bytes), context);
+            precacheImage(MemoryImage(bytes), context).then((_) {
+               // Optimization: Once cached in ImageCache, we can potentially 
+               // clear the raw bytes to save RAM, but we must be careful 
+               // if the app needs to re-read them (e.g. on invalidation).
+               // For now, we'll keep them as they are crucial for grid scrolling,
+               // but we'll ensure they are stored efficiently.
+            });
           }
         }
       }
@@ -361,9 +366,10 @@ class _AppListScreenState extends State<AppListScreen>
             ),
             onPressed: () async {
               if (appState.points >= 50) {
+                final navigator = Navigator.of(ctx);
                 await appState.deductPoints(50);
                 await appState.allowAppTemporarily(app.packageName);
-                Navigator.pop(ctx);
+                navigator.pop();
                 // Give a small delay for native service to sync bypass (1s is safer)
                 await Future.delayed(const Duration(milliseconds: 1000));
                 _openApp(app.packageName);
@@ -431,12 +437,6 @@ class _AppListScreenState extends State<AppListScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.security_rounded),
-            onPressed: () => Navigator.push(context, AppPageRoute(child: const AccessibilitySetupScreen())),
-            tooltip: lang == 'en' ? 'App Blocker Setup' : 'Setup Blokir',
-          ),
-          // Only this widget rebuilds when points change
           Selector<AppState, int>(
             selector: (_, s) => s.points,
             builder: (_, pts, child) => _PointsBadge(points: pts),

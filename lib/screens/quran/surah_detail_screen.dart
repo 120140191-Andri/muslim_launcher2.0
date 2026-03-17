@@ -42,6 +42,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   Timer? _eyeTimer;
   Timer? _vibrationTimer;
   StreamSubscription? _eyeFocusSubscription;
+  bool _isInitializing = false;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -58,18 +60,21 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   }
 
   void _initSpeech() async {
-    await _speech.initialize(
-      onError: (val) {
-        // onError
-        if (mounted) setState(() => _recordingAyahIdx = null);
-      },
-      onStatus: (val) {
-        // onStatus
-        if (val == 'done' || val == 'notListening') {
+    try {
+      await _speech.initialize(
+        onError: (val) {
           if (mounted) setState(() => _recordingAyahIdx = null);
-        }
-      },
-    );
+        },
+        onStatus: (val) {
+          if (val == 'done' || val == 'notListening') {
+            if (mounted) setState(() => _recordingAyahIdx = null);
+          }
+        },
+      );
+      if (!mounted) return;
+    } catch (e) {
+      debugPrint("Speech init error: $e");
+    }
   }
 
   void _onAyahMicPressed(int index, String arabic) async {
@@ -78,32 +83,39 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     } else {
       if (_recordingAyahIdx != null) _speech.stop();
 
-      bool available = await _speech.initialize();
-      if (available && mounted) {
-        setState(() {
-          _recordingAyahIdx = index;
-          _recognizedText = "";
-        });
+      setState(() => _isInitializing = true);
+      try {
+        bool available = await _speech.initialize();
+        if (available && mounted && !_isDisposed) {
+          setState(() {
+            _recordingAyahIdx = index;
+            _recognizedText = "";
+          });
 
-        _speech.listen(
-          onResult: (val) {
-            if (mounted) {
-              setState(() {
-                _recognizedText = val.recognizedWords;
-                if (val.hasConfidenceRating && val.confidence > 0.1) {
-                  _onSuccess(index, arabic);
-                }
-              });
-            }
-          },
-          localeId: 'ar_SA',
-        );
+          _speech.listen(
+            onResult: (val) {
+              if (mounted && !_isDisposed) {
+                setState(() {
+                  _recognizedText = val.recognizedWords;
+                  if (val.hasConfidenceRating && val.confidence > 0.1) {
+                    _onSuccess(index, arabic);
+                  }
+                });
+              }
+            },
+            localeId: 'ar_SA',
+          );
+        }
+      } finally {
+        if (mounted && !_isDisposed) {
+          setState(() => _isInitializing = false);
+        }
       }
     }
   }
 
-  void _stopListening() {
-    if (mounted) {
+  void _stopListening({bool isDisposing = false}) {
+    if (!isDisposing && mounted) {
       setState(() => _recordingAyahIdx = null);
     }
     _speech.stop();
@@ -126,34 +138,40 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     // Request permission
     final status = await Permission.camera.request();
+    if (!mounted) return;
+    
     if (status != PermissionStatus.granted) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Izin kamera diperlukan untuk deteksi mata"),
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Izin kamera diperlukan untuk deteksi mata"),
+        ),
+      );
       return;
     }
 
     setState(() {
+      _isInitializing = true;
       _eyeReadingAyahIdx = index;
       _eyeReadingProgress = 0.0;
       _isEyeFocused = false;
     });
 
-    await _eyeTrackerService.initialize();
-    if (!mounted) return;
+    try {
+      await _eyeTrackerService.initialize();
+      if (!mounted || _isDisposed) return;
 
-    _eyeFocusSubscription = _eyeTrackerService.focusStream?.listen((focused) {
-      if (mounted) {
+      _eyeFocusSubscription = _eyeTrackerService.focusStream?.listen((focused) {
+        if (!mounted || _isDisposed) return;
         setState(() => _isEyeFocused = focused);
         _handleEyeTimer(focused, arabic);
-      }
-    });
+      });
 
-    _handleEyeTimer(_eyeTrackerService.isFocused, arabic);
+      _handleEyeTimer(_eyeTrackerService.isFocused, arabic);
+    } finally {
+      if (mounted && !_isDisposed) {
+        setState(() => _isInitializing = false);
+      }
+    }
   }
 
   void _handleEyeTimer(bool focused, String arabic) {
@@ -201,15 +219,19 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     }
   }
 
-  void _stopEyeReading() {
+  Future<void> _stopEyeReading({bool isDisposing = false}) async {
     _eyeTimer?.cancel();
+    _eyeTimer = null;
     _vibrationTimer?.cancel();
-    _eyeFocusSubscription?.cancel();
+    _vibrationTimer = null;
+    await _eyeFocusSubscription?.cancel();
+    _eyeFocusSubscription = null;
+    
     _eyeTrackerService.dispose();
-    if (mounted) {
+
+    if (!isDisposing && mounted) {
       setState(() {
         _eyeReadingAyahIdx = null;
-        _vibrationTimer = null;
         _eyeReadingProgress = 0.0;
         _isEyeFocused = false;
       });
@@ -217,6 +239,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   }
 
   void _onSuccess(int index, String arabic) {
+    if (!mounted || _isDisposed) return;
     final appState = Provider.of<AppState>(context, listen: false);
 
     // Check if point should be awarded based on strict progression
@@ -243,7 +266,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     _stopListening();
 
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -273,9 +296,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     // Celebration for Khatm
     final totalAyahsInSurah = (widget.surah['ayahs'] as List).length;
     if (surahNumber == 114 && index == totalAyahsInSurah - 1 && getsPoints) {
-      if (context.mounted) {
-        _showKhatmCelebration(context, appState.khatmCount);
-      }
+      _showKhatmCelebration(context, appState.khatmCount);
     }
   }
 
@@ -340,7 +361,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (context.mounted) Navigator.pop(context);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.amber,
                 foregroundColor: Colors.teal.shade900,
@@ -396,17 +419,19 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
           const SizedBox(width: 8),
         ],
       ),
-      body: ScrollablePositionedList.builder(
-        itemCount:
-            ayahs.length +
-            (highestSurahIdx >= surahIndex &&
-                    highestAyahIdx == ayahs.length - 1 &&
-                    surahIndex < context.read<AppState>().quranData.length - 1
-                ? 1
-                : 0),
-        itemScrollController: _itemScrollController,
-        itemPositionsListener: _itemPositionsListener,
-        padding: const EdgeInsets.only(top: 8, bottom: 64),
+      body: Stack(
+        children: [
+          ScrollablePositionedList.builder(
+            itemCount:
+                ayahs.length +
+                (highestSurahIdx >= surahIndex &&
+                        highestAyahIdx == ayahs.length - 1 &&
+                        surahIndex < context.read<AppState>().quranData.length - 1
+                    ? 1
+                    : 0),
+            itemScrollController: _itemScrollController,
+            itemPositionsListener: _itemPositionsListener,
+            padding: const EdgeInsets.only(top: 8, bottom: 64),
 
         itemBuilder: (context, index) {
           if (index == ayahs.length) {
@@ -639,8 +664,40 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
           );
         },
       ),
-    );
-  }
+      if (_isInitializing)
+        Positioned.fill(
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.3),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      lang == 'en' ? "Initializing..." : "Menyiapkan...",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+    ],
+  ),
+);
+}
 
   Widget _buildNextSurahButton(
     BuildContext context,
@@ -669,8 +726,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
           shadowColor: Colors.teal.withValues(alpha: 0.3),
         ),
         onPressed: () {
-          Navigator.pushReplacement(
-            context,
+          final appState = Provider.of<AppState>(context, listen: false);
+          appState.navigatorKey.currentState?.pushReplacement(
             AppPageRoute(child: SurahDetailScreen(surah: nextSurah)),
           );
         },
@@ -696,9 +753,19 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
   @override
   void dispose() {
+    _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
-    _stopListening();
-    _stopEyeReading();
+    
+    // Cancel all timers immediately
+    _eyeTimer?.cancel();
+    _eyeTimer = null;
+    _vibrationTimer?.cancel();
+    _vibrationTimer = null;
+    
+    // Stop services without setState
+    _stopListening(isDisposing: true);
+    _stopEyeReading(isDisposing: true);
+
     super.dispose();
   }
 }

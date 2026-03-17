@@ -334,8 +334,7 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                         onPressed: () {
                           if (widget.isOnboarding) {
                             appState.completeOnboarding();
-                            Navigator.pushAndRemoveUntil(
-                              context,
+                            appState.navigatorKey.currentState?.pushAndRemoveUntil(
                               AppPageRoute(child: const HomeScreen()),
                               (route) => false,
                             );

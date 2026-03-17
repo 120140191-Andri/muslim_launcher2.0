@@ -88,8 +88,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                             isFinished: isFinished,
                             isFuture: isFuture,
                             onTap: () {
-                              Navigator.push(
-                                context,
+                              appState.navigatorKey.currentState?.push(
                                 AppPageRoute(
                                   child: SurahDetailScreen(surah: surah),
                                 ),

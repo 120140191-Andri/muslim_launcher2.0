@@ -44,8 +44,9 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "getAllAppIcons" -> {
-                    // Batch load all icons in one call on background thread
-                    val packages = call.argument<List<String>>("packages")
+                    // Batch load icons in one call on background thread
+                    // Limit to 30 icons per call to avoid OOM or IPC transaction limits
+                    val packages = call.argument<List<String>>("packages")?.take(30)
                     if (packages != null) {
                         executor.execute {
                             val iconMap = mutableMapOf<String, ByteArray>()
@@ -246,24 +247,29 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun drawableToByteArray(drawable: Drawable): ByteArray? {
-        val bitmap: Bitmap = when {
-            drawable is BitmapDrawable -> drawable.bitmap
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && drawable is AdaptiveIconDrawable -> {
-                Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888).also {
-                    val canvas = Canvas(it)
-                    drawable.setBounds(0, 0, 96, 96)
-                    drawable.draw(canvas)
+        val bitmap: Bitmap = try {
+            when {
+                drawable is BitmapDrawable -> drawable.bitmap
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && drawable is AdaptiveIconDrawable -> {
+                    Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888).also {
+                        val canvas = Canvas(it)
+                        drawable.setBounds(0, 0, 96, 96)
+                        drawable.draw(canvas)
+                    }
+                }
+                else -> {
+                    val w = drawable.intrinsicWidth.takeIf { it in 1..128 } ?: 96
+                    val h = drawable.intrinsicHeight.takeIf { it in 1..128 } ?: 96
+                    Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also {
+                        val canvas = Canvas(it)
+                        drawable.setBounds(0, 0, w, h)
+                        drawable.draw(canvas)
+                    }
                 }
             }
-            else -> {
-                val w = drawable.intrinsicWidth.takeIf { it in 1..96 } ?: 96
-                val h = drawable.intrinsicHeight.takeIf { it in 1..96 } ?: 96
-                Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also {
-                    val canvas = Canvas(it)
-                    drawable.setBounds(0, 0, w, h)
-                    drawable.draw(canvas)
-                }
-            }
+        } catch (e: Exception) {
+            // Fallback for some strange drawables that crash on createBitmap
+            Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
         }
         val stream = ByteArrayOutputStream()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

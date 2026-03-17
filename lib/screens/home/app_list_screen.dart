@@ -73,13 +73,23 @@ class AppListScreen extends StatefulWidget {
           .toList();
 
       if (missing.isNotEmpty) {
-        final Map<dynamic, dynamic> icons = await _channel.invokeMethod(
-          'getAllAppIcons',
-          {'packages': missing},
-        );
-        icons.forEach((pkg, bytes) {
-          iconCache[pkg as String] = bytes as Uint8List;
-        });
+        // Chunk missing into batches of 30 to avoid native IPC / memory limits
+        for (var i = 0; i < missing.length; i += 30) {
+          final end = (i + 30 < missing.length) ? i + 30 : missing.length;
+          final batch = missing.sublist(i, end);
+          
+          try {
+            final Map<dynamic, dynamic> icons = await _channel.invokeMethod(
+              'getAllAppIcons',
+              {'packages': batch},
+            );
+            icons.forEach((pkg, bytes) {
+              iconCache[pkg as String] = bytes as Uint8List;
+            });
+          } catch (e) {
+            debugPrint("Batch icon load error at $i: $e");
+          }
+        }
       }
     } catch (_) {
       _cache ??= [];
@@ -375,8 +385,7 @@ class _AppListScreenState extends State<AppListScreen>
                 _openApp(app.packageName);
               } else {
                 Navigator.pop(ctx);
-                Navigator.push(
-                  context,
+                appState.navigatorKey.currentState?.push(
                   AppPageRoute(child: const SurahListScreen()),
                 );
               }

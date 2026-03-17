@@ -127,13 +127,9 @@ class BlockedAppScreen extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () {
                     appState.clearBlockedApp();
-                    final navContext = appState.navigatorKey.currentContext;
-                    if (navContext != null) {
-                      Navigator.push(
-                        navContext,
-                        AppPageRoute(child: const SurahListScreen()),
-                      );
-                    }
+                    appState.navigatorKey.currentState?.push(
+                      AppPageRoute(child: const SurahListScreen()),
+                    );
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),

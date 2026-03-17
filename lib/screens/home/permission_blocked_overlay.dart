@@ -78,13 +78,11 @@ class PermissionBlockedOverlay extends StatelessWidget {
                       const SizedBox(height: 48),
                       if (isMissingDefault)
                         _buildRepairButton(
-                          context,
                           icon: Icons.home_rounded,
                           label: isEn ? 'Set Default Launcher' : 'Atur Beranda Utama',
                           onTap: () {
                             appState.setIgnorePermissionGuard(true);
-                            Navigator.push(
-                              context,
+                            appState.navigatorKey.currentState?.push(
                               AppPageRoute(child: const SetupLauncherScreen()),
                             ).then((_) => appState.setIgnorePermissionGuard(false));
                           },
@@ -92,13 +90,11 @@ class PermissionBlockedOverlay extends StatelessWidget {
                       if (isMissingDefault && isMissingAccess) const SizedBox(height: 16),
                       if (isMissingAccess)
                         _buildRepairButton(
-                          context,
                           icon: Icons.accessibility_new_rounded,
                           label: isEn ? 'Enable Accessibility' : 'Aktifkan Aksesibilitas',
                           onTap: () {
                             appState.setIgnorePermissionGuard(true);
-                            Navigator.push(
-                              context,
+                            appState.navigatorKey.currentState?.push(
                               AppPageRoute(child: const AccessibilitySetupScreen()),
                             ).then((_) => appState.setIgnorePermissionGuard(false));
                           },
@@ -114,8 +110,7 @@ class PermissionBlockedOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildRepairButton(
-    BuildContext context, {
+  Widget _buildRepairButton({
     required IconData icon,
     required String label,
     required VoidCallback onTap,

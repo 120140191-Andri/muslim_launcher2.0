@@ -35,28 +35,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
 
     // Delayed preload to avoid startup peak
-    Future.delayed(const Duration(milliseconds: 50), () {
-      AppListScreen.preload().then((_) {
-        if (mounted) {
-          setState(() {});
-          _checkAccessibilityStatus();
-          
-          // PROACTIVE SYNC: Force category-based blocking on startup
-          final appState = Provider.of<AppState>(context, listen: false);
-          const MethodChannel('com.muslimlauncher/apps').invokeMethod('getApps').then((raw) {
-            appState.syncAppsWithCategories(raw);
-          });
-        }
-      });
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      AppListScreen.preload()
+          .then((_) {
+            if (!mounted) return;
+            setState(() {});
+            _checkAccessibilityStatus();
+
+            // PROACTIVE SYNC: Force category-based blocking on startup
+            final appState = Provider.of<AppState>(context, listen: false);
+            const MethodChannel('com.muslimlauncher/apps')
+                .invokeMethod('getApps')
+                .then((raw) {
+                  if (!mounted) return;
+                  appState.syncAppsWithCategories(raw);
+                })
+                .catchError((_) {});
+          })
+          .catchError((_) {});
     });
   }
 
   Future<void> _checkAccessibilityStatus() async {
     final appState = Provider.of<AppState>(context, listen: false);
     // Show if apps are blocked OR if it's the first time and service is not enabled
-    final shouldShow = (appState.blockedApps.isNotEmpty || !appState.hasSeenAccessibilitySetup) && 
-                       !appState.isAccessibilityEnabled;
-    
+    final shouldShow =
+        (appState.blockedApps.isNotEmpty ||
+            !appState.hasSeenAccessibilitySetup) &&
+        !appState.isAccessibilityEnabled;
+
     if (shouldShow && mounted) {
       _showAccessibilitySetupPrompt();
     }
@@ -65,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _showAccessibilitySetupPrompt() {
     final appState = Provider.of<AppState>(context, listen: false);
     appState.setHasSeenAccessibilitySetup(true);
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -90,15 +98,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.teal,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () {
               appState.setIgnorePermissionGuard(true);
               Navigator.pop(ctx);
-              Navigator.push(
-                context,
-                AppPageRoute(child: const AccessibilitySetupScreen()),
-              ).then((_) => appState.setIgnorePermissionGuard(false));
+              appState.navigatorKey.currentState
+                  ?.push(AppPageRoute(child: const AccessibilitySetupScreen()))
+                  .then((_) => appState.setIgnorePermissionGuard(false));
             },
             child: const Text('Setup Sekarang'),
           ),
@@ -158,8 +167,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (appState.lastReadSurah.isNotEmpty && appState.quranData.isNotEmpty) {
       final surahIdx = appState.currentSurahIndex;
       if (surahIdx >= 0 && surahIdx < appState.quranData.length) {
-        Navigator.push(
-          context,
+        appState.navigatorKey.currentState?.push(
           AppPageRoute(
             child: SurahDetailScreen(
               surah: appState.quranData[surahIdx],
@@ -215,332 +223,529 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFA),
-      body: Stack(
-        children: [
-          // Background Gradient / Pattern
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.teal.shade900, const Color(0xFFF8FAFA)],
-                  stops: const [
-                    0.0,
-                    0.5,
-                  ], // Extended gradient slightly for dock
-                ),
-              ),
-            ),
-          ),
-
-          SafeArea(
-            child: Column(
-              children: [
-                // Header with Clock & Greeting
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    24,
-                    16,
-                    24,
-                    20,
-                  ), // More balanced header padding
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _getTimeGreeting(lang),
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.7),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                lang == 'en'
-                                    ? 'Spread Kindness'
-                                    : 'Pejuang Kebaikan',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () => Navigator.push(
-                                  context,
-                                  AppPageRoute(
-                                    child: const ReadingHistoryScreen(),
-                                  ),
-                                ),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.history_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              _buildHeaderBadge(
-                                icon: Icons.stars_rounded,
-                                value: appState.points.toString(),
-                                color: Colors.amber,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      RepaintBoundary(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: _ClockWidget(
-                            hourString: _hourString,
-                            minuteString: _minuteString,
-                            dateString: _dateString,
-                          ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 600),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        child: !appState.isReady
+            ? _buildLoadingState()
+            : Stack(
+                key: const ValueKey('home_content'),
+                children: [
+                  // Background Gradient
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.teal.shade900,
+                            const Color(0xFFF8FAFA),
+                          ],
+                          stops: const [0.0, 0.5],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF8FAFA),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(36),
-                        topRight: Radius.circular(36),
-                      ),
                     ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(
-                        24,
-                        24,
-                        24,
-                        16,
-                      ), // Increased top padding for breathing room
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Accessibility Warning Banner
-                          if (appState.blockedApps.isNotEmpty && !appState.isAccessibilityEnabled)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 24),
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.red.shade100),
+                  ),
+
+                  SafeArea(
+                    child: Column(
+                      children: [
+                        // Header with Clock & Greeting
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _getTimeGreeting(lang),
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'Pejuang Kebaikan',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () => appState
+                                            .navigatorKey
+                                            .currentState
+                                            ?.push(
+                                              AppPageRoute(
+                                                child:
+                                                    const ReadingHistoryScreen(),
+                                              ),
+                                            ),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.history_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _buildHeaderBadge(
+                                        icon: Icons.stars_rounded,
+                                        value: "${appState.points} Pts",
+                                        color: Colors.amber,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              RepaintBoundary(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: _ClockWidget(
+                                    hourString: _hourString,
+                                    minuteString: _minuteString,
+                                    dateString: _dateString,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Main Content (Scrollable)
+                        Expanded(
+                          child: Container(
+                            width: double.infinity,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF8FAFA),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(32),
+                                topRight: Radius.circular(32),
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(32),
+                                topRight: Radius.circular(32),
+                              ),
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
                                 ),
                                 child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    const SizedBox(height: 24),
+
+                                    // Accessibility Warning
+                                    if (appState.blockedApps.isNotEmpty &&
+                                        !appState.isAccessibilityEnabled)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 24,
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade50,
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.red.shade100,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.warning_amber_rounded,
+                                                    color: Colors.red.shade800,
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Text(
+                                                      lang == 'en'
+                                                          ? 'Accessibility service is required for global app blocking.'
+                                                          : 'Layanan aksesibilitas diperlukan agar fitur blokir bekerja di luar Launcher.',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Colors.red.shade900,
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 12),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: ElevatedButton(
+                                                  onPressed: () {
+                                                    appState
+                                                        .setIgnorePermissionGuard(
+                                                          true,
+                                                        );
+                                                    appState
+                                                        .navigatorKey
+                                                        .currentState
+                                                        ?.push(
+                                                          AppPageRoute(
+                                                            child:
+                                                                const AccessibilitySetupScreen(),
+                                                          ),
+                                                        )
+                                                        .then(
+                                                          (_) => appState
+                                                              .setIgnorePermissionGuard(
+                                                                false,
+                                                              ),
+                                                        );
+                                                  },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        Colors.red.shade700,
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    elevation: 0,
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    lang == 'en'
+                                                        ? 'Setup Now'
+                                                        : 'Atur Sekarang',
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+
+                                    // Last Read Card
+                                    Text(
+                                      (lang == 'en'
+                                              ? 'CONTINUE JOURNEY'
+                                              : 'LANJUTKAN PERJALANAN')
+                                          .toUpperCase(),
+                                      style: TextStyle(
+                                        color: Colors.teal.shade900.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Builder(
+                                      builder: (context) {
+                                        int totalAyahs = 0;
+                                        if (appState.quranData.isNotEmpty &&
+                                            appState.currentSurahIndex >= 0 &&
+                                            appState.currentSurahIndex <
+                                                appState.quranData.length) {
+                                          totalAyahs =
+                                              (appState.quranData[appState
+                                                          .currentSurahIndex]['ayahs']
+                                                      as List)
+                                                  .length;
+                                        }
+
+                                        return _LastAyatCard(
+                                          surah: appState.lastReadSurah,
+                                          ayahNumber:
+                                              appState.lastReadAyahNumber,
+                                          totalAyahs: totalAyahs,
+                                          currentSurahIdx:
+                                              appState.currentSurahIndex,
+                                          lang: lang,
+                                          khatmCount: appState.khatmCount,
+                                          onTap: () => _resumeReading(appState),
+                                        );
+                                      },
+                                    ),
+
+                                    const SizedBox(height: 24),
+                                    Text(
+                                      (lang == 'en'
+                                              ? 'QUICK ACTIONS'
+                                              : 'AKSES CEPAT')
+                                          .toUpperCase(),
+                                      style: TextStyle(
+                                        color: Colors.teal.shade900.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 12),
+                                    _QuickDock(),
+                                    const SizedBox(height: 24),
+
+                                    // Daily Inspiration
+                                    _DailyInspiration(
+                                      lang: lang,
+                                      surah: appState.dailySurahName,
+                                      ayahNumber: appState.dailyAyahNumber,
+                                      ayahText: lang == 'en'
+                                          ? appState.dailyAyahTextEn
+                                          : appState.dailyAyahTextId,
+                                    ),
+
+                                    const SizedBox(height: 24),
+
                                     Row(
                                       children: [
-                                        Icon(Icons.warning_amber_rounded, color: Colors.red.shade800),
-                                        const SizedBox(width: 12),
                                         Expanded(
-                                          child: Text(
-                                            lang == 'en' 
-                                              ? 'Accessibility service is required for global app blocking.'
-                                              : 'Layanan aksesibilitas diperlukan agar fitur blokir bekerja di luar Launcher.',
-                                            style: TextStyle(
-                                              color: Colors.red.shade900,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                          child: _GridAction(
+                                            icon: Icons.menu_book_rounded,
+                                            title: lang == 'en'
+                                                ? 'Read Quran'
+                                                : 'Baca Quran',
+                                            subtitle: lang == 'en'
+                                                ? '114 Surahs'
+                                                : '114 Surah',
+                                            color: Colors.teal.shade700,
+                                            onTap: () => appState
+                                                .navigatorKey
+                                                .currentState
+                                                ?.push(
+                                                  AppPageRoute(
+                                                    child:
+                                                        const SurahListScreen(),
+                                                  ),
+                                                ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: _GridAction(
+                                            icon: Icons.apps_rounded,
+                                            title: lang == 'en'
+                                                ? 'Your Apps'
+                                                : 'Aplikasi',
+                                            subtitle: lang == 'en'
+                                                ? 'Open Apps'
+                                                : 'Buka Aplikasi',
+                                            color: Colors.amber.shade800,
+                                            onTap: () => appState
+                                                .navigatorKey
+                                                .currentState
+                                                ?.push(
+                                                  AppPageRoute(
+                                                    child:
+                                                        const AppListScreen(),
+                                                  ),
+                                                ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 12),
+
                                     SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton(
-                                        onPressed: () {
-                                          appState.setIgnorePermissionGuard(true);
-                                          Navigator.push(
-                                            context,
-                                            AppPageRoute(child: const AccessibilitySetupScreen()),
-                                          ).then((_) => appState.setIgnorePermissionGuard(false));
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red.shade700,
-                                          foregroundColor: Colors.white,
-                                          elevation: 0,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        ),
-                                        child: Text(lang == 'en' ? 'Setup Now' : 'Atur Sekarang'),
-                                      ),
+                                      height:
+                                          80 +
+                                          MediaQuery.of(context).padding.bottom,
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-
-                          // Resume Section
-                          Text(
-                            (lang == 'en'
-                                    ? 'CONTINUE JOURNEY'
-                                    : 'LANJUTKAN PERJALANAN')
-                                .toUpperCase(),
-                            style: TextStyle(
-                              color: Colors.teal.shade900.withValues(
-                                alpha: 0.5,
-                              ),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
                           ),
-                          const SizedBox(height: 12),
-                          RepaintBoundary(
-                            child: Builder(
-                              builder: (context) {
-                                int totalAyahs = 0;
-                                if (appState.quranData.isNotEmpty &&
-                                    appState.currentSurahIndex >= 0 &&
-                                    appState.currentSurahIndex <
-                                        appState.quranData.length) {
-                                  totalAyahs =
-                                      (appState.quranData[appState
-                                                  .currentSurahIndex]['ayahs']
-                                              as List)
-                                          .length;
-                                }
-
-                                return _LastAyatCard(
-                                  surah: appState.lastReadSurah,
-                                  ayahNumber: appState.lastReadAyahNumber,
-                                  totalAyahs: totalAyahs,
-                                  currentSurahIdx: appState.currentSurahIndex,
-                                  lang: lang,
-                                  khatmCount: appState.khatmCount,
-                                  onTap: () => _resumeReading(appState),
-                                );
-                              },
-                            ),
-                          ),
-
-                          const SizedBox(
-                            height: 24,
-                          ), // Increased for proportional spacing
-                          // Quick Actions Grid
-                          Text(
-                            (lang == 'en' ? 'QUICK ACTIONS' : 'AKSES CEPAT')
-                                .toUpperCase(),
-                            style: TextStyle(
-                              color: Colors.teal.shade900.withValues(
-                                alpha: 0.5,
-                              ),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 12), // Increased from 8
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _GridAction(
-                                  icon: Icons.menu_book_rounded,
-                                  title: lang == 'en'
-                                      ? 'Read Quran'
-                                      : 'Baca Quran',
-                                  subtitle: lang == 'en'
-                                      ? '114 Surahs'
-                                      : '114 Surah',
-                                  color: Colors.teal.shade700,
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    AppPageRoute(
-                                      child: const SurahListScreen(),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _GridAction(
-                                  icon: Icons.apps_rounded,
-                                  title: lang == 'en'
-                                      ? 'Your Apps'
-                                      : 'Aplikasi',
-                                  subtitle: lang == 'en'
-                                      ? 'Open Apps'
-                                      : 'Buka Aplikasi',
-                                  color: Colors.amber.shade800,
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    AppPageRoute(child: const AppListScreen()),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 20), // Increased for balance
-                          _QuickDock(),
-                          const SizedBox(height: 24), // Increased for balance
-                          // Inspirational Section (Now Last Read Ayah Translation)
-                          Builder(
-                            builder: (context) {
-                              String translation = "";
-                              if (appState.quranData.isNotEmpty &&
-                                  appState.lastReadSurah.isNotEmpty) {
-                                final sIdx = appState.currentSurahIndex;
-                                final aIdx = appState.currentAyahIndex;
-                                if (sIdx >= 0 &&
-                                    sIdx < appState.quranData.length) {
-                                  final surah = appState.quranData[sIdx];
-                                  final ayahs = surah['ayahs'] as List<dynamic>;
-                                  if (aIdx >= 0 && aIdx < ayahs.length) {
-                                    final ayah = ayahs[aIdx];
-                                    translation = lang == 'en'
-                                        ? (ayah['translation_en'] ?? "")
-                                        : (ayah['translation_id'] ?? "");
-                                  }
-                                }
-                              }
-
-                              return _DailyInspiration(
-                                lang: lang,
-                                surah: appState.lastReadSurah,
-                                ayahNumber: appState.lastReadAyahNumber,
-                                ayahText: translation,
-                              );
-                            },
-                          ),
-
-                          const SizedBox(height: 24),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+
+                  // Bottom Dock
+                  Positioned(
+                    bottom: 24 + MediaQuery.of(context).padding.bottom,
+                    left: 24,
+                    right: 24,
+                    child: _buildBottomDock(appState, context),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Container(
+      key: const ValueKey('loading_state'),
+      width: double.infinity,
+      color: Colors.teal.shade900,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white,
+              size: 64,
+            ),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            "MUSLIM LAUNCHER",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Menyiapkan Ruang Fokus",
+            style: TextStyle(
+              color: Colors.teal.shade100,
+              fontSize: 14,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 48),
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(
+              color: Colors.teal.shade200,
+              strokeWidth: 3,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBottomDock(AppState appState, BuildContext context) {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 25,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildDockItem(
+              icon: Icons.home_rounded,
+              label: 'Home',
+              isActive: true,
+              onTap: () {},
+            ),
+            _buildDockItem(
+              icon: Icons.menu_book_rounded,
+              label: 'Quran',
+              isActive: false,
+              onTap: () => appState.navigatorKey.currentState?.push(
+                AppPageRoute(child: const SurahListScreen()),
+              ),
+            ),
+            _buildDockItem(
+              icon: Icons.apps_rounded,
+              label: 'Apps',
+              isActive: false,
+              onTap: () => appState.navigatorKey.currentState?.push(
+                AppPageRoute(child: const AppListScreen()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDockItem({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive
+              ? Colors.teal.withValues(alpha: 0.08)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isActive ? Colors.teal : Colors.grey.shade500,
+              size: 24,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.teal : Colors.grey.shade500,
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1063,10 +1268,17 @@ class _DailyInspiration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasLastRead = surah.isNotEmpty && ayahText.isNotEmpty;
+    final double fontSize = ayahText.length < 60
+        ? 22
+        : ayahText.length < 120
+        ? 18
+        : ayahText.length < 200
+        ? 16
+        : 14;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16), // Reduced from 24
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [Colors.teal.shade800, Colors.teal.shade900],
@@ -1074,34 +1286,39 @@ class _DailyInspiration extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.teal.shade900.withValues(alpha: 0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               const Icon(
-                Icons.format_quote_rounded,
+                Icons.lightbulb_rounded,
                 color: Colors.amber,
-                size: 24,
+                size: 20,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Text(
-                (hasLastRead
-                        ? (lang == 'en'
-                              ? 'LAST READ AYAH'
-                              : 'AYAT TERAKHIR DIBACA')
-                        : (lang == 'en'
-                              ? 'DAILY INSPIRATION'
-                              : 'INSPIRASI HARIAN'))
-                    .toUpperCase(),
+                (lang == 'en' ? 'INSIGHT OF THE DAY' : 'INSIGHT HARI INI'),
                 style: const TextStyle(
                   color: Colors.amber,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
                 ),
+              ),
+              const Spacer(),
+              const Icon(
+                Icons.format_quote_rounded,
+                color: Colors.amber,
+                size: 24,
               ),
             ],
           ),
@@ -1112,21 +1329,31 @@ class _DailyInspiration extends StatelessWidget {
                 : (lang == 'en'
                       ? '"Verily, with hardship, there is relief."'
                       : '"Karena sesungguhnya sesudah kesulitan itu ada kemudahan."'),
-            style: const TextStyle(
+            maxLines: 10,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: fontSize,
               fontWeight: FontWeight.w500,
               fontStyle: FontStyle.italic,
-              height: 1.6,
+              height: 1.5,
+              letterSpacing: 0.2,
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            hasLastRead ? 'QS. $surah: $ayahNumber' : 'QS. Al-Insyirah: 5',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              hasLastRead ? 'QS. $surah: $ayahNumber' : 'QS. Al-Insyirah: 5',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],

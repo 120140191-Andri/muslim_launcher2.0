@@ -117,10 +117,14 @@ class AppBlockService : AccessibilityService() {
 
         try {
             val eventPackage = event.packageName?.toString()?.trim()?.lowercase()
-            // rootInActiveWindow is more reliable for the current foreground app
-            val activePackage = rootInActiveWindow?.packageName?.toString()?.trim()?.lowercase()
             
-            val packageName = activePackage ?: eventPackage ?: return
+            // Priority 1: Event Source (if available, it's very accurate for the actual triggering window)
+            val sourcePackage = event.source?.packageName?.toString()?.trim()?.lowercase()
+            
+            // Priority 2: rootInActiveWindow (Global foreground, but can be null)
+            val activePackage = try { rootInActiveWindow?.packageName?.toString()?.trim()?.lowercase() } catch (e: Exception) { null }
+            
+            val packageName = sourcePackage ?: activePackage ?: eventPackage ?: return
             
             // Skip our own app
             if (packageName == this.packageName) return

@@ -5,47 +5,82 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class EyeTrackerService {
+  static final EyeTrackerService _instance = EyeTrackerService._internal();
+  factory EyeTrackerService() => _instance;
+  EyeTrackerService._internal();
+
   CameraController? _cameraController;
   FaceDetector? _faceDetector;
   bool _isBusy = false;
   bool _isFocused = false;
+  bool _isInitializing = false;
+  Future<void>? _lock;
   StreamController<bool>? _focusController;
 
   Stream<bool>? get focusStream => _focusController?.stream;
   bool get isFocused => _isFocused;
 
   Future<void> initialize() async {
-    // Reset state for new session
-    _isBusy = false;
-    _isFocused = false;
-    
-    // Close existing if any
-    await _focusController?.close();
-    _focusController = StreamController<bool>.broadcast();
+    if (_isInitializing) return;
+    _isInitializing = true;
 
-    final cameras = await availableCameras();
-    final frontCam = cameras.firstWhere(
-      (cam) => cam.lensDirection == CameraLensDirection.front,
-      orElse: () => cameras.first,
-    );
+    // Ensure we wait for any existing operations (like a pending dispose)
+    // Adding a safety timeout to prevent permanent deadlocks on faulty hardware
+    int attempts = 0;
+    while (_lock != null && attempts < 30) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
 
-    _cameraController = CameraController(
-      frontCam,
-      ResolutionPreset.low,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.nv21,
-    );
+    final Completer<void> completer = Completer<void>();
+    _lock = completer.future;
 
-    _faceDetector = FaceDetector(
-      options: FaceDetectorOptions(
-        enableClassification: true,
-        enableTracking: false,
-        performanceMode: FaceDetectorMode.fast,
-      ),
-    );
+    try {
+      // Release existing resources if any (synchronous check)
+      if (_cameraController != null || _faceDetector != null) {
+        await _disposeInternal();
+      }
+      
+      _isFocused = false;
+      _isBusy = false;
+      
+      _focusController = StreamController<bool>.broadcast();
 
-    await _cameraController?.initialize();
-    _cameraController?.startImageStream(_processCameraImage);
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        return;
+      }
+
+      final frontCam = cameras.firstWhere(
+        (cam) => cam.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first,
+      );
+
+      _cameraController = CameraController(
+        frontCam,
+        ResolutionPreset.low,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.nv21,
+      );
+
+      _faceDetector = FaceDetector(
+        options: FaceDetectorOptions(
+          enableClassification: true,
+          enableTracking: false,
+          performanceMode: FaceDetectorMode.fast,
+        ),
+      );
+
+      await _cameraController?.initialize();
+      await _cameraController?.startImageStream(_processCameraImage);
+    } catch (e) {
+      debugPrint("EyeTrackerService init error: $e");
+      await _disposeInternal();
+    } finally {
+      completer.complete();
+      _lock = null;
+      _isInitializing = false;
+    }
   }
 
   void _processCameraImage(CameraImage image) async {
@@ -109,17 +144,44 @@ class EyeTrackerService {
   }
 
   Future<void> dispose() async {
-    if (_cameraController?.value.isStreamingImages ?? false) {
-      await _cameraController?.stopImageStream();
+    // Ensure we wait for any pending init
+    int attempts = 0;
+    while (_lock != null && attempts < 20) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
     }
-    await _cameraController?.dispose();
-    await _faceDetector?.close();
-    await _focusController?.close();
     
-    _cameraController = null;
-    _faceDetector = null;
-    _focusController = null;
-    _isFocused = false;
-    _isBusy = false;
+    final Completer<void> completer = Completer<void>();
+    _lock = completer.future;
+    
+    try {
+      await _disposeInternal();
+    } finally {
+      completer.complete();
+      _lock = null;
+    }
+  }
+
+  Future<void> _disposeInternal() async {
+    try {
+      if (_cameraController != null) {
+        if (_cameraController!.value.isStreamingImages) {
+          try {
+            await _cameraController!.stopImageStream();
+          } catch (_) {}
+        }
+        await _cameraController!.dispose();
+      }
+      await _faceDetector?.close();
+      await _focusController?.close();
+    } catch (e) {
+      debugPrint("EyeTrackerService internal dispose error: $e");
+    } finally {
+      _cameraController = null;
+      _faceDetector = null;
+      _focusController = null;
+      _isFocused = false;
+      _isBusy = false;
+    }
   }
 }

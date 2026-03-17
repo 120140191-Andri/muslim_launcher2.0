@@ -12,8 +12,41 @@ import 'screens/home/permission_blocked_overlay.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Increase image cache limits for smoother launcher experience
-  // 50MB maximum size and 500 images count to keep all app icons in memory
+  // Global Error Boundary - Move to main for production safety
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    debugPrint("Flutter Error: ${details.exception}");
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Material(
+        color: const Color(0xFF004D40), // Teal 900
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Colors.white70, size: 64),
+                const SizedBox(height: 24),
+                const Text(
+                  "Oops! Something went wrong",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "A minor error occurred. Please try again or restart the app.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  };
+
+  // Increase image cache limits
   PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024;
   PaintingBinding.instance.imageCache.maximumSize = 500;
 
@@ -33,32 +66,32 @@ class MuslimLauncherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
-      builder: (context, appState, child) {
+      builder: (context, state, child) {
         return MaterialApp(
-          navigatorKey: appState.navigatorKey,
+          navigatorKey: state.navigatorKey,
           title: 'Muslim Launcher 2',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
             useMaterial3: true,
           ),
-          home: _determineHome(appState),
+          home: _determineHome(state),
           builder: (context, child) {
-            return Consumer<AppState>(
-              builder: (context, state, _) {
-                return PermissionBlockedOverlay(
-                  appState: state,
-                  child: Stack(
-                    children: [
-                      child ?? const SizedBox.shrink(),
-                      if (state.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
-                        BlockedAppScreen(
-                          packageName: state.lastAttemptedBlockedPackage!,
-                        ),
-                    ],
-                  ),
-                );
-              },
+            // CRITICAL: Ensure we always have a child to render. 
+            // If child is null, something in MaterialApp initialization failed.
+            final rootWidget = child ?? _determineHome(state);
+            
+            return PermissionBlockedOverlay(
+              appState: state,
+              child: Stack(
+                children: [
+                  rootWidget,
+                  if (state.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
+                    BlockedAppScreen(
+                      packageName: state.lastAttemptedBlockedPackage!,
+                    ),
+                ],
+              ),
             );
           },
         );

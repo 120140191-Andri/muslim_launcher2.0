@@ -50,8 +50,8 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
   }
 
   void _goToNextStep() {
-    Navigator.push(
-      context,
+    final appState = Provider.of<AppState>(context, listen: false);
+    appState.navigatorKey.currentState?.push(
       AppPageRoute(child: const AccessibilitySetupScreen(isOnboarding: true)),
     );
   }

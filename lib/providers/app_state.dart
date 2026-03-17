@@ -40,6 +40,16 @@ class AppState extends ChangeNotifier {
   int _lastReadAyahNumber = 0;
   List<dynamic> _quranData = [];
   bool _isDataLoaded = false;
+  bool _isInitialized = false;
+
+  // Persistent Daily Verse
+  String _dailySurahName = '';
+  int _dailyAyahNumber = 0;
+  String _dailyAyahTextEn = '';
+  String _dailyAyahTextId = '';
+  String _dailyVerseDate = '';
+
+  bool get isReady => _isDataLoaded && _isInitialized;
 
 
   String get languageCode => _languageCode;
@@ -63,7 +73,14 @@ class AppState extends ChangeNotifier {
   bool get ignorePermissionGuard => _ignorePermissionGuard;
   AppBlockService get appBlockService => _appBlockService;
 
-  void _init() {
+  // Daily Verse Getters
+  String get dailySurahName => _dailySurahName;
+  int get dailyAyahNumber => _dailyAyahNumber;
+  String get dailyAyahTextEn => _dailyAyahTextEn;
+  String get dailyAyahTextId => _dailyAyahTextId;
+  String get dailyVerseDate => _dailyVerseDate;
+
+  void _init() async {
     _languageCode = prefs.getString('languageCode') ?? 'id';
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
@@ -94,8 +111,13 @@ class AppState extends ChangeNotifier {
       _unlockedExpirations = {};
     }
 
-    loadQuranData();
-    _fetchDeviceInfo();
+    // Await crucial initialization
+    await Future.wait([
+      loadQuranData(),
+      _fetchDeviceInfo(),
+    ]);
+
+    _initDailyVerse();
     
     // Initialize App Block Service
     _appBlockService.init(onAppBlocked: (pkg) {
@@ -106,6 +128,14 @@ class AppState extends ChangeNotifier {
     });
     _appBlockService.setBlockedApps(_blockedApps.toList());
     
+    // Initial status check before showing UI
+    try {
+      _isAccessibilityEnabled = await _appBlockService.isAccessibilityEnabled();
+      const appsChannel = MethodChannel('com.muslimlauncher/apps');
+      _isDefaultLauncher = await appsChannel.invokeMethod('isDefaultLauncher');
+    } catch (_) {}
+
+    _isInitialized = true;
     _startStatusTimer();
     
     notifyListeners();
@@ -114,11 +144,17 @@ class AppState extends ChangeNotifier {
   void _startStatusTimer() {
     _statusTimer?.cancel();
     _statusTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
+      bool changed = false;
+
       // 1. Accessibility Check
-      final accEnabled = await _appBlockService.isAccessibilityEnabled();
-      if (accEnabled != _isAccessibilityEnabled) {
-        _isAccessibilityEnabled = accEnabled;
-        notifyListeners();
+      try {
+        final accEnabled = await _appBlockService.isAccessibilityEnabled();
+        if (accEnabled != _isAccessibilityEnabled) {
+          _isAccessibilityEnabled = accEnabled;
+          changed = true;
+        }
+      } catch (e) {
+        debugPrint("Accessibility check error: $e");
       }
       
       // 2. Default Launcher Check
@@ -127,9 +163,11 @@ class AppState extends ChangeNotifier {
         final bool defEnabled = await appsChannel.invokeMethod('isDefaultLauncher');
         if (defEnabled != _isDefaultLauncher) {
           _isDefaultLauncher = defEnabled;
-          notifyListeners();
+          changed = true;
         }
       } catch (_) {}
+
+      if (changed) notifyListeners();
       
       // 3. Cleanup & Unlock Expiry
       _cleanupExpiredUnlocks();
@@ -188,6 +226,48 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       // Error loading central Quran data
     }
+  }
+
+  void _initDailyVerse() {
+    _dailySurahName = prefs.getString('dailySurahName') ?? '';
+    _dailyAyahNumber = prefs.getInt('dailyAyahNumber') ?? 0;
+    _dailyAyahTextEn = prefs.getString('dailyAyahTextEn') ?? '';
+    _dailyAyahTextId = prefs.getString('dailyAyahTextId') ?? '';
+    _dailyVerseDate = prefs.getString('dailyVerseDate') ?? '';
+
+    _checkDailyVerse();
+  }
+
+  void _checkDailyVerse() {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyVerseDate != today || _dailySurahName.isEmpty) {
+      _updateDailyVerse(today);
+    }
+  }
+
+  void _updateDailyVerse(String date) async {
+    if (_quranData.isEmpty) return;
+
+    final random = DateTime.now().millisecondsSinceEpoch;
+    final int surahIdx = (random % _quranData.length).abs();
+    final surah = _quranData[surahIdx];
+    final ayahs = surah['ayahs'] as List;
+    final int ayahIdx = (random % ayahs.length).abs();
+    final ayah = ayahs[ayahIdx];
+
+    _dailySurahName = surah['surah_name'] as String;
+    _dailyAyahNumber = ayah['ayah_number'] as int;
+    _dailyAyahTextEn = ayah['translation_en'] as String? ?? '';
+    _dailyAyahTextId = ayah['translation_id'] as String? ?? '';
+    _dailyVerseDate = date;
+
+    await prefs.setString('dailySurahName', _dailySurahName);
+    await prefs.setInt('dailyAyahNumber', _dailyAyahNumber);
+    await prefs.setString('dailyAyahTextEn', _dailyAyahTextEn);
+    await prefs.setString('dailyAyahTextId', _dailyAyahTextId);
+    await prefs.setString('dailyVerseDate', _dailyVerseDate);
+
+    notifyListeners();
   }
 
   static List<dynamic> _decodeJson(String source) {
@@ -353,8 +433,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  int get currentSurahIndex => prefs.getInt('currentSurahIndex') ?? 0;
-  int get currentAyahIndex => prefs.getInt('currentAyahIndex') ?? 0;
+  int get currentSurahIndex => _highestSurahIndex;
+  int get currentAyahIndex => _highestAyahIndex;
 
   Future<void> saveProgress(
     int surahIndex,

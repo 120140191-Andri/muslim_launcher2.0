@@ -79,12 +79,9 @@ class LanguageScreen extends StatelessWidget {
                   onPressed: () async {
                     // Ensure language is officially saved before moving forward
                     await appState.setLanguage(lang);
-                    if (context.mounted) {
-                      Navigator.pushReplacement(
-                        context,
-                        AppPageRoute(child: const SetupLauncherScreen()),
-                      );
-                    }
+                    appState.navigatorKey.currentState?.pushReplacement(
+                      AppPageRoute(child: const SetupLauncherScreen()),
+                    );
                   },
 
                   style: ElevatedButton.styleFrom(

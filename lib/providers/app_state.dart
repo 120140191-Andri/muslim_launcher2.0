@@ -246,21 +246,24 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // Pre-defined sets for better performance during sync
+  static const Set<String> _nonProductiveKeywords = {
+    'game', 'social', 'video', 'player', 'tiktok', 'instagram', 'facebook', 
+    'twitter', 'netflix', 'disney', 'mobile.legend', 'freefire', 'pubg', 'genshin',
+    'youtube', 'vimeo', 'hulu', 'twitch', 'discord', 'telegram', 'snapchat', 
+    'reddit', 'pinterest', 'linkedin', 'arcade', 'puzzle', 'racing', 'simulation',
+    'entertainment', 'shotcut', 'capcut', 'snackvideo', 'kwaiviral', 'wattpad'
+  };
+
+  static const Set<String> _whitelist = {
+    'com.whatsapp', 'com.whatsapp.w4b', 'com.android.chrome', 
+    'com.google.android.gm', 'com.android.settings', 'com.android.vending',
+    'com.google.android.apps.messaging', 'com.android.mms', 'com.samsung.android.messaging',
+    'com.google.android.contacts', 'com.android.contacts'
+  };
+
   /// Automatically blocks apps based on categories
   Future<void> syncAppsWithCategories(List<dynamic> apps) async {
-    // Optimization: Use a Set for faster keyword contains check
-    final nonProductiveKeywords = {
-      'game', 'social', 'video', 'player', 'tiktok', 'instagram', 'facebook', 
-      'twitter', 'netflix', 'disney', 'mobile.legend', 'freefire', 'pubg', 'genshin',
-      'youtube', 'vimeo', 'hulu', 'twitch', 'discord', 'telegram', 'snapchat', 
-      'reddit', 'pinterest', 'linkedin', 'arcade', 'puzzle', 'racing', 'simulation',
-      'entertainment', 'shotcut', 'capcut', 'snackvideo', 'kwaiviral', 'wattpad'
-    };
-
-    final whitelist = {
-      'com.whatsapp', 'com.whatsapp.w4b', 'com.android.chrome', 
-      'com.google.android.gm', 'com.android.settings', 'com.android.vending'
-    };
 
     bool changed = false;
     for (var app in apps) {
@@ -269,13 +272,20 @@ class AppState extends ChangeNotifier {
       final name = (app['appName'] as String? ?? '').toLowerCase();
       final cat = app['category'] as int? ?? -1;
       
-      if (pkg.isEmpty || whitelist.any((w) => pkg.contains(w) || pkg == w)) continue;
+      if (pkg.isEmpty || _whitelist.any((w) => pkg.contains(w) || pkg == w)) {
+        // Ensure whitelisted apps are NOT blocked
+        if (_blockedApps.contains(pkg)) {
+          _blockedApps.remove(pkg);
+          changed = true;
+        }
+        continue;
+      }
 
       // Check category: 0: Game, 1: Audio, 2: Video, 4: Social
       bool isNonProductive = (cat == 0 || cat == 1 || cat == 2 || cat == 4);
       
       if (!isNonProductive) {
-        isNonProductive = nonProductiveKeywords.any((k) => pkg.contains(k) || name.contains(k));
+        isNonProductive = _nonProductiveKeywords.any((k) => pkg.contains(k) || name.contains(k));
       }
 
       if (isNonProductive && !_blockedApps.contains(pkg)) {

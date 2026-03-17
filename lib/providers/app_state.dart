@@ -141,34 +141,39 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void refreshStatus() async {
+    bool changed = false;
+
+    // 1. Accessibility Check
+    try {
+      final accEnabled = await _appBlockService.isAccessibilityEnabled();
+      if (accEnabled != _isAccessibilityEnabled) {
+        _isAccessibilityEnabled = accEnabled;
+        changed = true;
+      }
+    } catch (e) {
+      debugPrint("Accessibility check error: $e");
+    }
+
+    // 2. Default Launcher Check
+    try {
+      const appsChannel = MethodChannel('com.muslimlauncher/apps');
+      final bool defEnabled =
+          await appsChannel.invokeMethod('isDefaultLauncher');
+      if (defEnabled != _isDefaultLauncher) {
+        _isDefaultLauncher = defEnabled;
+        changed = true;
+      }
+    } catch (_) {}
+
+    if (changed) notifyListeners();
+  }
+
   void _startStatusTimer() {
     _statusTimer?.cancel();
     _statusTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
-      bool changed = false;
+      refreshStatus();
 
-      // 1. Accessibility Check
-      try {
-        final accEnabled = await _appBlockService.isAccessibilityEnabled();
-        if (accEnabled != _isAccessibilityEnabled) {
-          _isAccessibilityEnabled = accEnabled;
-          changed = true;
-        }
-      } catch (e) {
-        debugPrint("Accessibility check error: $e");
-      }
-      
-      // 2. Default Launcher Check
-      try {
-        const appsChannel = MethodChannel('com.muslimlauncher/apps');
-        final bool defEnabled = await appsChannel.invokeMethod('isDefaultLauncher');
-        if (defEnabled != _isDefaultLauncher) {
-          _isDefaultLauncher = defEnabled;
-          changed = true;
-        }
-      } catch (_) {}
-
-      if (changed) notifyListeners();
-      
       // 3. Cleanup & Unlock Expiry
       _cleanupExpiredUnlocks();
     });

@@ -59,19 +59,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _checkAccessibilityStatus() async {
     final appState = Provider.of<AppState>(context, listen: false);
-    // Show if apps are blocked OR if it's the first time and service is not enabled
-    final shouldShow =
-        (appState.blockedApps.isNotEmpty ||
-            !appState.hasSeenAccessibilitySetup) &&
-        !appState.isAccessibilityEnabled;
+    
+    // 1. If it's already enabled, do nothing.
+    if (appState.isAccessibilityEnabled) return;
 
-    if (shouldShow && mounted) {
+    // 2. Only show the DISRUPTIVE dialog if they've never seen the setup before.
+    // If they have seen it, but it's still off, the UI Banner (below in build) will remind them.
+    final shouldShowDialog = !appState.hasSeenAccessibilitySetup;
+
+    if (shouldShowDialog && mounted) {
       _showAccessibilitySetupPrompt();
     }
   }
 
   void _showAccessibilitySetupPrompt() {
     final appState = Provider.of<AppState>(context, listen: false);
+    // Explicitly check if the service is already enabled to avoid redundant prompts
+    if (appState.isAccessibilityEnabled) return;
+    
     appState.setHasSeenAccessibilitySetup(true);
 
     showDialog(
@@ -119,6 +124,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Refresh status on re-entry
+      final appState = Provider.of<AppState>(context, listen: false);
+      appState.refreshStatus();
+      _checkAccessibilityStatus();
+
       // Only invalidate app list, keep icon cache intact for smooth re-entry
       AppListScreen.invalidateAppsOnly();
       AppListScreen.preload();

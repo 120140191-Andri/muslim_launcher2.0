@@ -143,6 +143,8 @@ class AppState extends ChangeNotifier {
           AppListScreen.invalidateFull();
           final rawApps = await appsChannel.invokeMethod('getApps');
           syncAppsWithCategories(rawApps);
+        } else if (call.method == 'onHomePressed') {
+          navigatorKey.currentState?.popUntil((route) => route.isFirst);
         }
       });
     } catch (_) {}

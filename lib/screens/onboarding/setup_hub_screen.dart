@@ -51,6 +51,16 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     appState.refreshStatus();
   }
 
+  Future<void> _openSupportDeveloperUrl() async {
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.VIEW',
+        data: 'https://ko-fi.com/andrisetiawan84153',
+      );
+      await intent.launch();
+    } catch (_) {}
+  }
+
   // ── Brand-Specific Instructions Builder ─────────────────────────────────────
 
   List<String> _getHomeInstructions(String brand, bool isEn) {
@@ -476,6 +486,91 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                             ),
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Support Developer Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.amber.shade700, Colors.orange.shade800],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.shade900.withValues(alpha: 0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isEn ? 'Support Developer' : 'Dukung Pengembang',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    isEn
+                                        ? 'Help us keep this app free & ad-free'
+                                        : 'Bantu kami menjaga aplikasi ini tetap gratis & tanpa iklan',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _openSupportDeveloperUrl,
+                            icon: const Icon(Icons.coffee_rounded, size: 18),
+                            label: Text(
+                              isEn ? 'Support via Ko-fi' : 'Dukung via Ko-fi',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.orange.shade900,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),

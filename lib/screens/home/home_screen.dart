@@ -24,6 +24,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late Timer _clockTimer;
   DateTime _now = DateTime.now();
 
+  Future<void> _openSupportDeveloperUrl() async {
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.VIEW',
+        data: 'https://ko-fi.com/andrisetiawan84153',
+      );
+      await intent.launch();
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
@@ -299,36 +309,86 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   ),
                                   Row(
                                     children: [
-                                      GestureDetector(
-                                        onTap: () => appState
-                                            .navigatorKey
-                                            .currentState
-                                            ?.push(
+                                      Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: _openSupportDeveloperUrl,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 10,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.amber.shade700,
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withValues(
+                                                      alpha: 0.15,
+                                                    ),
+                                                    blurRadius: 6,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(
+                                                    Icons.favorite_rounded,
+                                                    color: Colors.white,
+                                                    size: 14,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    lang == 'en'
+                                                        ? 'Support'
+                                                        : 'Dukung',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          GestureDetector(
+                                            onTap: () => appState
+                                                .navigatorKey.currentState
+                                                ?.push(
                                               AppPageRoute(
                                                 child:
                                                     const ReadingHistoryScreen(),
                                               ),
                                             ),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.15,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.15,
+                                                ),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.history_rounded,
+                                                color: Colors.white,
+                                                size: 18,
+                                              ),
                                             ),
-                                            shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(
-                                            Icons.history_rounded,
-                                            color: Colors.white,
-                                            size: 18,
+                                          const SizedBox(width: 8),
+                                          _buildHeaderBadge(
+                                            icon: Icons.stars_rounded,
+                                            value: "${appState.points} Pts",
+                                            color: Colors.amber,
                                           ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _buildHeaderBadge(
-                                        icon: Icons.stars_rounded,
-                                        value: "${appState.points} Pts",
-                                        color: Colors.amber,
+                                        ],
                                       ),
                                     ],
                                   ),

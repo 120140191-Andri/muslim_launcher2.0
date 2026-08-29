@@ -1,31 +1,35 @@
 package com.muslimlauncher.muslim_launcher_2
 
-import android.content.Intent
-import android.content.Context
+import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
+import android.text.TextUtils
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import android.util.Log
-import android.net.Uri
-import android.provider.Settings
-import android.text.TextUtils
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 
 
 class MainActivity : FlutterActivity() {
+    private val CHANNEL = "com.muslimlauncher/apps"
+    private val BLOCK_CHANNEL = "com.muslimlauncher/block"
     private val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors().coerceAtLeast(4))
 
     private var appsChannel: MethodChannel? = null
 
-    private val packageReceiver = object : BroadcastReceiver() {
+    private val packageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             appsChannel?.invokeMethod("onAppListChanged", null)
         }

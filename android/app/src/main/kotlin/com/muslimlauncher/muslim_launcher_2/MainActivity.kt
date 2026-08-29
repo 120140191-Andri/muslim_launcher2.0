@@ -258,6 +258,7 @@ class MainActivity : FlutterActivity() {
 
     private fun openPhoneApp() {
         val intents = mutableListOf<Intent>()
+        intents.add(Intent(Intent.ACTION_DIAL, Uri.parse("tel:")))
         intents.add(Intent(Intent.ACTION_DIAL))
         try {
             intents.add(Intent(Intent.ACTION_VIEW, Uri.parse("tel:")))
@@ -284,7 +285,9 @@ class MainActivity : FlutterActivity() {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 startActivity(intent)
                 return
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                android.util.Log.e("MuslimLauncher", "Failed to start phone intent: ${e.message}")
+            }
         }
     }
 

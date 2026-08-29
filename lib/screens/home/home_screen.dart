@@ -860,79 +860,78 @@ class _QuickDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Hide Quick Dock completely while apps are loading, exactly like other apps
-    if (AppListScreen.cachedApps == null) {
-      return const SizedBox.shrink();
-    }
+    final bool isLoading = AppListScreen.cachedApps == null;
 
     final List<Widget> items = [];
 
-    // 1. Strict Phone Dialer App (Always Present at the Far Left)
-    final phonePkg = _findFirstAvailable([
-      'com.google.android.dialer',
-      'com.samsung.android.dialer',
-      'com.sec.android.app.dialer',
-      'com.android.dialer',
-      'com.android.phone',
-    ]);
+    if (!isLoading) {
+      // 1. Strict Phone Dialer App (Always Present at the Far Left)
+      final phonePkg = _findFirstAvailable([
+        'com.google.android.dialer',
+        'com.samsung.android.dialer',
+        'com.sec.android.app.dialer',
+        'com.android.dialer',
+        'com.android.phone',
+      ]);
 
-    if (phonePkg != null) {
-      items.add(_buildIcon(Icons.phone_rounded, phonePkg, overrideTap: _openPhoneApp));
-    } else {
-      // Fallback: Direct native ACTION_DIAL intent call
-      items.add(
-        InkWell(
-          onTap: _openPhoneApp,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            width: 44,
-            height: 44,
-            padding: const EdgeInsets.all(4),
-            child: Icon(Icons.phone_rounded, color: Colors.teal.shade700, size: 24),
+      if (phonePkg != null) {
+        items.add(_buildIcon(Icons.phone_rounded, phonePkg, overrideTap: _openPhoneApp));
+      } else {
+        // Fallback: Direct native ACTION_DIAL intent call
+        items.add(
+          InkWell(
+            onTap: _openPhoneApp,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: 44,
+              height: 44,
+              padding: const EdgeInsets.all(4),
+              child: Icon(Icons.phone_rounded, color: Colors.teal.shade700, size: 24),
+            ),
           ),
-        ),
-      );
-    }
+        );
+      }
 
-    // 2. Messages App
-    final msgPkg = _findFirstAvailable([
-      'com.google.android.apps.messaging',
-      'com.android.messaging',
-      'com.samsung.android.messaging',
-    ]);
-    if (msgPkg != null) {
-      items.add(_buildIcon(Icons.message_rounded, msgPkg));
-    }
+      // 2. Messages App
+      final msgPkg = _findFirstAvailable([
+        'com.google.android.apps.messaging',
+        'com.android.messaging',
+        'com.samsung.android.messaging',
+      ]);
+      if (msgPkg != null) {
+        items.add(_buildIcon(Icons.message_rounded, msgPkg));
+      }
 
-    // 3. Contacts App
-    final contactPkg = _findFirstAvailable([
-      'com.google.android.contacts',
-      'com.android.contacts',
-      'com.samsung.android.contacts',
-    ]);
-    if (contactPkg != null) {
-      items.add(_buildIcon(Icons.people_alt_rounded, contactPkg));
-    }
+      // 3. Contacts App
+      final contactPkg = _findFirstAvailable([
+        'com.google.android.contacts',
+        'com.android.contacts',
+        'com.samsung.android.contacts',
+      ]);
+      if (contactPkg != null) {
+        items.add(_buildIcon(Icons.people_alt_rounded, contactPkg));
+      }
 
-    // 4. WhatsApp (Conditional)
-    if (_findFirstAvailable(['com.whatsapp']) != null) {
-      items.add(_buildIcon(Icons.chat_bubble_rounded, 'com.whatsapp'));
-    }
+      // 4. WhatsApp (Conditional)
+      if (_findFirstAvailable(['com.whatsapp']) != null) {
+        items.add(_buildIcon(Icons.chat_bubble_rounded, 'com.whatsapp'));
+      }
 
-    // 5. WhatsApp Business (Conditional)
-    if (_findFirstAvailable(['com.whatsapp.w4b']) != null) {
-      items.add(_buildIcon(Icons.business_center_rounded, 'com.whatsapp.w4b'));
-    }
+      // 5. WhatsApp Business (Conditional)
+      if (_findFirstAvailable(['com.whatsapp.w4b']) != null) {
+        items.add(_buildIcon(Icons.business_center_rounded, 'com.whatsapp.w4b'));
+      }
 
-    // 6. Gallery / Photos
-    final galleryPkg = _findFirstAvailable([
-      'com.google.android.apps.photos',
-      'com.android.gallery',
-      'com.sec.android.gallery3d',
-      'com.miui.gallery',
-    ]);
-    if (galleryPkg != null) {
-      items.add(_buildIcon(Icons.photo_library_rounded, galleryPkg));
+      // 6. Gallery / Photos
+      final galleryPkg = _findFirstAvailable([
+        'com.google.android.apps.photos',
+        'com.android.gallery',
+        'com.sec.android.gallery3d',
+        'com.miui.gallery',
+      ]);
+      if (galleryPkg != null) {
+        items.add(_buildIcon(Icons.photo_library_rounded, galleryPkg));
+      }
     }
 
     return Container(
@@ -951,12 +950,24 @@ class _QuickDock extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: items
-            .map((w) => Flexible(child: w))
-            .toList(),
-      ),
+      child: isLoading
+          ? SizedBox(
+              height: 44,
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.teal.shade700,
+                  ),
+                ),
+              ),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: items.map((w) => Flexible(child: w)).toList(),
+            ),
     );
   }
 

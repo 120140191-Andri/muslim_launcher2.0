@@ -52,6 +52,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       AppListScreen.preload(
         onRawAppsFetched: (raw) {
           if (mounted) appState.syncAppsWithCategories(raw);
+        },
+        onProgress: () {
+          if (mounted) setState(() {});
         }
       ).then((_) {
         if (!mounted) return;
@@ -135,7 +138,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       // Only invalidate app list, keep icon cache intact for smooth re-entry
       AppListScreen.invalidateAppsOnly();
-      AppListScreen.preload();
+      AppListScreen.preload(onProgress: () {
+        if (mounted) setState(() {});
+      });
     }
   }
 

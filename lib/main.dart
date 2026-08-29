@@ -100,6 +100,21 @@ class MuslimLauncherApp extends StatelessWidget {
   }
 
   Widget _determineHome(AppState appState) {
+    if (!appState.isReady) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF052C28),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.mosque_rounded, size: 72, color: Color(0xFF34D399)),
+              SizedBox(height: 24),
+              CircularProgressIndicator(color: Color(0xFF34D399)),
+            ],
+          ),
+        ),
+      );
+    }
     if (appState.hasCompletedOnboarding) return const HomeScreen();
     if (appState.hasSelectedLanguage) return const SetupHubScreen();
     return const LanguageScreen();

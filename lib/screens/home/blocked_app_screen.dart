@@ -15,11 +15,16 @@ class BlockedAppScreen extends StatelessWidget {
     final lang = appState.languageCode;
 
     return PopScope(
-      canPop: false, // Prevent back button
+      canPop: false, // Prevent back button from passing through
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          appState.clearBlockedApp();
+        }
+      },
       child: Material(
         type: MaterialType.transparency,
         child: Scaffold(
-          backgroundColor: Colors.teal.shade900,
+          backgroundColor: const Color(0xFF052C28),
         body: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 32),

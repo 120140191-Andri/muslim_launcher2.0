@@ -27,8 +27,10 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private var blockChannel: MethodChannel? = null
+        var pendingBlockedPackage: String? = null
         
         fun notifyAppBlocked(packageName: String) {
+            pendingBlockedPackage = packageName
             blockChannel?.invokeMethod("onAppBlocked", mapOf("packageName" to packageName))
         }
     }
@@ -159,13 +161,20 @@ class MainActivity : FlutterActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleIntent(intent)
     }
 
-    private fun handleIntent(intent: Intent) {
+    private fun handleIntent(intent: Intent?) {
+        if (intent == null) return
         if (intent.getBooleanExtra("triggerBlockScreen", false)) {
             val blockedPackage = intent.getStringExtra("blockedPackageName") ?: ""
-            notifyAppBlocked(blockedPackage)
+            if (blockedPackage.isNotEmpty()) {
+                pendingBlockedPackage = blockedPackage
+                window?.decorView?.post {
+                    notifyAppBlocked(blockedPackage)
+                }
+            }
         }
     }
 

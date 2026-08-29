@@ -36,56 +36,58 @@ class PermissionBlockedOverlay extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          shape: BoxShape.circle,
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.security_rounded,
+                            color: Colors.red.shade800,
+                            size: 64,
+                          ),
                         ),
-                        child: Icon(
-                          Icons.security_rounded,
-                          color: Colors.red.shade800,
-                          size: 64,
+                        const SizedBox(height: 32),
+                        Text(
+                          isEn ? 'Action Required' : 'Aksi Diperlukan',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        isEn ? 'Action Required' : 'Aksi Diperlukan',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(height: 16),
+                        Text(
+                          isEn
+                              ? 'Some essential permissions were disabled. To keep you focused, please re-enable them.'
+                              : 'Beberapa izin utama dinonaktifkan. Agar Anda tetap fokus, silakan aktifkan kembali.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 16,
+                            height: 1.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        isEn
-                            ? 'Some essential permissions were disabled. To keep you focused, please re-enable them.'
-                            : 'Beberapa izin utama dinonaktifkan. Agar Anda tetap fokus, silakan aktifkan kembali.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 16,
-                          height: 1.5,
+                        const SizedBox(height: 48),
+                        _buildRepairButton(
+                          icon: Icons.tune_rounded,
+                          label: isEn ? 'Open Setup Hub' : 'Buka Pusat Pengaturan',
+                          onTap: () {
+                            appState.setIgnorePermissionGuard(true);
+                            appState.navigatorKey.currentState?.push(
+                              AppPageRoute(child: const SetupHubScreen(isOnboarding: false)),
+                            ).then((_) => appState.setIgnorePermissionGuard(false));
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 48),
-                      _buildRepairButton(
-                        icon: Icons.tune_rounded,
-                        label: isEn ? 'Open Setup Hub' : 'Buka Pusat Pengaturan',
-                        onTap: () {
-                          appState.setIgnorePermissionGuard(true);
-                          appState.navigatorKey.currentState?.push(
-                            AppPageRoute(child: const SetupHubScreen(isOnboarding: false)),
-                          ).then((_) => appState.setIgnorePermissionGuard(false));
-                        },
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

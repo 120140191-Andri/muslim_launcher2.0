@@ -293,14 +293,18 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                       children: [
                         const Icon(Icons.smartphone_rounded, color: Color(0xFF34D399), size: 16),
                         const SizedBox(width: 8),
-                        Text(
-                          isEn
-                              ? 'Device: $brandDisplay $modelDisplay'
-                              : 'HP Anda: $brandDisplay $modelDisplay',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            isEn
+                                ? 'Device: $brandDisplay $modelDisplay'
+                                : 'HP Anda: $brandDisplay $modelDisplay',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -510,14 +514,19 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        (isDefault && isAccess)
-                            ? (isEn ? 'START USING MUSLIM LAUNCHER' : 'MULAI GUNAKAN MUSLIM LAUNCHER')
-                            : (isEn ? 'COMPLETE ESSENTIAL SETTINGS (STEP 2 & 3)' : 'SELESAIKAN SETTING UTAMA (STEP 2 & 3)'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            (isDefault && isAccess)
+                                ? (isEn ? 'START USING MUSLIM LAUNCHER' : 'MULAI GUNAKAN MUSLIM LAUNCHER')
+                                : (isEn ? 'COMPLETE SETTINGS (STEP 2 & 3)' : 'SELESAIKAN SETTING UTAMA (STEP 2 & 3)'),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ),
                       ),
                       if (isDefault && isAccess) ...[

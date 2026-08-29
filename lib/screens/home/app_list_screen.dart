@@ -53,27 +53,27 @@ class AppListScreen extends StatefulWidget {
   static final Map<String, Uint8List> iconCache = {};
 
   // ── Preload ───────────────────────────────────────────────────────────────
-  static Future<void> preload() async {
-    if (_cache != null) return;
+  static Future<void> preload([VoidCallback? onProgress]) async {
+    if (_cache != null && iconCache.isNotEmpty) return;
     if (_preloading) return _preloadCompleter?.future;
 
     _preloading = true;
     _preloadCompleter = Completer<void>();
 
     try {
-      // 1) Fetch app list
+      // 1) Fetch app list immediately
       final List<dynamic> raw = await _channel.invokeMethod('getApps');
       final List<AppInfo> apps = await compute(_processApps, raw);
       _cache = apps;
+      onProgress?.call();
 
-      // 2) Batch-load all icons that are not yet cached
+      // 2) Batch-load all missing icons using multi-threaded native pool
       final missing = apps
           .map((a) => a.packageName)
           .where((pkg) => !iconCache.containsKey(pkg))
           .toList();
 
       if (missing.isNotEmpty) {
-        // Chunk missing into batches of 50 for faster loading
         for (var i = 0; i < missing.length; i += 50) {
           final end = (i + 50 < missing.length) ? i + 50 : missing.length;
           final batch = missing.sublist(i, end);
@@ -86,6 +86,7 @@ class AppListScreen extends StatefulWidget {
             icons.forEach((pkg, bytes) {
               iconCache[pkg as String] = bytes as Uint8List;
             });
+            onProgress?.call();
           } catch (e) {
             debugPrint("Batch icon load error at $i: $e");
           }
@@ -169,31 +170,21 @@ class _AppListScreenState extends State<AppListScreen>
   }
 
   Future<void> _fetchAndSet() async {
-    await AppListScreen.preload();
-    if (mounted) {
-      final cache = AppListScreen.cachedApps;
-      if (cache != null) {
-        // Pre-decode all icons into Flutter's image cache in background
-        for (var app in cache) {
-          final bytes = AppListScreen.iconCache[app.packageName];
-          if (bytes != null) {
-            precacheImage(MemoryImage(bytes), context).then((_) {
-               // Optimization: Once cached in ImageCache, we can potentially 
-               // clear the raw bytes to save RAM, but we must be careful 
-               // if the app needs to re-read them (e.g. on invalidation).
-               // For now, we'll keep them as they are crucial for grid scrolling,
-               // but we'll ensure they are stored efficiently.
-            });
-          }
-        }
+    await AppListScreen.preload(() {
+      if (mounted) {
+        setState(() {
+          _apps = AppListScreen.cachedApps;
+          _updateFilter();
+        });
       }
+    });
 
+    if (mounted) {
       setState(() {
         _apps = AppListScreen.cachedApps;
         _updateFilter();
       });
 
-      // Sync categories for auto-blocking
       final appState = Provider.of<AppState>(context, listen: false);
       final rawApps = await _channel.invokeMethod('getApps');
       appState.syncAppsWithCategories(rawApps);

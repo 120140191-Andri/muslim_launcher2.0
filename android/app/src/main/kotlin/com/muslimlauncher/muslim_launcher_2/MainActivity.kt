@@ -21,9 +21,8 @@ import java.util.concurrent.Executors
 
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.muslimlauncher/apps"
-    private val BLOCK_CHANNEL = "com.muslimlauncher/block"
-    private val executor = Executors.newSingleThreadExecutor()
+    private val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors().coerceAtLeast(4))
+
     private var appsChannel: MethodChannel? = null
 
     private val packageReceiver = object : BroadcastReceiver() {
@@ -59,31 +58,39 @@ class MainActivity : FlutterActivity() {
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "getApps" -> {
-                    // Run on background thread to avoid blocking UI
-                    executor.execute {
+                    // Run on threadPool background thread to avoid blocking UI
+                    threadPool.execute {
                         val apps = getInstalledApps()
                         runOnUiThread { result.success(apps) }
                     }
                 }
                 "getAllAppIcons" -> {
                     val packages = call.argument<List<String>>("packages")
-                    if (packages != null) {
-                        executor.execute {
-                            val iconMap = mutableMapOf<String, ByteArray>()
+                    if (packages != null && packages.isNotEmpty()) {
+                        threadPool.execute {
+                            val iconMap = java.util.concurrent.ConcurrentHashMap<String, ByteArray>()
                             val pm = packageManager
+                            val countDownLatch = java.util.concurrent.CountDownLatch(packages.size)
                             for (pkg in packages) {
-                                try {
-                                    val iconDrawable = pm.getApplicationIcon(pkg)
-                                    val iconBytes = drawableToByteArray(iconDrawable)
-                                    if (iconBytes != null && iconBytes.isNotEmpty()) {
-                                        iconMap[pkg] = iconBytes
+                                threadPool.execute {
+                                    try {
+                                        val iconDrawable = pm.getApplicationIcon(pkg)
+                                        val iconBytes = drawableToByteArray(iconDrawable)
+                                        if (iconBytes != null && iconBytes.isNotEmpty()) {
+                                            iconMap[pkg] = iconBytes
+                                        }
+                                    } catch (_: Exception) {} finally {
+                                        countDownLatch.countDown()
                                     }
-                                } catch (_: Exception) {}
+                                }
                             }
+                            try {
+                                countDownLatch.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                            } catch (_: Exception) {}
                             runOnUiThread { result.success(iconMap) }
                         }
                     } else {
-                        result.error("UNAVAILABLE", "Packages not provided.", null)
+                        runOnUiThread { result.success(emptyMap<String, ByteArray>()) }
                     }
                 }
                 "getAppIcon" -> {

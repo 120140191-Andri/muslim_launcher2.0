@@ -358,8 +358,8 @@ class _AppListScreenState extends State<AppListScreen>
         title: Text(Translations.get(lang, 'non_productive')),
         content: Text(
           lang == 'en'
-              ? 'This is a non-productive app. Spend 50 Points to open it?'
-              : 'Aplikasi non-produktif. Gunakan 50 Poin untuk membuka?',
+              ? 'This is a non-productive app. Use 50 Points to unlock it for 60 minutes?'
+              : 'Aplikasi ini non-produktif. Gunakan 50 Poin untuk membuka selama 60 menit?',
         ),
         actions: [
           TextButton(
@@ -390,7 +390,13 @@ class _AppListScreenState extends State<AppListScreen>
                 );
               }
             },
-            child: Text(appState.points >= 50 ? (lang == 'en' ? 'Unlock (50 Pts)' : 'Buka (50 Poin)') : (lang == 'en' ? 'Read Quran' : 'Baca Quran')),
+            child: Text(
+              appState.points >= 50
+                  ? (lang == 'en'
+                      ? 'Unlock 60m (50 Pts)'
+                      : 'Buka 60m (50 Poin)')
+                  : (lang == 'en' ? 'Read Quran' : 'Baca Quran'),
+            ),
           ),
         ],
       ),

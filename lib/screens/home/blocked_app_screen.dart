@@ -63,8 +63,8 @@ class BlockedAppScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         lang == 'en'
-                            ? 'To open this app, you must read the Quran or use points.'
-                            : 'Untuk membuka aplikasi ini, silakan baca Al-Quran atau gunakan poin.',
+                            ? 'To open this app, read the Quran or spend 50 Points to unlock for 60 minutes.'
+                            : 'Untuk membuka aplikasi ini, silakan baca Al-Quran atau gunakan 50 Poin untuk membuka selama 60 menit.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
@@ -118,7 +118,7 @@ class BlockedAppScreen extends StatelessWidget {
                           ),
                           child: Text(
                             appState.points >= 50
-                              ? (lang == 'en' ? 'Unlock (50 Points)' : 'Buka Blokir (50 Poin)')
+                              ? (lang == 'en' ? 'Unlock 60 Min (50 Points)' : 'Buka Blokir 60 Menit (50 Poin)')
                               : (lang == 'en' ? 'Need 50 Points' : 'Butuh 50 Poin'),
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),

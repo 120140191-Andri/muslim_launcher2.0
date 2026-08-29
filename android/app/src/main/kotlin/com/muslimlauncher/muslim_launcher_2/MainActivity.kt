@@ -24,6 +24,13 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.muslimlauncher/apps"
     private val BLOCK_CHANNEL = "com.muslimlauncher/block"
     private val executor = Executors.newSingleThreadExecutor()
+    private var appsChannel: MethodChannel? = null
+
+    private val packageReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            appsChannel?.invokeMethod("onAppListChanged", null)
+        }
+    }
 
     companion object {
         private var blockChannel: MethodChannel? = null
@@ -37,7 +44,18 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        appsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        val channel = appsChannel!!
+
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addDataScheme("package")
+        }
+        registerReceiver(packageReceiver, filter)
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "getApps" -> {
@@ -424,5 +442,12 @@ class MainActivity : FlutterActivity() {
                 null
             }
         }
+    }
+
+    override fun onDestroy() {
+        try {
+            unregisterReceiver(packageReceiver)
+        } catch (_: Exception) {}
+        super.onDestroy()
     }
 }

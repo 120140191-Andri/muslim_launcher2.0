@@ -136,6 +136,14 @@ class _AppListScreenState extends State<AppListScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onAppListChanged') {
+        AppListScreen.invalidateFull();
+        await _fetchAndSet();
+      }
+    });
+
     if (AppListScreen._cache != null) {
       _apps = AppListScreen._cache;
       _filtered = _apps!;

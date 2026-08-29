@@ -456,40 +456,6 @@ class _AppListScreenState extends State<AppListScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          GestureDetector(
-            onTap: _openSupportDeveloperUrl,
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade700,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.favorite_rounded, color: Colors.white, size: 13),
-                  const SizedBox(width: 4),
-                  Text(
-                    lang == 'en' ? 'Support Dev' : 'Dukung Dev',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
           Selector<AppState, int>(
             selector: (_, s) => s.points,
             builder: (_, pts, child) => _PointsBadge(points: pts),
@@ -511,43 +477,51 @@ class _AppListScreenState extends State<AppListScreen>
             child: Row(
               children: [
                 Icon(
-                  Icons.info_outline_rounded,
-                  color: Colors.white.withValues(alpha: 0.6),
-                  size: 14,
+                  Icons.favorite_rounded,
+                  color: Colors.amber.shade300,
+                  size: 15,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     lang == 'en'
-                        ? 'Tap an icon to launch the app'
-                        : 'Ketuk ikon untuk membuka aplikasi',
+                        ? 'Support dev to keep app 100% free & ad-free'
+                        : 'Dukung pengembang agar aplikasi 100% gratis & tanpa iklan',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 InkWell(
                   onTap: _openSupportDeveloperUrl,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      color: Colors.amber.shade700,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.coffee_rounded, color: Colors.amber, size: 13),
+                        const Icon(Icons.coffee_rounded, color: Colors.white, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          lang == 'en' ? 'Ko-fi Support' : 'Dukung Dev',
+                          lang == 'en' ? 'Support' : 'Dukung',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],

@@ -1,6 +1,6 @@
 # Muslim Launcher 🕌
 
-[English](#-english) | [Bahasa Indonesia](#-bahasa-indonesia)
+[English](#english) | [Bahasa Indonesia](#bahasa-indonesia)
 
 ---
 

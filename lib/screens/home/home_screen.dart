@@ -309,86 +309,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   ),
                                   Row(
                                     children: [
-                                      Row(
-                                        children: [
-                                          GestureDetector(
-                                            onTap: _openSupportDeveloperUrl,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 10,
-                                                vertical: 6,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.amber.shade700,
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black
-                                                        .withValues(
-                                                      alpha: 0.15,
-                                                    ),
-                                                    blurRadius: 6,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  const Icon(
-                                                    Icons.favorite_rounded,
-                                                    color: Colors.white,
-                                                    size: 14,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    lang == 'en'
-                                                        ? 'Support'
-                                                        : 'Dukung',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
+                                      GestureDetector(
+                                        onTap: () => appState
+                                            .navigatorKey.currentState
+                                            ?.push(
+                                          AppPageRoute(
+                                            child:
+                                                const ReadingHistoryScreen(),
                                           ),
-                                          const SizedBox(width: 8),
-                                          GestureDetector(
-                                            onTap: () => appState
-                                                .navigatorKey.currentState
-                                                ?.push(
-                                              AppPageRoute(
-                                                child:
-                                                    const ReadingHistoryScreen(),
-                                              ),
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.15,
                                             ),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.15,
-                                                ),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.history_rounded,
-                                                color: Colors.white,
-                                                size: 18,
-                                              ),
-                                            ),
+                                            shape: BoxShape.circle,
                                           ),
-                                          const SizedBox(width: 8),
-                                          _buildHeaderBadge(
-                                            icon: Icons.stars_rounded,
-                                            value: "${appState.points} Pts",
-                                            color: Colors.amber,
+                                          child: const Icon(
+                                            Icons.history_rounded,
+                                            color: Colors.white,
+                                            size: 18,
                                           ),
-                                        ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _buildHeaderBadge(
+                                        icon: Icons.stars_rounded,
+                                        value: "${appState.points} Pts",
+                                        color: Colors.amber,
                                       ),
                                     ],
                                   ),
@@ -649,6 +598,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                           ),
                                         ),
                                       ],
+                                    ),
+
+                                    const SizedBox(height: 24),
+                                    _SupportDeveloperCard(
+                                      lang: lang,
+                                      onTap: _openSupportDeveloperUrl,
                                     ),
 
                                     SizedBox(
@@ -1452,6 +1407,121 @@ class _DailyInspiration extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── _SupportDeveloperCard ───────────────────────────────────────────────────
+class _SupportDeveloperCard extends StatelessWidget {
+  final String lang;
+  final VoidCallback onTap;
+
+  const _SupportDeveloperCard({required this.lang, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isEn = lang == 'en';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFEA580C), Color(0xFFD97706)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEA580C).withValues(alpha: 0.25),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.favorite_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isEn ? 'Support Developer' : 'Dukung Pengembang',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      isEn
+                          ? '100% Free & Ad-Free App'
+                          : 'Aplikasi 100% Gratis & Tanpa Iklan',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            isEn
+                ? 'Your support helps us keep Muslim Launcher free, independent, and continuously updated with new Islamic features.'
+                : 'Dukungan Anda sangat berarti untuk menjaga Muslim Launcher tetap gratis, mandiri, dan terus berkembang dengan fitur-fitur kebaikan.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.95),
+              fontSize: 12.5,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.coffee_rounded, size: 20),
+              label: Text(
+                isEn ? 'Support via Ko-fi' : 'Dukung via Ko-fi (Ko-fi.com)',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFFC2410C),
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ),

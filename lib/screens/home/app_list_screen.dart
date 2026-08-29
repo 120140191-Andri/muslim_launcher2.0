@@ -655,8 +655,7 @@ class _AppIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final bytes = AppListScreen.iconCache[packageName];
 
-    if (bytes == null) {
-      // Fallback placeholder (rare: only if preload missed this package)
+    if (bytes == null || bytes.isEmpty) {
       return Container(
         width: 48,
         height: 48,
@@ -664,7 +663,7 @@ class _AppIcon extends StatelessWidget {
           color: Colors.teal.shade50.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(Icons.apps_rounded, size: 20, color: Colors.teal.shade200),
+        child: Icon(Icons.apps_rounded, size: 22, color: Colors.teal.shade700),
       );
     }
 
@@ -672,10 +671,19 @@ class _AppIcon extends StatelessWidget {
       bytes,
       width: 48,
       height: 48,
-      cacheWidth: 96,
-      cacheHeight: 96,
       fit: BoxFit.contain,
       gaplessPlayback: true,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.teal.shade50.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.apps_rounded, size: 22, color: Colors.teal.shade700),
+        );
+      },
     );
 
     if (grayscale) {

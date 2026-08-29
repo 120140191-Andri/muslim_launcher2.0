@@ -48,15 +48,18 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "getAllAppIcons" -> {
-                    // Batch load icons in one call on background thread
-                    // Limit to 50 icons per call to optimize load speed
-                    val packages = call.argument<List<String>>("packages")?.take(50)
+                    val packages = call.argument<List<String>>("packages")
                     if (packages != null) {
                         executor.execute {
                             val iconMap = mutableMapOf<String, ByteArray>()
+                            val pm = packageManager
                             for (pkg in packages) {
                                 try {
-                                    getAppIcon(pkg)?.let { iconMap[pkg] = it }
+                                    val iconDrawable = pm.getApplicationIcon(pkg)
+                                    val iconBytes = drawableToByteArray(iconDrawable)
+                                    if (iconBytes != null && iconBytes.isNotEmpty()) {
+                                        iconMap[pkg] = iconBytes
+                                    }
                                 } catch (_: Exception) {}
                             }
                             runOnUiThread { result.success(iconMap) }
@@ -379,26 +382,47 @@ class MainActivity : FlutterActivity() {
 
     private fun drawableToByteArray(drawable: Drawable): ByteArray? {
         val size = 96
-        val bitmap: Bitmap = try {
-            if (drawable is BitmapDrawable && drawable.bitmap != null) {
-                Bitmap.createScaledBitmap(drawable.bitmap, size, size, true)
-            } else {
-                Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888).also {
-                    val canvas = Canvas(it)
-                    drawable.setBounds(0, 0, size, size)
-                    drawable.draw(canvas)
+        return try {
+            val bitmap = if (drawable is BitmapDrawable && drawable.bitmap != null && !drawable.bitmap.isRecycled) {
+                val srcBmp = drawable.bitmap
+                val softwareBmp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && srcBmp.config == Bitmap.Config.HARDWARE) {
+                    srcBmp.copy(Bitmap.Config.ARGB_8888, false)
+                } else {
+                    srcBmp
                 }
+                if (softwareBmp.width == size && softwareBmp.height == size) {
+                    softwareBmp
+                } else {
+                    Bitmap.createScaledBitmap(softwareBmp, size, size, true)
+                }
+            } else {
+                val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bmp)
+                drawable.setBounds(0, 0, canvas.width, canvas.height)
+                drawable.draw(canvas)
+                bmp
             }
+
+            val stream = ByteArrayOutputStream()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 85, stream)
+            } else {
+                @Suppress("DEPRECATION")
+                bitmap.compress(Bitmap.CompressFormat.WEBP, 85, stream)
+            }
+            stream.toByteArray()
         } catch (e: Exception) {
-            Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+            try {
+                val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bmp)
+                drawable.setBounds(0, 0, size, size)
+                drawable.draw(canvas)
+                val stream = ByteArrayOutputStream()
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                stream.toByteArray()
+            } catch (_: Exception) {
+                null
+            }
         }
-        val stream = ByteArrayOutputStream()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 75, stream)
-        } else {
-            @Suppress("DEPRECATION")
-            bitmap.compress(Bitmap.CompressFormat.WEBP, 75, stream)
-        }
-        return stream.toByteArray()
     }
 }

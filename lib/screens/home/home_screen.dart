@@ -868,16 +868,16 @@ class _QuickDock extends StatelessWidget {
       'com.samsung.android.dialer',
       'com.sec.android.app.dialer',
       'com.android.dialer',
-      'com.android.phone',
-      'com.miui.securitycenter',
-      'com.coloros.safecenter',
+      'com.android.contacts',
+      'com.miui.contacts',
       'com.oppo.contacts',
+      'com.coloros.contacts',
       'com.vivo.contacts',
       'com.huawei.contacts',
     ]);
 
     if (phonePkg != null) {
-      items.add(_buildIcon(Icons.phone_rounded, phonePkg));
+      items.add(_buildIcon(Icons.phone_rounded, phonePkg, overrideTap: _openPhoneApp));
     } else {
       // Fallback: Direct native ACTION_DIAL intent call
       items.add(
@@ -961,7 +961,7 @@ class _QuickDock extends StatelessWidget {
     );
   }
 
-  Widget _buildIcon(IconData fallback, String pkg) {
+  Widget _buildIcon(IconData fallback, String pkg, {VoidCallback? overrideTap}) {
     final app = AppListScreen.cachedApps?.firstWhere(
       (a) => a.packageName == pkg,
       orElse: () => AppInfo(appName: '', packageName: '', category: -1),
@@ -970,7 +970,7 @@ class _QuickDock extends StatelessWidget {
     final iconBytes = (app != null && app.packageName.isNotEmpty) ? AppListScreen.iconCache[pkg] : null;
 
     return InkWell(
-      onTap: () => _openApp(pkg),
+      onTap: overrideTap ?? () => _openApp(pkg),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: 44,

@@ -841,6 +841,12 @@ class _QuickDock extends StatelessWidget {
     } catch (_) {}
   }
 
+  Future<void> _openPhoneApp() async {
+    try {
+      await _channel.invokeMethod('openPhoneApp');
+    } catch (_) {}
+  }
+
   String? _findFirstAvailable(List<String> candidates) {
     final apps = AppListScreen.cachedApps;
     if (apps == null) return null;
@@ -854,52 +860,52 @@ class _QuickDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine dynamic icons
     final List<Widget> items = [];
 
-    // 1. Phone Icons (Trying to find two different ones if available)
-    final phonePkgs = [
+    // 1. Dynamic Phone App (Always Present at the Far Left for All Phones)
+    final phonePkg = _findFirstAvailable([
       'com.google.android.dialer',
-      'com.android.dialer',
       'com.samsung.android.dialer',
+      'com.sec.android.app.dialer',
+      'com.android.dialer',
       'com.android.phone',
-      'com.oppo.launcher', // Some manufacturers bake it in
+      'com.miui.securitycenter',
       'com.coloros.safecenter',
-    ];
+      'com.oppo.contacts',
+      'com.vivo.contacts',
+      'com.huawei.contacts',
+    ]);
 
-    final availablePhones = <String>[];
-    for (var p in phonePkgs) {
-      if (AppListScreen.cachedApps?.any((a) => a.packageName == p) ?? false) {
-        if (!availablePhones.contains(p)) availablePhones.add(p);
-      }
-      if (availablePhones.length >= 2) break;
+    if (phonePkg != null) {
+      items.add(_buildIcon(Icons.phone_rounded, phonePkg));
+    } else {
+      // Fallback: Direct native ACTION_DIAL intent call
+      items.add(
+        InkWell(
+          onTap: _openPhoneApp,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.phone_rounded, color: Colors.teal.shade700, size: 24),
+          ),
+        ),
+      );
     }
 
-    // Add first phone (if many found, add first two; otherwise just what's found)
-    if (availablePhones.isNotEmpty) {
-      items.add(_buildIcon(Icons.phone_rounded, availablePhones[0]));
-    }
-    // Add second phone if available
-    if (availablePhones.length > 1) {
-      items.add(_buildIcon(Icons.phone_callback_rounded, availablePhones[1]));
-    } else if (availablePhones.isNotEmpty) {
-      // If only one system dialer, maybe user wants a duplicate or just one?
-      // User asked for "1 more phone app on the far left"
-      // If we only find one, we'll only show one to avoid confusion,
-      // but the logic allows showing 2 if found.
-    }
-
-    // 2. Messages
+    // 2. Messages App
     final msgPkg = _findFirstAvailable([
       'com.google.android.apps.messaging',
       'com.android.messaging',
       'com.samsung.android.messaging',
+      'com.samsung.android.dialer',
     ]);
     if (msgPkg != null) {
       items.add(_buildIcon(Icons.message_rounded, msgPkg));
     }
 
-    // 3. Contacts
+    // 3. Contacts App
     final contactPkg = _findFirstAvailable([
       'com.google.android.contacts',
       'com.android.contacts',
@@ -919,7 +925,7 @@ class _QuickDock extends StatelessWidget {
       items.add(_buildIcon(Icons.business_center_rounded, 'com.whatsapp.w4b'));
     }
 
-    // 6. Gallery
+    // 6. Gallery / Photos
     final galleryPkg = _findFirstAvailable([
       'com.google.android.apps.photos',
       'com.android.gallery',
@@ -934,7 +940,7 @@ class _QuickDock extends StatelessWidget {
       padding: const EdgeInsets.symmetric(
         horizontal: 4,
         vertical: 12,
-      ), // Reduced horizontal padding
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -950,27 +956,26 @@ class _QuickDock extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: items
             .map((w) => Flexible(child: w))
-            .toList(), // Make each icon flexible to prevent overflow
+            .toList(),
       ),
     );
   }
 
   Widget _buildIcon(IconData fallback, String pkg) {
-    // Try to get real icon from cache
     final app = AppListScreen.cachedApps?.firstWhere(
       (a) => a.packageName == pkg,
       orElse: () => AppInfo(appName: '', packageName: '', category: -1),
     );
 
-    final iconBytes = (app != null) ? AppListScreen.iconCache[pkg] : null;
+    final iconBytes = (app != null && app.packageName.isNotEmpty) ? AppListScreen.iconCache[pkg] : null;
 
     return InkWell(
       onTap: () => _openApp(pkg),
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        width: 44, // Reduced from 56
-        height: 44, // Reduced from 56
-        padding: const EdgeInsets.all(4), // Tighter padding
+        width: 44,
+        height: 44,
+        padding: const EdgeInsets.all(4),
         child: iconBytes != null
             ? Image.memory(iconBytes, filterQuality: FilterQuality.medium)
             : Icon(fallback, color: Colors.teal.shade700, size: 24),

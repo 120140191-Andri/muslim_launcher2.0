@@ -92,6 +92,10 @@ class MainActivity : FlutterActivity() {
                 "isDefaultLauncher" -> {
                     result.success(isDefaultLauncher())
                 }
+                "openPhoneApp" -> {
+                    openPhoneApp()
+                    result.success(true)
+                }
                 "getDeviceInfo" -> {
                     result.success(
                         mapOf(
@@ -249,6 +253,43 @@ class MainActivity : FlutterActivity() {
         packageManager.getLaunchIntentForPackage(packageName)?.let { 
             it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(it) 
+        }
+    }
+
+    private fun openPhoneApp() {
+        val intents = mutableListOf<Intent>()
+        intents.add(Intent(Intent.ACTION_DIAL))
+        try {
+            intents.add(Intent(Intent.ACTION_VIEW, Uri.parse("tel:")))
+        } catch (_: Exception) {}
+
+        val dialerPackages = listOf(
+            "com.google.android.dialer",
+            "com.samsung.android.dialer",
+            "com.sec.android.app.dialer",
+            "com.android.dialer",
+            "com.android.phone",
+            "com.miui.securitycenter",
+            "com.coloros.safecenter",
+            "com.oppo.contacts",
+            "com.vivo.contacts",
+            "com.huawei.contacts"
+        )
+        for (pkg in dialerPackages) {
+            try {
+                val launchIntent = packageManager.getLaunchIntentForPackage(pkg)
+                if (launchIntent != null) {
+                    intents.add(launchIntent)
+                }
+            } catch (_: Exception) {}
+        }
+
+        for (intent in intents) {
+            try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                return
+            } catch (_: Exception) {}
         }
     }
 

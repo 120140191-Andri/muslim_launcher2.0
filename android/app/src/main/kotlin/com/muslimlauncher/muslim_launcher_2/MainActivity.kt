@@ -49,8 +49,8 @@ class MainActivity : FlutterActivity() {
                 }
                 "getAllAppIcons" -> {
                     // Batch load icons in one call on background thread
-                    // Limit to 30 icons per call to avoid OOM or IPC transaction limits
-                    val packages = call.argument<List<String>>("packages")?.take(30)
+                    // Limit to 50 icons per call to optimize load speed
+                    val packages = call.argument<List<String>>("packages")?.take(50)
                     if (packages != null) {
                         executor.execute {
                             val iconMap = mutableMapOf<String, ByteArray>()
@@ -378,36 +378,26 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun drawableToByteArray(drawable: Drawable): ByteArray? {
+        val size = 96
         val bitmap: Bitmap = try {
-            when {
-                drawable is BitmapDrawable -> drawable.bitmap
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && drawable is AdaptiveIconDrawable -> {
-                    Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888).also {
-                        val canvas = Canvas(it)
-                        drawable.setBounds(0, 0, 96, 96)
-                        drawable.draw(canvas)
-                    }
-                }
-                else -> {
-                    val w = drawable.intrinsicWidth.takeIf { it in 1..128 } ?: 96
-                    val h = drawable.intrinsicHeight.takeIf { it in 1..128 } ?: 96
-                    Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also {
-                        val canvas = Canvas(it)
-                        drawable.setBounds(0, 0, w, h)
-                        drawable.draw(canvas)
-                    }
+            if (drawable is BitmapDrawable && drawable.bitmap != null) {
+                Bitmap.createScaledBitmap(drawable.bitmap, size, size, true)
+            } else {
+                Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888).also {
+                    val canvas = Canvas(it)
+                    drawable.setBounds(0, 0, size, size)
+                    drawable.draw(canvas)
                 }
             }
         } catch (e: Exception) {
-            // Fallback for some strange drawables that crash on createBitmap
             Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
         }
         val stream = ByteArrayOutputStream()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 70, stream)
+            bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 75, stream)
         } else {
             @Suppress("DEPRECATION")
-            bitmap.compress(Bitmap.CompressFormat.WEBP, 70, stream)
+            bitmap.compress(Bitmap.CompressFormat.WEBP, 75, stream)
         }
         return stream.toByteArray()
     }

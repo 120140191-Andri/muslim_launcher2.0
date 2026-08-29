@@ -73,9 +73,9 @@ class AppListScreen extends StatefulWidget {
           .toList();
 
       if (missing.isNotEmpty) {
-        // Chunk missing into batches of 30 to avoid native IPC / memory limits
-        for (var i = 0; i < missing.length; i += 30) {
-          final end = (i + 30 < missing.length) ? i + 30 : missing.length;
+        // Chunk missing into batches of 50 for faster loading
+        for (var i = 0; i < missing.length; i += 50) {
+          final end = (i + 50 < missing.length) ? i + 50 : missing.length;
           final batch = missing.sublist(i, end);
           
           try {
@@ -513,9 +513,9 @@ class _AppListScreenState extends State<AppListScreen>
 
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
-      physics: const BouncingScrollPhysics(),
-      addAutomaticKeepAlives: false,
-      addRepaintBoundaries: false,
+      physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+      addAutomaticKeepAlives: true,
+      addRepaintBoundaries: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
         crossAxisSpacing: 16,
@@ -593,9 +593,9 @@ class _AppTile extends StatelessWidget {
                     ),
                   ),
                 // Timer badge
-                Consumer<AppState>(
-                  builder: (context, state, child) {
-                    final remaining = state.getUnlockRemainingMinutes(app.packageName);
+                Selector<AppState, int>(
+                  selector: (context, state) => state.getUnlockRemainingMinutes(app.packageName),
+                  builder: (context, remaining, child) {
                     if (remaining <= 0) return const SizedBox.shrink();
                     
                     return Positioned(
@@ -672,6 +672,8 @@ class _AppIcon extends StatelessWidget {
       bytes,
       width: 48,
       height: 48,
+      cacheWidth: 96,
+      cacheHeight: 96,
       fit: BoxFit.contain,
       gaplessPlayback: true,
     );

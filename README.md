@@ -1,4 +1,4 @@
-# Muslim Launcher 🕌
+# Muslim Launcher 2 🕌
 
 [English](#english) | [Bahasa Indonesia](#bahasa-indonesia) | [Privacy Policy](#privacy-policy-)
 

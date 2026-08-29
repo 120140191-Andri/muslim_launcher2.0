@@ -36,6 +36,10 @@ This application respects your privacy. Muslim Launcher uses Android's **Accessi
 * **Offline First:** All core logic and Quranic data operate 100% offline on your local device.
 * **Open Source Transparency:** The entire source code of this application is fully open source and publicly available in this repository, ensuring complete transparency of how the `AccessibilityService` is used under the hood.
 
+### Support the Developer ☕
+If you find this app helpful in reducing your smartphone addiction and increasing your Ibadah, consider supporting the development!
+* [Support via Ko-fi](https://ko-fi.com/andrisetiawan84153)
+
 ---
 
 ## Bahasa Indonesia
@@ -70,9 +74,9 @@ Aplikasi ini sangat menghargai privasi Anda. Muslim Launcher menggunakan **Acces
 * **Berjalan Offline:** Seluruh sistem dan data Al-Quran berjalan 100% secara luring (offline) di dalam perangkat Anda.
 * **Transparansi Open Source:** Seluruh kode sumber aplikasi ini bersifat sumber terbuka (*open source*) dan dapat dilihat secara publik di repositori ini, memberikan transparansi penuh tentang bagaimana `AccessibilityService` bekerja di belakang layar.
 
-## Support the Developer ☕
-If you find this app helpful in reducing your smartphone addiction and increasing your Ibadah, consider supporting the development!
-* [Support via Ko-fi](https://ko-fi.com/andrisetiawan84153)
+## Dukung Pengembang ☕
+Jika Anda merasa aplikasi ini bermanfaat dalam mengurangi kecanduan smartphone dan meningkatkan ibadah Anda, pertimbangkan untuk mendukung pengembangannya!
+* [Dukung via Ko-fi](https://ko-fi.com/andrisetiawan84153)
 
 ---
 *Dibuat untuk memotivasi Anda lebih banyak berinteraksi dengan Al-Quran dan mengubah kecanduan smartphone menjadi pahala.*

@@ -1,0 +1,4 @@
+﻿Analyzing Muslim Launcher 2...                                  
+
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\quran\surah_detail_screen.dart:290:41 - deprecated_member_use
+

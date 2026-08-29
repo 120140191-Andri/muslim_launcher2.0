@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:android_intent_plus/android_intent.dart';
 
@@ -256,7 +255,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.smartphone_rounded, color: Colors.emerald, size: 16),
+                        const Icon(Icons.smartphone_rounded, color: Color(0xFF34D399), size: 16),
                         const SizedBox(width: 8),
                         Text(
                           isEn
@@ -347,7 +346,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                     subtitle: isDefault
                         ? (isEn ? 'Muslim Launcher 2 is active' : 'Muslim Launcher 2 sudah aktif')
                         : (isEn ? 'Action required for home screen' : 'Diperlukan untuk layar beranda HP'),
-                    icon: Icons.home_app_rounded,
+                    icon: Icons.home_rounded,
                     isDone: isDefault,
                     instructions: _getHomeInstructions(manufacturer, isEn),
                     actionWidget: ElevatedButton.icon(

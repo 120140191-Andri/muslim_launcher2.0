@@ -268,12 +268,7 @@ class MainActivity : FlutterActivity() {
             "com.samsung.android.dialer",
             "com.sec.android.app.dialer",
             "com.android.dialer",
-            "com.android.contacts",
-            "com.miui.contacts",
-            "com.oppo.contacts",
-            "com.coloros.contacts",
-            "com.vivo.contacts",
-            "com.huawei.contacts"
+            "com.android.phone"
         )
         for (pkg in dialerPackages) {
             try {

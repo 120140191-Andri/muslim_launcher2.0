@@ -34,6 +34,7 @@ Raw text files are merged and structured using custom scripts (`data_temp/merge_
 This application respects your privacy. Muslim Launcher uses Android's **Accessibility Service** purely to detect when a blocked application is opened so it can redirect you to the lock screen.
 * **No Data Collection:** We do not collect, store, or transmit any personal data, typing behavior, or screen content.
 * **Offline First:** All core logic and Quranic data operate 100% offline on your local device.
+* **Open Source Transparency:** The entire source code of this application is fully open source and publicly available in this repository, ensuring complete transparency of how the `AccessibilityService` is used under the hood.
 
 ---
 
@@ -67,6 +68,7 @@ Data mentah diproses dan digabungkan secara terstruktur menggunakan skrip pemros
 Aplikasi ini sangat menghargai privasi Anda. Muslim Launcher menggunakan **Accessibility Service (Layanan Aksesibilitas)** bawaan Android semata-mata hanya untuk mendeteksi kapan aplikasi yang diblokir sedang dibuka agar dapat dicegah dan dikunci.
 * **Tanpa Pengumpulan Data:** Kami sama sekali tidak mengumpulkan, menyimpan, atau mengirimkan data pribadi, riwayat pengetikan, maupun konten di layar Anda.
 * **Berjalan Offline:** Seluruh sistem dan data Al-Quran berjalan 100% secara luring (offline) di dalam perangkat Anda.
+* **Transparansi Open Source:** Seluruh kode sumber aplikasi ini bersifat sumber terbuka (*open source*) dan dapat dilihat secara publik di repositori ini, memberikan transparansi penuh tentang bagaimana `AccessibilityService` bekerja di belakang layar.
 
 ---
 *Dibuat untuk memotivasi Anda lebih banyak berinteraksi dengan Al-Quran dan mengubah kecanduan smartphone menjadi pahala.*

@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _clockTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       final now = DateTime.now();
       if (now.minute != _now.minute || now.hour != _now.hour) {
         if (mounted) setState(() => _now = now);
@@ -48,23 +48,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Delayed preload to avoid startup peak
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
-      AppListScreen.preload()
-          .then((_) {
-            if (!mounted) return;
-            setState(() {});
-            _checkAccessibilityStatus();
-
-            // PROACTIVE SYNC: Force category-based blocking on startup
-            final appState = Provider.of<AppState>(context, listen: false);
-            const MethodChannel('com.muslimlauncher/apps')
-                .invokeMethod('getApps')
-                .then((raw) {
-                  if (!mounted) return;
-                  appState.syncAppsWithCategories(raw);
-                })
-                .catchError((_) {});
-          })
-          .catchError((_) {});
+      final appState = Provider.of<AppState>(context, listen: false);
+      AppListScreen.preload(
+        onRawAppsFetched: (raw) {
+          if (mounted) appState.syncAppsWithCategories(raw);
+        }
+      ).then((_) {
+        if (!mounted) return;
+        setState(() {});
+        _checkAccessibilityStatus();
+      }).catchError((_) {});
     });
   }
 
@@ -1169,42 +1162,42 @@ class _LastAyatCard extends StatelessWidget {
                 ),
 
                 // Khatm Badge Overlay
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade400,
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(16),
+                if (khatmCount > 0)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade400,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(16),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Color(0xFF5D4037),
+                            size: 10,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Khatm: ${khatmCount}x",
+                            style: const TextStyle(
+                              color: Color(0xFF5D4037),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: Color(0xFF5D4037),
-                          size: 10,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          "Khatm: ${khatmCount}x",
-                          style: const TextStyle(
-                            color: Color(0xFF5D4037),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                ),
 
                 // Progress Indicator at Bottom
                 if (surah.isNotEmpty && totalAyahs > 0)

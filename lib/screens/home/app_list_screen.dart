@@ -54,9 +54,12 @@ class AppListScreen extends StatefulWidget {
   static final Map<String, Uint8List> iconCache = {};
 
   // ── Preload ───────────────────────────────────────────────────────────────
-  static Future<void> preload([VoidCallback? onProgress]) async {
+  static Future<void> preload({
+    VoidCallback? onProgress,
+    Function(List<dynamic>)? onRawAppsFetched,
+  }) async {
     if (_cache != null && iconCache.isNotEmpty) return;
-    if (_preloading) return _preloadCompleter?.future;
+    if (_preloading) return _preloadCompleter!.future;
 
     _preloading = true;
     _preloadCompleter = Completer<void>();
@@ -64,6 +67,7 @@ class AppListScreen extends StatefulWidget {
     try {
       // 1) Fetch app list immediately
       final List<dynamic> raw = await _channel.invokeMethod('getApps');
+      onRawAppsFetched?.call(raw);
       final List<AppInfo> apps = await compute(_processApps, raw);
       _cache = apps;
       onProgress?.call();
@@ -139,13 +143,6 @@ class _AppListScreenState extends State<AppListScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _channel.setMethodCallHandler((call) async {
-      if (call.method == 'onAppListChanged') {
-        AppListScreen.invalidateFull();
-        await _fetchAndSet();
-      }
-    });
-
     if (AppListScreen._cache != null) {
       _apps = AppListScreen._cache;
       _filtered = _apps!;
@@ -171,24 +168,27 @@ class _AppListScreenState extends State<AppListScreen>
   }
 
   Future<void> _fetchAndSet() async {
-    await AppListScreen.preload(() {
-      if (mounted) {
-        setState(() {
-          _apps = AppListScreen.cachedApps;
-          _updateFilter();
-        });
-      }
-    });
+    final appState = Provider.of<AppState>(context, listen: false);
+
+    await AppListScreen.preload(
+      onProgress: () {
+        if (mounted) {
+          setState(() {
+            _apps = AppListScreen.cachedApps;
+            _updateFilter();
+          });
+        }
+      },
+      onRawAppsFetched: (raw) {
+        appState.syncAppsWithCategories(raw);
+      },
+    );
 
     if (mounted) {
       setState(() {
         _apps = AppListScreen.cachedApps;
         _updateFilter();
       });
-
-      final appState = Provider.of<AppState>(context, listen: false);
-      final rawApps = await _channel.invokeMethod('getApps');
-      appState.syncAppsWithCategories(rawApps);
     }
   }
 
@@ -364,7 +364,7 @@ class _AppListScreenState extends State<AppListScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+            child: Text(lang == 'en' ? 'Cancel' : 'Batal'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(

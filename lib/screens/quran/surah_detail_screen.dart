@@ -227,7 +227,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     await _eyeFocusSubscription?.cancel();
     _eyeFocusSubscription = null;
     
-    _eyeTrackerService.dispose();
+    await _eyeTrackerService.dispose();
 
     if (!isDisposing && mounted) {
       setState(() {

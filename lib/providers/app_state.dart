@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_block_service.dart';
+import '../screens/home/app_list_screen.dart';
 
 class AppState extends ChangeNotifier {
   final SharedPreferences prefs;
@@ -83,6 +84,7 @@ class AppState extends ChangeNotifier {
   String get dailyVerseDate => _dailyVerseDate;
 
   void _init() async {
+    try {
     _languageCode = prefs.getString('languageCode') ?? 'id';
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
@@ -131,17 +133,31 @@ class AppState extends ChangeNotifier {
     });
     _appBlockService.setBlockedApps(_blockedApps.toList());
     
-    // Initial status check before showing UI
     try {
       _isAccessibilityEnabled = await _appBlockService.isAccessibilityEnabled();
       const appsChannel = MethodChannel('com.muslimlauncher/apps');
       _isDefaultLauncher = await appsChannel.invokeMethod('isDefaultLauncher');
+      
+      appsChannel.setMethodCallHandler((call) async {
+        if (call.method == 'onAppListChanged') {
+          AppListScreen.invalidateFull();
+          final rawApps = await appsChannel.invokeMethod('getApps');
+          syncAppsWithCategories(rawApps);
+        }
+      });
     } catch (_) {}
 
     _isInitialized = true;
     _startStatusTimer();
     
     notifyListeners();
+    } catch (e) {
+      debugPrint("AppState init error: $e");
+      // Ensure app can still show UI even if init partially fails
+      _isInitialized = true;
+      _isDataLoaded = _quranData.isNotEmpty;
+      notifyListeners();
+    }
   }
 
   void refreshStatus() async {
@@ -216,10 +232,8 @@ class AppState extends ChangeNotifier {
     if (changed) {
       prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
       notifyListeners();
-    } else if (_unlockedExpirations.isNotEmpty) {
-      // Still have active timers, keep UI updated for the countdown
-      notifyListeners();
     }
+    // Removed: unnecessary notifyListeners when no change occurred
   }
 
   Future<void> loadQuranData() async {
@@ -253,14 +267,16 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void _updateDailyVerse(String date) async {
+  Future<void> _updateDailyVerse(String date) async {
     if (_quranData.isEmpty) return;
 
-    final random = DateTime.now().millisecondsSinceEpoch;
-    final int surahIdx = (random % _quranData.length).abs();
+    try {
+    // Use date hashCode for consistent random per day (won't change on restart)
+    final seed = date.hashCode;
+    final int surahIdx = (seed % _quranData.length).abs();
     final surah = _quranData[surahIdx];
     final ayahs = surah['ayahs'] as List;
-    final int ayahIdx = (random % ayahs.length).abs();
+    final int ayahIdx = ((seed ~/ _quranData.length) % ayahs.length).abs();
     final ayah = ayahs[ayahIdx];
 
     _dailySurahName = surah['surah_name'] as String;
@@ -276,6 +292,9 @@ class AppState extends ChangeNotifier {
     await prefs.setString('dailyVerseDate', _dailyVerseDate);
 
     notifyListeners();
+    } catch (e) {
+      debugPrint("Failed to update daily verse: $e");
+    }
   }
 
   static List<dynamic> _decodeJson(String source) {
@@ -366,7 +385,7 @@ class AppState extends ChangeNotifier {
       final name = (app['appName'] as String? ?? '').toLowerCase();
       final cat = app['category'] as int? ?? -1;
       
-      if (pkg.isEmpty || _whitelist.any((w) => pkg.contains(w) || pkg == w)) {
+      if (pkg.isEmpty || _whitelist.contains(pkg)) {
         // Ensure whitelisted apps are NOT blocked
         if (_blockedApps.contains(pkg)) {
           _blockedApps.remove(pkg);
@@ -596,10 +615,11 @@ class AppState extends ChangeNotifier {
   }
 
   bool isAppBlocked(String packageName) {
-    if (!_blockedApps.contains(packageName)) return false;
+    final pkg = packageName.toLowerCase();
+    if (!_blockedApps.contains(pkg)) return false;
     
     // Check if temporarily allowed
-    final expiry = _unlockedExpirations[packageName.toLowerCase()];
+    final expiry = _unlockedExpirations[pkg];
     if (expiry != null && DateTime.now().millisecondsSinceEpoch < expiry) {
       return false;
     }

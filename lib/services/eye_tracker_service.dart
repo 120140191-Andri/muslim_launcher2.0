@@ -26,10 +26,10 @@ class EyeTrackerService {
 
     // Ensure we wait for any existing operations (like a pending dispose)
     // Adding a safety timeout to prevent permanent deadlocks on faulty hardware
-    int attempts = 0;
-    while (_lock != null && attempts < 30) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      attempts++;
+    if (_lock != null) {
+      try {
+        await _lock!.timeout(const Duration(seconds: 3));
+      } catch (_) {} // Ignore timeout
     }
 
     final Completer<void> completer = Completer<void>();

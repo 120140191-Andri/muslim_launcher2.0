@@ -86,6 +86,16 @@ class PermissionBlockedOverlay extends StatelessWidget {
                             ).then((_) => appState.setIgnorePermissionGuard(false));
                           },
                         ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () {
+                            appState.setIgnorePermissionGuard(true);
+                          },
+                          child: Text(
+                            isEn ? 'Continue without Protection' : 'Lanjutkan tanpa Proteksi',
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                          ),
+                        ),
                       ],
                     ),
                   ),

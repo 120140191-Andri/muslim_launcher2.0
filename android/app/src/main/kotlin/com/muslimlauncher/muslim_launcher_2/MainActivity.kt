@@ -411,25 +411,30 @@ class MainActivity : FlutterActivity() {
 
     private fun drawableToByteArray(drawable: Drawable): ByteArray? {
         val size = 96
+        var createdBmp1: Bitmap? = null
+        var createdBmp2: Bitmap? = null
+        
         return try {
             val bitmap = if (drawable is BitmapDrawable && drawable.bitmap != null && !drawable.bitmap.isRecycled) {
                 val srcBmp = drawable.bitmap
                 val softwareBmp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && srcBmp.config == Bitmap.Config.HARDWARE) {
-                    srcBmp.copy(Bitmap.Config.ARGB_8888, false)
+                    createdBmp1 = srcBmp.copy(Bitmap.Config.ARGB_8888, false)
+                    createdBmp1
                 } else {
                     srcBmp
                 }
                 if (softwareBmp.width == size && softwareBmp.height == size) {
                     softwareBmp
                 } else {
-                    Bitmap.createScaledBitmap(softwareBmp, size, size, true)
+                    createdBmp2 = Bitmap.createScaledBitmap(softwareBmp, size, size, true)
+                    createdBmp2
                 }
             } else {
-                val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-                val canvas = Canvas(bmp)
+                createdBmp1 = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(createdBmp1)
                 drawable.setBounds(0, 0, canvas.width, canvas.height)
                 drawable.draw(canvas)
-                bmp
+                createdBmp1
             }
 
             val stream = ByteArrayOutputStream()
@@ -439,7 +444,11 @@ class MainActivity : FlutterActivity() {
                 @Suppress("DEPRECATION")
                 bitmap.compress(Bitmap.CompressFormat.WEBP, 85, stream)
             }
-            stream.toByteArray()
+            
+            val result = stream.toByteArray()
+            createdBmp1?.recycle()
+            createdBmp2?.recycle()
+            result
         } catch (e: Exception) {
             try {
                 val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -448,7 +457,9 @@ class MainActivity : FlutterActivity() {
                 drawable.draw(canvas)
                 val stream = ByteArrayOutputStream()
                 bmp.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                stream.toByteArray()
+                val result = stream.toByteArray()
+                bmp.recycle()
+                result
             } catch (_: Exception) {
                 null
             }

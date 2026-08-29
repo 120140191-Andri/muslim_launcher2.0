@@ -67,6 +67,8 @@ class MuslimLauncherApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, state, child) {
+        final homeWidget = _determineHome(state);
+        
         return MaterialApp(
           navigatorKey: state.navigatorKey,
           title: 'Muslim Launcher 2',
@@ -75,11 +77,11 @@ class MuslimLauncherApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
             useMaterial3: true,
           ),
-          home: _determineHome(state),
+          home: homeWidget,
           builder: (context, child) {
             // CRITICAL: Ensure we always have a child to render. 
             // If child is null, something in MaterialApp initialization failed.
-            final rootWidget = child ?? _determineHome(state);
+            final rootWidget = child ?? homeWidget;
             
             return PermissionBlockedOverlay(
               appState: state,

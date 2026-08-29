@@ -70,5 +70,9 @@ Aplikasi ini sangat menghargai privasi Anda. Muslim Launcher menggunakan **Acces
 * **Berjalan Offline:** Seluruh sistem dan data Al-Quran berjalan 100% secara luring (offline) di dalam perangkat Anda.
 * **Transparansi Open Source:** Seluruh kode sumber aplikasi ini bersifat sumber terbuka (*open source*) dan dapat dilihat secara publik di repositori ini, memberikan transparansi penuh tentang bagaimana `AccessibilityService` bekerja di belakang layar.
 
+## Support the Developer ☕
+If you find this app helpful in reducing your smartphone addiction and increasing your Ibadah, consider supporting the development!
+* [Support via Ko-fi](https://ko-fi.com/andrisetiawan84153)
+
 ---
 *Dibuat untuk memotivasi Anda lebih banyak berinteraksi dengan Al-Quran dan mengubah kecanduan smartphone menjadi pahala.*

@@ -59,7 +59,7 @@ dev_dependencies:
 flutter_icons:
   android: "launcher_icon"
   ios: false
-  image_path: "assets/Logo Muslim Launcher 2.jpeg"
+  image_path: "assets/Logos Muslim Launcher 2.jpeg"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

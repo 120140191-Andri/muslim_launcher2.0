@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../quran/surah_list_screen.dart';
@@ -843,8 +844,15 @@ class _QuickDock extends StatelessWidget {
 
   Future<void> _openPhoneApp() async {
     try {
-      await _channel.invokeMethod('openPhoneApp');
-    } catch (_) {}
+      const intent = AndroidIntent(
+        action: 'android.intent.action.DIAL',
+      );
+      await intent.launch();
+    } catch (_) {
+      try {
+        await _channel.invokeMethod('openPhoneApp');
+      } catch (_) {}
+    }
   }
 
   String? _findFirstAvailable(List<String> candidates) {
@@ -875,7 +883,13 @@ class _QuickDock extends StatelessWidget {
       ]);
 
       if (phonePkg != null) {
-        items.add(_buildIcon(Icons.phone_rounded, phonePkg, overrideTap: _openPhoneApp));
+        items.add(_buildIcon(Icons.phone_rounded, phonePkg, overrideTap: () async {
+          try {
+            await _openApp(phonePkg);
+          } catch (_) {
+            await _openPhoneApp();
+          }
+        }));
       } else {
         // Fallback: Direct native ACTION_DIAL intent call
         items.add(

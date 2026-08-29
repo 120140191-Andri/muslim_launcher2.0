@@ -257,13 +257,6 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun openPhoneApp() {
-        val intents = mutableListOf<Intent>()
-        intents.add(Intent(Intent.ACTION_DIAL, Uri.parse("tel:")))
-        intents.add(Intent(Intent.ACTION_DIAL))
-        try {
-            intents.add(Intent(Intent.ACTION_VIEW, Uri.parse("tel:")))
-        } catch (_: Exception) {}
-
         val dialerPackages = listOf(
             "com.google.android.dialer",
             "com.samsung.android.dialer",
@@ -271,14 +264,23 @@ class MainActivity : FlutterActivity() {
             "com.android.dialer",
             "com.android.phone"
         )
+
         for (pkg in dialerPackages) {
             try {
                 val launchIntent = packageManager.getLaunchIntentForPackage(pkg)
                 if (launchIntent != null) {
-                    intents.add(launchIntent)
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(launchIntent)
+                    return
                 }
             } catch (_: Exception) {}
         }
+
+        val intents = listOf(
+            Intent(Intent.ACTION_DIAL),
+            Intent(Intent.ACTION_VIEW, Uri.parse("tel:")),
+            Intent("android.intent.action.CALL_BUTTON")
+        )
 
         for (intent in intents) {
             try {

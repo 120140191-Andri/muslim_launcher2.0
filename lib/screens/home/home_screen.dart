@@ -240,8 +240,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final appState = Provider.of<AppState>(context);
     final lang = appState.languageCode;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFA),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFA),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 600),
         switchInCurve: Curves.easeInOut,
@@ -637,6 +639,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
                 ],
               ),
+      ),
       ),
     );
   }

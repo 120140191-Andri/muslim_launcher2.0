@@ -523,7 +523,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                 )
                               else if (isNext)
                                 Text(
-                                  lang == 'en' ? 'Next' : 'Berikutnya',
+                                  lang == 'en' ? 'Read with:' : 'Baca dengan:',
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: Colors.teal.shade700,
@@ -532,12 +532,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                 ),
                               const Spacer(),
                               _MicButton(
+                                lang: lang,
                                 isRecording: isRecording,
                                 onPressed: () =>
                                     _onAyahMicPressed(index, ayah['arabic']),
                               ),
                               const SizedBox(width: 8),
                               _EyeButton(
+                                lang: lang,
                                 isActive: _eyeReadingAyahIdx == index,
                                 isFocused: _isEyeFocused,
                                 onPressed: () =>
@@ -771,25 +773,40 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 }
 
 class _MicButton extends StatelessWidget {
+  final String lang;
   final bool isRecording;
   final VoidCallback onPressed;
 
-  const _MicButton({required this.isRecording, required this.onPressed});
+  const _MicButton({required this.lang, required this.isRecording, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isRecording ? Colors.red : Colors.teal.shade100,
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(
-          isRecording ? Icons.mic : Icons.mic_none,
-          color: isRecording ? Colors.white : Colors.teal.shade800,
-          size: 20,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isRecording ? Icons.mic : Icons.mic_none,
+              color: isRecording ? Colors.white : Colors.teal.shade800,
+              size: 16,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              lang == 'en' ? "Voice" : "Suara",
+              style: TextStyle(
+                color: isRecording ? Colors.white : Colors.teal.shade800,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -864,11 +881,13 @@ class _PointsBadge extends StatelessWidget {
 }
 
 class _EyeButton extends StatelessWidget {
+  final String lang;
   final bool isActive;
   final bool isFocused;
   final VoidCallback onPressed;
 
   const _EyeButton({
+    required this.lang,
     required this.isActive,
     required this.isFocused,
     required this.onPressed,
@@ -879,19 +898,33 @@ class _EyeButton extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isActive
               ? (isFocused ? Colors.green : Colors.orange)
               : Colors.teal.shade100,
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(
-          isActive
-              ? (isFocused ? Icons.visibility : Icons.visibility_off)
-              : Icons.remove_red_eye_rounded,
-          color: isActive ? Colors.white : Colors.teal.shade800,
-          size: 20,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive
+                  ? (isFocused ? Icons.visibility : Icons.visibility_off)
+                  : Icons.remove_red_eye_rounded,
+              color: isActive ? Colors.white : Colors.teal.shade800,
+              size: 16,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              lang == 'en' ? "Silent" : "Dlm Hati",
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.teal.shade800,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

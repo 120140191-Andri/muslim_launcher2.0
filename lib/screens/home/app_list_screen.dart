@@ -57,8 +57,9 @@ class AppListScreen extends StatefulWidget {
   static Future<void> preload({
     VoidCallback? onProgress,
     Function(List<dynamic>)? onRawAppsFetched,
+    bool forceRefresh = false,
   }) async {
-    if (_cache != null && iconCache.isNotEmpty) return;
+    if (!forceRefresh && _cache != null && iconCache.isNotEmpty) return;
     if (_preloading) return _preloadCompleter!.future;
 
     _preloading = true;
@@ -113,7 +114,6 @@ class AppListScreen extends StatefulWidget {
 
   /// Invalidate only the app list. Icon cache is kept intact.
   static void invalidateAppsOnly() {
-    _cache = null;
     _preloading = false;
   }
 

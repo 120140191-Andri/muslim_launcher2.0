@@ -199,6 +199,10 @@ class MainActivity : FlutterActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIntent(intent)
+        
+        if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            appsChannel?.invokeMethod("onHomePressed", null)
+        }
     }
 
     private fun handleIntent(intent: Intent?) {
@@ -244,12 +248,7 @@ class MainActivity : FlutterActivity() {
         return false
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
-            appsChannel?.invokeMethod("onHomePressed", null)
-        }
-    }
+
 
     private fun getInstalledApps(): List<Map<String, Any>> {
         val pm = packageManager

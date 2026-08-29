@@ -216,15 +216,18 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                           color: Color(0xFF0891B2),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          isEn
-                              ? "FOR YOUR $brandDisplay DEVICE:"
-                              : "PETUNJUK HP $brandDisplay:",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                            fontSize: 12,
-                            color: Color(0xFF0891B2),
+                        Flexible(
+                          child: Text(
+                            isEn
+                                ? "FOR YOUR $brandDisplay DEVICE:"
+                                : "PETUNJUK HP $brandDisplay:",
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                              fontSize: 12,
+                              color: Color(0xFF0891B2),
+                            ),
                           ),
                         ),
                       ],

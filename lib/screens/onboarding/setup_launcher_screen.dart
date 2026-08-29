@@ -160,13 +160,16 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                         children: [
                           const Icon(Icons.touch_app_rounded, size: 18, color: Color(0xFF0891B2)),
                           const SizedBox(width: 8),
-                          Text(
-                            isEn ? "STEPS FOR $brandDisplay:" : "LANGKAH UNTUK $brandDisplay:",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800, 
-                              letterSpacing: 0.5,
-                              fontSize: 12,
-                              color: Color(0xFF0891B2),
+                          Flexible(
+                            child: Text(
+                              isEn ? "STEPS FOR $brandDisplay:" : "LANGKAH UNTUK $brandDisplay:",
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800, 
+                                letterSpacing: 0.5,
+                                fontSize: 12,
+                                color: Color(0xFF0891B2),
+                              ),
                             ),
                           ),
                         ],

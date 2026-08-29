@@ -51,6 +51,15 @@ class AppBlockService {
     }
   }
 
+  Future<void> openAutostartSettings() async {
+    try {
+      const appsChannel = MethodChannel('com.muslimlauncher/apps');
+      await appsChannel.invokeMethod('openAutostartSettings');
+    } on PlatformException catch (_) {
+      // Fallback
+    }
+  }
+
   Future<void> allowAppTemporarily(String packageName, {int durationMinutes = 60}) async {
     try {
       await _channel.invokeMethod('allowAppTemporarily', {

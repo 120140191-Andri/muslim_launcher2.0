@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/app_state.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/language_screen.dart';
-import 'screens/onboarding/setup_launcher_screen.dart';
+import 'screens/onboarding/setup_hub_screen.dart';
 import 'screens/home/blocked_app_screen.dart';
 import 'screens/home/permission_blocked_overlay.dart';
 
@@ -101,7 +101,7 @@ class MuslimLauncherApp extends StatelessWidget {
 
   Widget _determineHome(AppState appState) {
     if (appState.hasCompletedOnboarding) return const HomeScreen();
-    if (appState.hasSelectedLanguage) return const SetupLauncherScreen();
+    if (appState.hasSelectedLanguage) return const SetupHubScreen();
     return const LanguageScreen();
   }
 }

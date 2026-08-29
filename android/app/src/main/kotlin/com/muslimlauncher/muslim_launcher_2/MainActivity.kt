@@ -2,6 +2,7 @@ package com.muslimlauncher.muslim_launcher_2
 
 import android.content.Intent
 import android.content.Context
+import android.content.ComponentName
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
@@ -76,6 +77,10 @@ class MainActivity : FlutterActivity() {
                     val pkg = call.argument<String>("packageName")
                     if (pkg != null) { openAppSettings(pkg); result.success(null) }
                     else result.error("UNAVAILABLE", "Package name not provided.", null)
+                }
+                "openAutostartSettings" -> {
+                    openAutostartSettings()
+                    result.success(true)
                 }
                 "uninstallApp" -> {
                     val pkg = call.argument<String>("packageName")
@@ -244,6 +249,42 @@ class MainActivity : FlutterActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
+    }
+
+    private fun openAutostartSettings() {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        val intents = mutableListOf<Intent>()
+
+        when {
+            manufacturer.contains("xiaomi") || manufacturer.contains("poco") || manufacturer.contains("redmi") -> {
+                intents.add(Intent().setComponent(ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")))
+            }
+            manufacturer.contains("oppo") || manufacturer.contains("realme") -> {
+                intents.add(Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")))
+                intents.add(Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity")))
+            }
+            manufacturer.contains("vivo") -> {
+                intents.add(Intent().setComponent(ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity")))
+                intents.add(Intent().setComponent(ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")))
+            }
+            manufacturer.contains("samsung") -> {
+                intents.add(Intent().setComponent(ComponentName("com.samsung.android.looper", "com.samsung.android.sm.ui.battery.BatteryActivity")))
+            }
+        }
+
+        intents.add(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = android.net.Uri.fromParts("package", packageName, null)
+        })
+
+        for (intent in intents) {
+            try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                return
+            } catch (_: Exception) {
+                // Try next intent fallback
+            }
+        }
     }
 
     private fun uninstallApp(packageName: String) {

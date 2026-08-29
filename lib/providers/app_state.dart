@@ -27,6 +27,7 @@ class AppState extends ChangeNotifier {
   bool _isAccessibilityEnabled = false;
   bool _isDefaultLauncher = false;
   bool _hasSeenAccessibilitySetup = false;
+  bool _hasAcknowledgedAutostart = false;
   String _manufacturer = '';
   String _deviceModel = '';
   bool _ignorePermissionGuard = false;
@@ -68,6 +69,7 @@ class AppState extends ChangeNotifier {
   bool get isAccessibilityEnabled => _isAccessibilityEnabled;
   bool get isDefaultLauncher => _isDefaultLauncher;
   bool get hasSeenAccessibilitySetup => _hasSeenAccessibilitySetup;
+  bool get hasAcknowledgedAutostart => _hasAcknowledgedAutostart;
   String get manufacturer => _manufacturer;
   String get deviceModel => _deviceModel;
   bool get ignorePermissionGuard => _ignorePermissionGuard;
@@ -90,6 +92,7 @@ class AppState extends ChangeNotifier {
     _lastReadSurah = prefs.getString('lastReadSurah') ?? '';
     _lastReadAyahNumber = prefs.getInt('lastReadAyahNumber') ?? 0;
     _hasSeenAccessibilitySetup = prefs.getBool('hasSeenAccessibilitySetup') ?? false;
+    _hasAcknowledgedAutostart = prefs.getBool('hasAcknowledgedAutostart') ?? false;
     
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
@@ -298,6 +301,12 @@ class AppState extends ChangeNotifier {
   Future<void> addPoints(int amount) async {
     _points += amount;
     await prefs.setInt('points', _points);
+    notifyListeners();
+  }
+
+  Future<void> setHasAcknowledgedAutostart(bool value) async {
+    _hasAcknowledgedAutostart = value;
+    await prefs.setBool('hasAcknowledgedAutostart', value);
     notifyListeners();
   }
 

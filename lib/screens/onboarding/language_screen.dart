@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
-import 'setup_launcher_screen.dart';
+import 'setup_hub_screen.dart';
 import '../../utils/page_transitions.dart';
 
 class LanguageScreen extends StatelessWidget {
@@ -80,7 +80,7 @@ class LanguageScreen extends StatelessWidget {
                     // Ensure language is officially saved before moving forward
                     await appState.setLanguage(lang);
                     appState.navigatorKey.currentState?.pushReplacement(
-                      AppPageRoute(child: const SetupLauncherScreen()),
+                      AppPageRoute(child: const SetupHubScreen()),
                     );
                   },
 

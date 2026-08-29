@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../providers/app_state.dart';
-import 'accessibility_setup_screen.dart';
-import '../onboarding/setup_launcher_screen.dart';
+import '../onboarding/setup_hub_screen.dart';
 import '../../utils/page_transitions.dart';
 
 class PermissionBlockedOverlay extends StatelessWidget {
@@ -76,29 +75,16 @@ class PermissionBlockedOverlay extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 48),
-                      if (isMissingDefault)
-                        _buildRepairButton(
-                          icon: Icons.home_rounded,
-                          label: isEn ? 'Set Default Launcher' : 'Atur Beranda Utama',
-                          onTap: () {
-                            appState.setIgnorePermissionGuard(true);
-                            appState.navigatorKey.currentState?.push(
-                              AppPageRoute(child: const SetupLauncherScreen()),
-                            ).then((_) => appState.setIgnorePermissionGuard(false));
-                          },
-                        ),
-                      if (isMissingDefault && isMissingAccess) const SizedBox(height: 16),
-                      if (isMissingAccess)
-                        _buildRepairButton(
-                          icon: Icons.accessibility_new_rounded,
-                          label: isEn ? 'Enable Accessibility' : 'Aktifkan Aksesibilitas',
-                          onTap: () {
-                            appState.setIgnorePermissionGuard(true);
-                            appState.navigatorKey.currentState?.push(
-                              AppPageRoute(child: const AccessibilitySetupScreen()),
-                            ).then((_) => appState.setIgnorePermissionGuard(false));
-                          },
-                        ),
+                      _buildRepairButton(
+                        icon: Icons.tune_rounded,
+                        label: isEn ? 'Open Setup Hub' : 'Buka Pusat Pengaturan',
+                        onTap: () {
+                          appState.setIgnorePermissionGuard(true);
+                          appState.navigatorKey.currentState?.push(
+                            AppPageRoute(child: const SetupHubScreen(isOnboarding: false)),
+                          ).then((_) => appState.setIgnorePermissionGuard(false));
+                        },
+                      ),
                     ],
                   ),
                 ),

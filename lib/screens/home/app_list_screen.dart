@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
@@ -396,6 +397,16 @@ class _AppListScreenState extends State<AppListScreen>
     );
   }
 
+  Future<void> _openSupportDeveloperUrl() async {
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.VIEW',
+        data: 'https://ko-fi.com/andrisetiawan84153',
+      );
+      await intent.launch();
+    } catch (_) {}
+  }
+
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -445,6 +456,40 @@ class _AppListScreenState extends State<AppListScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          GestureDetector(
+            onTap: _openSupportDeveloperUrl,
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade700,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.favorite_rounded, color: Colors.white, size: 13),
+                  const SizedBox(width: 4),
+                  Text(
+                    lang == 'en' ? 'Support Dev' : 'Dukung Dev',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           Selector<AppState, int>(
             selector: (_, s) => s.points,
             builder: (_, pts, child) => _PointsBadge(points: pts),
@@ -455,7 +500,7 @@ class _AppListScreenState extends State<AppListScreen>
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.teal.shade800,
               borderRadius: const BorderRadius.only(
@@ -471,13 +516,42 @@ class _AppListScreenState extends State<AppListScreen>
                   size: 14,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  lang == 'en'
-                      ? 'Tap an icon to launch the app'
-                      : 'Ketuk ikon untuk membuka aplikasi',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 11,
+                Expanded(
+                  child: Text(
+                    lang == 'en'
+                        ? 'Tap an icon to launch the app'
+                        : 'Ketuk ikon untuk membuka aplikasi',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: _openSupportDeveloperUrl,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.coffee_rounded, color: Colors.amber, size: 13),
+                        const SizedBox(width: 4),
+                        Text(
+                          lang == 'en' ? 'Ko-fi Support' : 'Dukung Dev',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

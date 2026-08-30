@@ -5,14 +5,25 @@ import '../../utils/translations.dart';
 import 'setup_hub_screen.dart';
 import '../../utils/page_transitions.dart';
 
-class LanguageScreen extends StatelessWidget {
+class LanguageScreen extends StatefulWidget {
   const LanguageScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    final lang = appState.languageCode;
+  State<LanguageScreen> createState() => _LanguageScreenState();
+}
 
+class _LanguageScreenState extends State<LanguageScreen> {
+  late String _selectedLang;
+
+  @override
+  void initState() {
+    super.initState();
+    final appState = Provider.of<AppState>(context, listen: false);
+    _selectedLang = appState.languageCode;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F4),
       body: SafeArea(
@@ -67,16 +78,16 @@ class LanguageScreen extends StatelessWidget {
                           context: context,
                           title: 'Bahasa Indonesia',
                           code: 'id',
-                          isSelected: lang == 'id',
-                          onTap: () => appState.setLanguage('id'),
+                          isSelected: _selectedLang == 'id',
+                          onTap: () => setState(() => _selectedLang = 'id'),
                         ),
                         const SizedBox(height: 16),
                         _buildLanguageOption(
                           context: context,
                           title: 'English (US)',
                           code: 'en',
-                          isSelected: lang == 'en',
-                          onTap: () => appState.setLanguage('en'),
+                          isSelected: _selectedLang == 'en',
+                          onTap: () => setState(() => _selectedLang = 'en'),
                         ),
                         const Spacer(),
                         const SizedBox(height: 24),
@@ -84,7 +95,8 @@ class LanguageScreen extends StatelessWidget {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () async {
-                              await appState.setLanguage(lang);
+                              final appState = Provider.of<AppState>(context, listen: false);
+                              await appState.setLanguage(_selectedLang);
                               appState.navigatorKey.currentState?.pushReplacement(
                                 AppPageRoute(child: const SetupHubScreen()),
                               );
@@ -105,7 +117,7 @@ class LanguageScreen extends StatelessWidget {
                                   child: FittedBox(
                                     fit: BoxFit.scaleDown,
                                     child: Text(
-                                      Translations.get(lang, 'next').toUpperCase(),
+                                      Translations.get(_selectedLang, 'next').toUpperCase(),
                                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
                                     ),
                                   ),

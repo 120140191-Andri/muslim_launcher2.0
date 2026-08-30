@@ -201,8 +201,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
         );
+        return;
       }
     }
+    
+    appState.navigatorKey.currentState?.push(
+      AppPageRoute(child: const SurahListScreen()),
+    );
   }
 
   String _getTimeGreeting(String lang) {
@@ -1079,7 +1084,7 @@ class _LastAyatCard extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: surah.isEmpty ? null : onTap,
+            onTap: onTap,
             child: Stack(
               children: [
                 Padding(

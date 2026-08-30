@@ -83,7 +83,7 @@ class AppListScreen extends StatefulWidget {
         for (var i = 0; i < missing.length; i += 50) {
           final end = (i + 50 < missing.length) ? i + 50 : missing.length;
           final batch = missing.sublist(i, end);
-          
+
           try {
             final Map<dynamic, dynamic> icons = await _channel.invokeMethod(
               'getAllAppIcons',
@@ -109,7 +109,9 @@ class AppListScreen extends StatefulWidget {
 
   static List<AppInfo> _processApps(List<dynamic> raw) {
     return raw.map((a) => AppInfo.fromMap(a as Map<dynamic, dynamic>)).toList()
-      ..sort((a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()));
+      ..sort(
+        (a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()),
+      );
   }
 
   /// Invalidate only the app list. Icon cache is kept intact.
@@ -302,7 +304,9 @@ class _AppListScreenState extends State<AppListScreen>
                     ),
                     onTap: () {
                       Navigator.pop(ctx);
-                      context.read<AppState>().toggleAppBlockedStatus(app.packageName);
+                      context.read<AppState>().toggleAppBlockedStatus(
+                        app.packageName,
+                      );
                     },
                   ),
                 SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
@@ -359,7 +363,7 @@ class _AppListScreenState extends State<AppListScreen>
         content: Text(
           lang == 'en'
               ? 'This is a non-productive app. Use 50 Points to unlock it for 60 minutes?'
-              : 'Aplikasi ini non-produktif. Gunakan 50 Poin untuk membuka selama 60 menit?',
+              : 'Aplikasi ini non-produktif. Gunakan 50 Poin untuk membuka aplikasi ini selama 60 menit?',
         ),
         actions: [
           TextButton(
@@ -393,8 +397,8 @@ class _AppListScreenState extends State<AppListScreen>
             child: Text(
               appState.points >= 50
                   ? (lang == 'en'
-                      ? 'Unlock 60m (50 Pts)'
-                      : 'Buka 60m (50 Poin)')
+                        ? 'Unlock 60m (50 Pts)'
+                        : 'Buka 60m (50 Poin)')
                   : (lang == 'en' ? 'Read Quran' : 'Baca Quran'),
             ),
           ),
@@ -509,7 +513,10 @@ class _AppListScreenState extends State<AppListScreen>
                   onTap: _openSupportDeveloperUrl,
                   borderRadius: BorderRadius.circular(14),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.amber.shade700,
                       borderRadius: BorderRadius.circular(14),
@@ -524,10 +531,16 @@ class _AppListScreenState extends State<AppListScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.coffee_rounded, color: Colors.white, size: 14),
+                        const Icon(
+                          Icons.coffee_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                         const SizedBox(width: 4),
                         Text(
-                          lang == 'en' ? 'Support / Request Features' : 'Dukung / Usulkan Fitur',
+                          lang == 'en'
+                              ? 'Support / Request Features'
+                              : 'Dukung / Usulkan Fitur',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11.5,
@@ -557,7 +570,11 @@ class _AppListScreenState extends State<AppListScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.shade400),
+            Icon(
+              Icons.search_off_rounded,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
             const SizedBox(height: 16),
             Text(
               lang == 'en' ? 'No apps found' : 'Aplikasi tidak ditemukan',
@@ -570,7 +587,9 @@ class _AppListScreenState extends State<AppListScreen>
 
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
-      physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: ClampingScrollPhysics(),
+      ),
       addAutomaticKeepAlives: true,
       addRepaintBoundaries: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -651,15 +670,19 @@ class _AppTile extends StatelessWidget {
                   ),
                 // Timer badge
                 Selector<AppState, int>(
-                  selector: (context, state) => state.getUnlockRemainingMinutes(app.packageName),
+                  selector: (context, state) =>
+                      state.getUnlockRemainingMinutes(app.packageName),
                   builder: (context, remaining, child) {
                     if (remaining <= 0) return const SizedBox.shrink();
-                    
+
                     return Positioned(
                       left: -4,
                       bottom: -4,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade700,
                           borderRadius: BorderRadius.circular(10),
@@ -688,7 +711,9 @@ class _AppTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: isBlocked ? Colors.grey.shade500 : Colors.teal.shade900,
+                  color: isBlocked
+                      ? Colors.grey.shade500
+                      : Colors.teal.shade900,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -738,7 +763,11 @@ class _AppIcon extends StatelessWidget {
             color: Colors.teal.shade50.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(Icons.apps_rounded, size: 22, color: Colors.teal.shade700),
+          child: Icon(
+            Icons.apps_rounded,
+            size: 22,
+            color: Colors.teal.shade700,
+          ),
         );
       },
     );
@@ -746,10 +775,26 @@ class _AppIcon extends StatelessWidget {
     if (grayscale) {
       img = ColorFiltered(
         colorFilter: const ColorFilter.matrix(<double>[
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0,      0,      0,      1, 0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
         ]),
         child: img,
       );

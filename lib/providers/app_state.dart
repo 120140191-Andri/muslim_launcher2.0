@@ -142,6 +142,7 @@ class AppState extends ChangeNotifier {
         if (call.method == 'onAppListChanged') {
           AppListScreen.invalidateFull();
           final rawApps = await appsChannel.invokeMethod('getApps');
+          AppListScreen.preload(forceRefresh: true);
           syncAppsWithCategories(rawApps);
         } else if (call.method == 'onHomePressed') {
           navigatorKey.currentState?.popUntil((route) => route.isFirst);

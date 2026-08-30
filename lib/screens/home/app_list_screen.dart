@@ -73,7 +73,10 @@ class AppListScreen extends StatefulWidget {
       _cache = apps;
       onProgress?.call();
 
-      // 2) Batch-load all missing icons using multi-threaded native pool
+      // 2) Clean up uninstalled apps from icon cache
+      iconCache.removeWhere((pkg, _) => !apps.any((a) => a.packageName == pkg));
+
+      // 3) Batch-load all missing icons using multi-threaded native pool
       final missing = apps
           .map((a) => a.packageName)
           .where((pkg) => !iconCache.containsKey(pkg))
@@ -119,11 +122,9 @@ class AppListScreen extends StatefulWidget {
     _preloading = false;
   }
 
-  /// Full invalidation (e.g. after install/uninstall where icons may change).
+  /// Invalidate apps for re-fetching without abruptly clearing memory cache.
   static void invalidateFull() {
-    _cache = null;
     _preloading = false;
-    iconCache.clear();
   }
 
   static List<AppInfo>? get cachedApps => _cache;

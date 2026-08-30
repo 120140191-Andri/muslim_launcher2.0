@@ -1,4 +1,4 @@
-package com.muslimlauncher.muslim_launcher_2
+package com.kraftech.muslim_launcher_2
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Context

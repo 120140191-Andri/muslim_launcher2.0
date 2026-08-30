@@ -499,7 +499,7 @@ class _AppListScreenState extends State<AppListScreen>
                 Expanded(
                   child: Text(
                     lang == 'en'
-                        ? 'Support dev to keep app 100% free & ad-free'
+                        ? 'Support dev to keep app free & ad-free'
                         : 'Dukung pengembang agar aplikasi tetap gratis & tanpa iklan',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.9),

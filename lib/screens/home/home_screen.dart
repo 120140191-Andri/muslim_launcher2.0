@@ -1484,7 +1484,7 @@ class _SupportDeveloperCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isEn ? 'Support / Request Feature' : 'Dukung / Request Fitur',
+                      isEn ? 'Support / Request Features' : 'Dukung / Usulkan Fitur',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,
@@ -1526,7 +1526,7 @@ class _SupportDeveloperCard extends StatelessWidget {
               onPressed: onTap,
               icon: const Icon(Icons.coffee_rounded, size: 20),
               label: Text(
-                isEn ? 'Support / Request Feature via Ko-fi' : 'Dukung / Request Fitur via Trakteer',
+                isEn ? 'Support / Request Features via Ko-fi' : 'Dukung / Usulkan Fitur via Trakteer',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,

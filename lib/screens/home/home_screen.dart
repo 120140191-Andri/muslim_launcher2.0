@@ -21,9 +21,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-  late Timer _clockTimer;
-  DateTime _now = DateTime.now();
-
   Future<void> _openSupportDeveloperUrl() async {
     try {
       final appState = Provider.of<AppState>(context, listen: false);
@@ -42,12 +39,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _clockTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      final now = DateTime.now();
-      if (now.minute != _now.minute || now.hour != _now.hour) {
-        if (mounted) setState(() => _now = now);
-      }
-    });
 
     // Delayed preload to avoid startup peak
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -155,39 +146,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _clockTimer.cancel();
     super.dispose();
-  }
-
-  String _pad(int v) => v.toString().padLeft(2, '0');
-  String get _hourString => _pad(_now.hour);
-  String get _minuteString => _pad(_now.minute);
-
-  String get _dateString {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    const days = [
-      'Senin',
-      'Selasa',
-      'Rabu',
-      'Kamis',
-      'Jumat',
-      'Sabtu',
-      'Minggu',
-    ];
-    return '${days[_now.weekday - 1]}, ${_now.day} ${months[_now.month - 1]} ${_now.year}';
   }
 
   void _resumeReading(AppState appState) {
@@ -209,14 +168,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     appState.navigatorKey.currentState?.push(
       AppPageRoute(child: const SurahListScreen()),
     );
-  }
-
-  String _getTimeGreeting(String lang) {
-    final hour = _now.hour;
-    if (hour < 12) return lang == 'en' ? 'Good Morning' : 'Selamat Pagi';
-    if (hour < 15) return lang == 'en' ? 'Good Afternoon' : 'Selamat Siang';
-    if (hour < 18) return lang == 'en' ? 'Good Evening' : 'Selamat Sore';
-    return lang == 'en' ? 'Good Night' : 'Selamat Malam';
   }
 
   Widget _buildHeaderBadge({
@@ -296,37 +247,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _getTimeGreeting(lang),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.7,
-                                            ),
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          lang == 'en'
-                                              ? 'Seeker of Goodness'
-                                              : 'Pejuang Kebaikan',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                    child: _GreetingWidget(lang: lang),
                                   ),
                                   const SizedBox(width: 8),
                                   Row(
@@ -366,14 +287,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              RepaintBoundary(
+                              const RepaintBoundary(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: _ClockWidget(
-                                    hourString: _hourString,
-                                    minuteString: _minuteString,
-                                    dateString: _dateString,
-                                  ),
+                                  padding: EdgeInsets.all(16.0),
+                                  child: _ClockWidget(),
                                 ),
                               ),
                             ],
@@ -528,16 +445,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                   .length;
                                         }
 
-                                        return _LastAyatCard(
-                                          surah: appState.lastReadSurah,
-                                          ayahNumber:
-                                              appState.lastReadAyahNumber,
-                                          totalAyahs: totalAyahs,
-                                          currentSurahIdx:
-                                              appState.currentSurahIndex,
-                                          lang: lang,
-                                          khatmCount: appState.khatmCount,
-                                          onTap: () => _resumeReading(appState),
+                                        return RepaintBoundary(
+                                          child: _LastAyatCard(
+                                            surah: appState.lastReadSurah,
+                                            ayahNumber:
+                                                appState.lastReadAyahNumber,
+                                            totalAyahs: totalAyahs,
+                                            currentSurahIdx:
+                                                appState.currentSurahIndex,
+                                            lang: lang,
+                                            khatmCount: appState.khatmCount,
+                                            onTap: () => _resumeReading(appState),
+                                          ),
                                         );
                                       },
                                     ),
@@ -559,17 +478,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     ),
 
                                     const SizedBox(height: 12),
-                                    _QuickDock(),
+                                    const RepaintBoundary(child: _QuickDock()),
                                     const SizedBox(height: 24),
 
                                     // Daily Inspiration
-                                    _DailyInspiration(
-                                      lang: lang,
-                                      surah: appState.dailySurahName,
-                                      ayahNumber: appState.dailyAyahNumber,
-                                      ayahText: lang == 'en'
-                                          ? appState.dailyAyahTextEn
-                                          : appState.dailyAyahTextId,
+                                    RepaintBoundary(
+                                      child: _DailyInspiration(
+                                        lang: lang,
+                                        surah: appState.dailySurahName,
+                                        ayahNumber: appState.dailyAyahNumber,
+                                        ayahText: lang == 'en'
+                                            ? appState.dailyAyahTextEn
+                                            : appState.dailyAyahTextId,
+                                      ),
                                     ),
 
                                     const SizedBox(height: 24),
@@ -800,13 +721,108 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 }
 
-class _ClockWidget extends StatelessWidget {
-  final String hourString, minuteString, dateString;
-  const _ClockWidget({
-    required this.hourString,
-    required this.minuteString,
-    required this.dateString,
-  });
+class _GreetingWidget extends StatelessWidget {
+  final String lang;
+  const _GreetingWidget({required this.lang});
+
+  String _getTimeGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return lang == 'en' ? 'Good Morning' : 'Selamat Pagi';
+    if (hour < 15) return lang == 'en' ? 'Good Afternoon' : 'Selamat Siang';
+    if (hour < 18) return lang == 'en' ? 'Good Evening' : 'Selamat Sore';
+    return lang == 'en' ? 'Good Night' : 'Selamat Malam';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _getTimeGreeting(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          lang == 'en' ? 'Seeker of Goodness' : 'Pejuang Kebaikan',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ClockWidget extends StatefulWidget {
+  const _ClockWidget();
+
+  @override
+  State<_ClockWidget> createState() => _ClockWidgetState();
+}
+
+class _ClockWidgetState extends State<_ClockWidget> {
+  late DateTime _now;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _now = DateTime.now();
+    _timer = Timer.periodic(const Duration(seconds: 15), (_) {
+      final now = DateTime.now();
+      if (now.minute != _now.minute || now.hour != _now.hour) {
+        if (mounted) setState(() => _now = now);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String _pad(int v) => v.toString().padLeft(2, '0');
+  String get _hourString => _pad(_now.hour);
+  String get _minuteString => _pad(_now.minute);
+
+  String get _dateString {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+    const days = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
+    return '${days[_now.weekday - 1]}, ${_now.day} ${months[_now.month - 1]} ${_now.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -818,7 +834,7 @@ class _ClockWidget extends StatelessWidget {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
-              hourString,
+              _hourString,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 84,
@@ -838,7 +854,7 @@ class _ClockWidget extends StatelessWidget {
               ),
             ),
             Text(
-              minuteString,
+              _minuteString,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 72,
@@ -856,12 +872,12 @@ class _ClockWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            dateString.toUpperCase(),
+            _dateString.toUpperCase(),
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              letterSpacing: 2,
+              letterSpacing: 1.5,
             ),
           ),
         ),
@@ -872,6 +888,8 @@ class _ClockWidget extends StatelessWidget {
 
 // ── _QuickDock ───────────────────────────────────────────────────────────────
 class _QuickDock extends StatelessWidget {
+  const _QuickDock();
+
   static const _channel = MethodChannel('com.muslimlauncher/apps');
 
   Future<void> _openApp(String pkg) async {
@@ -1086,7 +1104,15 @@ class _QuickDock extends StatelessWidget {
         height: 44,
         padding: const EdgeInsets.all(4),
         child: iconBytes != null
-            ? Image.memory(iconBytes, filterQuality: FilterQuality.medium)
+            ? Image.memory(
+                iconBytes,
+                width: 44,
+                height: 44,
+                cacheWidth: 88,
+                cacheHeight: 88,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.medium,
+              )
             : Icon(fallback, color: Colors.teal.shade700, size: 24),
       ),
     );

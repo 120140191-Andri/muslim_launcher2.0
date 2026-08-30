@@ -193,10 +193,12 @@ class AppState extends ChangeNotifier {
 
   void _startStatusTimer() {
     _statusTimer?.cancel();
-    _statusTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
-      refreshStatus();
-
-      // 3. Cleanup & Unlock Expiry
+    if (_unlockedExpirations.isEmpty) {
+      _statusTimer = null;
+      return;
+    }
+    // Only tick when there are active temporary unlocks to monitor
+    _statusTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _cleanupExpiredUnlocks();
     });
   }
@@ -222,6 +224,11 @@ class AppState extends ChangeNotifier {
   }
 
   void _cleanupExpiredUnlocks() {
+    if (_unlockedExpirations.isEmpty) {
+      _statusTimer?.cancel();
+      _statusTimer = null;
+      return;
+    }
     final now = DateTime.now().millisecondsSinceEpoch;
     bool changed = false;
     _unlockedExpirations.removeWhere((pkg, expiry) {
@@ -236,7 +243,10 @@ class AppState extends ChangeNotifier {
       prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
       notifyListeners();
     }
-    // Removed: unnecessary notifyListeners when no change occurred
+    if (_unlockedExpirations.isEmpty) {
+      _statusTimer?.cancel();
+      _statusTimer = null;
+    }
   }
 
   Future<void> loadQuranData() async {
@@ -432,6 +442,7 @@ class AppState extends ChangeNotifier {
     try {
       await _appBlockService.allowAppTemporarily(pkg, durationMinutes: durationMinutes);
       await prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
+      _startStatusTimer();
     } catch (e) {
       _unlockedExpirations.remove(pkg); // Rollback locally if native fails
       success = false;

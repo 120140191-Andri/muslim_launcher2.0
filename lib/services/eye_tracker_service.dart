@@ -14,6 +14,7 @@ class EyeTrackerService {
   bool _isBusy = false;
   bool _isFocused = false;
   bool _isInitializing = false;
+  int _lastProcessTime = 0;
   Future<void>? _lock;
   StreamController<bool>? _focusController;
 
@@ -84,8 +85,12 @@ class EyeTrackerService {
   }
 
   void _processCameraImage(CameraImage image) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    // Throttle to ~4 FPS (250ms) to drastically save CPU/GPU and battery
+    if (now - _lastProcessTime < 250) return;
     if (_isBusy || _focusController == null || _focusController!.isClosed) return;
     _isBusy = true;
+    _lastProcessTime = now;
 
     final WriteBuffer allBytes = WriteBuffer();
     for (final Plane plane in image.planes) {
@@ -182,6 +187,7 @@ class EyeTrackerService {
       _focusController = null;
       _isFocused = false;
       _isBusy = false;
+      _lastProcessTime = 0;
     }
   }
 }

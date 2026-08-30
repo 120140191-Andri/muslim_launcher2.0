@@ -756,6 +756,8 @@ class _AppIcon extends StatelessWidget {
       bytes,
       width: 48,
       height: 48,
+      cacheWidth: 96,
+      cacheHeight: 96,
       fit: BoxFit.contain,
       gaplessPlayback: true,
       errorBuilder: (context, error, stackTrace) {

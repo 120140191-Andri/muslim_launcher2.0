@@ -12,12 +12,35 @@ import java.util.Collections
 
 class AppBlockService : AccessibilityService() {
     companion object {
+        private var instance: AppBlockService? = null
+        private val handler = android.os.Handler(android.os.Looper.getMainLooper())
         private var blockedPackages = Collections.synchronizedSet(mutableSetOf<String>())
         private var temporaryAllowedPackages = ConcurrentHashMap<String, Long>()
         
         // Transition Shield: Prevent loop during the first 10 seconds of unlock
         private var lastBypassPackage: String? = null
         private var lastBypassTime: Long = 0
+
+        fun checkAndKickExpiredApp(packageName: String) {
+            val s = instance ?: return
+            val now = System.currentTimeMillis()
+            val expiry = temporaryAllowedPackages[packageName]
+            if (expiry != null && now >= expiry) {
+                temporaryAllowedPackages.remove(packageName)
+                val activePackage = try { s.rootInActiveWindow?.packageName?.toString()?.trim()?.lowercase() } catch (e: Exception) { null }
+                if (activePackage == packageName && blockedPackages.contains(packageName)) {
+                    Log.d("AppBlockService", "EXPIRED WHILE IN APP: Kicking $packageName")
+                    MainActivity.notifyAppBlocked(packageName)
+                    s.performGlobalAction(GLOBAL_ACTION_HOME)
+                    val launchIntent = s.packageManager.getLaunchIntentForPackage(s.packageName)?.apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        putExtra("blockedPackageName", packageName)
+                        putExtra("triggerBlockScreen", true)
+                    }
+                    s.startActivity(launchIntent)
+                }
+            }
+        }
 
         fun updateBlockedPackages(context: Context, packages: List<String>) {
             Log.d("AppBlockService", "Flutter updateBlockedPackages: ${packages.size} apps")
@@ -46,7 +69,12 @@ class AppBlockService : AccessibilityService() {
             allowedMap.add("$pkg|$expiry")
             prefs.edit().putStringSet("allowed_temp_packages", allowedMap).commit()
             
-            Log.d("AppBlockService", "ALLOW_TEMP: $pkg until $expiry (Shield ON)")
+            // Schedule instant kick when duration expires
+            handler.postDelayed({
+                checkAndKickExpiredApp(pkg)
+            }, durationMillis)
+            
+            Log.d("AppBlockService", "ALLOW_TEMP: $pkg until $expiry (Shield ON, Scheduler Active)")
         }
     }
 
@@ -65,6 +93,11 @@ class AppBlockService : AccessibilityService() {
                     if (now < expiry) {
                         temporaryAllowedPackages[pkg] = expiry
                         stillvalid.add("$pkg|$expiry")
+                        
+                        val remaining = expiry - now
+                        handler.postDelayed({
+                            checkAndKickExpiredApp(pkg)
+                        }, remaining)
                     }
                 }
             }
@@ -170,6 +203,7 @@ class AppBlockService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        instance = this
         loadBlockedPackages()
         
         // Register receiver for instant unlock signals
@@ -185,6 +219,8 @@ class AppBlockService : AccessibilityService() {
 
     override fun onDestroy() {
         try {
+            if (instance == this) instance = null
+            handler.removeCallbacksAndMessages(null)
             unregisterReceiver(allowReceiver)
         } catch (e: Exception) {}
         super.onDestroy()

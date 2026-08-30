@@ -33,6 +33,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
   int? _recordingAyahIdx;
   String _recognizedText = "";
+  String _cumulativeRecognizedText = "";
+  String _currentSessionText = "";
+  String _targetArabicText = "";
 
   // Eye Focus Mode
   final EyeTrackerService _eyeTrackerService = EyeTrackerService();
@@ -63,11 +66,25 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     try {
       await _speech.initialize(
         onError: (val) {
-          if (mounted) setState(() => _recordingAyahIdx = null);
+          if (mounted) {
+            if (_recordingAyahIdx != null && !_isDisposed) {
+               Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted && _recordingAyahIdx != null) _startListeningSession();
+               });
+            } else {
+               setState(() => _recordingAyahIdx = null);
+            }
+          }
         },
         onStatus: (val) {
           if (val == 'done' || val == 'notListening') {
-            if (mounted) setState(() => _recordingAyahIdx = null);
+            if (mounted && _recordingAyahIdx != null && !_isDisposed) {
+              _cumulativeRecognizedText = (_cumulativeRecognizedText + " " + _currentSessionText).trim();
+              _currentSessionText = "";
+              Future.delayed(const Duration(milliseconds: 500), () {
+                 if (mounted && _recordingAyahIdx != null) _startListeningSession();
+              });
+            }
           }
         },
       );
@@ -81,29 +98,44 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     if (_recordingAyahIdx == index) {
       _stopListening();
     } else {
-      if (_recordingAyahIdx != null) _speech.stop();
+      _stopListening(); // Make sure previous is stopped properly
 
-      setState(() => _isInitializing = true);
+      setState(() {
+        _isInitializing = true;
+        _recordingAyahIdx = index;
+        _recognizedText = "";
+        _cumulativeRecognizedText = "";
+        _currentSessionText = "";
+        _targetArabicText = arabic;
+      });
+
+      _startListeningSession();
+    }
+  }
+
+  void _startListeningSession() async {
       try {
-        bool available = await _speech.initialize();
-        if (available && mounted && !_isDisposed) {
-          setState(() {
-            _recordingAyahIdx = index;
-            _recognizedText = "";
-          });
-
+        if (!await _speech.initialize()) {
+           if (mounted) setState(() => _isInitializing = false);
+           return;
+        }
+        if (mounted && !_isDisposed && _recordingAyahIdx != null) {
           _speech.listen(
             onResult: (val) {
-              if (mounted && !_isDisposed) {
+              if (mounted && !_isDisposed && _recordingAyahIdx != null) {
                 setState(() {
-                  _recognizedText = val.recognizedWords;
-                  if (val.hasConfidenceRating && val.confidence > 0.1) {
-                    _onSuccess(index, arabic);
+                  _currentSessionText = val.recognizedWords;
+                  _recognizedText = (_cumulativeRecognizedText + " " + _currentSessionText).trim();
+                  
+                  if (_checkMatch(_recognizedText, _targetArabicText)) {
+                    _onSuccess(_recordingAyahIdx!, _targetArabicText);
+                    _stopListening();
                   }
                 });
               }
             },
             localeId: 'ar_SA',
+            pauseFor: const Duration(seconds: 5), // Provide enough time to breathe
           );
         }
       } finally {
@@ -111,12 +143,60 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
           setState(() => _isInitializing = false);
         }
       }
+  }
+
+  String _normalizeArabicText(String text) {
+    if (text.isEmpty) return text;
+    String normalized = text.replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), ''); // Remove tashkeel
+    normalized = normalized.replaceAll(RegExp(r'[أإآ]'), 'ا'); // Normalize Alif
+    normalized = normalized.replaceAll('ة', 'ه'); // Normalize Ta Marbuta
+    normalized = normalized.replaceAll(RegExp(r'[^\u0600-\u06FF\s]'), ''); // Remove punctuation
+    return normalized.trim();
+  }
+
+  bool _checkMatch(String recognized, String target) {
+    if (recognized.trim().isEmpty) return false;
+    
+    final normRecognized = _normalizeArabicText(recognized);
+    final normTarget = _normalizeArabicText(target);
+    
+    final recWords = normRecognized.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    final targetWords = normTarget.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    
+    if (targetWords.isEmpty) return false;
+    
+    int matchCount = 0;
+    List<String> remainingRecWords = List.from(recWords);
+    for (String word in targetWords) {
+      int idx = remainingRecWords.indexOf(word);
+      if (idx != -1) {
+        matchCount++;
+        remainingRecWords.removeAt(idx);
+      } else if (word.length >= 3) {
+         int partialIdx = remainingRecWords.indexWhere((rw) => rw.length >= 3 && (rw.contains(word) || word.contains(rw)));
+         if (partialIdx != -1) {
+            matchCount++;
+            remainingRecWords.removeAt(partialIdx);
+         }
+      }
+    }
+    
+    double matchPercentage = matchCount / targetWords.length;
+    if (targetWords.length <= 4) {
+      return matchCount >= 1; // 1 word for very short ayahs
+    } else {
+      return matchPercentage >= 0.45; // 45% matching words
     }
   }
 
   void _stopListening({bool isDisposing = false}) {
     if (!isDisposing && mounted) {
-      setState(() => _recordingAyahIdx = null);
+      setState(() {
+        _recordingAyahIdx = null;
+        _cumulativeRecognizedText = "";
+        _currentSessionText = "";
+        _targetArabicText = "";
+      });
     }
     _speech.stop();
   }

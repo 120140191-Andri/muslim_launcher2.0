@@ -5,10 +5,23 @@ import '../../providers/app_state.dart';
 import '../quran/surah_list_screen.dart';
 import '../../utils/page_transitions.dart';
 
-class BlockedAppScreen extends StatelessWidget {
+class BlockedAppScreen extends StatefulWidget {
   final String packageName;
 
   const BlockedAppScreen({super.key, required this.packageName});
+
+  @override
+  State<BlockedAppScreen> createState() => _BlockedAppScreenState();
+}
+
+class _BlockedAppScreenState extends State<BlockedAppScreen> {
+  late final Future<String> _appNameFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _appNameFuture = _getAppName(widget.packageName);
+  }
 
   Future<String> _getAppName(String pkg) async {
     const channel = MethodChannel('com.muslimlauncher/apps');
@@ -27,6 +40,7 @@ class BlockedAppScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final lang = appState.languageCode;
+
 
     return PopScope(
       canPop: false, // Prevent back button from passing through
@@ -75,7 +89,7 @@ class BlockedAppScreen extends StatelessWidget {
                         ),
                       ),
                       FutureBuilder<String>(
-                        future: _getAppName(packageName),
+                        future: _appNameFuture,
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) {
                             return const SizedBox.shrink();
@@ -137,9 +151,9 @@ class BlockedAppScreen extends StatelessWidget {
                           onPressed: appState.points >= 50 
                             ? () async {
                                 await appState.deductPoints(50);
-                                await appState.allowAppTemporarily(packageName);
+                                await appState.allowAppTemporarily(widget.packageName);
                                 await Future.delayed(const Duration(milliseconds: 1000));
-                                appState.openApp(packageName);
+                                appState.openApp(widget.packageName);
                                 appState.clearBlockedApp();
                               }
                             : null,

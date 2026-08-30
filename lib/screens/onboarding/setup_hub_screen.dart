@@ -175,31 +175,31 @@ class _SetupHubScreenState extends State<SetupHubScreen>
       return [
         isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
         isEn ? 'Tap "Downloaded Apps" (Aplikasi Terunduh).' : 'Pilih menu "Aplikasi Terunduh / Downloaded Apps".',
-        isEn ? 'Select "Muslim Launcher".' : 'Pilih "Muslim Launcher".',
-        isEn ? 'Turn ON "Use Muslim Launcher".' : 'Aktifkan sakelar "Gunakan Muslim Launcher".',
+        isEn ? 'Select "Muslim Launcher 2".' : 'Pilih "Muslim Launcher 2".',
+        isEn ? 'Turn ON "Use Muslim Launcher 2".' : 'Aktifkan sakelar "Gunakan Muslim Launcher 2".',
       ];
     } else if (b.contains('samsung')) {
       return [
         isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
         isEn ? 'Select "Installed Apps" or "Installed Services".' : 'Pilih "Layanan Terinstal / Installed Apps".',
-        isEn ? 'Tap "Muslim Launcher" and turn ON.' : 'Pilih "Muslim Launcher" lalu aktifkan sakelar.',
+        isEn ? 'Tap "Muslim Launcher 2" and turn ON.' : 'Pilih "Muslim Launcher 2" lalu aktifkan sakelar.',
       ];
     } else if (b.contains('oppo') || b.contains('oneplus') || b.contains('realme') || b.contains('vivo') || b.contains('iqoo')) {
       return [
         isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
-        isEn ? 'Find "Muslim Launcher" under Accessibility Services.' : 'Cari "Muslim Launcher" di daftar layanan.',
+        isEn ? 'Find "Muslim Launcher 2" under Accessibility Services.' : 'Cari "Muslim Launcher 2" di daftar layanan.',
         isEn ? 'Enable the switch and grant permissions.' : 'Aktifkan sakelar dan izinkan akses.',
       ];
     } else if (b.contains('huawei') || b.contains('honor')) {
       return [
         isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
         isEn ? 'Go to Accessibility -> Installed Services.' : 'Masuk ke Aksesibilitas -> Layanan Terinstal.',
-        isEn ? 'Enable "Muslim Launcher".' : 'Aktifkan "Muslim Launcher".',
+        isEn ? 'Enable "Muslim Launcher 2".' : 'Aktifkan "Muslim Launcher 2".',
       ];
     } else {
       return [
         isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
-        isEn ? 'Find "Muslim Launcher" in the list.' : 'Cari "Muslim Launcher" di daftar aplikasi.',
+        isEn ? 'Find "Muslim Launcher 2" in the list.' : 'Cari "Muslim Launcher 2" di daftar aplikasi.',
         isEn ? 'Turn ON the switch & confirm warnings.' : 'Aktifkan sakelar & klik Izinkan.',
       ];
     }
@@ -217,7 +217,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
       return [
         isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
         isEn ? 'Go to Battery -> Background usage limits.' : 'Masuk ke Baterai -> Batas penggunaan latar belakang.',
-        isEn ? 'Add Muslim Launcher to "Never sleeping apps".' : 'Tambahkan Muslim Launcher ke "Aplikasi yang tidak pernah tidur".',
+        isEn ? 'Add Muslim Launcher 2 to "Never sleeping apps".' : 'Tambahkan Muslim Launcher 2 ke "Aplikasi yang tidak pernah tidur".',
       ];
     } else if (b.contains('oppo') || b.contains('oneplus') || b.contains('realme')) {
       return [
@@ -233,20 +233,20 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     } else if (b.contains('huawei') || b.contains('honor')) {
       return [
         isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Go to App Launch -> Turn off Automatic for Muslim Launcher.' : 'Masuk ke Peluncuran Aplikasi -> Matikan Otomatis untuk Muslim Launcher.',
+        isEn ? 'Go to App Launch -> Turn off Automatic for Muslim Launcher 2.' : 'Masuk ke Peluncuran Aplikasi -> Matikan Otomatis untuk Muslim Launcher 2.',
         isEn ? 'Enable Auto-launch, Secondary Launch & Run in background.' : 'Aktifkan Peluncuran Otomatis, Peluncuran Sekunder & Latar Belakang.',
       ];
     } else if (b.contains('infinix') || b.contains('tecno') || b.contains('itel') || b.contains('transsion')) {
       return [
         isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
         isEn ? 'Open Phone Manager -> Auto-start management.' : 'Buka Pengelola Telepon -> Manajemen Mulai Otomatis.',
-        isEn ? 'Enable Muslim Launcher auto-start switch.' : 'Aktifkan sakelar mulai otomatis Muslim Launcher.',
+        isEn ? 'Enable Muslim Launcher 2 auto-start switch.' : 'Aktifkan sakelar mulai otomatis Muslim Launcher 2.',
       ];
     } else if (b.contains('asus')) {
       return [
         isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
         isEn ? 'Open Mobile Manager -> Auto-start Manager.' : 'Buka Manajer Seluler -> Manajer Mulai Otomatis.',
-        isEn ? 'Allow Muslim Launcher to auto-start.' : 'Izinkan Muslim Launcher mulai otomatis.',
+        isEn ? 'Allow Muslim Launcher 2 to auto-start.' : 'Izinkan Muslim Launcher 2 mulai otomatis.',
       ];
     } else {
       return [
@@ -666,7 +666,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                           fit: BoxFit.scaleDown,
                           child: Text(
                             (isDefault && isAccess)
-                                ? (isEn ? 'START USING MUSLIM LAUNCHER' : 'MULAI GUNAKAN MUSLIM LAUNCHER')
+                                ? (isEn ? 'START USING MUSLIM LAUNCHER 2' : 'MULAI GUNAKAN MUSLIM LAUNCHER 2')
                                 : (isEn ? 'COMPLETE SETTINGS (STEP 2 & 3)' : 'SELESAIKAN PENGATURAN UTAMA (LANGKAH 2 & 3)'),
                             style: const TextStyle(
                               fontSize: 13,

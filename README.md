@@ -30,15 +30,47 @@ Included datasets:
 
 Raw text files are merged and structured using custom scripts (`data_temp/merge_quran.dart` / `data_temp/merge_quran.py`) into an optimized JSON format for Flutter performance.
 
+# Muslim Launcher 2 🕌
+
+[English](#english) | [Bahasa Indonesia](#bahasa-indonesia) | [Privacy Policy](#privacy-policy-)
+
+---
+
+## English
+
+An innovative custom Android launcher designed specifically to reduce smartphone addiction in a meaningful way. It transforms screen-wasting habits (mindless scrolling) into a habit of reading the Holy Quran.
+
+### Core Concept
+Instead of simply blocking apps with standard timers, Muslim Launcher utilizes an **"Ibadah Points"** system. Distracting apps are automatically blocked.
+
+To unlock and access blocked applications, you are **required to read the Holy Quran** through the built-in reader. Every interaction with the Quran earns you points, and you need a certain amount of points (e.g., 50 Points) to unlock a blocked application for 60 minutes.
+
+### Key Features
+* 📖 **Read Quran for Points:** Built-in Quran integration inside the launcher. Reading surahs earns you points that act as "currency" to use entertainment or social media apps.
+* 🛡️ **Smart Background Blocking:** Powered by native Android `AccessibilityService`. If you attempt to open a blocked app without enough points, the lock screen instantly kicks you out.
+* 🔒 **Temporary Unlock System:** Once points are spent, apps become accessible normally for 60 minutes. When the unlocked duration expires, apps are locked again, ensuring consistent Quran reading.
+* ⬛ **Minimalist Aesthetics:** A clean, distraction-free interface with dark theme support to help break visual smartphone triggers.
+
+### Quran Data Source 📖
+The Quranic data in this app is sourced from the **[Tanzil Project](https://tanzil.net)** and bundled locally (`assets/quran.json`) for complete offline availability.
+
+Included datasets:
+* **Arabic Text:** Uthmani Script & Tajweed text from [Tanzil.net](https://tanzil.net).
+* **Indonesian Translation:** Ministry of Religious Affairs (Kemenag RI) via Tanzil.
+* **English Translation:** Saheeh International via Tanzil.
+* **Transliteration (Latin):** Standard Latin transliteration via Tanzil.
+
+Raw text files are merged and structured using custom scripts (`data_temp/merge_quran.dart` / `data_temp/merge_quran.py`) into an optimized JSON format for Flutter performance.
+
 ### Privacy Policy 🔒
 This application respects your privacy. Muslim Launcher uses Android's **Accessibility Service** purely to detect when a blocked application is opened so it can redirect you to the lock screen.
 * **No Data Collection:** We do not collect, store, or transmit any personal data, typing behavior, or screen content.
 * **Offline First:** All core logic and Quranic data operate 100% offline on your local device.
 * **Open Source Transparency:** The entire source code of this application is fully open source and publicly available in this repository, ensuring complete transparency of how the `AccessibilityService` is used under the hood.
 
-### Support the Developer ☕
-If you find this app helpful in reducing your smartphone addiction and increasing your Ibadah, consider supporting the development!
-* [Support via Ko-fi](https://ko-fi.com/andrisetiawan84153)
+### Support / Request Feature ☕
+If you find this app helpful in reducing your smartphone addiction and increasing your Ibadah, or if you want to request a new feature, consider supporting the development!
+* [Support / Request Feature via Ko-fi](https://ko-fi.com/andrisetiawan84153)
 
 ---
 
@@ -74,9 +106,9 @@ Aplikasi ini sangat menghargai privasi Anda. Muslim Launcher menggunakan **Acces
 * **Berjalan Offline:** Seluruh sistem dan data Al-Quran berjalan 100% secara luring (offline) di dalam perangkat Anda.
 * **Transparansi Open Source:** Seluruh kode sumber aplikasi ini bersifat sumber terbuka (*open source*) dan dapat dilihat secara publik di repositori ini, memberikan transparansi penuh tentang bagaimana `AccessibilityService` bekerja di belakang layar.
 
-## Dukung Pengembang ☕
-Jika Anda merasa aplikasi ini bermanfaat dalam mengurangi kecanduan smartphone dan meningkatkan ibadah Anda, pertimbangkan untuk mendukung pengembangannya!
-* [Dukung via Trakteer](https://trakteer.id/andri_setiawan108/tip)
+## Dukung / Request Fitur ☕
+Jika Anda merasa aplikasi ini bermanfaat dalam mengurangi kecanduan smartphone dan meningkatkan ibadah Anda, atau ingin me-request fitur baru, pertimbangkan untuk mendukung pengembangannya!
+* [Dukung / Request Fitur via Trakteer](https://trakteer.id/andri_setiawan108/tip)
 
 ---
 *Dibuat untuk memotivasi Anda lebih banyak berinteraksi dengan Al-Quran dan mengubah kecanduan smartphone menjadi pahala.*

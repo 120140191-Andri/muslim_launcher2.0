@@ -76,7 +76,7 @@ Aplikasi ini sangat menghargai privasi Anda. Muslim Launcher menggunakan **Acces
 
 ## Dukung Pengembang ☕
 Jika Anda merasa aplikasi ini bermanfaat dalam mengurangi kecanduan smartphone dan meningkatkan ibadah Anda, pertimbangkan untuk mendukung pengembangannya!
-* [Dukung via Ko-fi](https://ko-fi.com/andrisetiawan84153)
+* [Dukung via Trakteer](https://trakteer.id/andri_setiawan108/tip)
 
 ---
 *Dibuat untuk memotivasi Anda lebih banyak berinteraksi dengan Al-Quran dan mengubah kecanduan smartphone menjadi pahala.*

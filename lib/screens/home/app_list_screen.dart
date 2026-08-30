@@ -405,9 +405,13 @@ class _AppListScreenState extends State<AppListScreen>
 
   Future<void> _openSupportDeveloperUrl() async {
     try {
-      const intent = AndroidIntent(
+      final appState = Provider.of<AppState>(context, listen: false);
+      final url = appState.languageCode == 'id'
+          ? 'https://trakteer.id/andri_setiawan108/tip'
+          : 'https://ko-fi.com/andrisetiawan84153';
+      final intent = AndroidIntent(
         action: 'android.intent.action.VIEW',
-        data: 'https://ko-fi.com/andrisetiawan84153',
+        data: url,
       );
       await intent.launch();
     } catch (_) {}

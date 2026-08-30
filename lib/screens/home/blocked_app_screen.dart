@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:device_apps/device_apps.dart';
 import '../../providers/app_state.dart';
 import '../quran/surah_list_screen.dart';
 import '../../utils/page_transitions.dart';
@@ -9,6 +9,19 @@ class BlockedAppScreen extends StatelessWidget {
   final String packageName;
 
   const BlockedAppScreen({super.key, required this.packageName});
+
+  Future<String> _getAppName(String pkg) async {
+    const channel = MethodChannel('com.muslimlauncher/apps');
+    try {
+      final List<dynamic> apps = await channel.invokeMethod('getApps');
+      for (var app in apps) {
+        if (app != null && app['packageName'] == pkg) {
+          return app['appName'] as String;
+        }
+      }
+    } catch (_) {}
+    return pkg;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,16 +74,16 @@ class BlockedAppScreen extends StatelessWidget {
                           letterSpacing: 2,
                         ),
                       ),
-                      FutureBuilder<Application?>(
-                        future: DeviceApps.getApp(packageName),
+                      FutureBuilder<String>(
+                        future: _getAppName(packageName),
                         builder: (context, snapshot) {
-                          if (!snapshot.hasData || snapshot.data == null) {
+                          if (!snapshot.hasData) {
                             return const SizedBox.shrink();
                           }
                           return Padding(
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Text(
-                              snapshot.data!.appName,
+                              snapshot.data!,
                               style: const TextStyle(
                                 color: Colors.amber,
                                 fontSize: 20,

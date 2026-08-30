@@ -79,7 +79,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         onStatus: (val) {
           if (val == 'done' || val == 'notListening') {
             if (mounted && _recordingAyahIdx != null && !_isDisposed) {
-              _cumulativeRecognizedText = (_cumulativeRecognizedText + " " + _currentSessionText).trim();
+              _cumulativeRecognizedText = "$_cumulativeRecognizedText $_currentSessionText".trim();
               _currentSessionText = "";
               Future.delayed(const Duration(milliseconds: 500), () {
                  if (mounted && _recordingAyahIdx != null) _startListeningSession();
@@ -125,7 +125,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
               if (mounted && !_isDisposed && _recordingAyahIdx != null) {
                 setState(() {
                   _currentSessionText = val.recognizedWords;
-                  _recognizedText = (_cumulativeRecognizedText + " " + _currentSessionText).trim();
+                  _recognizedText = "$_cumulativeRecognizedText $_currentSessionText".trim();
                   
                   if (_checkMatch(_recognizedText, _targetArabicText)) {
                     _onSuccess(_recordingAyahIdx!, _targetArabicText);

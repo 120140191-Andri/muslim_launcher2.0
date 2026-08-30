@@ -210,8 +210,8 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     if (b.contains('xiaomi') || b.contains('poco') || b.contains('redmi') || b.contains('blackshark')) {
       return [
         isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Enable switch for "Autostart" (Mulai Otomatis).' : 'Aktifkan sakelar "Mulai Otomatis" (Autostart).',
-        isEn ? 'Tap "Battery Saver" -> Select "No restrictions".' : 'Pilih "Penghemat Baterai" -> Setel ke "Tanpa Pembatasan".',
+        isEn ? 'Find "Muslim Launcher 2" & Enable "Autostart".' : 'Cari "Muslim Launcher 2" & aktifkan "Mulai Otomatis".',
+        isEn ? 'Tap the app -> "Battery Saver" -> "No restrictions".' : 'Ketuk aplikasinya -> "Penghemat Baterai" -> "Tanpa Pembatasan".',
       ];
     } else if (b.contains('samsung')) {
       return [
@@ -222,13 +222,13 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     } else if (b.contains('oppo') || b.contains('oneplus') || b.contains('realme')) {
       return [
         isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Enable "Allow auto-launch" (Mulai Otomatis).' : 'Aktifkan "Izinkan Mulai Otomatis" (Auto-launch).',
+        isEn ? 'Find "Muslim Launcher 2" & Enable "Allow auto-launch".' : 'Cari "Muslim Launcher 2" & aktifkan "Izinkan Mulai Otomatis".',
         isEn ? 'Allow background activity.' : 'Izinkan aktivitas latar belakang.',
       ];
     } else if (b.contains('vivo') || b.contains('iqoo')) {
       return [
         isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Enable "Autostart" & "High background power consumption".' : 'Aktifkan "Mulai Otomatis" & "Konsumsi daya latar tinggi".',
+        isEn ? 'Find "Muslim Launcher 2" & Enable "Autostart".' : 'Cari "Muslim Launcher 2" & aktifkan "Mulai Otomatis".',
       ];
     } else if (b.contains('huawei') || b.contains('honor')) {
       return [

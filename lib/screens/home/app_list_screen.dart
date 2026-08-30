@@ -163,9 +163,11 @@ class _AppListScreenState extends State<AppListScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Only invalidate app list; keep icon cache so icons don't reload.
-      AppListScreen.invalidateAppsOnly();
-      _fetchAndSet();
+      // Only re-fetch if cache was invalidated (e.g. after install/uninstall).
+      // Native 'onAppListChanged' callback handles invalidation automatically.
+      if (AppListScreen._cache == null) {
+        _fetchAndSet();
+      }
     }
   }
 

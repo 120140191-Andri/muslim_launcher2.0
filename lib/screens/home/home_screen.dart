@@ -140,14 +140,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       appState.refreshStatus();
       _checkAccessibilityStatus();
 
-      // Only invalidate app list, keep icon cache intact for smooth re-entry
-      AppListScreen.invalidateAppsOnly();
-      AppListScreen.preload(
-        forceRefresh: true,
-        onProgress: () {
-          if (mounted) setState(() {});
-        },
-      );
+      // Only preload if cache is empty (first launch or after invalidateFull from install/uninstall).
+      // Native 'onAppListChanged' callback already handles install/uninstall events via invalidateFull.
+      if (AppListScreen.cachedApps == null) {
+        AppListScreen.preload(
+          onProgress: () {
+            if (mounted) setState(() {});
+          },
+        );
+      }
     }
   }
 

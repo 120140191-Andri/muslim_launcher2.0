@@ -907,7 +907,6 @@ class _QuickDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isLoading = AppListScreen.cachedApps == null;
-
     final List<Widget> items = [];
 
     if (!isLoading) {
@@ -984,6 +983,68 @@ class _QuickDock extends StatelessWidget {
       if (galleryPkg != null) {
         items.add(_buildIcon(Icons.photo_library_rounded, galleryPkg));
       }
+    } else {
+      // Instant Fallback Dock: Render immediately during startup without showing a spinner
+      items.add(
+        InkWell(
+          onTap: _openPhoneApp,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.phone_rounded, color: Colors.teal.shade700, size: 24),
+          ),
+        ),
+      );
+      items.add(
+        InkWell(
+          onTap: () => _openApp('com.google.android.apps.messaging'),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.message_rounded, color: Colors.teal.shade700, size: 24),
+          ),
+        ),
+      );
+      items.add(
+        InkWell(
+          onTap: () => _openApp('com.google.android.contacts'),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.people_alt_rounded, color: Colors.teal.shade700, size: 24),
+          ),
+        ),
+      );
+      items.add(
+        InkWell(
+          onTap: () => _openApp('com.whatsapp'),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.chat_bubble_rounded, color: Colors.teal.shade700, size: 24),
+          ),
+        ),
+      );
+      items.add(
+        InkWell(
+          onTap: () => _openApp('com.google.android.apps.photos'),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.photo_library_rounded, color: Colors.teal.shade700, size: 24),
+          ),
+        ),
+      );
     }
 
     return Container(
@@ -1002,24 +1063,10 @@ class _QuickDock extends StatelessWidget {
           ),
         ],
       ),
-      child: isLoading
-          ? SizedBox(
-              height: 44,
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.teal.shade700,
-                  ),
-                ),
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: items.map((w) => Flexible(child: w)).toList(),
-            ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: items.map((w) => Flexible(child: w)).toList(),
+      ),
     );
   }
 

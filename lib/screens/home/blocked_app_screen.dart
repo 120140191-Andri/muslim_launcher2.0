@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:device_apps/device_apps.dart';
 import '../../providers/app_state.dart';
 import '../quran/surah_list_screen.dart';
 import '../../utils/page_transitions.dart';
@@ -59,6 +60,26 @@ class BlockedAppScreen extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                           letterSpacing: 2,
                         ),
+                      ),
+                      FutureBuilder<Application?>(
+                        future: DeviceApps.getApp(packageName),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || snapshot.data == null) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              snapshot.data!.appName,
+                              style: const TextStyle(
+                                color: Colors.amber,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
                       Text(

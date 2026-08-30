@@ -362,8 +362,8 @@ class _AppListScreenState extends State<AppListScreen>
         title: Text(Translations.get(lang, 'non_productive')),
         content: Text(
           lang == 'en'
-              ? 'This is a non-productive app. Use 50 Points to unlock it for 60 minutes?'
-              : 'Aplikasi ini non-produktif. Gunakan 50 Poin untuk membuka aplikasi ini selama 60 menit?',
+              ? '${app.appName} is a non-productive app. Use 50 Points to unlock it for 60 minutes?'
+              : '${app.appName} adalah aplikasi non-produktif. Gunakan 50 Poin untuk membuka aplikasi ini selama 60 menit?',
         ),
         actions: [
           TextButton(

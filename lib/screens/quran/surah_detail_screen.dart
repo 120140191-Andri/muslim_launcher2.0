@@ -141,9 +141,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     if (!mounted) return;
     
     if (status != PermissionStatus.granted) {
+      final lang = Provider.of<AppState>(context, listen: false).languageCode;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Izin kamera diperlukan untuk deteksi mata"),
+        SnackBar(
+          content: Text(lang == 'en' ? "Camera permission is required for eye tracking" : "Izin kamera diperlukan untuk deteksi mata"),
         ),
       );
       return;
@@ -575,8 +576,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                 const SizedBox(height: 8),
                                 Text(
                                   _isEyeFocused
-                                      ? "Mata Terdeteksi: Membaca..."
-                                      : "TIDAK FOKUS: Tatap Ayat untuk Membaca",
+                                      ? (lang == 'en' ? "Eye Detected: Reading..." : "Mata Terdeteksi: Membaca...")
+                                      : (lang == 'en' ? "NOT FOCUSED: Look at Ayah to read" : "TIDAK FOKUS: Tatap Ayat untuk Membaca"),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 10,

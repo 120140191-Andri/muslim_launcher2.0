@@ -19,12 +19,34 @@ class SetupHubScreen extends StatefulWidget {
 class _SetupHubScreenState extends State<SetupHubScreen>
     with WidgetsBindingObserver {
   Timer? _statusTimer;
-  int? _expandedStepIndex = 1; // Default expand step 2 (Launcher) or first incomplete
+  int? _expandedStepIndex; 
+
+  late AppState _appStateRef;
+  bool _prevIsDefault = false;
+  bool _prevIsAccess = false;
+  bool _prevIsAutostart = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    _appStateRef = Provider.of<AppState>(context, listen: false);
+    _prevIsDefault = _appStateRef.isDefaultLauncher;
+    _prevIsAccess = _appStateRef.isAccessibilityEnabled;
+    _prevIsAutostart = _appStateRef.hasAcknowledgedAutostart;
+    
+    // Auto-expand first incomplete step initially
+    if (!_prevIsDefault) {
+      _expandedStepIndex = 1;
+    } else if (!_prevIsAccess) {
+      _expandedStepIndex = 2;
+    } else if (!_prevIsAutostart) {
+      _expandedStepIndex = 3;
+    }
+
+    _appStateRef.addListener(_onAppStateChanged);
+
     _refreshAllStatus();
     _statusTimer = Timer.periodic(
       const Duration(seconds: 2),
@@ -32,9 +54,36 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     );
   }
 
+  void _onAppStateChanged() {
+    final currentIsDefault = _appStateRef.isDefaultLauncher;
+    final currentIsAccess = _appStateRef.isAccessibilityEnabled;
+    final currentIsAutostart = _appStateRef.hasAcknowledgedAutostart;
+
+    bool shouldUpdate = false;
+    if (currentIsDefault && !_prevIsDefault) {
+      _expandedStepIndex = 2; // Auto expand step 3
+      shouldUpdate = true;
+    } else if (currentIsAccess && !_prevIsAccess) {
+      _expandedStepIndex = 3; // Auto expand step 4
+      shouldUpdate = true;
+    } else if (currentIsAutostart && !_prevIsAutostart) {
+      _expandedStepIndex = null;
+      shouldUpdate = true;
+    }
+
+    _prevIsDefault = currentIsDefault;
+    _prevIsAccess = currentIsAccess;
+    _prevIsAutostart = currentIsAutostart;
+
+    if (shouldUpdate && mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _appStateRef.removeListener(_onAppStateChanged);
     _statusTimer?.cancel();
     super.dispose();
   }
@@ -47,8 +96,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
   }
 
   void _refreshAllStatus() {
-    final appState = Provider.of<AppState>(context, listen: false);
-    appState.refreshStatus();
+    _appStateRef.refreshStatus();
   }
 
   Future<void> _openSupportDeveloperUrl() async {

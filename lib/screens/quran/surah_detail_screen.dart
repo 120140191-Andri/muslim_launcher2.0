@@ -917,7 +917,7 @@ class _EyeButton extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             Text(
-              lang == 'en' ? "Silent" : "Dlm Hati",
+              lang == 'en' ? "Silent" : "Dalam Hati",
               style: TextStyle(
                 color: isActive ? Colors.white : Colors.teal.shade800,
                 fontSize: 10,

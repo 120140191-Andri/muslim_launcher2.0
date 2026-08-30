@@ -62,15 +62,15 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
         manufacturer.contains('poco') ||
         manufacturer.contains('redmi')) {
       return [
-        isEn ? 'Click "Open Settings" below.' : 'Klik "Buka Pengaturan" di bawah.',
+        isEn ? 'Click "Open Settings" below.' : 'Ketuk "Buka Pengaturan" di bawah.',
         isEn ? 'Select "Muslim Launcher" (ML2).' : 'Pilih "Muslim Launcher" (ML2).',
-        isEn ? 'Confirm if the system asks.' : 'Konfirmasi jika sistem meminta.',
+        isEn ? 'Confirm if the system asks.' : 'Konfirmasi jika diminta oleh sistem.',
       ];
     } else {
       return [
-        isEn ? 'Click "Open Settings" below.' : 'Klik "Buka Pengaturan" di bawah.',
+        isEn ? 'Click "Open Settings" below.' : 'Ketuk "Buka Pengaturan" di bawah.',
         isEn ? 'Select "Muslim Launcher 2" from the list.' : 'Pilih "Muslim Launcher 2" dari daftar.',
-        isEn ? 'Choose "Always" if prompted.' : 'Pilih "Selalu" atau "Default" jika ditanya.',
+        isEn ? 'Choose "Always" if prompted.' : 'Pilih "Selalu" (Always) jika diminta.',
       ];
     }
   }
@@ -121,9 +121,9 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                     ),
                     const SizedBox(height: 32),
                     Text(
-                      _isDefaultLauncher
-                          ? (isEn ? 'Home App Ready!' : 'Beranda Aktif!')
-                          : (isEn ? 'Set Default Home' : 'Jadikan Beranda Utama'),
+                      _isDefaultLauncher 
+                          ? (isEn ? 'Home App Ready!' : 'Launcher Utama Aktif!') 
+                          : (isEn ? 'Set Default Home' : 'Jadikan Launcher Utama'),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 26, 
@@ -253,7 +253,7 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              (isEn ? 'NEXT STEP' : 'LANGKAH BERIKUTNYA').toUpperCase(),
+                              (isEn ? 'NEXT STEP' : 'LANGKAH SELANJUTNYA').toUpperCase(),
                               style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5),
                             ),
                             const SizedBox(width: 8),

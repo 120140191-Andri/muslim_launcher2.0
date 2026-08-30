@@ -144,7 +144,7 @@ class BlockedAppScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                           child: Text(
-                            lang == 'en' ? 'Read Quran to Earn Points' : 'Baca Al-Quran Cari Poin',
+                            lang == 'en' ? 'Read Quran to Earn Points' : 'Baca Al-Quran untuk Mendapatkan Poin',
                             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                           ),
                         ),

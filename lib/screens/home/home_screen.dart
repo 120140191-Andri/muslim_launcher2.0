@@ -496,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     Text(
                                       (lang == 'en'
                                               ? 'CONTINUE JOURNEY'
-                                              : 'LANJUTKAN PERJALANAN')
+                                              : 'LANJUTKAN BACAAN')
                                           .toUpperCase(),
                                       style: TextStyle(
                                         color: Colors.teal.shade900.withValues(
@@ -597,7 +597,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                             icon: Icons.apps_rounded,
                                             title: lang == 'en'
                                                 ? 'Your Apps'
-                                                : 'Aplikasi',
+                                                : 'Semua Aplikasi',
                                             subtitle: lang == 'en'
                                                 ? 'Open Apps'
                                                 : 'Buka Aplikasi',
@@ -1377,7 +1377,7 @@ class _DailyInspiration extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                (lang == 'en' ? 'INSIGHT OF THE DAY' : 'INSIGHT HARI INI'),
+                (lang == 'en' ? 'INSIGHT OF THE DAY' : 'INSPIRASI HARI INI'),
                 style: const TextStyle(
                   color: Colors.amber,
                   fontSize: 12,

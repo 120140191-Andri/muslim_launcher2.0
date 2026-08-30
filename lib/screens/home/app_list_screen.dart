@@ -527,7 +527,7 @@ class _AppListScreenState extends State<AppListScreen>
                         const Icon(Icons.coffee_rounded, color: Colors.white, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          lang == 'en' ? 'Support' : 'Dukung',
+                          lang == 'en' ? 'Support / Request Feature' : 'Dukung / Request Fitur',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11.5,

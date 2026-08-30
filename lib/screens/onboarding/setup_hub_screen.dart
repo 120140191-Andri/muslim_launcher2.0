@@ -533,7 +533,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    isEn ? 'Support Developer' : 'Dukung Pengembang',
+                                    isEn ? 'Support / Request Feature' : 'Dukung / Request Fitur',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -562,7 +562,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                             onPressed: _openSupportDeveloperUrl,
                             icon: const Icon(Icons.coffee_rounded, size: 18),
                             label: Text(
-                              isEn ? 'Support via Ko-fi' : 'Dukung via Ko-fi',
+                              isEn ? 'Support / Request Feature via Ko-fi' : 'Dukung / Request Fitur via Trakteer',
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             style: ElevatedButton.styleFrom(

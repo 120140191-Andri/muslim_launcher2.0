@@ -193,12 +193,13 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                     
                     const SizedBox(height: 40),
                     
-                    SizedBox(
+                    Container(
                       width: double.infinity,
-                      height: 60,
+                      constraints: const BoxConstraints(minHeight: 56),
                       child: ElevatedButton(
                         onPressed: _isDefaultLauncher ? null : _openSettings,
                         style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           backgroundColor: _isDefaultLauncher ? Colors.white : const Color(0xFF1B4332),
                           foregroundColor: _isDefaultLauncher ? Colors.grey.shade400 : Colors.white,
                           elevation: _isDefaultLauncher ? 0 : 4,
@@ -210,23 +211,27 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                             ),
                           ),
                         ),
-                        child: Text(
-                          _isDefaultLauncher 
-                            ? (isEn ? 'Already Default' : 'Sudah Menjadi Default')
-                            : (isEn ? 'OPEN SETTINGS' : 'BUKA PENGATURAN'),
-                          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _isDefaultLauncher 
+                              ? (isEn ? 'Already Default' : 'Sudah Menjadi Default')
+                              : (isEn ? 'OPEN SETTINGS' : 'BUKA PENGATURAN'),
+                            style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+                          ),
                         ),
                       ),
                     ),
                     
                     const SizedBox(height: 24),
                     
-                    SizedBox(
+                    Container(
                       width: double.infinity,
-                      height: 60,
+                      constraints: const BoxConstraints(minHeight: 56),
                       child: TextButton(
                         onPressed: _isDefaultLauncher ? _goToNextStep : null,
                         style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           foregroundColor: _isDefaultLauncher ? const Color(0xFF1B4332) : Colors.grey.shade400,
                           backgroundColor: _isDefaultLauncher ? const Color(0xFFD8F3DC) : Colors.transparent,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -234,9 +239,14 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              (isEn ? 'NEXT STEP' : 'LANGKAH SELANJUTNYA').toUpperCase(),
-                              style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  (isEn ? 'NEXT STEP' : 'LANGKAH SELANJUTNYA').toUpperCase(),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 8),
                             const Icon(Icons.arrow_forward_rounded, size: 20),

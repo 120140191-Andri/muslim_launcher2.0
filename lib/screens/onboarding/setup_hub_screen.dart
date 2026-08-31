@@ -473,11 +473,15 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                           child: ElevatedButton.icon(
                             onPressed: () => _openSupportDeveloperUrl(lang),
                             icon: const Icon(Icons.coffee_rounded, size: 18),
-                            label: Text(
-                              isEn ? 'Support / Request Features via Ko-fi' : 'Dukung / Usulkan Fitur via Trakteer',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            label: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                isEn ? 'Support / Request Features via Ko-fi' : 'Dukung / Usulkan Fitur via Trakteer',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ),
                             style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               backgroundColor: Colors.white,
                               foregroundColor: Colors.orange.shade900,
                               elevation: 2,

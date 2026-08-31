@@ -611,6 +611,8 @@ class _AppListScreenState extends State<AppListScreen>
                 Expanded(
                   child: Text(
                     Translations.get(lang, 'support_dev_msg'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 11,
@@ -624,7 +626,7 @@ class _AppListScreenState extends State<AppListScreen>
                   borderRadius: BorderRadius.circular(14),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
+                      horizontal: 10,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
@@ -644,14 +646,16 @@ class _AppListScreenState extends State<AppListScreen>
                         const Icon(
                           Icons.coffee_rounded,
                           color: Colors.white,
-                          size: 14,
+                          size: 13,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           Translations.get(lang, 'support_feature_request'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 11.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

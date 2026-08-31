@@ -37,6 +37,8 @@ class ReadingHistoryScreen extends StatelessWidget {
                     ? '--'
                     : DateFormat('dd MMM yyyy, HH:mm').format(date);
 
+                final isHadith = (entry['surah'] as String? ?? '').startsWith('Hadits');
+
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
@@ -58,16 +60,18 @@ class ReadingHistoryScreen extends StatelessWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.teal.shade50,
+                        color: isHadith ? const Color(0xFFD8F3DC) : Colors.teal.shade50,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.menu_book_rounded,
-                        color: Colors.teal.shade700,
+                        isHadith ? Icons.spa_rounded : Icons.menu_book_rounded,
+                        color: isHadith ? const Color(0xFF1B4332) : Colors.teal.shade700,
                       ),
                     ),
                     title: Text(
-                      "${entry['surah']} : ${Translations.get(lang, 'ayah')} ${entry['ayah']}",
+                      isHadith
+                          ? "${entry['surah']}"
+                          : "${entry['surah']} : ${Translations.get(lang, 'ayah')} ${entry['ayah']}",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.teal.shade900,

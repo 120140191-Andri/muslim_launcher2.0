@@ -9,6 +9,7 @@ import '../../providers/app_state.dart';
 import '../quran/surah_list_screen.dart';
 import '../quran/surah_detail_screen.dart';
 import '../quran/reading_history_screen.dart';
+import '../hadith/hadith_list_screen.dart';
 import 'app_list_screen.dart';
 import 'accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
@@ -529,16 +530,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     const RepaintBoundary(child: _QuickDock()),
                                     const SizedBox(height: 24),
 
-                                    // Daily Inspiration
+                                    // Daily Hadith / Inspiration
                                     RepaintBoundary(
                                       child: _DailyInspiration(
                                         lang: lang,
-                                        surah: appState.dailySurahName,
-                                        ayahNumber: appState.dailyAyahNumber,
-                                        ayahText:
-                                            (lang == 'id' || lang == 'ms')
-                                                ? appState.dailyAyahTextId
-                                                : appState.dailyAyahTextEn,
+                                        hadithText:
+                                            appState.getDailyHadithText(lang),
+                                        narrator: appState
+                                            .getDailyHadithNarrator(lang),
+                                        arabic: appState.dailyHadithArabic,
+                                        onTap: () => appState
+                                            .navigatorKey
+                                            .currentState
+                                            ?.push(
+                                              AppPageRoute(
+                                                child:
+                                                    const HadithListScreen(),
+                                              ),
+                                            ),
                                       ),
                                     ),
 
@@ -685,10 +694,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildBottomDock(AppState appState, BuildContext context) {
+    final lang = appState.languageCode;
+    final hadithLabel = (lang == 'en' || lang == 'sw' || lang == 'af') ? 'Hadith' : (lang == 'ar' ? 'الحديث' : 'Hadits');
+
     return Center(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        constraints: const BoxConstraints(maxWidth: 350),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(32),
@@ -718,6 +730,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
             _buildDockItem(
+              icon: Icons.spa_rounded,
+              label: hadithLabel,
+              isActive: false,
+              onTap: () => appState.navigatorKey.currentState?.push(
+                AppPageRoute(child: const HadithListScreen()),
+              ),
+            ),
+            _buildDockItem(
               icon: Icons.apps_rounded,
               label: 'Apps',
               isActive: false,
@@ -742,7 +762,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       borderRadius: BorderRadius.circular(20),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isActive
               ? Colors.teal.withValues(alpha: 0.08)
@@ -1190,6 +1210,8 @@ class _LastAyatCard extends StatelessWidget {
                               surah.isEmpty
                                   ? Translations.get(lang, 'start_reading')
                                   : surah,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.teal.shade900,
                                 fontSize: 18,
@@ -1201,6 +1223,8 @@ class _LastAyatCard extends StatelessWidget {
                               surah.isEmpty
                                   ? Translations.get(lang, 'find_guidance_today')
                                   : "${Translations.get(lang, 'ayah')} $ayahNumber",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.teal.shade600,
                                 fontSize: 14,
@@ -1210,12 +1234,16 @@ class _LastAyatCard extends StatelessWidget {
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  Text(
-                                    'Surah ${currentSurahIdx + 1}/114',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.teal.shade400,
-                                      fontWeight: FontWeight.bold,
+                                  Flexible(
+                                    child: Text(
+                                      'Surah ${currentSurahIdx + 1}/114',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.teal.shade400,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -1228,12 +1256,16 @@ class _LastAyatCard extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    '${Translations.get(lang, 'ayah')} $ayahNumber/$totalAyahs',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.teal.shade400,
-                                      fontWeight: FontWeight.bold,
+                                  Flexible(
+                                    child: Text(
+                                      '${Translations.get(lang, 'ayah')} $ayahNumber/$totalAyahs',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.teal.shade400,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1332,8 +1364,7 @@ class _GridAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height:
-          150, // Increased from 140 to fix 6px overflow while remaining compact
+      constraints: const BoxConstraints(minHeight: 148),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -1351,9 +1382,10 @@ class _GridAction extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(24),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -1363,23 +1395,29 @@ class _GridAction extends StatelessWidget {
                   ),
                   child: Icon(icon, color: color, size: 28),
                 ),
-                const Spacer(),
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.teal.shade900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                const SizedBox(height: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal.shade900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1390,33 +1428,34 @@ class _GridAction extends StatelessWidget {
   }
 }
 
+// ── _DailyInspiration ────────────────────────────────────────────────────────
 class _DailyInspiration extends StatelessWidget {
   final String lang;
-  final String surah;
-  final int ayahNumber;
-  final String ayahText;
+  final String hadithText;
+  final String narrator;
+  final String arabic;
+  final VoidCallback? onTap;
 
   const _DailyInspiration({
     required this.lang,
-    required this.surah,
-    required this.ayahNumber,
-    required this.ayahText,
+    required this.hadithText,
+    required this.narrator,
+    this.arabic = '',
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasLastRead = surah.isNotEmpty && ayahText.isNotEmpty;
-    final double fontSize = ayahText.length < 60
-        ? 22
-        : ayahText.length < 120
-        ? 18
-        : ayahText.length < 200
-        ? 16
+    final double fontSize = hadithText.length < 60
+        ? 20
+        : hadithText.length < 120
+        ? 17
+        : hadithText.length < 200
+        ? 15
         : 14;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [Colors.teal.shade800, Colors.teal.shade900],
@@ -1432,67 +1471,86 @@ class _DailyInspiration extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.lightbulb_rounded,
-                color: Colors.amber,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                Translations.get(lang, 'insight_of_the_day'),
-                style: const TextStyle(
-                  color: Colors.amber,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Colors.amber,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        Translations.get(lang, 'insight_of_the_day'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.amber,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.format_quote_rounded,
+                      color: Colors.amber,
+                      size: 24,
+                    ),
+                  ],
                 ),
-              ),
-              const Spacer(),
-              const Icon(
-                Icons.format_quote_rounded,
-                color: Colors.amber,
-                size: 24,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            hasLastRead
-                ? '"$ayahText"'
-                : '"${Translations.get(lang, 'daily_inspiration_default')}"',
-            maxLines: 10,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: fontSize,
-              fontWeight: FontWeight.w500,
-              fontStyle: FontStyle.italic,
-              height: 1.5,
-              letterSpacing: 0.2,
+                const SizedBox(height: 16),
+                Text(
+                  hadithText.isNotEmpty
+                      ? '"$hadithText"'
+                      : '"${Translations.get(lang, 'daily_inspiration_default')}"',
+                  maxLines: 10,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w500,
+                    fontStyle: FontStyle.italic,
+                    height: 1.5,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                if (narrator.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      narrator,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              hasLastRead ? 'QS. $surah: $ayahNumber' : 'QS. Al-Insyirah: 5',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1549,6 +1607,8 @@ class _SupportDeveloperCard extends StatelessWidget {
                   children: [
                     Text(
                       Translations.get(lang, 'support_feature_request'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,
@@ -1558,6 +1618,8 @@ class _SupportDeveloperCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       Translations.get(lang, 'free_ad_free_app'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 12,
@@ -1581,20 +1643,23 @@ class _SupportDeveloperCard extends StatelessWidget {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            height: 48,
             child: ElevatedButton.icon(
               onPressed: onTap,
               icon: const Icon(Icons.coffee_rounded, size: 20),
-              label: Text(
-                lang == 'id'
-                    ? 'Dukung / Usulkan Fitur via Trakteer'
-                    : 'Support / Request Features via Ko-fi',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+              label: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  lang == 'id'
+                      ? 'Dukung / Usulkan Fitur via Trakteer'
+                      : 'Support / Request Features via Ko-fi',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 backgroundColor: Colors.white,
                 foregroundColor: const Color(0xFFC2410C),
                 elevation: 2,

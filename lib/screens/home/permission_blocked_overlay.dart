@@ -112,17 +112,23 @@ class PermissionBlockedOverlay extends StatelessWidget {
     required String label,
     required VoidCallback onTap,
   }) {
-    return SizedBox(
+    return Container(
       width: double.infinity,
-      height: 60,
+      constraints: const BoxConstraints(minHeight: 56),
       child: ElevatedButton.icon(
         onPressed: onTap,
         icon: Icon(icon, size: 20),
-        label: Text(
-          label.toUpperCase(),
-          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+        label: Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label.toUpperCase(),
+              style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+            ),
+          ),
         ),
         style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           backgroundColor: Colors.white,
           foregroundColor: Colors.red.shade900,
           elevation: 0,

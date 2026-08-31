@@ -79,20 +79,32 @@ class MuslimLauncherApp extends StatelessWidget {
           ),
           home: homeWidget,
           builder: (context, child) {
-            // CRITICAL: Ensure we always have a child to render. 
+            // CRITICAL: Ensure we always have a child to render.
             // If child is null, something in MaterialApp initialization failed.
             final rootWidget = child ?? homeWidget;
-            
-            return PermissionBlockedOverlay(
-              appState: state,
-              child: Stack(
-                children: [
-                  rootWidget,
-                  if (state.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
-                    BlockedAppScreen(
-                      packageName: state.lastAttemptedBlockedPackage!,
-                    ),
-                ],
+
+            // Clamp text scale factor to prevent layout overflows on extreme accessibility font settings
+            final mediaQuery = MediaQuery.of(context);
+            final clampedMediaQuery = mediaQuery.copyWith(
+              textScaler: mediaQuery.textScaler.clamp(
+                minScaleFactor: 0.85,
+                maxScaleFactor: 1.15,
+              ),
+            );
+
+            return MediaQuery(
+              data: clampedMediaQuery,
+              child: PermissionBlockedOverlay(
+                appState: state,
+                child: Stack(
+                  children: [
+                    rootWidget,
+                    if (state.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
+                      BlockedAppScreen(
+                        packageName: state.lastAttemptedBlockedPackage!,
+                      ),
+                  ],
+                ),
               ),
             );
           },

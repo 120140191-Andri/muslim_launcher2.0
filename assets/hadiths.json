@@ -1,0 +1,1452 @@
+[
+  {
+    "id": 1,
+    "arabic": "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
+    "translations": {
+      "id": "Sesungguhnya setiap amalan tergantung pada niatnya, dan setiap orang akan mendapatkan apa yang ia niatkan.",
+      "en": "Actions are judged by motives, and every person will get what was intended.",
+      "ms": "Sesungguhnya setiap amalan itu bergantung kepada niat, dan setiap orang hanya akan beroleh apa yang diniatkannya.",
+      "ar": "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
+      "af": "Dade word volgens voornemens beoordeel, en elke mens sal kry wat hy beoog het.",
+      "sw": "Hakika matendo hutegemea nia, na kila mtu atapata kile alichokinuia."
+    },
+    "narrators": {
+      "id": "HR. Bukhari & Muslim",
+      "en": "Sahih al-Bukhari & Muslim",
+      "ms": "HR. Bukhari & Muslim",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Niat & Keikhlasan",
+    "themes": {
+      "id": "Niat & Keikhlasan",
+      "en": "Intention & Sincerity",
+      "ms": "Niat & Keikhlasan",
+      "ar": "النية والإخلاص",
+      "af": "Voorneme en Opregtheid",
+      "sw": "Nia na Unyoofu"
+    }
+  },
+  {
+    "id": 2,
+    "arabic": "تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ لَكَ صَدَقَةٌ",
+    "translations": {
+      "id": "Senyummu di hadapan saudaramu adalah sedekah bagimu.",
+      "en": "Your smile for your brother is a charity for you.",
+      "ms": "Senyumanmu di hadapan saudaramu adalah sedekah bagimu.",
+      "ar": "تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ لَكَ صَدَقَةٌ",
+      "af": "Jou glimlag vir jou broer is 'n liefdadigheid vir jou.",
+      "sw": "Tabasamu lako mbele ya ndugu yako ni sadaka kwako."
+    },
+    "narrators": {
+      "id": "HR. Tirmidzi No. 1956",
+      "en": "Jami` at-Tirmidhi 1956",
+      "ms": "HR. Tirmizi No. 1956",
+      "ar": "رواه الترمذي (١٩٥٦)",
+      "af": "Oorgelewer deur at-Tirmidhi (1956)",
+      "sw": "Imepokelewa na at-Tirmidhi (1956)"
+    },
+    "theme": "Kebaikan & Keramahan",
+    "themes": {
+      "id": "Kebaikan & Keramahan",
+      "en": "Kindness & Friendliness",
+      "ms": "Kebaikan & Kemesraan",
+      "ar": "الإحسان والود",
+      "af": "Goedhartigheid en Vriendelikheid",
+      "sw": "Wema na Ukarimu"
+    }
+  },
+  {
+    "id": 3,
+    "arabic": "الْمُسْلِمُ مَنْ سَلِمَ الْمُسْلِمُونَ مِنْ لِسَانِهِ وَيَدِهِ",
+    "translations": {
+      "id": "Seorang muslim sejati adalah yang orang lain merasa aman dari lisan dan tangannya.",
+      "en": "A true Muslim is the one from whose tongue and hand others are safe.",
+      "ms": "Seorang muslim sejati ialah mereka yang orang lain selamat dari kejahatan lidah dan tangannya.",
+      "ar": "الْمُسْلِمُ مَنْ سَلِمَ الْمُسْلِمُونَ مِنْ لِسَانِهِ وَيَدِهِ",
+      "af": "'n Ware Moslem is die een van wie se tong en hande ander veilig is.",
+      "sw": "Muislamu wa kweli ni yule ambaye watu wengine wako salama kutokana na ulimi na mkono wake."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 10",
+      "en": "Sahih al-Bukhari 10",
+      "ms": "HR. Bukhari No. 10",
+      "ar": "رواه البخاري (١٠)",
+      "af": "Oorgelewer deur al-Bukhari (10)",
+      "sw": "Imepokelewa na al-Bukhari (10)"
+    },
+    "theme": "Menjaga Lisan & Akhlak",
+    "themes": {
+      "id": "Menjaga Lisan & Akhlak",
+      "en": "Guarding the Tongue & Manners",
+      "ms": "Menjaga Lidah & Akhlak",
+      "ar": "حفظ اللسان والأخلاق",
+      "af": "Bewaking van die Tong en Maniere",
+      "sw": "Kulinda Ulimi na Maadili"
+    }
+  },
+  {
+    "id": 4,
+    "arabic": "لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لِأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ",
+    "translations": {
+      "id": "Tidak sempurna iman salah seorang di antara kalian hingga ia mencintai untuk saudaranya apa yang ia cintai untuk dirinya sendiri.",
+      "en": "None of you truly believes until he loves for his brother what he loves for himself.",
+      "ms": "Tidak sempurna iman seseorang daripada kamu sehinggalah dia menyayangi untuk saudaranya apa yang dia sayangi untuk dirinya sendiri.",
+      "ar": "لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لِأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ",
+      "af": "Niemand van julle glo waarlik totdat hy vir sy broer liefhet wat hy vir homself liefhet nie.",
+      "sw": "Hataamini mmoja wenu kikweli mpaka ampendelee ndugu yake kile anachojipendelea nafsi yake."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 13",
+      "en": "Sahih al-Bukhari 13",
+      "ms": "HR. Bukhari No. 13",
+      "ar": "رواه البخاري (١٣)",
+      "af": "Oorgelewer deur al-Bukhari (13)",
+      "sw": "Imepokelewa na al-Bukhari (13)"
+    },
+    "theme": "Persaudaraan & Kasih Sayang",
+    "themes": {
+      "id": "Persaudaraan & Kasih Sayang",
+      "en": "Brotherhood & Affection",
+      "ms": "Persaudaraan & Kasih Sayang",
+      "ar": "الأخوة والمودة",
+      "af": "Broederskap en Toegeneentheid",
+      "sw": "Undugu na Upendo"
+    }
+  },
+  {
+    "id": 5,
+    "arabic": "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ",
+    "translations": {
+      "id": "Barangsiapa yang beriman kepada Allah dan Hari Akhir, hendaklah ia berkata yang baik atau diam.",
+      "en": "Whoever believes in Allah and the Last Day should speak good or remain silent.",
+      "ms": "Barangsiapa yang beriman kepada Allah dan Hari Akhirat, hendaklah dia berkata yang baik atau diam.",
+      "ar": "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ",
+      "af": "Wie in Allah en die Laaste Dag glo, moet goeie dinge sê of stilbly.",
+      "sw": "Yeyote anayemwamini Mwenyezi Mungu na Siku ya Mwisho aseme mema au anyamaze."
+    },
+    "narrators": {
+      "id": "HR. Bukhari & Muslim",
+      "en": "Sahih al-Bukhari & Muslim",
+      "ms": "HR. Bukhari & Muslim",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Tutur Kata Baik",
+    "themes": {
+      "id": "Tutur Kata Baik",
+      "en": "Good Speech",
+      "ms": "Tutur Kata Baik",
+      "ar": "القول الطيب",
+      "af": "Goeie Spraak",
+      "sw": "Usemi Mzuri"
+    }
+  },
+  {
+    "id": 6,
+    "arabic": "مَنْ لَا يَرْحَمْ لَا يُرْحَمْ",
+    "translations": {
+      "id": "Barangsiapa yang tidak menyayangi, niscaya tidak akan disayangi.",
+      "en": "He who is not merciful to others will not be treated mercifully.",
+      "ms": "Sesiapa yang tidak mengasihi, dia tidak akan dikasihi.",
+      "ar": "مَنْ لَا يَرْحَمْ لَا يُرْحَمْ",
+      "af": "Hy wat nie barmhartig teenoor ander is nie, sal nie barmhartigheid ontvang nie.",
+      "sw": "Asiyewahurumia wengine hatarumiwa."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 5997",
+      "en": "Sahih al-Bukhari 5997",
+      "ms": "HR. Bukhari No. 5997",
+      "ar": "رواه البخاري (٥٩٩٧)",
+      "af": "Oorgelewer deur al-Bukhari (5997)",
+      "sw": "Imepokelewa na al-Bukhari (5997)"
+    },
+    "theme": "Kasih Sayang",
+    "themes": {
+      "id": "Kasih Sayang",
+      "en": "Compassion & Mercy",
+      "ms": "Kasih Sayang & Belas Kasihan",
+      "ar": "الرحمة والتراحم",
+      "af": "Medelye en Barmhartigheid",
+      "sw": "Huruma na Rehema"
+    }
+  },
+  {
+    "id": 7,
+    "arabic": "خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ",
+    "translations": {
+      "id": "Sebaik-baik kalian adalah orang yang belajar Al-Qur'an dan mengajarkannya.",
+      "en": "The best among you are those who learn the Quran and teach it.",
+      "ms": "Sebaik-baik kamu adalah orang yang mempelajari Al-Quran dan mengajarkannya.",
+      "ar": "خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ",
+      "af": "Die beste onder julle is diegene wat die Koran leer en dit onderrig.",
+      "sw": "Bora wenu ni yule anayejifunza Quran na kuifundisha."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 5027",
+      "en": "Sahih al-Bukhari 5027",
+      "ms": "HR. Bukhari No. 5027",
+      "ar": "رواه البخاري (٥٠٢٧)",
+      "af": "Oorgelewer deur al-Bukhari (5027)",
+      "sw": "Imepokelewa na al-Bukhari (5027)"
+    },
+    "theme": "Keutamaan Belajar Al-Quran",
+    "themes": {
+      "id": "Keutamaan Belajar Al-Quran",
+      "en": "Excellence of Quran Study",
+      "ms": "Keutamaan Belajar Al-Quran",
+      "ar": "فضل تعلم القرآن",
+      "af": "Voortreflikheid van Koran-studie",
+      "sw": "Ubora wa Kujifunza Quran"
+    }
+  },
+  {
+    "id": 8,
+    "arabic": "مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ",
+    "translations": {
+      "id": "Barangsiapa menempuh jalan untuk mencari ilmu, Allah akan memudahkan baginya jalan menuju surga.",
+      "en": "Whoever takes a path in pursuit of knowledge, Allah will facilitate for him a path to Paradise.",
+      "ms": "Sesiapa yang menempuh jalan untuk menuntut ilmu, Allah akan mempermudahkan baginya jalan menuju syurga.",
+      "ar": "مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ",
+      "af": "Wie 'n pad volg op soek na kennis, sal Allah vir hom 'n pad na die Paradys vergemaklik.",
+      "sw": "Yeyote anayepita njia akitafuta elimu, Mwenyezi Mungu atamrahisishia njia ya kuelekea Peponi."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 2699",
+      "en": "Sahih Muslim 2699",
+      "ms": "HR. Muslim No. 2699",
+      "ar": "رواه مسلم (٢٦٩٩)",
+      "af": "Oorgelewer deur Muslim (2699)",
+      "sw": "Imepokelewa na Muslim (2699)"
+    },
+    "theme": "Menuntut Ilmu",
+    "themes": {
+      "id": "Menuntut Ilmu",
+      "en": "Seeking Knowledge",
+      "ms": "Menuntut Ilmu",
+      "ar": "طلب العلم",
+      "af": "Soek na Kennis",
+      "sw": "Kutafuta Elimu"
+    }
+  },
+  {
+    "id": 9,
+    "arabic": "لَا تَغْضَبْ، وَلَكَ الْجَنَّةُ",
+    "translations": {
+      "id": "Janganlah kamu marah, maka bagimu surga.",
+      "en": "Do not become angry, and Paradise will be yours.",
+      "ms": "Janganlah kamu marah, maka bagimu syurga.",
+      "ar": "لَا تَغْضَبْ، وَلَكَ الْجَنَّةُ",
+      "af": "Moenie kwaad word nie, en die Paradys sal joune wees.",
+      "sw": "Usikasirike, nawe utapata Pepo."
+    },
+    "narrators": {
+      "id": "HR. Thabrani (Shahih al-Jami' 7374)",
+      "en": "At-Tabarani (Sahih al-Jami' 7374)",
+      "ms": "HR. Thabrani (Sahih al-Jami' 7374)",
+      "ar": "رواه الطبراني (صحيح الجامع ٧٣٧٤)",
+      "af": "Oorgelewer deur at-Tabarani (7374)",
+      "sw": "Imepokelewa na at-Tabarani (7374)"
+    },
+    "theme": "Menahan Amarah & Kesabaran",
+    "themes": {
+      "id": "Menahan Amarah & Kesabaran",
+      "en": "Restraining Anger & Patience",
+      "ms": "Menahan Marah & Kesabaran",
+      "ar": "كظم الغيظ والصبر",
+      "af": "Beheersing van Woede en Geduld",
+      "sw": "Kuzuia Hasira na Subira"
+    }
+  },
+  {
+    "id": 10,
+    "arabic": "عَجَبًا لِأَمْرِ الْمُؤْمِنِ إِنَّ أَمْرَهُ كُلَّهُ خَيْرٌ",
+    "translations": {
+      "id": "Sungguh menakjubkan urusan orang mukmin, sesungguhnya semua urusannya adalah baik baginya.",
+      "en": "How wonderful is the affair of the believer, for his affairs are all good for him.",
+      "ms": "Sungguh mengagumkan urusan orang mukmin, sesungguhnya semua perkaranya adalah baik baginya.",
+      "ar": "عَجَبًا لِأَمْرِ الْمُؤْمِنِ إِنَّ أَمْرَهُ كُلَّهُ خَيْرٌ",
+      "af": "Hoe wonderlik is die toestand van die gelowige, want al sy sake is vir hom goed.",
+      "sw": "Inashangaza namna mambo ya muumini yalivyo, kwani mambo yake yote ni kheri kwake."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 2999",
+      "en": "Sahih Muslim 2999",
+      "ms": "HR. Muslim No. 2999",
+      "ar": "رواه مسلم (٢٩٩٩)",
+      "af": "Oorgelewer deur Muslim (2999)",
+      "sw": "Imepokelewa na Muslim (2999)"
+    },
+    "theme": "Sabar & Syukur",
+    "themes": {
+      "id": "Sabar & Syukur",
+      "en": "Patience & Gratitude",
+      "ms": "Sabar & Syukur",
+      "ar": "الصبر والشكر",
+      "af": "Geduld en Dankbaarheid",
+      "sw": "Subira na Shukrani"
+    }
+  },
+  {
+    "id": 11,
+    "arabic": "الطُّهُورُ شَطْرُ الإِيمَانِ",
+    "translations": {
+      "id": "Kebersihan dan bersuci adalah sebagian dari keimanan.",
+      "en": "Purity is half of faith.",
+      "ms": "Kebersihan dan bersuci itu adalah sebahagian daripada iman.",
+      "ar": "الطُّهُورُ شَطْرُ الإِيمَانِ",
+      "af": "Reinheid is die helfte van geloof.",
+      "sw": "Usafi na utakaso ni nusu ya imani."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 223",
+      "en": "Sahih Muslim 223",
+      "ms": "HR. Muslim No. 223",
+      "ar": "رواه مسلم (٢٢٣)",
+      "af": "Oorgelewer deur Muslim (223)",
+      "sw": "Imepokelewa na Muslim (223)"
+    },
+    "theme": "Kebersihan & Kesucian",
+    "themes": {
+      "id": "Kebersihan & Kesucian",
+      "en": "Purity & Cleanliness",
+      "ms": "Kebersihan & Kesucian",
+      "ar": "الطهارة والنظافة",
+      "af": "Reinheid en Netheid",
+      "sw": "Usafi na Utakaso"
+    }
+  },
+  {
+    "id": 12,
+    "arabic": "الدُّعَاءُ هُوَ الْعِبَادَةُ",
+    "translations": {
+      "id": "Doa itu adalah intisari ibadah.",
+      "en": "Supplication (Dua) is worship itself.",
+      "ms": "Doa itu adalah intipati ibadah.",
+      "ar": "الدُّعَاءُ هُوَ الْعِبَادَةُ",
+      "af": "Smeekgebed (Dua) is self aanbidding.",
+      "sw": "Dua ndiyo msingi wa ibada."
+    },
+    "narrators": {
+      "id": "HR. Abu Dawud & Tirmidzi",
+      "en": "Sunan Abi Dawud & at-Tirmidhi",
+      "ms": "HR. Abu Daud & Tirmizi",
+      "ar": "رواه أبو داود والترمذي",
+      "af": "Oorgelewer deur Abu Dawud & at-Tirmidhi",
+      "sw": "Imepokelewa na Abu Dawud na at-Tirmidhi"
+    },
+    "theme": "Keutamaan Berdoa",
+    "themes": {
+      "id": "Keutamaan Berdoa",
+      "en": "Excellence of Supplication",
+      "ms": "Keutamaan Berdoa",
+      "ar": "فضل الدعاء",
+      "af": "Voortreflikheid van Smeekgebede",
+      "sw": "Ubora wa Dua"
+    }
+  },
+  {
+    "id": 13,
+    "arabic": "أَحَبُّ الأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا وَإِنْ قَلَّ",
+    "translations": {
+      "id": "Amalan yang paling dicintai oleh Allah adalah yang paling konsisten (kontinu), meskipun sedikit.",
+      "en": "The most beloved of deeds to Allah are those that are most consistent, even if they are small.",
+      "ms": "Amalan yang paling dicintai oleh Allah adalah yang paling berterusan (istiqamah) walaupun sedikit.",
+      "ar": "أَحَبُّ الأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا وَإِنْ قَلَّ",
+      "af": "Die mees geliefde dade vir Allah is dié wat die mees konsekwent is, selfs al is dit min.",
+      "sw": "Matendo yanayopendwa zaidi na Mwenyezi Mungu ni yale ya kudumu (ya mara kwa mara), hata kama ni kidogo."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 6464",
+      "en": "Sahih al-Bukhari 6464",
+      "ms": "HR. Bukhari No. 6464",
+      "ar": "رواه البخاري (٦٤٦٤)",
+      "af": "Oorgelewer deur al-Bukhari (6464)",
+      "sw": "Imepokelewa na al-Bukhari (6464)"
+    },
+    "theme": "Istiqamah & Konsistensi",
+    "themes": {
+      "id": "Istiqamah & Konsistensi",
+      "en": "Consistency in Deeds",
+      "ms": "Istiqamah & Konsistensi",
+      "ar": "الاستقامة والمداومة",
+      "af": "Konsekwentheid in Dade",
+      "sw": "Msimamo na Kudumu katika Matendo"
+    }
+  },
+  {
+    "id": 14,
+    "arabic": "اتَّقِ اللَّهَ حَيْثُمَا كُنْتَ، وَأَتْبِعِ السَّيِّئَةَ الْحَسَنَةَ تَمْحُهَا، وَخَالِقِ النَّاسَ بِخُلُقٍ حَسَنٍ",
+    "translations": {
+      "id": "Bertakwalah kepada Allah di mana pun engkau berada, iringilah keburukan dengan kebaikan niscaya akan menghapusnya, dan pergaulilah manusia dengan akhlak yang mulia.",
+      "en": "Fear Allah wherever you are, follow a bad deed with a good one and it will wipe it out, and behave well towards people.",
+      "ms": "Bertaqwalah kepada Allah di mana sahaja kamu berada, ikutilah kejahatan dengan kebaikan nescaya ia akan menghapuskannya, dan berakhlaklah kepada manusia dengan akhlak yang baik.",
+      "ar": "اتَّقِ اللَّهَ حَيْثُمَا كُنْتَ، وَأَتْبِعِ السَّيِّئَةَ الْحَسَنَةَ تَمْحُهَا، وَخَالِقِ النَّاسَ بِخُلُقٍ حَسَنٍ",
+      "af": "Vrees Allah waar jy ook al is, volg 'n slegte daad op met 'n goeie daad en dit sal dit uitwis, en behandel mense met goeie maniere.",
+      "sw": "Mche Mwenyezi Mungu popote ulipo, fuatisha tendo baya kwa tendo jema litafuta hilo baya, na uishi na watu kwa tabia njema."
+    },
+    "narrators": {
+      "id": "HR. Tirmidzi No. 1987",
+      "en": "Jami` at-Tirmidhi 1987",
+      "ms": "HR. Tirmizi No. 1987",
+      "ar": "رواه الترمذي (١٩٨٧)",
+      "af": "Oorgelewer deur at-Tirmidhi (1987)",
+      "sw": "Imepokelewa na at-Tirmidhi (1987)"
+    },
+    "theme": "Taqwa & Akhlak Terpuji",
+    "themes": {
+      "id": "Taqwa & Akhlak Terpuji",
+      "en": "Piety & Good Conduct",
+      "ms": "Taqwa & Akhlak Terpuji",
+      "ar": "التقوى وحسن الخلق",
+      "af": "Vroomheid en Goeie Gedrag",
+      "sw": "Ucha Mungu na Tabia Njema"
+    }
+  },
+  {
+    "id": 15,
+    "arabic": "الرَّاحِمُونَ يَرْحَمُهُمُ الرَّحْمَنُ، ارْحَمُوا مَنْ فِي الأَرْضِ يَرْحَمْكُمْ مَنْ فِي السَّمَاءِ",
+    "translations": {
+      "id": "Orang-orang yang penyayang akan disayangi oleh Dzat Yang Maha Pengasih. Sayangilah siapa pun yang ada di bumi, niscaya Yang di langit akan menyayangi kalian.",
+      "en": "The merciful are shown mercy by the Most Merciful. Be merciful to those on the earth and the One in the heavens will have mercy upon you.",
+      "ms": "Orang yang mengasihi akan dikasihi oleh Yang Maha Pemurah. Kasihanilah mereka yang berada di bumi, nescaya Yang di langit akan mengasihi kamu.",
+      "ar": "الرَّاحِمُونَ يَرْحَمُهُمُ الرَّحْمَنُ، ارْحَمُوا مَنْ فِي الأَرْضِ يَرْحَمْكُمْ مَنْ فِي السَّمَاءِ",
+      "af": "Aan die barmhartiges sal barmhartigheid bewys word deur die Mees Barmhartige. Wees barmhartig teenoor dié op aarde en die Een in die hemel sal jou barmhartig wees.",
+      "sw": "Wenye huruma watahurumiwa na Mwingi wa Rehema. Wahurumieni walioko ardhini, na Yule aliyeko mbinguni atawahurumia nanyi."
+    },
+    "narrators": {
+      "id": "HR. Abu Dawud & Tirmidzi",
+      "en": "Sunan Abi Dawud & at-Tirmidhi",
+      "ms": "HR. Abu Daud & Tirmizi",
+      "ar": "رواه أبو داود والترمذي",
+      "af": "Oorgelewer deur Abu Dawud & at-Tirmidhi",
+      "sw": "Imepokelewa na Abu Dawud na at-Tirmidhi"
+    },
+    "theme": "Rahmat & Kasih Sayang",
+    "themes": {
+      "id": "Rahmat & Kasih Sayang",
+      "en": "Mercy to All",
+      "ms": "Rahmat & Belas Kasihan",
+      "ar": "الرحمة بالخلق",
+      "af": "Barmhartigheid aan Almal",
+      "sw": "Rehema kwa Wote"
+    }
+  },
+  {
+    "id": 16,
+    "arabic": "مَنْ كَانَ فِي حَاجَةِ أَخِيهِ كَانَ اللَّهُ فِي حَاجَتِهِ",
+    "translations": {
+      "id": "Barangsiapa membantu memenuhi kebutuhan saudaranya, maka Allah akan memenuhi kebutuhannya.",
+      "en": "Whoever relieves a need of his brother, Allah will relieve his needs.",
+      "ms": "Sesiapa yang membantu memenuhi hajat saudaranya, maka Allah akan memenuhi hajatnya.",
+      "ar": "مَنْ كَانَ فِي حَاجَةِ أَخِيهِ كَانَ اللَّهُ فِي حَاجَتِهِ",
+      "af": "Wie 'n behoefte van sy broer verlig, sal Allah sy behoeftes verlig.",
+      "sw": "Yeyote anayemsaidia ndugu yake katika haja zake, Mwenyezi Mungu atamsaidia katika haja zake."
+    },
+    "narrators": {
+      "id": "HR. Bukhari & Muslim",
+      "en": "Sahih al-Bukhari & Muslim",
+      "ms": "HR. Bukhari & Muslim",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Tolong-Menolong",
+    "themes": {
+      "id": "Tolong-Menolong",
+      "en": "Mutual Assistance",
+      "ms": "Tolong-Menolong",
+      "ar": "التعاون على الخير",
+      "af": "Onderlinge Hulp",
+      "sw": "Kusaidiana"
+    }
+  },
+  {
+    "id": 17,
+    "arabic": "الْكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ",
+    "translations": {
+      "id": "Ucapan yang baik dan santun adalah sedekah.",
+      "en": "A good word is a form of charity.",
+      "ms": "Perkataan yang baik adalah sedekah.",
+      "ar": "الْكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ",
+      "af": "'n Goeie woord is 'n vorm van liefdadigheid.",
+      "sw": "Neno zuri na lenye heshima ni sadaka."
+    },
+    "narrators": {
+      "id": "HR. Bukhari & Muslim",
+      "en": "Sahih al-Bukhari & Muslim",
+      "ms": "HR. Bukhari & Muslim",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Tutur Kata Santun",
+    "themes": {
+      "id": "Tutur Kata Santun",
+      "en": "Polite Words",
+      "ms": "Percakapan Santun",
+      "ar": "الكلام اللطيف",
+      "af": "Hoflike Woorde",
+      "sw": "Maneno ya Adabu"
+    }
+  },
+  {
+    "id": 18,
+    "arabic": "إِنَّ اللَّهَ رَفِيقٌ يُحِبُّ الرِّفْقَ فِي الأَمْرِ كُلِّهِ",
+    "translations": {
+      "id": "Sesungguhnya Allah Maha Lembut dan mencintai kelembutan dalam segala perkara.",
+      "en": "Indeed, Allah is Gentle and loves gentleness in all matters.",
+      "ms": "Sesungguhnya Allah Maha Lembut dan menyukai kelembutan dalam semua urusan.",
+      "ar": "إِنَّ اللَّهَ رَفِيقٌ يُحِبُّ الرِّفْقَ فِي الأَمْرِ كُلِّهِ",
+      "af": "Waarlik, Allah is Sagmoedig en het sagmoedigheid in alle sake lief.",
+      "sw": "Hakika Mwenyezi Mungu ni Mpole na anapenda upole katika mambo yote."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 6927",
+      "en": "Sahih al-Bukhari 6927",
+      "ms": "HR. Bukhari No. 6927",
+      "ar": "رواه البخاري (٦٩٢٧)",
+      "af": "Oorgelewer deur al-Bukhari (6927)",
+      "sw": "Imepokelewa na al-Bukhari (6927)"
+    },
+    "theme": "Kelembutan Hati",
+    "themes": {
+      "id": "Kelembutan Hati",
+      "en": "Gentleness & Softheartedness",
+      "ms": "Kelembutan Hati",
+      "ar": "الرفق ولين القلب",
+      "af": "Sagmoedigheid van Hart",
+      "sw": "Upole wa Moyo"
+    }
+  },
+  {
+    "id": 19,
+    "arabic": "الْمُؤْمِنُ الْقَوِيُّ خَيْرٌ وَأَحَبُّ إِلَى اللَّهِ مِنَ الْمُؤْمِنِ الضَّعِيفِ، وَفِي كُلٍّ خَيْرٌ",
+    "translations": {
+      "id": "Mukmin yang kuat lebih baik dan lebih dicintai oleh Allah daripada mukmin yang lemah, namun pada keduanya ada kebaikan.",
+      "en": "A strong believer is better and more beloved to Allah than a weak believer, though there is good in both.",
+      "ms": "Mukmin yang kuat lebih baik dan lebih dicintai Allah daripada mukmin yang lemah, walaupun pada kedua-duanya ada kebaikan.",
+      "ar": "الْمُؤْمِنُ الْقَوِيُّ خَيْرٌ وَأَحَبُّ إِلَى اللَّهِ مِنَ الْمُؤْمِنِ الضَّعِيفِ، وَفِي كُلٍّ خَيْرٌ",
+      "af": "'n Sterk gelowige is beter en meer geliefd by Allah as 'n swak gelowige, alhoewel daar goed in albei is.",
+      "sw": "Muumini mwenye nguvu ni bora na anapendwa zaidi na Mwenyezi Mungu kuliko muumini dhaifu, na katika wote kuna kheri."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 2664",
+      "en": "Sahih Muslim 2664",
+      "ms": "HR. Muslim No. 2664",
+      "ar": "رواه مسلم (٢٦٦٤)",
+      "af": "Oorgelewer deur Muslim (2664)",
+      "sw": "Imepokelewa na Muslim (2664)"
+    },
+    "theme": "Kekuatan Iman & Tekad",
+    "themes": {
+      "id": "Kekuatan Iman & Tekad",
+      "en": "Strength of Faith & Resolve",
+      "ms": "Kekuatan Iman & Tekad",
+      "ar": "قوة الإيمان والعزيمة",
+      "af": "Krag van Geloof en Vasberadenheid",
+      "sw": "Nguvu ya Imani na Dhamira"
+    }
+  },
+  {
+    "id": 20,
+    "arabic": "مَا نَقَصَتْ صَدَقَةٌ مِنْ مَالٍ",
+    "translations": {
+      "id": "Sedekah tidak akan mengurangi harta sedikit pun.",
+      "en": "Charity does not decrease wealth in the least.",
+      "ms": "Sedekah itu tidak akan mengurangkan harta sama sekali.",
+      "ar": "مَا نَقَصَتْ صَدَقَةٌ مِنْ مَالٍ",
+      "af": "Liefdadigheid verminder nie rykdom in die minste nie.",
+      "sw": "Sadaka haipunguzi mali hata kidogo."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 2588",
+      "en": "Sahih Muslim 2588",
+      "ms": "HR. Muslim No. 2588",
+      "ar": "رواه مسلم (٢٥٨٨)",
+      "af": "Oorgelewer deur Muslim (2588)",
+      "sw": "Imepokelewa na Muslim (2588)"
+    },
+    "theme": "Keberkahan Sedekah",
+    "themes": {
+      "id": "Keberkahan Sedekah",
+      "en": "Blessings of Charity",
+      "ms": "Keberkatan Sedekah",
+      "ar": "بركة الصدقة",
+      "af": "Seëninge van Liefdadigheid",
+      "sw": "Baraka za Sadaka"
+    }
+  },
+  {
+    "id": 21,
+    "arabic": "أَفْشُوا السَّلَامَ، وَأَطْعِمُوا الطَّعَامَ، وَصِلُوا الأَرْحَامَ، وَصَلُّوا بِاللَّيْلِ وَالنَّاسُ نِيَامٌ، تَدْخُلُوا الْجَنَّةَ بِسَلَامٍ",
+    "translations": {
+      "id": "Sebarkanlah salam, berikanlah makanan, sambunglah tali silaturahmi, dan shalatlah di waktu malam ketika manusia tidur, niscaya kalian akan masuk surga dengan selamat.",
+      "en": "Spread peace, feed the hungry, maintain kinship ties, and pray at night while people sleep; you will enter Paradise in peace.",
+      "ms": "Sebarkanlah salam, berikanlah makan, hubungkanlah silaturrahim, dan solatlah pada waktu malam ketika orang lain tidur, nescaya kamu akan masuk syurga dengan selamat.",
+      "ar": "أَفْشُوا السَّلَامَ، وَأَطْعِمُوا الطَّعَامَ، وَصِلُوا الأَرْحَامَ، وَصَلُّوا بِاللَّيْلِ وَالنَّاسُ نِيَامٌ، تَدْخُلُوا الْجَنَّةَ بِسَلَامٍ",
+      "af": "Versprei vrede, gee kos aan die hongeres, onderhou familiebande, en bid in die nag terwyl mense slaap; julle sal die Paradys in vrede binnegaan.",
+      "sw": "Enezeni amani, lisheni chakula, ungeni udugu, na swalini usiku watu wakiwa wamelala; mtaingia Peponi kwa amani."
+    },
+    "narrators": {
+      "id": "HR. Tirmidzi & Ibnu Majah",
+      "en": "Jami` at-Tirmidhi & Ibn Majah",
+      "ms": "HR. Tirmizi & Ibnu Majah",
+      "ar": "رواه الترمذي وابن ماجه",
+      "af": "Oorgelewer deur at-Tirmidhi & Ibn Majah",
+      "sw": "Imepokelewa na at-Tirmidhi na Ibn Majah"
+    },
+    "theme": "Kunci Masuk Surga",
+    "themes": {
+      "id": "Kunci Masuk Surga",
+      "en": "Keys to Paradise",
+      "ms": "Kunci Masuk Syurga",
+      "ar": "مفاتيح الجنة",
+      "af": "Sleutels tot die Paradys",
+      "sw": "Funguo za Peponi"
+    }
+  },
+  {
+    "id": 22,
+    "arabic": "يَسِّرُوا وَلَا تُعَسِّرُوا، وَبَشِّرُوا وَلَا تُنَفِّرُوا",
+    "translations": {
+      "id": "Permudahlah dan jangan mempersulit, berilah kabar gembira dan jangan membuat orang lari.",
+      "en": "Make things easy and do not make them difficult, give good tidings and do not repel people.",
+      "ms": "Permudahkanlah dan jangan kamu susahkan, berilah khabar gembira dan janganlah kamu membuatkan orang lari menjauh.",
+      "ar": "يَسِّرُوا وَلَا تُعَسِّرُوا، وَبَشِّرُوا وَلَا تُنَفِّرُوا",
+      "af": "Maak dinge maklik en moenie dit moeilik maak nie, gee goeie nuus en moenie mense afskrik nie.",
+      "sw": "Rahisisheni wala msifanye mambo kuwa magumu, toeni habari njema wala msiwakimbize watu."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 69",
+      "en": "Sahih al-Bukhari 69",
+      "ms": "HR. Bukhari No. 69",
+      "ar": "رواه البخاري (٦٩)",
+      "af": "Oorgelewer deur al-Bukhari (69)",
+      "sw": "Imepokelewa na al-Bukhari (69)"
+    },
+    "theme": "Kemudahan & Optimisme",
+    "themes": {
+      "id": "Kemudahan & Optimisme",
+      "en": "Ease & Good Cheer",
+      "ms": "Kemudahan & Khabar Gembira",
+      "ar": "التيسير والتبشير",
+      "af": "Gemak en Bemoediging",
+      "sw": "Urahisi na Matumaini"
+    }
+  },
+  {
+    "id": 23,
+    "arabic": "مَنْ حَسُنَ إِسْلَامُ الْمَرْءِ تَرْكُهُ مَا لَا يَعْنِيهِ",
+    "translations": {
+      "id": "Di antara tanda baiknya keislaman seseorang adalah meninggalkan hal-hal yang tidak bermanfaat baginya.",
+      "en": "Part of the perfection of one's Islam is leaving that which does not concern him.",
+      "ms": "Antara tanda kebaikan Islam seseorang itu ialah meninggalkan apa yang tidak berfaedah baginya.",
+      "ar": "مِنْ حُسْنِ إِسْلَامِ الْمَرْءِ تَرْكُهُ مَا لَا يَعْنِيهِ",
+      "af": "Deel van die volmaaktheid van 'n mens se Islam is om dit wat hom nie aangaan nie, te laat staan.",
+      "sw": "Miongoni mwa uzuri wa Uislamu wa mtu ni kuacha yasiyomhusu (yasiyo na manufaa kwake)."
+    },
+    "narrators": {
+      "id": "HR. Tirmidzi No. 2317",
+      "en": "Jami` at-Tirmidhi 2317",
+      "ms": "HR. Tirmizi No. 2317",
+      "ar": "رواه الترمذي (٢٣١٧)",
+      "af": "Oorgelewer deur at-Tirmidhi (2317)",
+      "sw": "Imepokelewa na at-Tirmidhi (2317)"
+    },
+    "theme": "Fokus Pada Hal Bermanfaat",
+    "themes": {
+      "id": "Fokus Pada Hal Bermanfaat",
+      "en": "Focus on What Benefits",
+      "ms": "Fokus Perkara Bermanfaat",
+      "ar": "الاشتغال بما ينفع",
+      "af": "Fokus op Wat Voordelig Is",
+      "sw": "Kuzingatia Yenye Manufaa"
+    }
+  },
+  {
+    "id": 24,
+    "arabic": "إِنَّ الدَّالَّ عَلَى الْخَيْرِ كَفَاعِلِهِ",
+    "translations": {
+      "id": "Orang yang menunjukkan kepada kebaikan akan mendapatkan pahala seperti orang yang melakukannya.",
+      "en": "Whoever guides someone to goodness will have a reward like one who did it.",
+      "ms": "Sesiapa yang menunjukkan kepada kebaikan, dia akan mendapat ganjaran seperti orang yang melakukannya.",
+      "ar": "إِنَّ الدَّالَّ عَلَى الْخَيْرِ كَفَاعِلِهِ",
+      "af": "Wie iemand na die goeie lei, sal 'n beloning hê soos die een wat dit gedoen het.",
+      "sw": "Mwenye kuelekeza kwenye wema anapata thawabu kama yule aliyeutenda."
+    },
+    "narrators": {
+      "id": "HR. Tirmidzi No. 2670",
+      "en": "Jami` at-Tirmidhi 2670",
+      "ms": "HR. Tirmizi No. 2670",
+      "ar": "رواه الترمذي (٢٦٧٠)",
+      "af": "Oorgelewer deur at-Tirmidhi (2670)",
+      "sw": "Imepokelewa na at-Tirmidhi (2670)"
+    },
+    "theme": "Mengajak Pada Kebaikan",
+    "themes": {
+      "id": "Mengajak Pada Kebaikan",
+      "en": "Guiding to Good",
+      "ms": "Mengajak Kepada Kebaikan",
+      "ar": "الدلالة على الخير",
+      "af": "Lei na die Goeie",
+      "sw": "Kuelekeza Kwenye Wema"
+    }
+  },
+  {
+    "id": 25,
+    "arabic": "الْبِرُّ حُسْنُ الْخُلُقِ، وَالإِثْمُ مَا حَاكَ فِي نَفْسِكَ وَكَرِهْتَ أَنْ يَطَّلِعَ عَلَيْهِ النَّاسُ",
+    "translations": {
+      "id": "Kebaikan itu adalah akhlak yang mulia, dan dosa itu adalah apa yang menggelisahkan jiwamu dan engkau tidak suka jika manusia mengetahuinya.",
+      "en": "Righteousness is good character, and sin is that which wavers in your heart and you dislike that people should find out about it.",
+      "ms": "Kebaikan itu adalah akhlak yang mulia, dan dosa itu adalah apa yang meragukan jiwamu dan kamu benci jika orang lain mengetahuinya.",
+      "ar": "الْبِرُّ حُسْنُ الْخُلُقِ، وَالإِثْمُ مَا حَاكَ فِي نَفْسِكَ وَكَرِهْتَ أَنْ يَطَّلِعَ عَلَيْهِ النَّاسُ",
+      "af": "Regverdigheid is goeie karakter, en sonde is dit wat in jou siel twyfel wek en waarvan jy nie hou dat mense daarvan weet nie.",
+      "sw": "Wema ni tabia njema, na dhambi ni ile inayotetereka moyoni mwako na ukachukia watu wajue."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 2553",
+      "en": "Sahih Muslim 2553",
+      "ms": "HR. Muslim No. 2553",
+      "ar": "رواه مسلم (٢٥٥٣)",
+      "af": "Oorgelewer deur Muslim (2553)",
+      "sw": "Imepokelewa na Muslim (2553)"
+    },
+    "theme": "Definisi Kebaikan & Dosa",
+    "themes": {
+      "id": "Definisi Kebaikan & Dosa",
+      "en": "Righteousness vs Sin",
+      "ms": "Takrif Kebaikan & Dosa",
+      "ar": "حقيقة البر والإثم",
+      "af": "Regverdigheid teenoor Sonde",
+      "sw": "Ufafanuzi wa Wema na Dhambi"
+    }
+  },
+  {
+    "id": 26,
+    "arabic": "مَنْ غَشَّنَا فَلَيْسَ مِنَّا",
+    "translations": {
+      "id": "Barangsiapa yang berbuat curang (menipu) kepada kami, maka ia bukan bagian dari golongan kami.",
+      "en": "Whoever deceives us is not one of us.",
+      "ms": "Sesiapa yang menipu kami, maka dia bukan daripada golongan kami.",
+      "ar": "مَنْ غَشَّنَا فَلَيْسَ مِنَّا",
+      "af": "Wie ons bedrieg, is nie een van ons nie.",
+      "sw": "Mwenye kutuhadaa (kudanganya) si miongoni mwetu."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 101",
+      "en": "Sahih Muslim 101",
+      "ms": "HR. Muslim No. 101",
+      "ar": "رواه مسلم (١٠١)",
+      "af": "Oorgelewer deur Muslim (101)",
+      "sw": "Imepokelewa na Muslim (101)"
+    },
+    "theme": "Kejujuran & Integritas",
+    "themes": {
+      "id": "Kejujuran & Integritas",
+      "en": "Honesty & Integrity",
+      "ms": "Kejujuran & Integriti",
+      "ar": "الصدق والأمانة",
+      "af": "Eerlikheid en Integriteit",
+      "sw": "Uaminifu na Uadilifu"
+    }
+  },
+  {
+    "id": 27,
+    "arabic": "اسْتَعِنْ بِاللَّهِ وَلَا تَعْجَزْ",
+    "translations": {
+      "id": "Mohonlah pertolongan kepada Allah dan janganlah kamu bersikap lemah atau putus asa.",
+      "en": "Seek help from Allah and do not give up or feel helpless.",
+      "ms": "Mintalah pertolongan kepada Allah dan janganlah kamu berasa lemah.",
+      "ar": "اسْتَعِنْ بِاللَّهِ وَلَا تَعْجَزْ",
+      "af": "Soek hulp by Allah en moenie moed opgee of hulpeloos voel nie.",
+      "sw": "Omba msaada kwa Mwenyezi Mungu na wala usikate tamaa."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 2664",
+      "en": "Sahih Muslim 2664",
+      "ms": "HR. Muslim No. 2664",
+      "ar": "رواه مسلم (٢٦٦٤)",
+      "af": "Oorgelewer deur Muslim (2664)",
+      "sw": "Imepokelewa na Muslim (2664)"
+    },
+    "theme": "Tawakkal & Semangat Hidup",
+    "themes": {
+      "id": "Tawakkal & Semangat Hidup",
+      "en": "Reliance on Allah & Resilience",
+      "ms": "Tawakkal & Keazaman",
+      "ar": "التوكل وعلو الهمة",
+      "af": "Vertroue op Allah en Deursettingsvermoë",
+      "sw": "Kumtegemea Mwenyezi Mungu na Bidii"
+    }
+  },
+  {
+    "id": 28,
+    "arabic": "كُلُّ مَعْرُوفٍ صَدَقَةٌ",
+    "translations": {
+      "id": "Setiap perbuatan baik adalah sedekah.",
+      "en": "Every act of goodness is a charity.",
+      "ms": "Setiap kebaikan itu adalah sedekah.",
+      "ar": "كُلُّ مَعْرُوفٍ صَدَقَةٌ",
+      "af": "Elke goeie daad is 'n vorm van liefdadigheid.",
+      "sw": "Kila tendo jema ni sadaka."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 6021",
+      "en": "Sahih al-Bukhari 6021",
+      "ms": "HR. Bukhari No. 6021",
+      "ar": "رواه البخاري (٦٠٢١)",
+      "af": "Oorgelewer deur al-Bukhari (6021)",
+      "sw": "Imepokelewa na al-Bukhari (6021)"
+    },
+    "theme": "Luasnya Pintu Sedekah",
+    "themes": {
+      "id": "Luasnya Pintu Sedekah",
+      "en": "Endless Ways of Charity",
+      "ms": "Luasnya Pintu Sedekah",
+      "ar": "سعة أبواب الصدقة",
+      "af": "Eindelose Maniere van Liefdadigheid",
+      "sw": "Upana wa Milango ya Sadaka"
+    }
+  },
+  {
+    "id": 29,
+    "arabic": "أَحَبُّ النَّاسِ إِلَى اللَّهِ أَنْفَعُهُمْ لِلنَّاسِ",
+    "translations": {
+      "id": "Manusia yang paling dicintai oleh Allah adalah yang paling bermanfaat bagi manusia lainnya.",
+      "en": "The most beloved people to Allah are those who are most beneficial to others.",
+      "ms": "Manusia yang paling dicintai oleh Allah adalah yang paling bermanfaat kepada manusia lain.",
+      "ar": "أَحَبُّ النَّاسِ إِلَى اللَّهِ أَنْفَعُهُمْ لِلنَّاسِ",
+      "af": "Die mees geliefde mense vir Allah is dié wat die voordeligste vir ander is.",
+      "sw": "Watu wanaopendwa zaidi na Mwenyezi Mungu ni wale wenye manufaa zaidi kwa watu wengine."
+    },
+    "narrators": {
+      "id": "HR. Thabrani (Shahih al-Jami' 176)",
+      "en": "At-Tabarani (Sahih al-Jami' 176)",
+      "ms": "HR. Thabrani (Sahih al-Jami' 176)",
+      "ar": "رواه الطبراني (صحيح الجامع ١٧٦)",
+      "af": "Oorgelewer deur at-Tabarani (176)",
+      "sw": "Imepokelewa na at-Tabarani (176)"
+    },
+    "theme": "Manfaat Bagi Sesama",
+    "themes": {
+      "id": "Manfaat Bagi Sesama",
+      "en": "Benefiting Others",
+      "ms": "Manfaat Kepada Sesama",
+      "ar": "نفع الناس",
+      "af": "Voordeel vir Ander",
+      "sw": "Manufaa kwa Wengine"
+    }
+  },
+  {
+    "id": 30,
+    "arabic": "الرِّضَا بِالْقَلِيلِ خَيْرٌ مِنَ الْكَثِيرِ الْمُلْهِي",
+    "translations": {
+      "id": "Harta yang sedikit namun mencukupi lebih baik daripada harta yang banyak namun melalaikan.",
+      "en": "That which is little but sufficient is better than that which is abundant but distracting.",
+      "ms": "Harta yang sedikit tetapi mencukupi adalah lebih baik daripada yang banyak tetapi melalaikan.",
+      "ar": "مَا قَلَّ وَكَفَى خَيْرٌ مِمَّا كَثُرَ وَأَلْهَى",
+      "af": "Dit wat min is maar voldoende, is beter as dit wat volop is maar afleidend.",
+      "sw": "Kidogo kinachotosheleza ni bora kuliko kingi kinachoghafilisha."
+    },
+    "narrators": {
+      "id": "HR. Ahmad & Abu Dawud",
+      "en": "Musnad Ahmad & Abu Dawud",
+      "ms": "HR. Ahmad & Abu Daud",
+      "ar": "رواه أحمد وأبو داود",
+      "af": "Oorgelewer deur Ahmad & Abu Dawud",
+      "sw": "Imepokelewa na Ahmad na Abu Dawud"
+    },
+    "theme": "Qana'ah & Syukur",
+    "themes": {
+      "id": "Qana'ah & Syukur",
+      "en": "Contentment & Gratitude",
+      "ms": "Qana'ah & Syukur",
+      "ar": "القناعة والشكر",
+      "af": "Tevredeheid en Dankbaarheid",
+      "sw": "Kukinai na Shukrani"
+    }
+  },
+  {
+    "id": 31,
+    "arabic": "لَا يَدْخُلُ الْجَنَّةَ قَاطِعُ رَحِمٍ",
+    "translations": {
+      "id": "Tidak akan masuk surga orang yang memutus tali silaturahmi.",
+      "en": "The one who severs ties of kinship will not enter Paradise.",
+      "ms": "Tidak akan masuk syurga orang yang memutuskan hubungan silaturrahim.",
+      "ar": "لَا يَدْخُلُ الْجَنَّةَ قَاطِعُ رَحِمٍ",
+      "af": "Die een wat familiebande verbreek, sal nie die Paradys binnegaan nie.",
+      "sw": "Hataingia Peponi yule anayekata undugu."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 5984 & Muslim No. 2556",
+      "en": "Sahih al-Bukhari 5984 & Muslim 2556",
+      "ms": "HR. Bukhari No. 5984 & Muslim No. 2556",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Menyambung Silaturahim",
+    "themes": {
+      "id": "Menyambung Silaturahim",
+      "en": "Kinship & Family Ties",
+      "ms": "Menyambung Silaturrahim",
+      "ar": "صلة الرحم",
+      "af": "Familiebande en Verwantskap",
+      "sw": "Kuunga Udugu"
+    }
+  },
+  {
+    "id": 32,
+    "arabic": "كَلِمَتَانِ حَبِيبَتَانِ إِلَى الرَّحْمَنِ، خَفِيفَتَانِ عَلَى اللِّسَانِ، ثَقِيلَتَانِ فِي الْمِيزَانِ: سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ",
+    "translations": {
+      "id": "Dua kalimat yang dicintai oleh Ar-Rahman, ringan di lisan, berat di timbangan: Subhanallah wa bihamdihi, Subhanallahil 'Azhim.",
+      "en": "Two words are beloved to the Most Merciful, light on the tongue, and heavy on the scale: SubhanAllahi wa bihamdih, SubhanAllahil-Azim.",
+      "ms": "Dua kalimah yang dicintai oleh Yang Maha Pemurah, ringan di lidah, berat di timbangan: Subhanallah wa bihamdihi, Subhanallahil 'Azhim.",
+      "ar": "كَلِمَتَانِ حَبِيبَتَانِ إِلَى الرَّحْمَنِ، خَفِيفَتَانِ عَلَى اللِّسَانِ، ثَقِيلَتَانِ فِي الْمِيزَانِ: سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ",
+      "af": "Twee woorde is geliefd by die Mees Barmhartige, lig op die tong, en swaar op die skaal: SubhanAllahi wa bihamdih, SubhanAllahil-Azim.",
+      "sw": "Maneno mawili yanapendwa na Mwingi wa Rehema, mepesi kwenye ulimi, mazito kwenye mizani: Subhanallah wa bihamdihi, Subhanallahil Adhim."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 6406 & Muslim No. 2694",
+      "en": "Sahih al-Bukhari 6406 & Muslim 2694",
+      "ms": "HR. Bukhari No. 6406 & Muslim No. 2694",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Keutamaan Dzikir",
+    "themes": {
+      "id": "Keutamaan Dzikir",
+      "en": "Excellence of Remembrance",
+      "ms": "Keutamaan Zikir",
+      "ar": "فضل الذكر",
+      "af": "Voortreflikheid van Gedenking",
+      "sw": "Ubora wa Dhikri"
+    }
+  },
+  {
+    "id": 33,
+    "arabic": "إِنَّمَا بُعِثْتُ لِأُتَمِّمَ صَالِحَ الأَخْلَاقِ",
+    "translations": {
+      "id": "Sesungguhnya aku diutus hanyalah untuk menyempurnakan akhlak yang mulia.",
+      "en": "I was only sent to perfect good character.",
+      "ms": "Sesungguhnya aku diutus hanyalah untuk menyempurnakan akhlak yang mulia.",
+      "ar": "إِنَّمَا بُعِثْتُ لِأُتَمِّمَ صَالِحَ الأَخْلَاقِ",
+      "af": "Ek is slegs gestuur om goeie karakter te vervolmaak.",
+      "sw": "Hakika nimetumwa ili kukamilisha tabia njema."
+    },
+    "narrators": {
+      "id": "HR. Ahmad No. 8952 (Shahih)",
+      "en": "Musnad Ahmad 8952 (Sahih)",
+      "ms": "HR. Ahmad No. 8952 (Sahih)",
+      "ar": "رواه أحمد (٨٩٥٢)",
+      "af": "Oorgelewer deur Ahmad (8952)",
+      "sw": "Imepokelewa na Ahmad (8952)"
+    },
+    "theme": "Misi Akhlak Mulia",
+    "themes": {
+      "id": "Misi Akhlak Mulia",
+      "en": "Noble Character Mission",
+      "ms": "Misi Akhlak Mulia",
+      "ar": "مكارم الأخلاق",
+      "af": "Missie van Edele Karakter",
+      "sw": "Ujumbe wa Tabia Njema"
+    }
+  },
+  {
+    "id": 34,
+    "arabic": "مَنْ صَلَّى عَلَيَّ صَلَاةً صَلَّى اللَّهُ عَلَيْهِ بِهَا عَشْرًا",
+    "translations": {
+      "id": "Barangsiapa bershalawat kepadaku satu kali, niscaya Allah akan bershalawat kepadanya sepuluh kali.",
+      "en": "Whoever sends blessings upon me once, Allah will send blessings upon him tenfold.",
+      "ms": "Sesiapa yang berselawat kepadaku sekali, nescaya Allah akan berselawat kepadanya sepuluh kali.",
+      "ar": "مَنْ صَلَّى عَلَيَّ صَلَاةً صَلَّى اللَّهُ عَلَيْهِ بِهَا عَشْرًا",
+      "af": "Wie een keer seëninge oor my uitspreek, sal Allah hom tienvoudig seën.",
+      "sw": "Mwenye kuniswalia mara moja, Mwenyezi Mungu atamswalia mara kumi."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 384",
+      "en": "Sahih Muslim 384",
+      "ms": "HR. Muslim No. 384",
+      "ar": "رواه مسلم (٣٨٤)",
+      "af": "Oorgelewer deur Muslim (384)",
+      "sw": "Imepokelewa na Muslim (384)"
+    },
+    "theme": "Keutamaan Shalawat",
+    "themes": {
+      "id": "Keutamaan Shalawat",
+      "en": "Blessings on the Prophet",
+      "ms": "Keutamaan Selawat",
+      "ar": "فضل الصلاة على النبي",
+      "af": "Seëninge op die Profeet",
+      "sw": "Ubora wa Kumswalia Mtume"
+    }
+  },
+  {
+    "id": 35,
+    "arabic": "أَفْضَلُ الذِّكْرِ لَا إِلَهَ إِلَّا اللَّهُ، وَأَفْضَلُ الدُّعَاءِ الْحَمْدُ لِلَّهِ",
+    "translations": {
+      "id": "Dzikir yang paling utama adalah Laa ilaaha illallaah, dan doa yang paling utama adalah Alhamdulillah.",
+      "en": "The best remembrance is 'La ilaha illallah', and the best supplication is 'Alhamdulillah'.",
+      "ms": "Zikir yang paling utama ialah La ilaha illallah, dan doa yang paling utama ialah Alhamdulillah.",
+      "ar": "أَفْضَلُ الذِّكْرِ لَا إِلَهَ إِلَّا اللَّهُ، وَأَفْضَلُ الدُّعَاءِ الْحَمْدُ لِلَّهِ",
+      "af": "Die beste gedenking is 'La ilaha illallah', en die beste smeekgebed is 'Alhamdulillah'.",
+      "sw": "Dhikri bora zaidi ni 'La ilaha illallah', na dua bora zaidi ni 'Alhamdulillah'."
+    },
+    "narrators": {
+      "id": "HR. Tirmidzi No. 3383 (Hasan)",
+      "en": "Jami` at-Tirmidhi 3383 (Hasan)",
+      "ms": "HR. Tirmizi No. 3383 (Hasan)",
+      "ar": "رواه الترمذي (٣٣٨٣)",
+      "af": "Oorgelewer deur at-Tirmidhi (3383)",
+      "sw": "Imepokelewa na at-Tirmidhi (3383)"
+    },
+    "theme": "Dzikir & Rasa Syukur",
+    "themes": {
+      "id": "Dzikir & Rasa Syukur",
+      "en": "Remembrance & Gratitude",
+      "ms": "Zikir & Rasa Syukur",
+      "ar": "الذكر والشكر",
+      "af": "Gedenking en Dankbaarheid",
+      "sw": "Dhikri na Shukrani"
+    }
+  },
+  {
+    "id": 36,
+    "arabic": "إِنَّ الصِّدْقَ يَهْدِي إِلَى الْبِرِّ، وَإِنَّ الْبِرَّ يَهْدِي إِلَى الْجَنَّةِ",
+    "translations": {
+      "id": "Sesungguhnya kejujuran itu membimbing kepada kebaikan, dan kebaikan itu membimbing ke surga.",
+      "en": "Indeed, truthfulness leads to righteousness, and righteousness leads to Paradise.",
+      "ms": "Sesungguhnya kejujuran itu membawa kepada kebaikan, dan kebaikan itu membawa ke syurga.",
+      "ar": "إِنَّ الصِّدْقَ يَهْدِي إِلَى الْبِرِّ، وَإِنَّ الْبِرَّ يَهْدِي إِلَى الْجَنَّةِ",
+      "af": "Waarlik, eerlikheid lei na geregtigheid, en geregtigheid lei na die Paradys.",
+      "sw": "Hakika ukweli huongoza kwenye wema, na wema huongoza kwenye Pepo."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 6094 & Muslim No. 2607",
+      "en": "Sahih al-Bukhari 6094 & Muslim 2607",
+      "ms": "HR. Bukhari No. 6094 & Muslim No. 2607",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Kejujuran & Kebenaran",
+    "themes": {
+      "id": "Kejujuran & Kebenaran",
+      "en": "Truthfulness & Righteousness",
+      "ms": "Kejujuran & Kebenaran",
+      "ar": "الصدق والبر",
+      "af": "Eerlikheid en Geregtigheid",
+      "sw": "Ukweli na Wema"
+    }
+  },
+  {
+    "id": 37,
+    "arabic": "الْمَرْءُ مَعَ مَنْ أَحَبَّ",
+    "translations": {
+      "id": "Seseorang akan bersama dengan orang yang ia cintai (di akhirat kelak).",
+      "en": "A person will be with whom he loves (in the Hereafter).",
+      "ms": "Seseorang itu akan bersama dengan orang yang dia cintai (di akhirat kelak).",
+      "ar": "الْمَرْءُ مَعَ مَنْ أَحَبَّ",
+      "af": "'n Mens sal wees saam met wie hy liefhet (in die Hiernamaals).",
+      "sw": "Mtu atakuwa pamoja na yule anayempenda (huko Akhera)."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 6169 & Muslim No. 2640",
+      "en": "Sahih al-Bukhari 6169 & Muslim 2640",
+      "ms": "HR. Bukhari No. 6169 & Muslim No. 2640",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Cinta Karena Allah",
+    "themes": {
+      "id": "Cinta Karena Allah",
+      "en": "Love for the Sake of Allah",
+      "ms": "Cinta Kerana Allah",
+      "ar": "الحب في الله",
+      "af": "Liefde ter wille van Allah",
+      "sw": "Kupenda kwa Ajili ya Mwenyezi Mungu"
+    }
+  },
+  {
+    "id": 38,
+    "arabic": "مَنْ كَفَّ غَضَبَهُ كَفَّ اللَّهُ عَنْهُ عَذَابَهُ",
+    "translations": {
+      "id": "Barangsiapa menahan amarahnya, Allah akan menahan azab-Nya darinya.",
+      "en": "Whoever restrains his anger, Allah will restrain His punishment from him.",
+      "ms": "Sesiapa yang menahan kemarahannya, Allah akan menahan azab-Nya daripadanya.",
+      "ar": "مَنْ كَفَّ غَضَبَهُ كَفَّ اللَّهُ عَنْهُ عَذَابَهُ",
+      "af": "Wie sy woede bedwing, sal Allah Sy straf van hom weerhou.",
+      "sw": "Mwenye kuzuia hasira zake, Mwenyezi Mungu atamkinga na adhabu Yake."
+    },
+    "narrators": {
+      "id": "HR. Thabrani (Shahih at-Targhib 2749)",
+      "en": "At-Tabarani (Sahih at-Targhib 2749)",
+      "ms": "HR. Thabrani (Sahih at-Targhib 2749)",
+      "ar": "رواه الطبراني",
+      "af": "Oorgelewer deur at-Tabarani",
+      "sw": "Imepokelewa na at-Tabarani"
+    },
+    "theme": "Keutamaan Menahan Amarah",
+    "themes": {
+      "id": "Keutamaan Menahan Amarah",
+      "en": "Controlling Anger",
+      "ms": "Keutamaan Menahan Marah",
+      "ar": "كف الغضب",
+      "af": "Beheersing van Woede",
+      "sw": "Kuzuia Hasira"
+    }
+  },
+  {
+    "id": 39,
+    "arabic": "لَا يَدْخُلُ الْجَنَّةَ مَنْ كَانَ فِي قَلْبِهِ مِثْقَالُ ذَرَّةٍ مِنْ كِبْرٍ",
+    "translations": {
+      "id": "Tidak akan masuk surga orang yang di dalam hatinya ada seberat biji zarrah dari kesombongan.",
+      "en": "He who has in his heart an atom's weight of arrogance will not enter Paradise.",
+      "ms": "Tidak akan masuk syurga orang yang di dalam hatinya ada sebesar zarah daripada sifat sombong.",
+      "ar": "لَا يَدْخُلُ الْجَنَّةَ مَنْ كَانَ فِي قَلْبِهِ مِثْقَالُ ذَرَّةٍ مِنْ كِبْرٍ",
+      "af": "Hy wat in sy hart 'n greintjie hoogmoed het, sal nie die Paradys binnegaan nie.",
+      "sw": "Hataingia Peponi yule ambaye moyoni mwake mna kibri hata chenye uzito wa chembe."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 91",
+      "en": "Sahih Muslim 91",
+      "ms": "HR. Muslim No. 91",
+      "ar": "رواه مسلم (٩١)",
+      "af": "Oorgelewer deur Muslim (91)",
+      "sw": "Imepokelewa na Muslim (91)"
+    },
+    "theme": "Menjauhi Kesombongan",
+    "themes": {
+      "id": "Menjauhi Kesombongan",
+      "en": "Avoiding Arrogance",
+      "ms": "Menjauhi Sifat Sombong",
+      "ar": "اجتناب الكبر",
+      "af": "Vermyding van Hoogmoed",
+      "sw": "Kuepuka Kibri"
+    }
+  },
+  {
+    "id": 40,
+    "arabic": "لَيْسَ الشَّدِيدُ بِالصُّرَعَةِ، إِنَّمَا الشَّدِيدُ الَّذِي يَمْلِكُ نَفْسَهُ عِنْدَ الْغَضَبِ",
+    "translations": {
+      "id": "Bukanlah orang kuat itu yang menang dalam bergulat, tetapi orang kuat adalah yang mampu mengendalikan dirinya ketika marah.",
+      "en": "The strong is not the one who overcomes people by his strength, but the strong is the one who controls himself while angry.",
+      "ms": "Bukanlah orang yang kuat itu yang menang bergusti, tetapi orang yang kuat ialah orang yang dapat mengawal dirinya ketika marah.",
+      "ar": "لَيْسَ الشَّدِيدُ بِالصُّرَعَةِ، إِنَّمَا الشَّدِيدُ الَّذِي يَمْلِكُ نَفْسَهُ عِنْدَ الْغَضَبِ",
+      "af": "Die sterke is nie die een wat ander in 'n geveg oorwin nie, maar die een wat homself beheers wanneer hy kwaad is.",
+      "sw": "Mwenye nguvu si yule anayewashinda watu katika miereka, bali mwenye nguvu ni yule anayedhibiti nafsi yake anapokasirika."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 6114 & Muslim No. 2609",
+      "en": "Sahih al-Bukhari 6114 & Muslim 2609",
+      "ms": "HR. Bukhari No. 6114 & Muslim No. 2609",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Hakikat Kekuatan Sejati",
+    "themes": {
+      "id": "Hakikat Kekuatan Sejati",
+      "en": "True Inner Strength",
+      "ms": "Hakikat Kekuatan Sebenar",
+      "ar": "القوة الحقيقية",
+      "af": "Ware Innerlike Krag",
+      "sw": "Nguvu ya Kweli ya Ndani"
+    }
+  },
+  {
+    "id": 41,
+    "arabic": "مَنْ تَوَاضَعَ لِلَّهِ رَفَعَهُ اللَّهُ",
+    "translations": {
+      "id": "Barangsiapa bersikap tawadhu' (rendah hati) karena Allah, niscaya Allah akan meninggikan derajatnya.",
+      "en": "Whoever humbles himself for the sake of Allah, Allah will raise him in status.",
+      "ms": "Sesiapa yang merendah diri (tawaduk) kerana Allah, nescaya Allah akan mengangkat darjatnya.",
+      "ar": "مَنْ تَوَاضَعَ لِلَّهِ رَفَعَهُ اللَّهُ",
+      "af": "Wie homself ter wille van Allah verneder, sal Allah hom in status verhef.",
+      "sw": "Mwenye kunyenyekea kwa ajili ya Mwenyezi Mungu, Mwenyezi Mungu atamnyanyua daraja."
+    },
+    "narrators": {
+      "id": "HR. Thabrani (Shahih al-Jami' 6162)",
+      "en": "At-Tabarani (Sahih al-Jami' 6162)",
+      "ms": "HR. Thabrani (Sahih al-Jami' 6162)",
+      "ar": "رواه الطبراني",
+      "af": "Oorgelewer deur at-Tabarani",
+      "sw": "Imepokelewa na at-Tabarani"
+    },
+    "theme": "Rendah Hati (Tawadhu')",
+    "themes": {
+      "id": "Rendah Hati (Tawadhu')",
+      "en": "Humility & Modesty",
+      "ms": "Rendah Diri (Tawaduk)",
+      "ar": "التواضع لله",
+      "af": "Nederigheid en Beskeidenheid",
+      "sw": "Unyenyekevu"
+    }
+  },
+  {
+    "id": 42,
+    "arabic": "أَحَبُّ الْبِلَادِ إِلَى اللَّهِ مَسَاجِدُهَا",
+    "translations": {
+      "id": "Tempat yang paling dicintai oleh Allah adalah masjid-masjidnya.",
+      "en": "The parts of land dearest to Allah are its mosques.",
+      "ms": "Tempat yang paling dicintai oleh Allah adalah masjid-masjidnya.",
+      "ar": "أَحَبُّ الْبِلَادِ إِلَى اللَّهِ مَسَاجِدُهَا",
+      "af": "Die plekke wat die meeste geliefd is by Allah is sy moskees.",
+      "sw": "Sehemu zinazopendwa zaidi na Mwenyezi Mungu katika ardhi ni misikiti yake."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 671",
+      "en": "Sahih Muslim 671",
+      "ms": "HR. Muslim No. 671",
+      "ar": "رواه مسلم (٦٧١)",
+      "af": "Oorgelewer deur Muslim (671)",
+      "sw": "Imepokelewa na Muslim (671)"
+    },
+    "theme": "Keutamaan Masjid",
+    "themes": {
+      "id": "Keutamaan Masjid",
+      "en": "Virtue of Mosques",
+      "ms": "Keutamaan Masjid",
+      "ar": "فضل المساجد",
+      "af": "Deugde van Moskees",
+      "sw": "Ubora wa Misikiti"
+    }
+  },
+  {
+    "id": 43,
+    "arabic": "إِنَّ الصَّدَقَةَ لَتُطْفِئُ غَضَبَ الرَّبِّ وَتَدْفَعُ مِيتَةَ السُّوءِ",
+    "translations": {
+      "id": "Sesungguhnya sedekah itu dapat meredam murka Allah dan mencegah kematian yang buruk (su'ul khatimah).",
+      "en": "Indeed charity extinguishes the Lord's anger and protects against an evil death.",
+      "ms": "Sesungguhnya sedekah itu dapat memadamkan kemurkaan Tuhan dan mencegah kematian yang buruk.",
+      "ar": "إِنَّ الصَّدَقَةَ لَتُطْفِئُ غَضَبَ الرَّبِّ وَتَدْفَعُ مِيتَةَ السُّوءِ",
+      "af": "Waarlik, liefdadigheid blus die toorn van die Here en beskerm teen 'n slegte dood.",
+      "sw": "Hakika sadaka huzima ghadhabu ya Mola na huzuia kifo kibaya."
+    },
+    "narrators": {
+      "id": "HR. Tirmidzi No. 664 (Hasan)",
+      "en": "Jami` at-Tirmidhi 664 (Hasan)",
+      "ms": "HR. Tirmizi No. 664 (Hasan)",
+      "ar": "رواه الترمذي (٦٦٤)",
+      "af": "Oorgelewer deur at-Tirmidhi (664)",
+      "sw": "Imepokelewa na at-Tirmidhi (664)"
+    },
+    "theme": "Keutamaan Sedekah",
+    "themes": {
+      "id": "Keutamaan Sedekah",
+      "en": "Virtue of Charity",
+      "ms": "Keutamaan Sedekah",
+      "ar": "فضل الصدقة",
+      "af": "Deugde van Liefdadigheid",
+      "sw": "Ubora wa Sadaka"
+    }
+  },
+  {
+    "id": 44,
+    "arabic": "مَنْ قَرَأَ حَرْفًا مِنْ كِتَابِ اللَّهِ فَلَهُ بِهِ حَسَنَةٌ، وَالْحَسَنَةُ بِعَشْرِ أَمْثَالِهَا",
+    "translations": {
+      "id": "Barangsiapa membaca satu huruf dari Kitab Allah (Al-Qur'an), maka baginya satu kebaikan, dan satu kebaikan dilipatgandakan sepuluh kali lipat.",
+      "en": "Whoever recites a letter from the Book of Allah will be credited with a good deed, and a good deed is rewarded tenfold.",
+      "ms": "Sesiapa yang membaca satu huruf daripada Kitab Allah (Al-Quran), maka baginya satu kebajikan, dan satu kebajikan itu digandakan sepuluh kali ganda.",
+      "ar": "مَنْ قَرَأَ حَرْفًا مِنْ كِتَابِ اللَّهِ فَلَهُ بِهِ حَسَنَةٌ، وَالْحَسَنَةُ بِعَشْرِ أَمْثَالِهَا",
+      "af": "Wie 'n letter uit die Boek van Allah lees, sal beloon word met 'n goeie daad, en 'n goeie daad word tienvoudig beloon.",
+      "sw": "Mwenye kusoma herufi moja kutoka katika Kitabu cha Mwenyezi Mungu anapata wema mmoja, na wema huo huzidishwa mara kumi."
+    },
+    "narrators": {
+      "id": "HR. Tirmidzi No. 2910 (Shahih)",
+      "en": "Jami` at-Tirmidhi 2910 (Sahih)",
+      "ms": "HR. Tirmizi No. 2910 (Sahih)",
+      "ar": "رواه الترمذي (٢٩١٠)",
+      "af": "Oorgelewer deur at-Tirmidhi (2910)",
+      "sw": "Imepokelewa na at-Tirmidhi (2910)"
+    },
+    "theme": "Pahala Membaca Al-Quran",
+    "themes": {
+      "id": "Pahala Membaca Al-Quran",
+      "en": "Reward for Quran Recitation",
+      "ms": "Pahala Membaca Al-Quran",
+      "ar": "ثواب قراءة القرآن",
+      "af": "Beloning vir Koran-voordrag",
+      "sw": "Thawabu za Kusoma Quran"
+    }
+  },
+  {
+    "id": 45,
+    "arabic": "الْمُسْلِمُ أَخُو الْمُسْلِمِ لَا يَظْلِمُهُ وَلَا يَخْذُلُهُ",
+    "translations": {
+      "id": "Seorang muslim adalah saudara bagi muslim lainnya, tidak boleh menzaliminya dan tidak boleh menelantarkannya.",
+      "en": "A Muslim is a brother of another Muslim, he neither oppresses him nor leaves him helpless.",
+      "ms": "Seorang muslim adalah saudara kepada muslim yang lain, dia tidak menzaliminya dan tidak membiarkannya binasa.",
+      "ar": "الْمُسْلِمُ أَخُو الْمُسْلِمِ لَا يَظْلِمُهُ وَلَا يَخْذُلُهُ",
+      "af": "'n Moslem is die broer van 'n ander Moslem; hy onderdruk hom nie en laat hom nie hulpeloos agter nie.",
+      "sw": "Muislamu ni ndugu wa Muislamu mwenzake, hamdhulumu wala hamtelekezi."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 2564",
+      "en": "Sahih Muslim 2564",
+      "ms": "HR. Muslim No. 2564",
+      "ar": "رواه مسلم (٢٥٦٤)",
+      "af": "Oorgelewer deur Muslim (2564)",
+      "sw": "Imepokelewa na Muslim (2564)"
+    },
+    "theme": "Hak Sesama Muslim",
+    "themes": {
+      "id": "Hak Sesama Muslim",
+      "en": "Rights of Fellow Muslims",
+      "ms": "Hak Sesama Muslim",
+      "ar": "حقوق المسلم على المسلم",
+      "af": "Regte van Mede-Moslems",
+      "sw": "Haki za Waislamu Wenzako"
+    }
+  },
+  {
+    "id": 46,
+    "arabic": "الْيَدُ الْعُلْيَا خَيْرٌ مِنَ الْيَدِ السُّفْلَى",
+    "translations": {
+      "id": "Tangan yang di atas (pemberi) lebih baik daripada tangan yang di bawah (peminta).",
+      "en": "The upper hand (that gives) is better than the lower hand (that receives).",
+      "ms": "Tangan yang di atas (memberi) lebih baik daripada tangan yang di bawah (menerima).",
+      "ar": "الْيَدُ الْعُلْيَا خَيْرٌ مِنَ الْيَدِ السُّفْلَى",
+      "af": "Die boonste hand (wat gee) is beter as die onderste hand (wat ontvang).",
+      "sw": "Mkono wa juu (unaotoa) ni bora kuliko mkono wa chini (unaoomba)."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 1429 & Muslim No. 1033",
+      "en": "Sahih al-Bukhari 1429 & Muslim 1033",
+      "ms": "HR. Bukhari No. 1429 & Muslim No. 1033",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Kemuliaan Memberi",
+    "themes": {
+      "id": "Kemuliaan Memberi",
+      "en": "Dignity of Giving",
+      "ms": "Kemuliaan Memberi",
+      "ar": "فضل اليد العليا",
+      "af": "Waardigheid van Gee",
+      "sw": "Utukufu wa Kutoa"
+    }
+  },
+  {
+    "id": 47,
+    "arabic": "حُفَّتِ الْجَنَّةُ بِالْمَكَارِهِ، وَحُفَّتِ النَّارُ بِالشَّهَوَاتِ",
+    "translations": {
+      "id": "Surga itu dikelilingi oleh hal-hal yang tidak disukai hawa nafsu, sedangkan neraka dikelilingi oleh kesenangan syahwat.",
+      "en": "Paradise is surrounded by hardships, and the Fire is surrounded by desires.",
+      "ms": "Syurga itu dikelilingi oleh perkara yang dibenci nafsu, dan neraka dikelilingi oleh perkara syahwat.",
+      "ar": "حُفَّتِ الْجَنَّةُ بِالْمَكَارِهِ، وَحُفَّتِ النَّارُ بِالشَّهَوَاتِ",
+      "af": "Die Paradys word omring deur beproewinge, en die Vuur word omring deur begeertes.",
+      "sw": "Pepo imezungukwa na machungu, na Moto umezungukwa na matamanio."
+    },
+    "narrators": {
+      "id": "HR. Muslim No. 2822",
+      "en": "Sahih Muslim 2822",
+      "ms": "HR. Muslim No. 2822",
+      "ar": "رواه مسلم (٢٨٢٢)",
+      "af": "Oorgelewer deur Muslim (2822)",
+      "sw": "Imepokelewa na Muslim (2822)"
+    },
+    "theme": "Hakikat Menuju Surga",
+    "themes": {
+      "id": "Hakikat Menuju Surga",
+      "en": "Path to Paradise",
+      "ms": "Hakikat Menuju Syurga",
+      "ar": "طريق الجنة",
+      "af": "Pad na die Paradys",
+      "sw": "Njia ya Peponi"
+    }
+  },
+  {
+    "id": 48,
+    "arabic": "لَا حَسَدَ إِلَّا فِي اثْنَتَيْنِ: رَجُلٌ آتَاهُ اللَّهُ مَالًا فَسَلَّطَهُ عَلَى هَلَكَتِهِ فِي الْحَقِّ، وَرَجُلٌ آتَاهُ اللَّهُ حِكْمَةً فَهُوَ يَقْضِي بِهَا وَيُعَلِّمُهَا",
+    "translations": {
+      "id": "Tidak boleh ada hasad (iri yang dibolehkan) kecuali pada dua orang: orang yang diberi harta oleh Allah lalu dihabiskannya dalam kebenaran, dan orang yang diberi hikmah (ilmu) lalu ia mengamalkannya dan mengajarkannya.",
+      "en": "There is no envy except in two cases: a person whom Allah has given wealth and he spends it rightfully, and a person whom Allah has given wisdom and he judges by it and teaches it.",
+      "ms": "Tidak boleh hasad melainkan pada dua perkara: orang yang diberikan harta oleh Allah lalu dibelanjakannya pada jalan kebenaran, dan orang yang diberikan hikmah (ilmu) lalu dia beramal dengannya dan mengajarkannya.",
+      "ar": "لَا حَسَدَ إِلَّا فِي اثْنَتَيْنِ: رَجُلٌ آتَاهُ اللَّهُ مَالًا فَسَلَّطَهُ عَلَى هَلَكَتِهِ فِي الْحَقِّ، وَرَجُلٌ آتَاهُ اللَّهُ حِكْمَةً فَهُوَ يَقْضِي بِهَا وَيُعَلِّمُهَا",
+      "af": "Geen afguns is toelaatbaar behalwe in twee gevalle nie: iemand aan wie Allah rykdom gegee het en hy spandeer dit regverdig, en iemand aan wie Allah wysheid gegee het en hy oordeel daaroor en leer dit.",
+      "sw": "Hakuna wivu unaoruhusiwa ila katika mambo mawili: mtu aliyepoewa mali na Mwenyezi Mungu na akaitumia katika haki, na mtu aliyepoewa hekima na akaitumia kuhukumu na kuifundisha."
+    },
+    "narrators": {
+      "id": "HR. Bukhari No. 73 & Muslim No. 816",
+      "en": "Sahih al-Bukhari 73 & Muslim 816",
+      "ms": "HR. Bukhari No. 73 & Muslim No. 816",
+      "ar": "رواه البخاري ومسلم",
+      "af": "Oorgelewer deur al-Bukhari & Muslim",
+      "sw": "Imepokelewa na al-Bukhari na Muslim"
+    },
+    "theme": "Iri yang Terpuji (Ghibthah)",
+    "themes": {
+      "id": "Iri yang Terpuji (Ghibthah)",
+      "en": "Praiseworthy Emulation",
+      "ms": "Iri Hati yang Dibenarkan (Ghibthah)",
+      "ar": "الغبطة في الخير",
+      "af": "Prysenswaardige Nabootsing",
+      "sw": "Wivu Unaojuzu (Ghibtah)"
+    }
+  },
+  {
+    "id": 49,
+    "arabic": "الْمُسْلِمُ مِرْآةُ أَخِيهِ، إِذَا رَأَى فِيهَا عَيْبًا أَصْلَحَهُ",
+    "translations": {
+      "id": "Seorang mukmin adalah cermin bagi saudaranya, jika ia melihat suatu cela pada saudaranya maka ia membantunya memperbaikinya.",
+      "en": "A believer is a mirror to his brother; if he sees a fault in him, he helps him rectify it.",
+      "ms": "Seorang mukmin adalah cermin bagi saudaranya, jika dia melihat aib padanya maka dia membantunya memperbaikinya.",
+      "ar": "الْمُسْلِمُ مِرْآةُ أَخِيهِ، إِذَا رَأَى فِيهَا عَيْبًا أَصْلَحَهُ",
+      "af": "'n Gelowige is 'n spieël vir sy broer; as hy 'n fout in hom sien, help hy hom om dit reg te stel.",
+      "sw": "Muumini ni kioo cha ndugu yake, akiona aibu au dosari kwake humsaidia kuirekebisha."
+    },
+    "narrators": {
+      "id": "HR. Bukhari (al-Adab al-Mufrad No. 238)",
+      "en": "Al-Bukhari (al-Adab al-Mufrad 238)",
+      "ms": "HR. Bukhari (al-Adab al-Mufrad No. 238)",
+      "ar": "رواه البخاري في الأدب المفرد",
+      "af": "Oorgelewer deur al-Bukhari (al-Adab al-Mufrad 238)",
+      "sw": "Imepokelewa na al-Bukhari (al-Adab al-Mufrad 238)"
+    },
+    "theme": "Saling Menasihati",
+    "themes": {
+      "id": "Saling Menasihati",
+      "en": "Mutual Advice & Brotherhood",
+      "ms": "Saling Menasihati",
+      "ar": "التناصح بين المسلمين",
+      "af": "Onderlinge Raad en Broederskap",
+      "sw": "Kunasihiana na Kusaidiana"
+    }
+  },
+  {
+    "id": 50,
+    "arabic": "مَا مِنْ شَيْءٍ أَثْقَلُ فِي مِيزَانِ الْمُؤْمِنِ يَوْمَ الْقِيَامَةِ مِنْ حُسْنِ الْخُلُقِ",
+    "translations": {
+      "id": "Tidak ada sesuatu pun yang lebih berat dalam timbangan amal seorang mukmin pada Hari Kiamat selain daripada akhlak yang mulia.",
+      "en": "Nothing is heavier on the scale of a believer on the Day of Resurrection than good character.",
+      "ms": "Tiada sesuatu pun yang lebih berat dalam timbangan seorang mukmin pada Hari Kiamat melainkan akhlak yang mulia.",
+      "ar": "مَا مِنْ شَيْءٍ أَثْقَلُ فِي مِيزَانِ الْمُؤْمِنِ يَوْمَ الْقِيَامَةِ مِنْ حُسْنِ الْخُلُقِ",
+      "af": "Niks is swaarder op die skaal van 'n gelowige op die Dag van Opstanding as goeie karakter nie.",
+      "sw": "Hakuna kitu kizito zaidi katika mizani ya muumini Siku ya Qiyama kuliko tabia njema."
+    },
+    "narrators": {
+      "id": "HR. Tirmidzi No. 2002 (Shahih)",
+      "en": "Jami` at-Tirmidhi 2002 (Sahih)",
+      "ms": "HR. Tirmizi No. 2002 (Sahih)",
+      "ar": "رواه الترمذي (٢٠٠٢)",
+      "af": "Oorgelewer deur at-Tirmidhi (2002)",
+      "sw": "Imepokelewa na at-Tirmidhi (2002)"
+    },
+    "theme": "Keagungan Akhlak Mulia",
+    "themes": {
+      "id": "Keagungan Akhlak Mulia",
+      "en": "Supreme Value of Good Character",
+      "ms": "Keagungan Akhlak Mulia",
+      "ar": "ثقل حسن الخلق في الميزان",
+      "af": "Hoogste Waarde van Goeie Karakter",
+      "sw": "Ukuu wa Tabia Njema"
+    }
+  }
+]

@@ -228,13 +228,14 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
 
                   const SizedBox(height: 32),
 
-                  SizedBox(
+                  Container(
                     width: double.infinity,
-                    height: 60,
+                    constraints: const BoxConstraints(minHeight: 56),
                     child: ElevatedButton(
                       onPressed: () =>
                           appState.appBlockService.openAccessibilitySettings(),
                       style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         backgroundColor: _isEnabled
                             ? Colors.white
                             : const Color(0xFF1B4332),
@@ -251,17 +252,20 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                           ),
                         ),
                       ),
-                      child: Text(
-                        _isEnabled
-                            ? (isEn
-                                  ? 'Adjust Settings'
-                                  : 'Buka Pengaturan Lagi')
-                            : (isEn
-                                  ? 'Open Settings Now'
-                                  : 'Buka Pengaturan Sekarang'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _isEnabled
+                              ? (isEn
+                                    ? 'Adjust Settings'
+                                    : 'Buka Pengaturan Lagi')
+                              : (isEn
+                                    ? 'Open Settings Now'
+                                    : 'Buka Pengaturan Sekarang'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -269,9 +273,9 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
 
                   if (_isEnabled) ...[
                     const SizedBox(height: 20),
-                    SizedBox(
+                    Container(
                       width: double.infinity,
-                      height: 60,
+                      constraints: const BoxConstraints(minHeight: 56),
                       child: ElevatedButton(
                         onPressed: () {
                           if (widget.isOnboarding) {
@@ -285,6 +289,7 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                           }
                         },
                         style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           backgroundColor: const Color(0xFF1B4332),
                           foregroundColor: Colors.white,
                           elevation: 4,
@@ -293,13 +298,16 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                             borderRadius: BorderRadius.circular(18),
                           ),
                         ),
-                        child: Text(
-                          widget.isOnboarding
-                              ? (isEn ? 'START EXPLORING' : 'MULAI SEKARANG')
-                              : (isEn ? 'Done' : 'Selesai'),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            widget.isOnboarding
+                                ? (isEn ? 'START EXPLORING' : 'MULAI SEKARANG')
+                                : (isEn ? 'Done' : 'Selesai'),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),

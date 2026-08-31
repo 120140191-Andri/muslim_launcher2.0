@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_block_service.dart';
 import '../screens/home/app_list_screen.dart';
+import '../utils/translations.dart';
 
 class AppState extends ChangeNotifier {
   final SharedPreferences prefs;
@@ -56,14 +58,24 @@ class AppState extends ChangeNotifier {
   bool _isDataLoaded = false;
   bool _isInitialized = false;
 
-  // Persistent Daily Verse
+  // Persistent Daily Verse & Hadith
   String _dailySurahName = '';
   int _dailyAyahNumber = 0;
   String _dailyAyahTextEn = '';
   String _dailyAyahTextId = '';
   String _dailyVerseDate = '';
 
+  List<dynamic> _hadithData = [];
+  Map<String, dynamic>? _dailyHadith;
+  String _dailyHadithDate = '';
+  Set<int> _readHadithIds = {};
+
   bool get isReady => _isDataLoaded && _isInitialized;
+
+  Set<int> get readHadithIds => _readHadithIds;
+  bool isHadithRead(int id) => _readHadithIds.contains(id);
+  int get totalHadithsCount => _hadithData.length;
+  int get completedHadithsCount => _readHadithIds.length;
 
 
   String get languageCode => _languageCode;
@@ -76,6 +88,14 @@ class AppState extends ChangeNotifier {
   int get lastReadAyahNumber => _lastReadAyahNumber;
   List<dynamic> get quranData => _quranData;
   bool get isDataLoaded => _isDataLoaded;
+  List<dynamic> get hadithData {
+    if (_hadithData.isEmpty) return [];
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    final seed = today.hashCode;
+    final list = List<dynamic>.from(_hadithData);
+    list.shuffle(Random(seed));
+    return list;
+  }
   int get khatmCount => _khatmCount;
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
   String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
@@ -95,6 +115,34 @@ class AppState extends ChangeNotifier {
   String get dailyAyahTextId => _dailyAyahTextId;
   String get dailyVerseDate => _dailyVerseDate;
 
+  // Daily Hadith Getters & Helpers
+  Map<String, dynamic>? get dailyHadith => _dailyHadith;
+  String get dailyHadithArabic => _dailyHadith?['arabic'] as String? ?? '';
+  String get dailyHadithDate => _dailyHadithDate;
+
+  String getDailyHadithText(String lang) {
+    if (_dailyHadith == null) {
+      return Translations.get(lang, 'daily_inspiration_default');
+    }
+    final translations = _dailyHadith!['translations'] as Map<String, dynamic>?;
+    if (translations == null) return _dailyHadith!['arabic'] as String? ?? '';
+    return translations[lang] as String? ??
+        translations['en'] as String? ??
+        translations['id'] as String? ??
+        _dailyHadith!['arabic'] as String? ??
+        '';
+  }
+
+  String getDailyHadithNarrator(String lang) {
+    if (_dailyHadith == null) return '';
+    final narrators = _dailyHadith!['narrators'] as Map<String, dynamic>?;
+    if (narrators == null) return '';
+    return narrators[lang] as String? ??
+        narrators['en'] as String? ??
+        narrators['id'] as String? ??
+        '';
+  }
+
   void _init() async {
     try {
     _languageCode = prefs.getString('languageCode') ?? getDefaultLanguageCode();
@@ -112,6 +160,17 @@ class AppState extends ChangeNotifier {
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
     _khatmCount = prefs.getInt('khatmCount') ?? 0;
     
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
+    if (lastHadithDate != today) {
+      _readHadithIds = {};
+      prefs.setStringList('readHadithIds', []);
+      prefs.setString('lastHadithDate', today);
+    } else {
+      final readHadithList = prefs.getStringList('readHadithIds') ?? [];
+      _readHadithIds = readHadithList.map((e) => int.tryParse(e) ?? 0).where((e) => e > 0).toSet();
+    }
+
     final historyJson = prefs.getString('readingHistory') ?? '[]';
     try {
       final decoded = json.decode(historyJson) as List;
@@ -131,11 +190,13 @@ class AppState extends ChangeNotifier {
     // Await crucial initialization
     await Future.wait([
       loadQuranData(),
+      loadHadithData(),
       _fetchDeviceInfo(),
       AppListScreen.initFromDisk(prefs),
     ]);
 
     _initDailyVerse();
+    _initDailyHadith();
     
     // Initialize App Block Service
     _appBlockService.init(onAppBlocked: (pkg) {
@@ -320,6 +381,54 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     } catch (e) {
       debugPrint("Failed to update daily verse: $e");
+    }
+  }
+
+  Future<void> loadHadithData() async {
+    try {
+      final String jsonString = await rootBundle.loadString(
+        'assets/hadiths.json',
+      );
+      _hadithData = await compute(_decodeJson, jsonString);
+      _checkDailyHadith();
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Failed to load hadith data: $e");
+    }
+  }
+
+  void _initDailyHadith() {
+    _dailyHadithDate = prefs.getString('dailyHadithDate') ?? '';
+    final cachedHadithJson = prefs.getString('dailyHadithJson') ?? '';
+    if (cachedHadithJson.isNotEmpty) {
+      try {
+        _dailyHadith = json.decode(cachedHadithJson) as Map<String, dynamic>;
+      } catch (_) {}
+    }
+    _checkDailyHadith();
+  }
+
+  void _checkDailyHadith() {
+    if (_hadithData.isEmpty) return;
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyHadithDate != today || _dailyHadith == null) {
+      _updateDailyHadith(today);
+    }
+  }
+
+  Future<void> _updateDailyHadith(String date) async {
+    if (_hadithData.isEmpty) return;
+    try {
+      final seed = date.hashCode;
+      final int hadithIdx = (seed % _hadithData.length).abs();
+      _dailyHadith = _hadithData[hadithIdx] as Map<String, dynamic>;
+      _dailyHadithDate = date;
+
+      await prefs.setString('dailyHadithDate', date);
+      await prefs.setString('dailyHadithJson', json.encode(_dailyHadith));
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Failed to update daily hadith: $e");
     }
   }
 
@@ -639,6 +748,28 @@ class AppState extends ChangeNotifier {
     if (_readingHistory.length > 50) _readingHistory.removeLast(); // Keep last 50
     
     prefs.setString('readingHistory', json.encode(_readingHistory));
+  }
+
+  Future<void> saveHadithProgress(int hadithId, String hadithTitle, int pointsEarned) async {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
+    if (lastHadithDate != today) {
+      _readHadithIds.clear();
+      await prefs.setString('lastHadithDate', today);
+    }
+
+    final isFirstTime = !_readHadithIds.contains(hadithId);
+    _readHadithIds.add(hadithId);
+    await prefs.setStringList('readHadithIds', _readHadithIds.map((e) => e.toString()).toList());
+    await prefs.setString('lastHadithDate', today);
+
+    if (isFirstTime && pointsEarned > 0) {
+      _points += pointsEarned;
+      await prefs.setInt('points', _points);
+    }
+
+    _addToHistory(hadithTitle, hadithId, isFirstTime ? pointsEarned : 0);
+    notifyListeners();
   }
 
   bool isAppBlocked(String packageName) {

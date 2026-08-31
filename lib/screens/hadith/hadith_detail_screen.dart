@@ -413,46 +413,33 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
               child: Column(
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            _hasCompleted
-                                ? Icons.check_circle_rounded
-                                : Icons.visibility_rounded,
-                            color: _hasCompleted
-                                ? Colors.amber
-                                : (_isEyeFocused
-                                    ? const Color(0xFF4ADE80)
-                                    : Colors.orange.shade300),
-                            size: 15,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _hasCompleted
-                                ? Translations.get(lang, 'reading_done')
-                                : (_isEyeFocused
-                                    ? Translations.get(lang, 'silent_reading')
-                                    : (lang == 'en' ? 'Focus Paused' : 'Fokus Dijeda')),
-                            style: TextStyle(
-                              color: _hasCompleted
-                                  ? Colors.amber
-                                  : (_isEyeFocused
-                                      ? Colors.white.withValues(alpha: 0.95)
-                                      : Colors.orange.shade200),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      Icon(
+                        _hasCompleted
+                            ? Icons.check_circle_rounded
+                            : Icons.visibility_rounded,
+                        color: _hasCompleted
+                            ? Colors.amber
+                            : (_isEyeFocused
+                                ? const Color(0xFF4ADE80)
+                                : Colors.orange.shade300),
+                        size: 15,
                       ),
+                      const SizedBox(width: 6),
                       Text(
-                        '${(_readingProgress * 100).toInt()}%',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        _hasCompleted
+                            ? Translations.get(lang, 'reading_done')
+                            : (_isEyeFocused
+                                ? Translations.get(lang, 'silent_reading')
+                                : (lang == 'en' ? 'Focus Paused' : 'Fokus Dijeda')),
+                        style: TextStyle(
+                          color: _hasCompleted
+                              ? Colors.amber
+                              : (_isEyeFocused
+                                  ? Colors.white.withValues(alpha: 0.95)
+                                  : Colors.orange.shade200),
                           fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -721,7 +708,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                                 child: Text(
                                   _hasCompleted
                                       ? Translations.get(lang, 'next_hadith')
-                                      : "${Translations.get(lang, 'reading_hadith_progress')} (${(_readingProgress * 100).toInt()}%) • +$currentPoints ${Translations.get(lang, 'points')}",
+                                      : "${Translations.get(lang, 'reading_hadith_progress')} • +$currentPoints ${Translations.get(lang, 'points')}",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14.5,

@@ -13,13 +13,17 @@ class EyeTrackerService {
   FaceDetector? _faceDetector;
   bool _isBusy = false;
   bool _isFocused = false;
+  bool _isFacePresent = false;
   bool _isInitializing = false;
   int _lastProcessTime = 0;
   Future<void>? _lock;
   StreamController<bool>? _focusController;
+  StreamController<bool>? _facePresenceController;
 
   Stream<bool>? get focusStream => _focusController?.stream;
+  Stream<bool>? get facePresenceStream => _facePresenceController?.stream;
   bool get isFocused => _isFocused;
+  bool get isFacePresent => _isFacePresent;
 
   Future<void> initialize() async {
     if (_isInitializing) return;
@@ -43,9 +47,11 @@ class EyeTrackerService {
       }
       
       _isFocused = false;
+      _isFacePresent = false;
       _isBusy = false;
       
       _focusController = StreamController<bool>.broadcast();
+      _facePresenceController = StreamController<bool>.broadcast();
 
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
@@ -111,6 +117,16 @@ class EyeTrackerService {
 
     try {
       final faces = await _faceDetector?.processImage(inputImage);
+      final bool facePresent = faces != null && faces.isNotEmpty;
+
+      // Update Face Presence (for Dzikir mode where eyes can be closed)
+      if (_isFacePresent != facePresent) {
+        _isFacePresent = facePresent;
+        if (_facePresenceController != null && !_facePresenceController!.isClosed) {
+          _facePresenceController!.add(_isFacePresent);
+        }
+      }
+
       if (faces != null && faces.isNotEmpty) {
         final face = faces.first;
         final double? eulerY = face.headEulerAngleY;
@@ -179,13 +195,16 @@ class EyeTrackerService {
       }
       await _faceDetector?.close();
       await _focusController?.close();
+      await _facePresenceController?.close();
     } catch (e) {
       debugPrint("EyeTrackerService internal dispose error: $e");
     } finally {
       _cameraController = null;
       _faceDetector = null;
       _focusController = null;
+      _facePresenceController = null;
       _isFocused = false;
+      _isFacePresent = false;
       _isBusy = false;
       _lastProcessTime = 0;
     }

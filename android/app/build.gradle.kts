@@ -17,13 +17,7 @@ plugins {
 android {
     namespace = "com.kraftech.muslim_launcher_2"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "28.2.13676358"
-
-    packaging {
-        jniLibs {
-            keepDebugSymbols.add("**/*.so")
-        }
-    }
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -57,6 +51,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            ndk {
+                debugSymbolLevel = "none"
+            }
         }
     }
 }

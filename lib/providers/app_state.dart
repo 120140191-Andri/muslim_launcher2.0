@@ -772,6 +772,16 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> saveDzikirProgress(String dzikirTitle, int count, int pointsEarned) async {
+    if (pointsEarned > 0) {
+      _points += pointsEarned;
+      await prefs.setInt('points', _points);
+    }
+
+    _addToHistory("Dzikir: $dzikirTitle (${count}x)", count, pointsEarned);
+    notifyListeners();
+  }
+
   bool isAppBlocked(String packageName) {
     final pkg = packageName.toLowerCase();
     if (!_blockedApps.contains(pkg)) return false;

@@ -37,7 +37,9 @@ class ReadingHistoryScreen extends StatelessWidget {
                     ? '--'
                     : DateFormat('dd MMM yyyy, HH:mm').format(date);
 
-                final isHadith = (entry['surah'] as String? ?? '').startsWith('Hadits');
+                final titleStr = entry['surah'] as String? ?? '';
+                final isHadith = titleStr.startsWith('Hadits');
+                final isDzikir = titleStr.startsWith('Dzikir');
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -60,18 +62,30 @@ class ReadingHistoryScreen extends StatelessWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isHadith ? const Color(0xFFD8F3DC) : Colors.teal.shade50,
+                        color: isDzikir
+                            ? const Color(0xFFCCFBF1)
+                            : isHadith
+                            ? const Color(0xFFD8F3DC)
+                            : Colors.teal.shade50,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        isHadith ? Icons.spa_rounded : Icons.menu_book_rounded,
-                        color: isHadith ? const Color(0xFF1B4332) : Colors.teal.shade700,
+                        isDzikir
+                            ? Icons.grain_rounded
+                            : isHadith
+                            ? Icons.spa_rounded
+                            : Icons.menu_book_rounded,
+                        color: isDzikir
+                            ? const Color(0xFF0F766E)
+                            : isHadith
+                            ? const Color(0xFF1B4332)
+                            : Colors.teal.shade700,
                       ),
                     ),
                     title: Text(
-                      isHadith
-                          ? "${entry['surah']}"
-                          : "${entry['surah']} : ${Translations.get(lang, 'ayah')} ${entry['ayah']}",
+                      (isHadith || isDzikir)
+                          ? titleStr
+                          : "$titleStr : ${Translations.get(lang, 'ayah')} ${entry['ayah']}",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.teal.shade900,

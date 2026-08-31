@@ -10,6 +10,7 @@ import '../quran/surah_list_screen.dart';
 import '../quran/surah_detail_screen.dart';
 import '../quran/reading_history_screen.dart';
 import '../hadith/hadith_list_screen.dart';
+import '../dzikir/dzikir_screen.dart';
 import 'app_list_screen.dart';
 import 'accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
@@ -697,10 +698,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final lang = appState.languageCode;
     final hadithLabel = (lang == 'en' || lang == 'sw' || lang == 'af') ? 'Hadith' : (lang == 'ar' ? 'الحديث' : 'Hadits');
 
+    final dzikirLabel = lang == 'ar'
+        ? 'ذكر'
+        : lang == 'ms'
+        ? 'Zikir'
+        : lang == 'id'
+        ? 'Dzikir'
+        : 'Dhikr';
+
     return Center(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 350),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        constraints: const BoxConstraints(maxWidth: 380),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(32),
@@ -715,34 +724,52 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildDockItem(
-              icon: Icons.home_rounded,
-              label: 'Home',
-              isActive: true,
-              onTap: () {},
-            ),
-            _buildDockItem(
-              icon: Icons.menu_book_rounded,
-              label: 'Quran',
-              isActive: false,
-              onTap: () => appState.navigatorKey.currentState?.push(
-                AppPageRoute(child: const SurahListScreen()),
+            Expanded(
+              child: _buildDockItem(
+                icon: Icons.home_rounded,
+                label: 'Home',
+                isActive: true,
+                onTap: () {},
               ),
             ),
-            _buildDockItem(
-              icon: Icons.spa_rounded,
-              label: hadithLabel,
-              isActive: false,
-              onTap: () => appState.navigatorKey.currentState?.push(
-                AppPageRoute(child: const HadithListScreen()),
+            Expanded(
+              child: _buildDockItem(
+                icon: Icons.menu_book_rounded,
+                label: 'Quran',
+                isActive: false,
+                onTap: () => appState.navigatorKey.currentState?.push(
+                  AppPageRoute(child: const SurahListScreen()),
+                ),
               ),
             ),
-            _buildDockItem(
-              icon: Icons.apps_rounded,
-              label: 'Apps',
-              isActive: false,
-              onTap: () => appState.navigatorKey.currentState?.push(
-                AppPageRoute(child: const AppListScreen()),
+            Expanded(
+              child: _buildDockItem(
+                icon: Icons.grain_rounded,
+                label: dzikirLabel,
+                isActive: false,
+                onTap: () => appState.navigatorKey.currentState?.push(
+                  AppPageRoute(child: const DzikirScreen()),
+                ),
+              ),
+            ),
+            Expanded(
+              child: _buildDockItem(
+                icon: Icons.spa_rounded,
+                label: hadithLabel,
+                isActive: false,
+                onTap: () => appState.navigatorKey.currentState?.push(
+                  AppPageRoute(child: const HadithListScreen()),
+                ),
+              ),
+            ),
+            Expanded(
+              child: _buildDockItem(
+                icon: Icons.apps_rounded,
+                label: 'Apps',
+                isActive: false,
+                onTap: () => appState.navigatorKey.currentState?.push(
+                  AppPageRoute(child: const AppListScreen()),
+                ),
               ),
             ),
           ],
@@ -762,7 +789,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       borderRadius: BorderRadius.circular(20),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
         decoration: BoxDecoration(
           color: isActive
               ? Colors.teal.withValues(alpha: 0.08)
@@ -775,16 +802,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Icon(
               icon,
               color: isActive ? Colors.teal : Colors.grey.shade500,
-              size: 24,
+              size: 22,
             ),
             const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? Colors.teal : Colors.grey.shade500,
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                letterSpacing: 0.3,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                style: TextStyle(
+                  color: isActive ? Colors.teal : Colors.grey.shade500,
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
               ),
             ),
           ],

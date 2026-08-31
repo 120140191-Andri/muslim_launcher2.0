@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'dart:io';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
@@ -29,6 +32,14 @@ class AppInfo {
     );
   }
 
+  Map<String, dynamic> toMap() {
+    return {
+      'appName': appName,
+      'packageName': packageName,
+      'category': category,
+    };
+  }
+
   bool isNonProductive() {
     if (packageName == 'com.whatsapp' ||
         packageName == 'com.whatsapp.w4b' ||
@@ -49,9 +60,60 @@ class AppListScreen extends StatefulWidget {
   static List<AppInfo>? _cache;
   static bool _preloading = false;
   static Completer<void>? _preloadCompleter;
+  static String? _storagePath;
+  static SharedPreferences? _prefs;
 
   /// Icon cache: packageName → raw bytes. Persists for the lifetime of the app.
   static final Map<String, Uint8List> iconCache = {};
+
+  /// Fast hydration from persistent disk storage into memory on startup (takes < 15ms)
+  static Future<void> initFromDisk(SharedPreferences prefs) async {
+    _prefs = prefs;
+    try {
+      // 1) Hydrate app list from SharedPreferences
+      final cachedAppsJson = prefs.getString('cached_installed_apps');
+      if (cachedAppsJson != null && cachedAppsJson.isNotEmpty) {
+        try {
+          final decoded = json.decode(cachedAppsJson) as List;
+          _cache = decoded
+              .map((e) => AppInfo.fromMap(e as Map<dynamic, dynamic>))
+              .toList();
+        } catch (_) {}
+      }
+
+      // 2) Hydrate icon bytes from internal app storage
+      try {
+        final path = await _channel.invokeMethod<String>('getAppStoragePath');
+        if (path != null && path.isNotEmpty) {
+          _storagePath = path;
+          final iconDir = Directory('$path/app_icons');
+          if (await iconDir.exists()) {
+            final entities = iconDir.listSync();
+            for (final entity in entities) {
+              if (entity is File && entity.path.endsWith('.bin')) {
+                final filename = entity.uri.pathSegments.last;
+                final pkg = filename.substring(0, filename.length - 4);
+                if (pkg.isNotEmpty && !iconCache.containsKey(pkg)) {
+                  try {
+                    final bytes = entity.readAsBytesSync();
+                    if (bytes.isNotEmpty) {
+                      iconCache[pkg] = bytes;
+                    }
+                  } catch (_) {}
+                }
+              }
+            }
+          } else {
+            await iconDir.create(recursive: true);
+          }
+        }
+      } catch (e) {
+        debugPrint("Icon disk hydration error: $e");
+      }
+    } catch (e) {
+      debugPrint("initFromDisk error: $e");
+    }
+  }
 
   // ── Preload ───────────────────────────────────────────────────────────────
   static Future<void> preload({
@@ -66,15 +128,52 @@ class AppListScreen extends StatefulWidget {
     _preloadCompleter = Completer<void>();
 
     try {
+      // Ensure storage path is known
+      if (_storagePath == null) {
+        try {
+          _storagePath = await _channel.invokeMethod<String>('getAppStoragePath');
+          if (_storagePath != null) {
+            final iconDir = Directory('$_storagePath/app_icons');
+            if (!await iconDir.exists()) await iconDir.create(recursive: true);
+          }
+        } catch (_) {}
+      }
+
       // 1) Fetch app list immediately
       final List<dynamic> raw = await _channel.invokeMethod('getApps');
       onRawAppsFetched?.call(raw);
       final List<AppInfo> apps = await compute(_processApps, raw);
       _cache = apps;
+
+      // Persist app list to SharedPreferences
+      if (_prefs != null) {
+        _prefs!.setString(
+          'cached_installed_apps',
+          json.encode(apps.map((a) => a.toMap()).toList()),
+        );
+      }
+
       onProgress?.call();
 
-      // 2) Clean up uninstalled apps from icon cache
+      // 2) Clean up uninstalled apps from icon cache and disk
       iconCache.removeWhere((pkg, _) => !apps.any((a) => a.packageName == pkg));
+      if (_storagePath != null) {
+        try {
+          final iconDir = Directory('$_storagePath/app_icons');
+          if (iconDir.existsSync()) {
+            final installedSet = apps.map((a) => a.packageName).toSet();
+            for (final entity in iconDir.listSync()) {
+              if (entity is File && entity.path.endsWith('.bin')) {
+                final filename = entity.uri.pathSegments.last;
+                final pkg = filename.substring(0, filename.length - 4);
+                if (!installedSet.contains(pkg)) {
+                  entity.delete().catchError((_) => entity);
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }
 
       // 3) Batch-load all missing icons using multi-threaded native pool
       final missing = apps
@@ -93,7 +192,17 @@ class AppListScreen extends StatefulWidget {
               {'packages': batch},
             );
             icons.forEach((pkg, bytes) {
-              iconCache[pkg as String] = bytes as Uint8List;
+              final pkgStr = pkg as String;
+              final byteData = bytes as Uint8List;
+              iconCache[pkgStr] = byteData;
+
+              // Save to persistent disk storage asynchronously
+              if (_storagePath != null) {
+                try {
+                  final file = File('$_storagePath/app_icons/$pkgStr.bin');
+                  file.writeAsBytes(byteData, flush: false).catchError((_) => file);
+                } catch (_) {}
+              }
             });
             onProgress?.call();
           } catch (e) {

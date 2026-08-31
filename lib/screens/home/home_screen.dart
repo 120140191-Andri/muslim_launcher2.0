@@ -40,8 +40,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Delayed preload to avoid startup peak
-    Future.delayed(const Duration(milliseconds: 500), () {
+    // Background sync apps without artificial delay since disk cache is already hydrated
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final appState = Provider.of<AppState>(context, listen: false);
       AppListScreen.preload(
@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         },
         onProgress: () {
           if (mounted) setState(() {});
-        }
+        },
       ).then((_) {
         if (!mounted) return;
         setState(() {});
@@ -1002,67 +1002,12 @@ class _QuickDock extends StatelessWidget {
         items.add(_buildIcon(Icons.photo_library_rounded, galleryPkg));
       }
     } else {
-      // Instant Fallback Dock: Render immediately during startup without showing a spinner
-      items.add(
-        InkWell(
-          onTap: _openPhoneApp,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            width: 44,
-            height: 44,
-            padding: const EdgeInsets.all(4),
-            child: Icon(Icons.phone_rounded, color: Colors.teal.shade700, size: 24),
-          ),
-        ),
-      );
-      items.add(
-        InkWell(
-          onTap: () => _openApp('com.google.android.apps.messaging'),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            width: 44,
-            height: 44,
-            padding: const EdgeInsets.all(4),
-            child: Icon(Icons.message_rounded, color: Colors.teal.shade700, size: 24),
-          ),
-        ),
-      );
-      items.add(
-        InkWell(
-          onTap: () => _openApp('com.google.android.contacts'),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            width: 44,
-            height: 44,
-            padding: const EdgeInsets.all(4),
-            child: Icon(Icons.people_alt_rounded, color: Colors.teal.shade700, size: 24),
-          ),
-        ),
-      );
-      items.add(
-        InkWell(
-          onTap: () => _openApp('com.whatsapp'),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            width: 44,
-            height: 44,
-            padding: const EdgeInsets.all(4),
-            child: Icon(Icons.chat_bubble_rounded, color: Colors.teal.shade700, size: 24),
-          ),
-        ),
-      );
-      items.add(
-        InkWell(
-          onTap: () => _openApp('com.google.android.apps.photos'),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            width: 44,
-            height: 44,
-            padding: const EdgeInsets.all(4),
-            child: Icon(Icons.photo_library_rounded, color: Colors.teal.shade700, size: 24),
-          ),
-        ),
-      );
+      // Instant Fallback Dock: Render immediately during startup using iconCache if available
+      items.add(_buildIcon(Icons.phone_rounded, 'com.google.android.dialer', overrideTap: _openPhoneApp));
+      items.add(_buildIcon(Icons.message_rounded, 'com.google.android.apps.messaging'));
+      items.add(_buildIcon(Icons.people_alt_rounded, 'com.google.android.contacts'));
+      items.add(_buildIcon(Icons.chat_bubble_rounded, 'com.whatsapp'));
+      items.add(_buildIcon(Icons.photo_library_rounded, 'com.google.android.apps.photos'));
     }
 
     return Container(
@@ -1089,12 +1034,7 @@ class _QuickDock extends StatelessWidget {
   }
 
   Widget _buildIcon(IconData fallback, String pkg, {VoidCallback? overrideTap}) {
-    final app = AppListScreen.cachedApps?.firstWhere(
-      (a) => a.packageName == pkg,
-      orElse: () => AppInfo(appName: '', packageName: '', category: -1),
-    );
-
-    final iconBytes = (app != null && app.packageName.isNotEmpty) ? AppListScreen.iconCache[pkg] : null;
+    final iconBytes = AppListScreen.iconCache[pkg];
 
     return InkWell(
       onTap: overrideTap ?? () => _openApp(pkg),
@@ -1111,6 +1051,7 @@ class _QuickDock extends StatelessWidget {
                 cacheWidth: 88,
                 cacheHeight: 88,
                 fit: BoxFit.contain,
+                gaplessPlayback: true,
                 filterQuality: FilterQuality.medium,
               )
             : Icon(fallback, color: Colors.teal.shade700, size: 24),

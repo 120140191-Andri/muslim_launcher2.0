@@ -137,6 +137,9 @@ class MainActivity : FlutterActivity() {
                         )
                     )
                 }
+                "getAppStoragePath" -> {
+                    result.success(context.filesDir.absolutePath)
+                }
                 else -> {
                     result.notImplemented()
                 }

@@ -120,6 +120,7 @@ class AppState extends ChangeNotifier {
     await Future.wait([
       loadQuranData(),
       _fetchDeviceInfo(),
+      AppListScreen.initFromDisk(prefs),
     ]);
 
     _initDailyVerse();

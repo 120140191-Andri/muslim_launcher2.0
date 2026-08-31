@@ -25,9 +25,13 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
     with WidgetsBindingObserver {
   // Silent Reading & Eye Tracking State
   final EyeTrackerService _eyeTrackerService = EyeTrackerService();
+  final ScrollController _scrollController = ScrollController();
   StreamSubscription? _eyeFocusSubscription;
   Timer? _readingTimer;
   Timer? _vibrationTimer;
+
+  late Map<String, dynamic> _currentHadith;
+  late int _currentHadithIndex;
 
   double _readingProgress = 0.0;
   int _totalDurationSeconds = 25;
@@ -40,6 +44,8 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
   @override
   void initState() {
     super.initState();
+    _currentHadith = widget.hadith;
+    _currentHadithIndex = widget.hadithIndex;
     WidgetsBinding.instance.addObserver(this);
     _calculateDuration();
     _initEyeReading();
@@ -60,9 +66,9 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
   }
 
   int get _pointsEarned {
-    final arabic = widget.hadith['arabic'] as String? ?? '';
+    final arabic = _currentHadith['arabic'] as String? ?? '';
     final translations =
-        widget.hadith['translations'] as Map<String, dynamic>? ?? {};
+        _currentHadith['translations'] as Map<String, dynamic>? ?? {};
     final appState = Provider.of<AppState>(context, listen: false);
     final lang = appState.languageCode;
     final translationText = translations[lang] as String? ??
@@ -76,10 +82,10 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
   }
 
   void _calculateDuration() {
-    final arabic = widget.hadith['arabic'] as String? ?? '';
+    final arabic = _currentHadith['arabic'] as String? ?? '';
     final translations =
-        widget.hadith['translations'] as Map<String, dynamic>? ?? {};
-    final narrators = widget.hadith['narrators'] as Map<String, dynamic>? ?? {};
+        _currentHadith['translations'] as Map<String, dynamic>? ?? {};
+    final narrators = _currentHadith['narrators'] as Map<String, dynamic>? ?? {};
 
     final appState = Provider.of<AppState>(context, listen: false);
     final lang = appState.languageCode;
@@ -192,7 +198,6 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
             _readingProgress = 1.0;
             timer.cancel();
             _onReadingCompleted();
-            _stopEyeTracking(isDisposing: false);
           }
         });
       });
@@ -209,12 +214,12 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
 
     final appState = Provider.of<AppState>(context, listen: false);
     final lang = appState.languageCode;
-    final hadithId = widget.hadith['id'] as int? ?? (widget.hadithIndex + 1);
-    final themes = widget.hadith['themes'] as Map<String, dynamic>? ?? {};
+    final hadithId = _currentHadith['id'] as int? ?? (_currentHadithIndex + 1);
+    final themes = _currentHadith['themes'] as Map<String, dynamic>? ?? {};
     final theme = themes[lang] as String? ??
         themes['en'] as String? ??
         themes['id'] as String? ??
-        widget.hadith['theme'] as String? ??
+        _currentHadith['theme'] as String? ??
         'Hadits Shahih';
 
     final points = _pointsEarned;
@@ -266,6 +271,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
   void dispose() {
     _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
+    _scrollController.dispose();
     _stopEyeTracking(isDisposing: true);
     super.dispose();
   }
@@ -273,18 +279,25 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
   void _goToNextHadith() {
     final appState = Provider.of<AppState>(context, listen: false);
     final allHadiths = appState.hadithData;
-    if (widget.hadithIndex + 1 < allHadiths.length) {
+    if (_currentHadithIndex + 1 < allHadiths.length) {
       final nextHadith =
-          allHadiths[widget.hadithIndex + 1] as Map<String, dynamic>;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => HadithDetailScreen(
-            hadith: nextHadith,
-            hadithIndex: widget.hadithIndex + 1,
-          ),
-        ),
-      );
+          allHadiths[_currentHadithIndex + 1] as Map<String, dynamic>;
+      setState(() {
+        _currentHadithIndex++;
+        _currentHadith = nextHadith;
+        _hasCompleted = false;
+        _readingProgress = 0.0;
+      });
+      _calculateDuration();
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+      // Seamlessly continue eye tracking on the new hadith with the already-running camera!
+      _handleEyeTimer(_eyeTrackerService.isFocused);
     } else {
       Navigator.pop(context);
     }
@@ -329,18 +342,18 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
     final appState = Provider.of<AppState>(context);
     final lang = appState.languageCode;
 
-    final hadithId = widget.hadith['id'] as int? ?? (widget.hadithIndex + 1);
-    final arabic = widget.hadith['arabic'] as String? ?? '';
+    final hadithId = _currentHadith['id'] as int? ?? (_currentHadithIndex + 1);
+    final arabic = _currentHadith['arabic'] as String? ?? '';
     final themes =
-        widget.hadith['themes'] as Map<String, dynamic>? ?? {};
+        _currentHadith['themes'] as Map<String, dynamic>? ?? {};
     final theme = themes[lang] as String? ??
         themes['en'] as String? ??
         themes['id'] as String? ??
-        widget.hadith['theme'] as String? ??
+        _currentHadith['theme'] as String? ??
         '';
     final translations =
-        widget.hadith['translations'] as Map<String, dynamic>? ?? {};
-    final narrators = widget.hadith['narrators'] as Map<String, dynamic>? ?? {};
+        _currentHadith['translations'] as Map<String, dynamic>? ?? {};
+    final narrators = _currentHadith['narrators'] as Map<String, dynamic>? ?? {};
 
     final translationText = translations[lang] as String? ??
         translations['en'] as String? ??
@@ -493,6 +506,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
             // Scrollable Content
             Expanded(
               child: SingleChildScrollView(
+                controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 child: Column(

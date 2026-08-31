@@ -5,6 +5,7 @@ import 'package:android_intent_plus/android_intent.dart';
 
 import '../../providers/app_state.dart';
 import '../home/home_screen.dart';
+import '../home/app_list_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 import '../../utils/device_instructions.dart';
@@ -145,11 +146,84 @@ class _SetupHubScreenState extends State<SetupHubScreen>
 
   void _finishSetup() {
     final appState = Provider.of<AppState>(context, listen: false);
-    appState.completeOnboarding();
-    appState.navigatorKey.currentState?.pushAndRemoveUntil(
-      AppPageRoute(child: const HomeScreen()),
-      (route) => false,
+    final lang = appState.languageCode;
+
+    // Show a sleek loading dialog while ensuring app icons are loaded
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00382E),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3.5,
+                    color: Color(0xFF34D399),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  Translations.get(lang, 'setup_preparing_home'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  Translations.get(lang, 'setup_loading_apps'),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
+
+    // Await preload completion with a safe timeout
+    AppListScreen.preload(
+      onRawAppsFetched: (raw) {
+        appState.syncAppsWithCategories(raw);
+      },
+    ).timeout(
+      const Duration(milliseconds: 3500),
+      onTimeout: () {},
+    ).whenComplete(() {
+      if (mounted) {
+        appState.completeOnboarding();
+        appState.navigatorKey.currentState?.pushAndRemoveUntil(
+          AppPageRoute(child: const HomeScreen()),
+          (route) => false,
+        );
+      }
+    });
   }
 
   // ── UI Builder ──────────────────────────────────────────────────────────────

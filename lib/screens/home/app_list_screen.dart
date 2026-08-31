@@ -68,6 +68,35 @@ class AppListScreen extends StatefulWidget {
 
   /// Icon cache: packageName → raw bytes. Persists for the lifetime of the app.
   static final Map<String, Uint8List> iconCache = {};
+  static final Set<String> _pendingIconRequests = {};
+
+  /// On-demand self-healing loader for any single missing icon
+  static Future<Uint8List?> loadIconOnDemand(String packageName) async {
+    if (iconCache.containsKey(packageName)) return iconCache[packageName];
+    if (_pendingIconRequests.contains(packageName)) return null;
+    _pendingIconRequests.add(packageName);
+    try {
+      final bytes = await _channel.invokeMethod<Uint8List>(
+        'getAppIcon',
+        {'packageName': packageName},
+      );
+      if (bytes != null && bytes.isNotEmpty) {
+        iconCache[packageName] = bytes;
+        if (_storagePath != null) {
+          try {
+            final file = File('$_storagePath/app_icons/$packageName.bin');
+            file.writeAsBytes(bytes, flush: false).catchError((_) => file);
+          } catch (_) {}
+        }
+        return bytes;
+      }
+    } catch (e) {
+      debugPrint("loadIconOnDemand error for $packageName: $e");
+    } finally {
+      _pendingIconRequests.remove(packageName);
+    }
+    return null;
+  }
 
   /// Fast hydration from persistent disk storage into memory on startup (takes < 15ms)
   static Future<void> initFromDisk(SharedPreferences prefs) async {
@@ -1394,16 +1423,33 @@ class _AppTile extends StatelessWidget {
   }
 }
 
-// ── _AppIcon (StatelessWidget – reads from static cache, no async setState) ──
-class _AppIcon extends StatelessWidget {
+// ── _AppIcon (StatefulWidget with auto on-demand fetch fallback) ─────────────
+class _AppIcon extends StatefulWidget {
   final String packageName;
   final bool grayscale;
 
   const _AppIcon({required this.packageName, this.grayscale = false});
 
   @override
+  State<_AppIcon> createState() => _AppIconState();
+}
+
+class _AppIconState extends State<_AppIcon> {
+  @override
+  void initState() {
+    super.initState();
+    if (!AppListScreen.iconCache.containsKey(widget.packageName)) {
+      AppListScreen.loadIconOnDemand(widget.packageName).then((bytes) {
+        if (mounted && bytes != null) {
+          setState(() {});
+        }
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bytes = AppListScreen.iconCache[packageName];
+    final bytes = AppListScreen.iconCache[widget.packageName];
 
     if (bytes == null || bytes.isEmpty) {
       return Container(
@@ -1442,7 +1488,7 @@ class _AppIcon extends StatelessWidget {
       },
     );
 
-    if (grayscale) {
+    if (widget.grayscale) {
       img = ColorFiltered(
         colorFilter: const ColorFilter.matrix(<double>[
           0.2126,

@@ -118,6 +118,8 @@ class Translations {
       'permission_disabled_desc': 'Beberapa izin utama dinonaktifkan. Agar Anda tetap fokus, silakan aktifkan kembali.',
       'open_setup_hub': 'Buka Pusat Pengaturan',
       'continue_without_protection': 'Lanjutkan tanpa Proteksi',
+      'setup_preparing_home': 'Menyiapkan Beranda Anda...',
+      'setup_loading_apps': 'Memuat aplikasi & ikon sistem...',
     },
     'en': {
       'language_selection': 'Select Language',
@@ -237,6 +239,8 @@ class Translations {
       'permission_disabled_desc': 'Some essential permissions were disabled. To keep you focused, please re-enable them.',
       'open_setup_hub': 'Open Setup Hub',
       'continue_without_protection': 'Continue without Protection',
+      'setup_preparing_home': 'Preparing Your Home...',
+      'setup_loading_apps': 'Loading applications & icons...',
     },
     'ms': {
       'language_selection': 'Pilih Bahasa',
@@ -356,6 +360,8 @@ class Translations {
       'permission_disabled_desc': 'Beberapa kebenaran penting telah dinyahaktifkan. Untuk memastikan anda kekal fokus, sila aktifkan semula.',
       'open_setup_hub': 'Buka Pusat Tetapan',
       'continue_without_protection': 'Teruskan tanpa Perlindungan',
+      'setup_preparing_home': 'Menyediakan Halaman Utama...',
+      'setup_loading_apps': 'Memuatkan aplikasi & ikon sistem...',
     },
     'ar': {
       'language_selection': 'اختر اللغة',
@@ -475,6 +481,8 @@ class Translations {
       'permission_disabled_desc': 'تم تعطيل بعض الأذونات الأساسية. للبقاء في تركيز، يرجى إعادة تفعيلها.',
       'open_setup_hub': 'فتح مركز الإعدادات',
       'continue_without_protection': 'المتابعة بدون حماية',
+      'setup_preparing_home': 'جارٍ إعداد الشاشة الرئيسية...',
+      'setup_loading_apps': 'جارٍ تحميل التطبيقات والأيقونات...',
     },
     'af': {
       'language_selection': 'Kies Taal',
@@ -594,6 +602,8 @@ class Translations {
       'permission_disabled_desc': 'Sommige noodsaaklike toestemmings is gedeaktiveer. Heraktiveer dit asseblief om gefokus te bly.',
       'open_setup_hub': 'Maak Instellingshub Oop',
       'continue_without_protection': 'Gaan voort sonder Beskerming',
+      'setup_preparing_home': 'Berei tans jou tuisskerm voor...',
+      'setup_loading_apps': 'Laai toepassings en ikone...',
     },
     'sw': {
       'language_selection': 'Chagua Lugha',
@@ -713,6 +723,8 @@ class Translations {
       'permission_disabled_desc': 'Baadhi ya ruhusa muhimu zimezimwa. Ili ubaki makini, tafadhali ziweshe tena.',
       'open_setup_hub': 'Fungua Kituo cha Mipangilio',
       'continue_without_protection': 'Endelea bila Ulinzi',
+      'setup_preparing_home': 'Inaandaa Skrini Kuu...',
+      'setup_loading_apps': 'Inapakia programu na aikoni...',
     },
   };
 

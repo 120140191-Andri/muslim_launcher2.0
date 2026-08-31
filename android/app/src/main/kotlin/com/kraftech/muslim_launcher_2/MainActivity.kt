@@ -25,7 +25,7 @@ import java.util.concurrent.Executors
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.muslimlauncher/apps"
     private val BLOCK_CHANNEL = "com.muslimlauncher/block"
-    private val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors().coerceAtLeast(4))
+    private val threadPool = Executors.newCachedThreadPool()
 
     private var appsChannel: MethodChannel? = null
 
@@ -89,7 +89,7 @@ class MainActivity : FlutterActivity() {
                                 }
                             }
                             try {
-                                countDownLatch.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                                countDownLatch.await(15, java.util.concurrent.TimeUnit.SECONDS)
                             } catch (_: Exception) {}
                             runOnUiThread { result.success(iconMap) }
                         }
@@ -420,31 +420,11 @@ class MainActivity : FlutterActivity() {
 
     private fun drawableToByteArray(drawable: Drawable): ByteArray? {
         val size = 96
-        var createdBmp1: Bitmap? = null
-        var createdBmp2: Bitmap? = null
-        
         return try {
-            val bitmap = if (drawable is BitmapDrawable && drawable.bitmap != null && !drawable.bitmap.isRecycled) {
-                val srcBmp = drawable.bitmap
-                val softwareBmp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && srcBmp.config == Bitmap.Config.HARDWARE) {
-                    createdBmp1 = srcBmp.copy(Bitmap.Config.ARGB_8888, false)
-                    createdBmp1
-                } else {
-                    srcBmp
-                }
-                if (softwareBmp.width == size && softwareBmp.height == size) {
-                    softwareBmp
-                } else {
-                    createdBmp2 = Bitmap.createScaledBitmap(softwareBmp, size, size, true)
-                    createdBmp2
-                }
-            } else {
-                createdBmp1 = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-                val canvas = Canvas(createdBmp1)
-                drawable.setBounds(0, 0, canvas.width, canvas.height)
-                drawable.draw(canvas)
-                createdBmp1
-            }
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, size, size)
+            drawable.draw(canvas)
 
             val stream = ByteArrayOutputStream()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -453,10 +433,8 @@ class MainActivity : FlutterActivity() {
                 @Suppress("DEPRECATION")
                 bitmap.compress(Bitmap.CompressFormat.WEBP, 85, stream)
             }
-            
             val result = stream.toByteArray()
-            createdBmp1?.recycle()
-            createdBmp2?.recycle()
+            bitmap.recycle()
             result
         } catch (e: Exception) {
             try {

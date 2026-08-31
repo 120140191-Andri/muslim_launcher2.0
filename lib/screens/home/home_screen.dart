@@ -1138,10 +1138,56 @@ class _QuickDock extends StatelessWidget {
   }
 
   Widget _buildIcon(IconData fallback, String pkg, {VoidCallback? overrideTap}) {
-    final iconBytes = AppListScreen.iconCache[pkg];
+    return _DockIcon(
+      fallback: fallback,
+      pkg: pkg,
+      overrideTap: overrideTap,
+    );
+  }
+}
+
+class _DockIcon extends StatefulWidget {
+  final IconData fallback;
+  final String pkg;
+  final VoidCallback? overrideTap;
+
+  const _DockIcon({
+    required this.fallback,
+    required this.pkg,
+    this.overrideTap,
+  });
+
+  @override
+  State<_DockIcon> createState() => _DockIconState();
+}
+
+class _DockIconState extends State<_DockIcon> {
+  static const _channel = MethodChannel('com.muslimlauncher/apps');
+
+  Future<void> _openApp(String pkg) async {
+    try {
+      await _channel.invokeMethod('openApp', {'packageName': pkg});
+    } catch (_) {}
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (!AppListScreen.iconCache.containsKey(widget.pkg)) {
+      AppListScreen.loadIconOnDemand(widget.pkg).then((bytes) {
+        if (mounted && bytes != null) {
+          setState(() {});
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final iconBytes = AppListScreen.iconCache[widget.pkg];
 
     return InkWell(
-      onTap: overrideTap ?? () => _openApp(pkg),
+      onTap: widget.overrideTap ?? () => _openApp(widget.pkg),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: 44,
@@ -1158,7 +1204,7 @@ class _QuickDock extends StatelessWidget {
                 gaplessPlayback: true,
                 filterQuality: FilterQuality.medium,
               )
-            : Icon(fallback, color: Colors.teal.shade700, size: 24),
+            : Icon(widget.fallback, color: Colors.teal.shade700, size: 24),
       ),
     );
   }

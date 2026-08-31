@@ -204,6 +204,11 @@ class AppState extends ChangeNotifier {
 
     _initDailyVerse();
     _initDailyHadith();
+
+    // Start background app & icon preloading immediately
+    AppListScreen.preload(
+      onRawAppsFetched: (raw) => syncAppsWithCategories(raw),
+    );
     
     // Initialize App Block Service
     _appBlockService.init(onAppBlocked: (pkg) {

@@ -5,6 +5,7 @@ import 'package:android_intent_plus/android_intent.dart';
 import '../../providers/app_state.dart';
 import '../home/accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
+import '../../utils/device_instructions.dart';
 
 class SetupLauncherScreen extends StatefulWidget {
   const SetupLauncherScreen({super.key});
@@ -56,25 +57,6 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
     );
   }
 
-  List<String> _getHomeBrandInstructions(String manufacturer, String lang) {
-    bool isEn = lang == 'en';
-    if (manufacturer.contains('xiaomi') ||
-        manufacturer.contains('poco') ||
-        manufacturer.contains('redmi')) {
-      return [
-        isEn ? 'Click "Open Settings" below.' : 'Ketuk "Buka Pengaturan" di bawah.',
-        isEn ? 'Select "Muslim Launcher" (ML2).' : 'Pilih "Muslim Launcher" (ML2).',
-        isEn ? 'Confirm if the system asks.' : 'Konfirmasi jika diminta oleh sistem.',
-      ];
-    } else {
-      return [
-        isEn ? 'Click "Open Settings" below.' : 'Ketuk "Buka Pengaturan" di bawah.',
-        isEn ? 'Select "Muslim Launcher 2" from the list.' : 'Pilih "Muslim Launcher 2" dari daftar.',
-        isEn ? 'Choose "Always" if prompted.' : 'Pilih "Selalu" (Always) jika diminta.',
-      ];
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -82,7 +64,7 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
     final isEn = lang == 'en';
     final manufacturer = appState.manufacturer;
     
-    final instructions = _getHomeBrandInstructions(manufacturer, lang);
+    final instructions = DeviceInstructions.getHomeInstructions(manufacturer, lang);
     final brandDisplay = manufacturer.isNotEmpty 
         ? manufacturer[0].toUpperCase() + manufacturer.substring(1) 
         : "Android";

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../providers/app_state.dart';
 import '../onboarding/setup_hub_screen.dart';
 import '../../utils/page_transitions.dart';
+import '../../utils/translations.dart';
 
 class PermissionBlockedOverlay extends StatelessWidget {
   final AppState appState;
@@ -24,7 +25,7 @@ class PermissionBlockedOverlay extends StatelessWidget {
 
     if (!isMissingDefault && !isMissingAccess) return child;
 
-    final isEn = appState.languageCode == 'en';
+    final lang = appState.languageCode;
 
     return Stack(
       children: [
@@ -56,7 +57,7 @@ class PermissionBlockedOverlay extends StatelessWidget {
                         ),
                         const SizedBox(height: 32),
                         Text(
-                          isEn ? 'Action Required' : 'Aksi Diperlukan',
+                          Translations.get(lang, 'action_required'),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 28,
@@ -65,9 +66,7 @@ class PermissionBlockedOverlay extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          isEn
-                              ? 'Some essential permissions were disabled. To keep you focused, please re-enable them.'
-                              : 'Beberapa izin utama dinonaktifkan. Agar Anda tetap fokus, silakan aktifkan kembali.',
+                          Translations.get(lang, 'permission_disabled_desc'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.8),
@@ -78,7 +77,7 @@ class PermissionBlockedOverlay extends StatelessWidget {
                         const SizedBox(height: 48),
                         _buildRepairButton(
                           icon: Icons.tune_rounded,
-                          label: isEn ? 'Open Setup Hub' : 'Buka Pusat Pengaturan',
+                          label: Translations.get(lang, 'open_setup_hub'),
                           onTap: () {
                             appState.setIgnorePermissionGuard(true);
                             appState.navigatorKey.currentState?.push(
@@ -92,7 +91,7 @@ class PermissionBlockedOverlay extends StatelessWidget {
                             appState.setIgnorePermissionGuard(true);
                           },
                           child: Text(
-                            isEn ? 'Continue without Protection' : 'Lanjutkan tanpa Proteksi',
+                            Translations.get(lang, 'continue_without_protection'),
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
                           ),
                         ),

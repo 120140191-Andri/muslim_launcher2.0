@@ -11,6 +11,7 @@ import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
 import '../quran/surah_list_screen.dart';
 import '../../utils/page_transitions.dart';
+import '../../widgets/language_selection_dialog.dart';
 
 // ── AppInfo model ────────────────────────────────────────────────────────────
 class AppInfo {
@@ -376,7 +377,7 @@ class _AppListScreenState extends State<AppListScreen>
                     ),
                   ),
                   title: Text(
-                    lang == 'en' ? 'Uninstall App' : 'Hapus Aplikasi',
+                    Translations.get(lang, 'uninstall_app'),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -407,7 +408,7 @@ class _AppListScreenState extends State<AppListScreen>
                       ),
                     ),
                     title: Text(
-                      lang == 'en' ? 'Block App' : 'Blokir Aplikasi',
+                      Translations.get(lang, 'non_productive'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -435,16 +436,14 @@ class _AppListScreenState extends State<AppListScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(lang == 'en' ? 'Uninstall App?' : 'Hapus Aplikasi?'),
+        title: Text(Translations.get(lang, 'uninstall_app')),
         content: Text(
-          lang == 'en'
-              ? 'Are you sure you want to uninstall ${app.appName}?'
-              : 'Apakah Anda yakin ingin menghapus ${app.appName}?',
+          Translations.get(lang, 'uninstall_confirm'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(lang == 'en' ? 'Cancel' : 'Batal'),
+            child: Text(Translations.get(lang, 'cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -458,7 +457,7 @@ class _AppListScreenState extends State<AppListScreen>
               Navigator.pop(ctx);
               _uninstallApp(app.packageName);
             },
-            child: Text(lang == 'en' ? 'Uninstall' : 'Hapus'),
+            child: Text(Translations.get(lang, 'uninstall')),
           ),
         ],
       ),
@@ -473,14 +472,12 @@ class _AppListScreenState extends State<AppListScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(Translations.get(lang, 'non_productive')),
         content: Text(
-          lang == 'en'
-              ? '${app.appName} is a non-productive app. Use 50 Points to unlock it for 60 minutes?'
-              : '${app.appName} adalah aplikasi non-produktif. Gunakan 50 Poin untuk membuka aplikasi ini selama 60 menit?',
+          Translations.get(lang, 'app_blocked_desc'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(lang == 'en' ? 'Cancel' : 'Batal'),
+            child: Text(Translations.get(lang, 'cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -508,10 +505,8 @@ class _AppListScreenState extends State<AppListScreen>
             },
             child: Text(
               appState.points >= 50
-                  ? (lang == 'en'
-                        ? 'Unlock 60m (50 Pts)'
-                        : 'Buka 60m (50 Poin)')
-                  : (lang == 'en' ? 'Read Quran' : 'Baca Quran'),
+                  ? Translations.get(lang, 'unlock_60m')
+                  : Translations.get(lang, 'read_quran'),
             ),
           ),
         ],
@@ -548,7 +543,7 @@ class _AppListScreenState extends State<AppListScreen>
           cursorColor: Colors.white,
           textAlignVertical: TextAlignVertical.center,
           decoration: InputDecoration(
-            hintText: lang == 'en' ? 'Search Apps...' : 'Cari Aplikasi...',
+            hintText: Translations.get(lang, 'search_apps'),
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
             border: InputBorder.none,
             isDense: true,
@@ -582,6 +577,11 @@ class _AppListScreenState extends State<AppListScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.language_rounded, size: 22),
+            tooltip: Translations.get(lang, 'language_selection'),
+            onPressed: () => LanguageSelectionDialog.show(context),
+          ),
           Selector<AppState, int>(
             selector: (_, s) => s.points,
             builder: (_, pts, child) => _PointsBadge(points: pts),
@@ -610,9 +610,7 @@ class _AppListScreenState extends State<AppListScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    lang == 'en'
-                        ? 'Support dev to keep app free & ad-free'
-                        : 'Dukung pengembang agar aplikasi tetap gratis & tanpa iklan',
+                    Translations.get(lang, 'support_dev_msg'),
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 11,

@@ -7,6 +7,8 @@ import '../../providers/app_state.dart';
 import '../home/home_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
+import '../../utils/device_instructions.dart';
+import '../../widgets/language_selection_dialog.dart';
 
 class SetupHubScreen extends StatefulWidget {
   final bool isOnboarding;
@@ -31,78 +33,84 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     
+    // Store reference for safe dispose
     _appStateRef = Provider.of<AppState>(context, listen: false);
     _prevIsDefault = _appStateRef.isDefaultLauncher;
     _prevIsAccess = _appStateRef.isAccessibilityEnabled;
     _prevIsAutostart = _appStateRef.hasAcknowledgedAutostart;
-    
-    // Auto-expand first incomplete step initially
-    if (!_prevIsDefault) {
-      _expandedStepIndex = 1;
-    } else if (!_prevIsAccess) {
-      _expandedStepIndex = 2;
-    } else if (!_prevIsAutostart) {
-      _expandedStepIndex = 3;
-    }
 
-    _appStateRef.addListener(_onAppStateChanged);
+    // Fast check on enter
+    _appStateRef.refreshStatus();
 
-    _refreshAllStatus();
-    _statusTimer = Timer.periodic(
-      const Duration(seconds: 2),
-      (_) => _refreshAllStatus(),
-    );
+    // Auto expand first incomplete step
+    _autoExpandNextStep();
+
+    // Periodic check while screen is open
+    _statusTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      if (mounted) {
+        final appState = Provider.of<AppState>(context, listen: false);
+        appState.refreshStatus();
+        _handleStepTransitions(appState);
+      }
+    });
   }
 
-  void _onAppStateChanged() {
-    final currentIsDefault = _appStateRef.isDefaultLauncher;
-    final currentIsAccess = _appStateRef.isAccessibilityEnabled;
-    final currentIsAutostart = _appStateRef.hasAcknowledgedAutostart;
-
-    bool shouldUpdate = false;
-    if (currentIsDefault && !_prevIsDefault) {
-      _expandedStepIndex = 2; // Auto expand step 3
-      shouldUpdate = true;
-    } else if (currentIsAccess && !_prevIsAccess) {
-      _expandedStepIndex = 3; // Auto expand step 4
-      shouldUpdate = true;
-    } else if (currentIsAutostart && !_prevIsAutostart) {
-      _expandedStepIndex = null;
-      shouldUpdate = true;
+  void _handleStepTransitions(AppState appState) {
+    bool hasChanged = false;
+    
+    if (appState.isDefaultLauncher != _prevIsDefault) {
+      _prevIsDefault = appState.isDefaultLauncher;
+      hasChanged = true;
+    }
+    if (appState.isAccessibilityEnabled != _prevIsAccess) {
+      _prevIsAccess = appState.isAccessibilityEnabled;
+      hasChanged = true;
+    }
+    if (appState.hasAcknowledgedAutostart != _prevIsAutostart) {
+      _prevIsAutostart = appState.hasAcknowledgedAutostart;
+      hasChanged = true;
     }
 
-    _prevIsDefault = currentIsDefault;
-    _prevIsAccess = currentIsAccess;
-    _prevIsAutostart = currentIsAutostart;
-
-    if (shouldUpdate && mounted) {
+    if (hasChanged && mounted) {
       setState(() {});
+      _autoExpandNextStep();
+    }
+  }
+
+  void _autoExpandNextStep() {
+    final appState = Provider.of<AppState>(context, listen: false);
+    if (!appState.hasSelectedLanguage) {
+      _expandedStepIndex = 0;
+    } else if (!appState.isDefaultLauncher) {
+      _expandedStepIndex = 1;
+    } else if (!appState.isAccessibilityEnabled) {
+      _expandedStepIndex = 2;
+    } else if (!appState.hasAcknowledgedAutostart) {
+      _expandedStepIndex = 3;
+    } else {
+      _expandedStepIndex = null; // All done
     }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _appStateRef.removeListener(_onAppStateChanged);
     _statusTimer?.cancel();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _refreshAllStatus();
+    if (state == AppLifecycleState.resumed && mounted) {
+      final appState = Provider.of<AppState>(context, listen: false);
+      appState.refreshStatus();
+      _handleStepTransitions(appState);
     }
   }
 
-  void _refreshAllStatus() {
-    _appStateRef.refreshStatus();
-  }
-
-  Future<void> _openSupportDeveloperUrl() async {
+  Future<void> _openSupportDeveloperUrl(String lang) async {
     try {
-      final appState = Provider.of<AppState>(context, listen: false);
-      final url = appState.languageCode == 'id'
+      final url = lang == 'id'
           ? 'https://trakteer.id/andri_setiawan108/tip'
           : 'https://ko-fi.com/andrisetiawan84153';
       final intent = AndroidIntent(
@@ -111,150 +119,6 @@ class _SetupHubScreenState extends State<SetupHubScreen>
       );
       await intent.launch();
     } catch (_) {}
-  }
-
-  // ── Brand-Specific Instructions Builder ─────────────────────────────────────
-
-  List<String> _getHomeInstructions(String brand, bool isEn) {
-    final b = brand.toLowerCase();
-    if (b.contains('xiaomi') || b.contains('poco') || b.contains('redmi') || b.contains('blackshark')) {
-      return [
-        isEn ? 'Tap "Open Home Settings" below.' : 'Ketuk "Buka Pengaturan Beranda" di bawah.',
-        isEn ? 'Look for "Default launcher" option.' : 'Pilih menu "Peluncur Utama / Beranda".',
-        isEn ? 'Select "Muslim Launcher 2".' : 'Pilih "Muslim Launcher 2".',
-        isEn ? 'Tap "Always" if prompted by MIUI/HyperOS.' : 'Konfirmasi dan pilih "Selalu" jika muncul dialog.',
-      ];
-    } else if (b.contains('samsung')) {
-      return [
-        isEn ? 'Tap "Open Home Settings" below.' : 'Ketuk "Buka Pengaturan Beranda" di bawah.',
-        isEn ? 'Select "Home app" from list.' : 'Pilih menu "Aplikasi Beranda".',
-        isEn ? 'Choose "Muslim Launcher 2".' : 'Pilih "Muslim Launcher 2".',
-      ];
-    } else if (b.contains('oppo') || b.contains('oneplus') || b.contains('realme')) {
-      return [
-        isEn ? 'Tap "Open Home Settings" below.' : 'Ketuk "Buka Pengaturan Beranda" di bawah.',
-        isEn ? 'Go to Default Apps -> Home App.' : 'Masuk ke Aplikasi Default -> Aplikasi Beranda.',
-        isEn ? 'Set to "Muslim Launcher 2".' : 'Setel ke "Muslim Launcher 2".',
-      ];
-    } else if (b.contains('vivo') || b.contains('iqoo')) {
-      return [
-        isEn ? 'Tap "Open Home Settings" below.' : 'Ketuk "Buka Pengaturan Beranda" di bawah.',
-        isEn ? 'Select Default App Settings -> Home app.' : 'Pilih Pengaturan Aplikasi Default -> Beranda.',
-        isEn ? 'Enable "Muslim Launcher 2".' : 'Aktifkan "Muslim Launcher 2".',
-      ];
-    } else if (b.contains('infinix') || b.contains('tecno') || b.contains('itel') || b.contains('transsion')) {
-      return [
-        isEn ? 'Tap "Open Home Settings" below.' : 'Ketuk "Buka Pengaturan Beranda" di bawah.',
-        isEn ? 'Select XOS / HiOS Home app settings.' : 'Pilih menu Aplikasi Beranda (Desktop).',
-        isEn ? 'Switch default to "Muslim Launcher 2".' : 'Ubah launcher default ke "Muslim Launcher 2".',
-      ];
-    } else if (b.contains('huawei') || b.contains('honor')) {
-      return [
-        isEn ? 'Tap "Open Home Settings" below.' : 'Ketuk "Buka Pengaturan Beranda" di bawah.',
-        isEn ? 'Go to Apps -> Default Apps -> Launcher.' : 'Masuk ke Aplikasi -> Aplikasi Default -> Peluncur.',
-        isEn ? 'Select "Muslim Launcher 2".' : 'Pilih "Muslim Launcher 2".',
-      ];
-    } else if (b.contains('asus')) {
-      return [
-        isEn ? 'Tap "Open Home Settings" below.' : 'Ketuk "Buka Pengaturan Beranda" di bawah.',
-        isEn ? 'Go to ZenUI Launcher / Apps -> Default Apps.' : 'Masuk ke Aplikasi -> Aplikasi Default -> Beranda.',
-        isEn ? 'Select "Muslim Launcher 2".' : 'Pilih "Muslim Launcher 2".',
-      ];
-    } else {
-      return [
-        isEn ? 'Tap "Open Home Settings" below.' : 'Ketuk "Buka Pengaturan Beranda" di bawah.',
-        isEn ? 'Find "Default apps" or "Home app".' : 'Cari "Aplikasi Default" atau "Aplikasi Beranda".',
-        isEn ? 'Select "Muslim Launcher 2".' : 'Pilih "Muslim Launcher 2".',
-      ];
-    }
-  }
-
-  List<String> _getAccessibilityInstructions(String brand, bool isEn) {
-    final b = brand.toLowerCase();
-    if (b.contains('xiaomi') || b.contains('poco') || b.contains('redmi') || b.contains('blackshark')) {
-      return [
-        isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
-        isEn ? 'Tap "Downloaded Apps" (Aplikasi Terunduh).' : 'Pilih menu "Aplikasi Terunduh / Downloaded Apps".',
-        isEn ? 'Select "Muslim Launcher 2".' : 'Pilih "Muslim Launcher 2".',
-        isEn ? 'Turn ON "Use Muslim Launcher 2".' : 'Aktifkan sakelar "Gunakan Muslim Launcher 2".',
-      ];
-    } else if (b.contains('samsung')) {
-      return [
-        isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
-        isEn ? 'Select "Installed Apps" (or "Installed Services").' : 'Pilih "Aplikasi Terinstal" (atau "Layanan Terinstal").',
-        isEn ? 'Tap "Muslim Launcher 2" and turn ON.' : 'Pilih "Muslim Launcher 2" lalu aktifkan sakelar.',
-      ];
-    } else if (b.contains('oppo') || b.contains('oneplus') || b.contains('realme') || b.contains('vivo') || b.contains('iqoo')) {
-      return [
-        isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
-        isEn ? 'Find "Muslim Launcher 2" under Accessibility Services.' : 'Cari "Muslim Launcher 2" di daftar layanan.',
-        isEn ? 'Enable the switch and grant permissions.' : 'Aktifkan sakelar dan izinkan akses.',
-      ];
-    } else if (b.contains('huawei') || b.contains('honor')) {
-      return [
-        isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
-        isEn ? 'Go to Accessibility -> Installed Services.' : 'Masuk ke Aksesibilitas -> Layanan Terinstal.',
-        isEn ? 'Enable "Muslim Launcher 2".' : 'Aktifkan "Muslim Launcher 2".',
-      ];
-    } else {
-      return [
-        isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
-        isEn ? 'Find "Muslim Launcher 2" in the list.' : 'Cari "Muslim Launcher 2" di daftar aplikasi.',
-        isEn ? 'Turn ON the switch & confirm warnings.' : 'Aktifkan sakelar & klik Izinkan.',
-      ];
-    }
-  }
-
-  List<String> _getAutostartInstructions(String brand, bool isEn) {
-    final b = brand.toLowerCase();
-    if (b.contains('xiaomi') || b.contains('poco') || b.contains('redmi') || b.contains('blackshark')) {
-      return [
-        isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Find "Muslim Launcher 2" & Enable "Autostart".' : 'Cari "Muslim Launcher 2" & aktifkan "Mulai Otomatis".',
-        isEn ? 'Tap the app -> "Battery Saver" -> "No restrictions".' : 'Ketuk aplikasinya -> "Penghemat Baterai" -> "Tanpa Pembatasan".',
-      ];
-    } else if (b.contains('samsung')) {
-      return [
-        isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Go to Battery -> Background usage limits.' : 'Masuk ke Baterai -> Batas penggunaan latar belakang.',
-        isEn ? 'Add Muslim Launcher 2 to "Never sleeping apps".' : 'Tambahkan Muslim Launcher 2 ke "Aplikasi yang tidak pernah tidur".',
-      ];
-    } else if (b.contains('oppo') || b.contains('oneplus') || b.contains('realme')) {
-      return [
-        isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Find "Muslim Launcher 2" & Enable "Allow auto-launch".' : 'Cari "Muslim Launcher 2" & aktifkan "Izinkan Mulai Otomatis".',
-        isEn ? 'Allow background activity.' : 'Izinkan aktivitas latar belakang.',
-      ];
-    } else if (b.contains('vivo') || b.contains('iqoo')) {
-      return [
-        isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Find "Muslim Launcher 2" & Enable "Autostart".' : 'Cari "Muslim Launcher 2" & aktifkan "Mulai Otomatis".',
-      ];
-    } else if (b.contains('huawei') || b.contains('honor')) {
-      return [
-        isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Go to App Launch -> Turn off Automatic for Muslim Launcher 2.' : 'Masuk ke Peluncuran Aplikasi -> Matikan Otomatis untuk Muslim Launcher 2.',
-        isEn ? 'Enable Auto-launch, Secondary Launch & Run in background.' : 'Aktifkan Peluncuran Otomatis, Peluncuran Sekunder & Latar Belakang.',
-      ];
-    } else if (b.contains('infinix') || b.contains('tecno') || b.contains('itel') || b.contains('transsion')) {
-      return [
-        isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Open Phone Manager -> Auto-start management.' : 'Buka Pengelola Telepon -> Manajemen Mulai Otomatis.',
-        isEn ? 'Enable Muslim Launcher 2 auto-start switch.' : 'Aktifkan sakelar mulai otomatis Muslim Launcher 2.',
-      ];
-    } else if (b.contains('asus')) {
-      return [
-        isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Open Mobile Manager -> Auto-start Manager.' : 'Buka Manajer Seluler -> Manajer Mulai Otomatis.',
-        isEn ? 'Allow Muslim Launcher 2 to auto-start.' : 'Izinkan Muslim Launcher 2 mulai otomatis.',
-      ];
-    } else {
-      return [
-        isEn ? 'Tap "Configure Autostart & Battery" below.' : 'Ketuk "Atur Autostart & Baterai" di bawah.',
-        isEn ? 'Select Battery -> Set to "Unrestricted".' : 'Pilih menu Baterai -> Ubah ke "Tanpa Pembatasan".',
-        isEn ? 'Allow auto-start in background if available.' : 'Izinkan jalankan otomatis jika ada pilihan.',
-      ];
-    }
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────────
@@ -422,15 +286,15 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                   _buildStepCard(
                     index: 0,
                     stepNum: 1,
-                    title: isEn ? 'Language Setting' : 'Pengaturan Bahasa',
-                    subtitle: lang == 'en' ? 'English (Aktif)' : 'Bahasa Indonesia (Aktif)',
+                    title: Translations.get(lang, 'language_selection'),
+                    subtitle: '${_getLanguageDisplayName(lang)} - ${Translations.get(lang, 'done')}',
                     icon: Icons.language_rounded,
                     isDone: true,
                     instructions: [],
                     actionWidget: OutlinedButton.icon(
-                      onPressed: () => _showLanguageDialog(context, appState),
+                      onPressed: () => LanguageSelectionDialog.show(context),
                       icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                      label: Text(isEn ? 'Change Language' : 'Ubah Bahasa'),
+                      label: Text(Translations.get(lang, 'change_language')),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF0F5132),
                         side: const BorderSide(color: Color(0xFF0F5132)),
@@ -450,7 +314,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                         : (isEn ? 'Action required for home screen' : 'Tindakan diperlukan untuk layar beranda'),
                     icon: Icons.home_rounded,
                     isDone: isDefault,
-                    instructions: _getHomeInstructions(manufacturer, isEn),
+                    instructions: DeviceInstructions.getHomeInstructions(manufacturer, lang),
                     actionWidget: ElevatedButton.icon(
                       onPressed: _openHomeSettings,
                       icon: Icon(isDefault ? Icons.settings_rounded : Icons.open_in_new_rounded, size: 18),
@@ -479,7 +343,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                         : (isEn ? 'Required for real-time app blocking' : 'Dibutuhkan agar pemblokir berfungsi real-time'),
                     icon: Icons.security_rounded,
                     isDone: isAccess,
-                    instructions: _getAccessibilityInstructions(manufacturer, isEn),
+                    instructions: DeviceInstructions.getAccessibilityInstructions(manufacturer, lang),
                     actionWidget: ElevatedButton.icon(
                       onPressed: _openAccessibilitySettings,
                       icon: Icon(isAccess ? Icons.verified_rounded : Icons.lock_open_rounded, size: 18),
@@ -508,7 +372,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                         : (isEn ? 'Prevent OS from killing background blocker' : 'Cegah sistem mematikan pemblokir di latar belakang'),
                     icon: Icons.bolt_rounded,
                     isDone: isAutostart,
-                    instructions: _getAutostartInstructions(manufacturer, isEn),
+                    instructions: DeviceInstructions.getAutostartInstructions(manufacturer, lang),
                     actionWidget: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -607,7 +471,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: _openSupportDeveloperUrl,
+                            onPressed: () => _openSupportDeveloperUrl(lang),
                             icon: const Icon(Icons.coffee_rounded, size: 18),
                             label: Text(
                               isEn ? 'Support / Request Features via Ko-fi' : 'Dukung / Usulkan Fitur via Trakteer',
@@ -891,43 +755,22 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     );
   }
 
-  // ── Language Dialog ─────────────────────────────────────────────────────────
-
-  void _showLanguageDialog(BuildContext context, AppState appState) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(Translations.get(appState.languageCode, 'language_selection')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Text('🇮🇩', style: TextStyle(fontSize: 24)),
-              title: const Text('Bahasa Indonesia'),
-              trailing: appState.languageCode == 'id'
-                  ? const Icon(Icons.check_circle, color: Color(0xFF0F5132))
-                  : null,
-              onTap: () {
-                appState.setLanguage('id');
-                Navigator.pop(ctx);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Text('🇬🇧', style: TextStyle(fontSize: 24)),
-              title: const Text('English'),
-              trailing: appState.languageCode == 'en'
-                  ? const Icon(Icons.check_circle, color: Color(0xFF0F5132))
-                  : null,
-              onTap: () {
-                appState.setLanguage('en');
-                Navigator.pop(ctx);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+  String _getLanguageDisplayName(String code) {
+    switch (code) {
+      case 'id':
+        return 'Bahasa Indonesia';
+      case 'en':
+        return 'English';
+      case 'ms':
+        return 'Bahasa Melayu';
+      case 'ar':
+        return 'العربية';
+      case 'af':
+        return 'Afrikaans';
+      case 'sw':
+        return 'Kiswahili';
+      default:
+        return code.toUpperCase();
+    }
   }
 }

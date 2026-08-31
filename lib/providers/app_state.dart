@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +15,18 @@ class AppState extends ChangeNotifier {
     _init();
   }
 
-  String _languageCode = 'id';
+  static String getDefaultLanguageCode() {
+    try {
+      final sysLang = ui.PlatformDispatcher.instance.locale.languageCode.toLowerCase();
+      const supported = ['id', 'ms', 'af', 'sw', 'ar', 'en'];
+      if (supported.contains(sysLang)) {
+        return sysLang;
+      }
+    } catch (_) {}
+    return 'en'; // Default to English for any language outside id, ms, af, sw, ar, en
+  }
+
+  String _languageCode = getDefaultLanguageCode();
   bool _hasSelectedLanguage = false;
   bool _hasCompletedOnboarding = false;
   int _points = 0;
@@ -85,7 +97,7 @@ class AppState extends ChangeNotifier {
 
   void _init() async {
     try {
-    _languageCode = prefs.getString('languageCode') ?? 'id';
+    _languageCode = prefs.getString('languageCode') ?? getDefaultLanguageCode();
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
     _points = prefs.getInt('points') ?? 0;

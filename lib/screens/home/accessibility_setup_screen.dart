@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import 'home_screen.dart';
 import '../../utils/page_transitions.dart';
+import '../../utils/device_instructions.dart';
 
 class AccessibilitySetupScreen extends StatefulWidget {
   final bool isOnboarding;
@@ -52,67 +53,6 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
     }
   }
 
-  List<String> _getBrandInstructions(String manufacturer, String lang) {
-    bool isEn = lang == 'en';
-    if (manufacturer.contains('xiaomi') ||
-        manufacturer.contains('poco') ||
-        manufacturer.contains('redmi')) {
-      return [
-        isEn
-            ? 'Click "Open Settings" below.'
-            : 'Klik "Buka Pengaturan" di bawah.',
-        isEn
-            ? 'Look for "Downloaded Apps" (Aplikasi Terunduh).'
-            : 'Cari menu "Aplikasi Yang Didownload".',
-        isEn ? 'Select "Muslim Launcher".' : 'Pilih "Muslim Launcher".',
-        isEn
-            ? 'Enable "Use Muslim Launcher".'
-            : 'Aktifkan "Aktifkan Muslim Launcher".',
-      ];
-    } else if (manufacturer.contains('samsung')) {
-      return [
-        isEn
-            ? 'Click "Open Settings" below.'
-            : 'Klik "Buka Pengaturan" di bawah.',
-        isEn
-            ? 'Find "Installed Apps" (or "Installed Services").'
-            : 'Cari menu "Aplikasi Terinstal" (atau "Layanan Terinstal").',
-        isEn ? 'Select "Muslim Launcher 2".' : 'Pilih "Muslim Launcher 2".',
-        isEn ? 'Turn the switch to ON.' : 'Geser tombol ke posisi AKTIF.',
-      ];
-    } else if (manufacturer.contains('oppo') ||
-        manufacturer.contains('realme') ||
-        manufacturer.contains('vivo')) {
-      return [
-        isEn
-            ? 'Click "Open Settings" below.'
-            : 'Klik "Buka Pengaturan" di bawah.',
-        isEn
-            ? 'Find "Muslim Launcher" in the list.'
-            : 'Cari "Muslim Launcher" di daftar layanan.',
-        isEn
-            ? 'If not seen, check for "More" or "Installed Services".'
-            : 'Jika tidak ditemukan, cek menu "Lainnya" atau "Layanan Terinstal".',
-        isEn ? 'Enable the permission switch.' : 'Aktifkan izin atau tombolnya.',
-      ];
-    } else {
-      return [
-        isEn
-            ? 'Click "Open Settings" below.'
-            : 'Klik "Buka Pengaturan" di bawah.',
-        isEn
-            ? 'Find "Muslim Launcher" in the list.'
-            : 'Cari "Muslim Launcher" di daftar.',
-        isEn
-            ? 'Select it and turn ON the toggle.'
-            : 'Pilih aplikasinya dan aktifkan tombolnya.',
-        isEn
-            ? 'Confirm any system warnings.'
-            : 'Klik "OK" atau "Izinkan" jika ada peringatan.',
-      ];
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -120,7 +60,8 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
     final manufacturer = appState.manufacturer;
     final isEn = lang == 'en';
 
-    final instructions = _getBrandInstructions(manufacturer, lang);
+    final instructions =
+        DeviceInstructions.getAccessibilityInstructions(manufacturer, lang);
     final brandDisplay = manufacturer.isNotEmpty
         ? manufacturer[0].toUpperCase() + manufacturer.substring(1)
         : "";
@@ -273,9 +214,7 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              isEn
-                                  ? "Tip: Look for the 'Downloaded' or 'Services' section first."
-                                  : "Tips: Biasanya ada di bagian 'Aplikasi Yang Didownload' atau 'Layanan'.",
+                              DeviceInstructions.getAccessibilityTip(lang),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.amber.shade900,

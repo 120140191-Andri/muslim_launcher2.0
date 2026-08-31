@@ -12,6 +12,8 @@ import '../quran/reading_history_screen.dart';
 import 'app_list_screen.dart';
 import 'accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
+import '../../utils/translations.dart';
+import '../../widgets/language_selection_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -252,6 +254,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   const SizedBox(width: 8),
                                   Row(
                                     children: [
+                                      GestureDetector(
+                                        onTap: () =>
+                                            LanguageSelectionDialog.show(
+                                              context,
+                                            ),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.language_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
                                       GestureDetector(
                                         onTap: () => appState
                                             .navigatorKey.currentState
@@ -727,10 +750,10 @@ class _GreetingWidget extends StatelessWidget {
 
   String _getTimeGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return lang == 'en' ? 'Good Morning' : 'Selamat Pagi';
-    if (hour < 15) return lang == 'en' ? 'Good Afternoon' : 'Selamat Siang';
-    if (hour < 18) return lang == 'en' ? 'Good Evening' : 'Selamat Sore';
-    return lang == 'en' ? 'Good Night' : 'Selamat Malam';
+    if (hour < 12) return Translations.get(lang, 'good_morning');
+    if (hour < 15) return Translations.get(lang, 'good_afternoon');
+    if (hour < 18) return Translations.get(lang, 'good_evening');
+    return Translations.get(lang, 'good_night');
   }
 
   @override
@@ -750,7 +773,7 @@ class _GreetingWidget extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          lang == 'en' ? 'Seeker of Goodness' : 'Pejuang Kebaikan',
+          Translations.get(lang, 'user_title'),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
@@ -1397,7 +1420,7 @@ class _DailyInspiration extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                (lang == 'en' ? 'INSIGHT OF THE DAY' : 'INSPIRASI HARI INI'),
+                Translations.get(lang, 'insight_of_the_day'),
                 style: const TextStyle(
                   color: Colors.amber,
                   fontSize: 12,
@@ -1417,9 +1440,7 @@ class _DailyInspiration extends StatelessWidget {
           Text(
             hasLastRead
                 ? '"$ayahText"'
-                : (lang == 'en'
-                      ? '"Verily, with hardship, there is relief."'
-                      : '"Karena sesungguhnya sesudah kesulitan itu ada kemudahan."'),
+                : '"${Translations.get(lang, 'daily_inspiration_default')}"',
             maxLines: 10,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../quran/surah_list_screen.dart';
 import '../../utils/page_transitions.dart';
+import '../../utils/translations.dart';
 
 class BlockedAppScreen extends StatefulWidget {
   final String packageName;
@@ -40,7 +41,6 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final lang = appState.languageCode;
-
 
     return PopScope(
       canPop: false, // Prevent back button from passing through
@@ -80,13 +80,14 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        lang == 'en' ? 'APP BLOCKED' : 'APLIKASI DIBLOKIR',
+                        Translations.get(lang, 'app_blocked'),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 26,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
+                          letterSpacing: 1.5,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                       FutureBuilder<String>(
                         future: _appNameFuture,
@@ -110,9 +111,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        lang == 'en'
-                            ? 'To open this app, read the Quran or spend 50 Points to unlock for 60 minutes.'
-                            : 'Untuk membuka aplikasi ini, silakan baca Al-Quran atau gunakan 50 Poin untuk membuka selama 60 menit.',
+                        Translations.get(lang, 'app_blocked_desc'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
@@ -134,7 +133,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                             const Icon(Icons.stars_rounded, color: Colors.amber, size: 18),
                             const SizedBox(width: 8),
                             Text(
-                              lang == 'en' ? "${appState.points} Points Available" : "${appState.points} Poin Tersedia",
+                              "${appState.points} ${Translations.get(lang, 'points_available')}",
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -166,8 +165,8 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                           ),
                           child: Text(
                             appState.points >= 50
-                              ? (lang == 'en' ? 'Unlock 60 Min (50 Points)' : 'Buka Blokir 60 Menit (50 Poin)')
-                              : (lang == 'en' ? 'Need 50 Points' : 'Butuh 50 Poin'),
+                              ? Translations.get(lang, 'unlock_60m')
+                              : Translations.get(lang, 'need_50_points'),
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -192,7 +191,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                           child: Text(
-                            lang == 'en' ? 'Read Quran to Earn Points' : 'Baca Al-Quran untuk Mendapatkan Poin',
+                            Translations.get(lang, 'read_quran_earn_points'),
                             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -202,7 +201,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                       TextButton(
                         onPressed: () => appState.clearBlockedApp(),
                         child: Text(
-                          lang == 'en' ? 'Go Back' : 'Kembali',
+                          Translations.get(lang, 'go_back'),
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
                         ),
                       ),

@@ -207,6 +207,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
           Expanded(
             child: ListView.builder(
               physics: const BouncingScrollPhysics(),
+              cacheExtent: 500,
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
               itemCount: filteredHadiths.length,
               itemBuilder: (context, index) {

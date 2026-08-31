@@ -328,7 +328,9 @@ class _DzikirScreenState extends State<DzikirScreen>
     // Valid Tap: Trigger distinct vibration!
     _lastTapTime = now;
     HapticFeedback.lightImpact();
-    _pulseController.forward().then((_) => _pulseController.reverse());
+    _pulseController.forward().then((_) {
+      if (mounted) _pulseController.reverse();
+    });
 
     setState(() {
       _count++;

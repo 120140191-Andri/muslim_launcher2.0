@@ -69,6 +69,8 @@ class AppState extends ChangeNotifier {
   Map<String, dynamic>? _dailyHadith;
   String _dailyHadithDate = '';
   Set<int> _readHadithIds = {};
+  List<dynamic> _cachedShuffledHadithData = [];
+  String _cachedHadithShuffleDate = '';
 
   bool get isReady => _isDataLoaded && _isInitialized;
 
@@ -89,12 +91,17 @@ class AppState extends ChangeNotifier {
   List<dynamic> get quranData => _quranData;
   bool get isDataLoaded => _isDataLoaded;
   List<dynamic> get hadithData {
-    if (_hadithData.isEmpty) return [];
+    if (_hadithData.isEmpty) return const [];
     final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_cachedShuffledHadithData.isNotEmpty && _cachedHadithShuffleDate == today) {
+      return _cachedShuffledHadithData;
+    }
     final seed = today.hashCode;
     final list = List<dynamic>.from(_hadithData);
     list.shuffle(Random(seed));
-    return list;
+    _cachedShuffledHadithData = list;
+    _cachedHadithShuffleDate = today;
+    return _cachedShuffledHadithData;
   }
   int get khatmCount => _khatmCount;
   List<Map<String, dynamic>> get readingHistory => _readingHistory;

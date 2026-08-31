@@ -98,11 +98,16 @@ class EyeTrackerService {
     _isBusy = true;
     _lastProcessTime = now;
 
-    final WriteBuffer allBytes = WriteBuffer();
-    for (final Plane plane in image.planes) {
-      allBytes.putUint8List(plane.bytes);
+    final Uint8List bytes;
+    if (image.planes.length == 1) {
+      bytes = image.planes[0].bytes;
+    } else {
+      final WriteBuffer allBytes = WriteBuffer();
+      for (final Plane plane in image.planes) {
+        allBytes.putUint8List(plane.bytes);
+      }
+      bytes = allBytes.done().buffer.asUint8List();
     }
-    final bytes = allBytes.done().buffer.asUint8List();
 
     final InputImageMetadata metadata = InputImageMetadata(
       size: Size(image.width.toDouble(), image.height.toDouble()),

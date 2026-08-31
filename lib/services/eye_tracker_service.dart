@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class EyeTrackerService {
   static final EyeTrackerService _instance = EyeTrackerService._internal();
@@ -24,6 +25,7 @@ class EyeTrackerService {
   Stream<bool>? get facePresenceStream => _facePresenceController?.stream;
   bool get isFocused => _isFocused;
   bool get isFacePresent => _isFacePresent;
+  bool get isCameraReady => _cameraController != null && _cameraController!.value.isInitialized;
 
   Future<void> initialize() async {
     if (_isInitializing) return;
@@ -41,6 +43,14 @@ class EyeTrackerService {
     _lock = completer.future;
 
     try {
+      // 1. Explicitly request camera permission first and wait for user response
+      final status = await Permission.camera.request();
+      if (!status.isGranted) {
+        debugPrint("EyeTrackerService: Camera permission not granted ($status)");
+        _isFacePresent = true; // Graceful fallback mode if permission denied
+        return;
+      }
+
       // Release existing resources if any (synchronous check)
       if (_cameraController != null || _faceDetector != null) {
         await _disposeInternal();
@@ -55,6 +65,7 @@ class EyeTrackerService {
 
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
+        _isFacePresent = true;
         return;
       }
 

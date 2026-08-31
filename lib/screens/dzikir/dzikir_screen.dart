@@ -287,10 +287,11 @@ class _DzikirScreenState extends State<DzikirScreen>
       if (!mounted) return;
 
       setState(() {
-        _isCameraReady = true;
+        _isCameraReady = EyeTrackerService().isCameraReady;
         _isFacePresent = EyeTrackerService().isFacePresent;
       });
 
+      _presenceSub?.cancel();
       _presenceSub = EyeTrackerService().facePresenceStream?.listen((present) {
         if (!mounted) return;
         setState(() {

@@ -43,12 +43,15 @@ class EyeTrackerService {
     _lock = completer.future;
 
     try {
-      // 1. Explicitly request camera permission first and wait for user response
-      final status = await Permission.camera.request();
+      // 1. Verify/Request camera permission
+      final status = await Permission.camera.status;
       if (!status.isGranted) {
-        debugPrint("EyeTrackerService: Camera permission not granted ($status)");
-        _isFacePresent = true; // Graceful fallback mode if permission denied
-        return;
+        final req = await Permission.camera.request();
+        if (!req.isGranted) {
+          debugPrint("EyeTrackerService: Camera permission not granted ($req)");
+          _isFacePresent = true; // Graceful fallback mode if permission denied
+          return;
+        }
       }
 
       // Release existing resources if any (synchronous check)

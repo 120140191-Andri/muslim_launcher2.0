@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../services/eye_tracker_service.dart';
@@ -237,6 +238,7 @@ class _DzikirScreenState extends State<DzikirScreen>
   bool _isFacePresent = false;
   bool _isCameraReady = false;
   bool _isInCooldown = false;
+  bool _isRequestingPermission = false;
   String _rateLimitMessage = '';
   Timer? _rateLimitClearTimer;
   StreamSubscription<bool>? _presenceSub;
@@ -282,7 +284,24 @@ class _DzikirScreenState extends State<DzikirScreen>
   }
 
   Future<void> _initFaceTracker() async {
+    if (!mounted) return;
     try {
+      final status = await Permission.camera.status;
+      if (!status.isGranted) {
+        _isRequestingPermission = true;
+        final requested = await Permission.camera.request();
+        _isRequestingPermission = false;
+        if (!requested.isGranted) {
+          if (mounted) {
+            setState(() {
+              _isCameraReady = false;
+              _isFacePresent = true; // Fallback to graceful mode
+            });
+          }
+          return;
+        }
+      }
+
       await EyeTrackerService().initialize();
       if (!mounted) return;
 
@@ -312,11 +331,15 @@ class _DzikirScreenState extends State<DzikirScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _initFaceTracker();
-    } else if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
-      _presenceSub?.cancel();
-      EyeTrackerService().dispose();
+      if (!_isRequestingPermission) {
+        _initFaceTracker();
+      }
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      if (!_isRequestingPermission) {
+        _presenceSub?.cancel();
+        EyeTrackerService().dispose();
+      }
     }
   }
 

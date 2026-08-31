@@ -19,7 +19,7 @@ To unlock and access blocked applications, you need a certain amount of points (
 
 ### Key Features
 * 🌟 **Diverse Worship Point System:** Earn points by reading Quran, doing Dhikr (tasbih), or reflecting on Hadiths.
-* 📿 **Smart Face-Presence Dhikr:** Interactive digital tasbih with face detection, rhythm cooldowns, distinct vibration feedback, virtues (fadhilah), and automatic history logging.
+* 📿 **Smart Face-Presence Dhikr:** Interactive digital tasbih with face presence detection, gentle haptic feedback on each count, anti-rush rhythm pacing, virtues (fadhilah), and automatic history logging.
 * 📜 **Daily Authentic Hadith Collection:** Random daily shuffle of 50 verified Hadiths with theme filtering and multi-language translations.
 * 🛡️ **Native Background App Blocker:** Powered by native Android `AccessibilityService`. If you attempt to open a blocked app without enough points, the lock screen gently intercepts you and offers worship options.
 * 🔒 **Temporary Unlock System:** Once 50 points are spent, apps become accessible normally for 60 minutes. When the duration expires, apps are locked again.
@@ -58,7 +58,7 @@ Untuk membuka dan mengakses aplikasi yang diblokir selama 60 menit, Anda membutu
 
 ### Fitur Unggulan
 * 🌟 **Sistem Poin Ibadah Fleksibel:** Kumpulkan poin melalui tilawah Al-Quran, putaran Dzikir, maupun tadabbur Hadits.
-* 📿 **Mode Dzikir Khusyu' Cerdas:** Tasbih digital dengan deteksi wajah (*Face Presence*), getaran haptic saat tap valid, lafadz Arab/Latin/Arti, preset fadhilah, dan riwayat dzikir otomatis.
+* 📿 **Mode Dzikir Khusyu' Cerdas:** Tasbih digital dengan deteksi kehadiran wajah (*Face Presence*), getaran lembut di setiap hitungan dzikir, ritme jeda agar tidak terburu-buru, lafadz Arab/Latin/Arti, preset fadhilah, dan riwayat dzikir otomatis.
 * 📜 **Koleksi 50 Hadits Shahih Harian:** Diacak setiap hari dengan filter tema (Akidah, Ibadah, Akhlak, Muamalah) serta terjemahan multi-bahasa.
 * 🛡️ **Pemblokiran Latar Belakang Asli:** Berjalan menggunakan `AccessibilityService` Android. Jika aplikasi non-produktif dibuka tanpa poin yang cukup, layar pemblokiran akan langsung mengarahkan Anda ke pilihan ibadah.
 * 🔒 **Sistem "Unlock" 60 Menit:** Setelah 50 poin ditukar, aplikasi dapat diakses normal selama 60 menit sebelum terkunci kembali secara otomatis.

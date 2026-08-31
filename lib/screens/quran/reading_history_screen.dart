@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import 'package:intl/intl.dart';
+import '../../utils/translations.dart';
 
 class ReadingHistoryScreen extends StatelessWidget {
   const ReadingHistoryScreen({super.key});
@@ -15,7 +16,7 @@ class ReadingHistoryScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F4),
       appBar: AppBar(
-        title: Text(lang == 'en' ? 'Reading History' : 'Riwayat Bacaan'),
+        title: Text(Translations.get(lang, 'reading_history')),
         backgroundColor: Colors.teal.shade800,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -28,9 +29,13 @@ class ReadingHistoryScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final entry = history[index];
                 final timestamp = entry['timestamp'];
-                final int ts = (timestamp is int) ? timestamp : (int.tryParse(timestamp.toString()) ?? 0);
+                final int ts = (timestamp is int)
+                    ? timestamp
+                    : (int.tryParse(timestamp.toString()) ?? 0);
                 final date = DateTime.fromMillisecondsSinceEpoch(ts);
-                final formattedDate = ts == 0 ? '--' : DateFormat('dd MMM yyyy, HH:mm').format(date);
+                final formattedDate = ts == 0
+                    ? '--'
+                    : DateFormat('dd MMM yyyy, HH:mm').format(date);
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -46,17 +51,23 @@ class ReadingHistoryScreen extends StatelessWidget {
                     ],
                   ),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.teal.shade50,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.menu_book_rounded, color: Colors.teal.shade700),
+                      child: Icon(
+                        Icons.menu_book_rounded,
+                        color: Colors.teal.shade700,
+                      ),
                     ),
                     title: Text(
-                      "${entry['surah']} : Ayat ${entry['ayah']}",
+                      "${entry['surah']} : ${Translations.get(lang, 'ayah')} ${entry['ayah']}",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.teal.shade900,
@@ -66,12 +77,18 @@ class ReadingHistoryScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         formattedDate,
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                     trailing: entry['points'] != null && entry['points'] > 0
                         ? Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.amber.shade50,
                               borderRadius: BorderRadius.circular(12),
@@ -80,7 +97,11 @@ class ReadingHistoryScreen extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.stars_rounded, color: Colors.amber.shade700, size: 14),
+                                Icon(
+                                  Icons.stars_rounded,
+                                  color: Colors.amber.shade700,
+                                  size: 14,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   "+${entry['points']}",
@@ -109,7 +130,7 @@ class ReadingHistoryScreen extends StatelessWidget {
           Icon(Icons.history_rounded, size: 64, color: Colors.teal.shade100),
           const SizedBox(height: 16),
           Text(
-            lang == 'en' ? 'No history yet' : 'Belum ada riwayat',
+            Translations.get(lang, 'no_history_title'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -118,7 +139,7 @@ class ReadingHistoryScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            lang == 'en' ? 'Start reading to see your progress!' : 'Mulai membaca untuk melihat progresmu!',
+            Translations.get(lang, 'no_history_desc'),
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey.shade600),
           ),

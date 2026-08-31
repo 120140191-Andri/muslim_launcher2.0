@@ -648,9 +648,7 @@ class _AppListScreenState extends State<AppListScreen>
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          lang == 'en'
-                              ? 'Support / Request Features'
-                              : 'Dukung / Usulkan Fitur',
+                          Translations.get(lang, 'support_feature_request'),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11.5,
@@ -687,7 +685,7 @@ class _AppListScreenState extends State<AppListScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              lang == 'en' ? 'No apps found' : 'Aplikasi tidak ditemukan',
+              Translations.get(lang, 'no_apps_found'),
               style: TextStyle(color: Colors.grey.shade600),
             ),
           ],

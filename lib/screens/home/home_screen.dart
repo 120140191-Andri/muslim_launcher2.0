@@ -260,17 +260,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                               context,
                                             ),
                                         child: Container(
-                                          padding: const EdgeInsets.all(8),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: Colors.white.withValues(
-                                              alpha: 0.15,
+                                              alpha: 0.18,
                                             ),
-                                            shape: BoxShape.circle,
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                            border: Border.all(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.25,
+                                              ),
+                                            ),
                                           ),
-                                          child: const Icon(
-                                            Icons.language_rounded,
-                                            color: Colors.white,
-                                            size: 18,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.language_rounded,
+                                                color: Colors.white,
+                                                size: 15,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                lang.toUpperCase(),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),
@@ -374,9 +397,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                   const SizedBox(width: 12),
                                                   Expanded(
                                                     child: Text(
-                                                      lang == 'en'
-                                                          ? 'Accessibility service is required for global app blocking.'
-                                                          : 'Layanan aksesibilitas diperlukan agar fitur blokir bekerja di luar Launcher.',
+                                                      Translations.get(
+                                                        lang,
+                                                        'accessibility_required_banner',
+                                                      ),
                                                       style: TextStyle(
                                                         color:
                                                             Colors.red.shade900,
@@ -427,9 +451,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                     ),
                                                   ),
                                                   child: Text(
-                                                    lang == 'en'
-                                                        ? 'Setup Now'
-                                                        : 'Atur Sekarang',
+                                                    Translations.get(
+                                                      lang,
+                                                      'setup_now',
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -440,10 +465,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
                                     // Last Read Card
                                     Text(
-                                      (lang == 'en'
-                                              ? 'CONTINUE JOURNEY'
-                                              : 'LANJUTKAN BACAAN')
-                                          .toUpperCase(),
+                                      Translations.get(
+                                        lang,
+                                        'continue_journey',
+                                      ).toUpperCase(),
                                       style: TextStyle(
                                         color: Colors.teal.shade900.withValues(
                                           alpha: 0.5,
@@ -486,10 +511,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
                                     const SizedBox(height: 24),
                                     Text(
-                                      (lang == 'en'
-                                              ? 'QUICK ACTIONS'
-                                              : 'AKSES CEPAT')
-                                          .toUpperCase(),
+                                      Translations.get(
+                                        lang,
+                                        'quick_actions',
+                                      ).toUpperCase(),
                                       style: TextStyle(
                                         color: Colors.teal.shade900.withValues(
                                           alpha: 0.5,
@@ -510,9 +535,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                         lang: lang,
                                         surah: appState.dailySurahName,
                                         ayahNumber: appState.dailyAyahNumber,
-                                        ayahText: lang == 'en'
-                                            ? appState.dailyAyahTextEn
-                                            : appState.dailyAyahTextId,
+                                        ayahText:
+                                            (lang == 'id' || lang == 'ms')
+                                                ? appState.dailyAyahTextId
+                                                : appState.dailyAyahTextEn,
                                       ),
                                     ),
 
@@ -523,12 +549,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                         Expanded(
                                           child: _GridAction(
                                             icon: Icons.menu_book_rounded,
-                                            title: lang == 'en'
-                                                ? 'Read Quran'
-                                                : 'Baca Quran',
-                                            subtitle: lang == 'en'
-                                                ? '114 Surahs'
-                                                : '114 Surah',
+                                            title: Translations.get(
+                                              lang,
+                                              'read_quran',
+                                            ),
+                                            subtitle: Translations.get(
+                                              lang,
+                                              'total_surahs',
+                                            ),
                                             color: Colors.teal.shade700,
                                             onTap: () => appState
                                                 .navigatorKey
@@ -545,12 +573,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                         Expanded(
                                           child: _GridAction(
                                             icon: Icons.apps_rounded,
-                                            title: lang == 'en'
-                                                ? 'Your Apps'
-                                                : 'Semua Aplikasi',
-                                            subtitle: lang == 'en'
-                                                ? 'Open Apps'
-                                                : 'Buka Aplikasi',
+                                            title: Translations.get(
+                                              lang,
+                                              'your_apps',
+                                            ),
+                                            subtitle: Translations.get(
+                                              lang,
+                                              'open_apps',
+                                            ),
                                             color: Colors.amber.shade800,
                                             onTap: () => appState
                                                 .navigatorKey
@@ -1158,9 +1188,7 @@ class _LastAyatCard extends StatelessWidget {
                             const SizedBox(height: 8),
                             Text(
                               surah.isEmpty
-                                  ? (lang == 'en'
-                                        ? 'Start Reading'
-                                        : 'Mulai Baca')
+                                  ? Translations.get(lang, 'start_reading')
                                   : surah,
                               style: TextStyle(
                                 color: Colors.teal.shade900,
@@ -1171,12 +1199,8 @@ class _LastAyatCard extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               surah.isEmpty
-                                  ? (lang == 'en'
-                                        ? 'Find guidance today'
-                                        : 'Temukan petunjuk hari ini')
-                                  : (lang == 'en'
-                                        ? 'Ayah $ayahNumber'
-                                        : 'Ayat $ayahNumber'),
+                                  ? Translations.get(lang, 'find_guidance_today')
+                                  : "${Translations.get(lang, 'ayah')} $ayahNumber",
                               style: TextStyle(
                                 color: Colors.teal.shade600,
                                 fontSize: 14,
@@ -1205,7 +1229,7 @@ class _LastAyatCard extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Ayat $ayahNumber/$totalAyahs',
+                                    '${Translations.get(lang, 'ayah')} $ayahNumber/$totalAyahs',
                                     style: TextStyle(
                                       fontSize: 10,
                                       color: Colors.teal.shade400,
@@ -1483,7 +1507,6 @@ class _SupportDeveloperCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isEn = lang == 'en';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -1525,7 +1548,7 @@ class _SupportDeveloperCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isEn ? 'Support / Request Features' : 'Dukung / Usulkan Fitur',
+                      Translations.get(lang, 'support_feature_request'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,
@@ -1534,9 +1557,7 @@ class _SupportDeveloperCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      isEn
-                          ? '100% Free & Ad-Free App'
-                          : 'Aplikasi 100% Gratis & Tanpa Iklan',
+                      Translations.get(lang, 'free_ad_free_app'),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 12,
@@ -1550,9 +1571,7 @@ class _SupportDeveloperCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            isEn
-                ? 'Your support helps us keep Muslim Launcher free, independent, and continuously updated with new Islamic features.'
-                : 'Dukungan Anda sangat berarti untuk menjaga Muslim Launcher tetap gratis, mandiri, dan terus berkembang dengan fitur-fitur kebaikan.',
+            Translations.get(lang, 'support_dev_long_desc'),
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.95),
               fontSize: 12.5,
@@ -1567,7 +1586,9 @@ class _SupportDeveloperCard extends StatelessWidget {
               onPressed: onTap,
               icon: const Icon(Icons.coffee_rounded, size: 20),
               label: Text(
-                isEn ? 'Support / Request Features via Ko-fi' : 'Dukung / Usulkan Fitur via Trakteer',
+                lang == 'id'
+                    ? 'Dukung / Usulkan Fitur via Trakteer'
+                    : 'Support / Request Features via Ko-fi',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,

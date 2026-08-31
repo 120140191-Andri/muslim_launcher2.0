@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import 'surah_detail_screen.dart';
 import '../../utils/page_transitions.dart';
+import '../../utils/translations.dart';
 
 class SurahListScreen extends StatefulWidget {
   const SurahListScreen({super.key});
@@ -27,7 +27,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F4),
       appBar: AppBar(
-        title: Text(lang == 'en' ? 'Select Surah' : 'Pilih Surah'),
+        title: Text(Translations.get(lang, 'select_surah')),
         backgroundColor: Colors.teal.shade800,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -59,7 +59,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  lang == 'en' ? '114 Surahs' : 'Total 114 Surah',
+                  Translations.get(lang, 'total_surahs'),
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
@@ -70,7 +70,6 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(0, 12, 0, 60),
-
                     itemCount: appState.quranData.length,
                     itemBuilder: (context, index) {
                       final surah = appState.quranData[index];
@@ -84,6 +83,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                           opacity: isFuture ? 0.5 : 1.0,
                           child: _SurahTile(
                             surah: surah,
+                            lang: lang,
                             isLastRead: isLastRead,
                             isFinished: isFinished,
                             isFuture: isFuture,
@@ -108,6 +108,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
 
 class _SurahTile extends StatelessWidget {
   final dynamic surah;
+  final String lang;
   final bool isLastRead;
   final bool isFinished;
   final bool isFuture;
@@ -115,6 +116,7 @@ class _SurahTile extends StatelessWidget {
 
   const _SurahTile({
     required this.surah,
+    required this.lang,
     required this.isLastRead,
     required this.isFinished,
     required this.isFuture,
@@ -171,7 +173,7 @@ class _SurahTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "${surah['total_ayah']} Ayat",
+                        "${surah['total_ayah']} ${Translations.get(lang, 'ayah')}",
                         style: TextStyle(
                           fontSize: 12,
                           color: isLastRead

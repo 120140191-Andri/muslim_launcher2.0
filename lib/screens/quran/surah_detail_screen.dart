@@ -9,6 +9,7 @@ import 'quran_tajweed_text.dart';
 import '../../utils/page_transitions.dart';
 import '../../services/eye_tracker_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../utils/translations.dart';
 
 class SurahDetailScreen extends StatefulWidget {
   final Map<String, dynamic> surah;
@@ -682,9 +683,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                lang == 'en'
-                                    ? (ayah['translation_en'] ?? '')
-                                    : (ayah['translation_id'] ?? ''),
+                                (lang == 'id' || lang == 'ms')
+                                    ? (ayah['translation_id'] ?? '')
+                                    : (ayah['translation_en'] ?? ''),
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: isDone
@@ -717,9 +718,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                       Expanded(
                                         child: Text(
                                           _recognizedText.isEmpty
-                                              ? (lang == 'en'
-                                                    ? 'Listening...'
-                                                    : 'Mendengarkan...')
+                                              ? Translations.get(lang, 'listening')
                                               : _recognizedText,
                                           style: TextStyle(
                                             color: Colors.teal.shade800,
@@ -768,7 +767,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                     ),
                     const SizedBox(width: 16),
                     Text(
-                      lang == 'en' ? "Initializing..." : "Menyiapkan...",
+                      Translations.get(lang, 'initializing'),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -816,9 +815,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         },
         icon: const Icon(Icons.arrow_forward_rounded),
         label: Text(
-          lang == 'en'
-              ? "Next Surah: ${nextSurah['surah_name']}"
-              : "Surah Selanjutnya: ${nextSurah['surah_name']}",
+          "${Translations.get(lang, 'next_surah')}: ${nextSurah['surah_name']}",
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
@@ -880,7 +877,7 @@ class _MicButton extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             Text(
-              lang == 'en' ? "Voice" : "Suara",
+              Translations.get(lang, 'voice'),
               style: TextStyle(
                 color: isRecording ? Colors.white : Colors.teal.shade800,
                 fontSize: 10,

@@ -14,8 +14,8 @@ Instead of simply locking apps with rigid timers, Muslim Launcher utilizes an **
 To unlock and access blocked applications, you need a certain amount of points (e.g., 50 Points) to unlock an app for 60 minutes. Points are earned through multiple worship channels:
 
 1. 📖 **Read Holy Quran (Primary — +10 to +25 Points):** Read interactive verses with Uthmani script, Tajweed color coding, and audio/focus validation.
-2. 📿 **Mindful Dhikr (Face Presence — +10 Points per round):** Digital tasbih (33x) powered by smart front-camera face presence detection (valid even with closed eyes for serene contemplation), calming haptic feedback, rhythm pacing, and Arabic/Latin transliterations. Specially designed for everyday remembrance and excused moments (e.g., menstruation/haid).
-3. 📜 **Authentic Hadith Reflection (+3 to +8 Points):** Daily curated collection of authentic Prophetic Hadiths with focus-aware reading time and dynamic point calculations.
+2. 📿 **Mindful Dhikr (Face Presence — +10 Points per round):** Digital tasbih (33x) powered by smart front-camera face presence detection (valid even with closed eyes for serene contemplation), calming haptic feedback, rhythm pacing, and Arabic/Latin transliterations. Specially designed for everyday remembrance as well as when you are unable to read the Holy Quran (e.g., during menstruation/haid, in a state of ritual impurity, or when seeking a more flexible, contemplative worship).
+3. 📜 **Authentic Hadith Reflection (+3 to +8 Points):** Daily curated collection of authentic Prophetic Hadiths with focus-aware reading time and dynamic point calculations. Ideal for learning prophetic wisdom and as a great alternative when unable to recite the Quran (e.g., when not yet fluent in Arabic/Quran recitation, during excused periods, or on the go).
 
 ### Key Features
 * 🌟 **Diverse Worship Point System:** Earn points by reading Quran, doing Dhikr (tasbih), or reflecting on Hadiths.
@@ -53,8 +53,8 @@ Alih-alih sekadar memblokir aplikasi dengan pengatur waktu seperti launcher pada
 Untuk membuka dan mengakses aplikasi yang diblokir selama 60 menit, Anda membutuhkan sejumlah poin (misalnya: 50 Poin). Poin dapat diperoleh melalui berbagai jalur ibadah:
 
 1. 📖 **Membaca Al-Quran (Jalur Utama — +10 s.d. +25 Poin):** Membaca ayat Al-Quran ber-Tajweed lengkap dengan teks Arab, Latin, arti, serta validasi suara/fokus mata.
-2. 📿 **Dzikir Khusyu' (Deteksi Wajah — +10 Poin per putaran 33x):** Tasbih digital interaktif dengan deteksi kehadiran wajah melalui kamera depan (mata terpejam saat dzikir tetap sah), getaran haptic lembut, pembatas ritme dzikir agar tidak terburu-buru, teks Arab, Latin, arti, fadhilah, dan pencatatan riwayat. Sangat cocok untuk rutinitas harian maupun saat sedang berhalangan/haid.
-3. 📜 **Tadabbur Hadits Shahih (+3 s.d. +8 Poin):** Membaca dan merenungi koleksi Hadits Shahih harian dengan kalkulasi poin dinamis berbasis panjang matan dan waktu fokus.
+2. 📿 **Dzikir Khusyu' (Deteksi Wajah — +10 Poin per putaran 33x):** Tasbih digital interaktif dengan deteksi kehadiran wajah melalui kamera depan (mata terpejam saat dzikir tetap sah), getaran haptic lembut, pembatas ritme dzikir agar tidak terburu-buru, teks Arab, Latin, arti, fadhilah, dan pencatatan riwayat. Sangat cocok untuk rutinitas harian maupun bagi yang **sedang tidak bisa membaca Al-Quran** (misalnya: sedang berhalangan/haid, dalam keadaan hadas, atau saat ingin ibadah yang lebih tenang dan fleksibel).
+3. 📜 **Tadabbur Hadits Shahih (+3 s.d. +8 Poin):** Membaca dan merenungi koleksi Hadits Shahih harian dengan kalkulasi poin dinamis berbasis panjang matan dan waktu fokus. Pilihan ideal untuk mendalami sunnah Rasulullah ﷺ sekaligus solusi alternatif yang sangat bersahabat bagi yang **belum lancar membaca huruf Al-Quran**, sedang berhalangan/haid, atau memiliki waktu luang yang singkat.
 
 ### Fitur Unggulan
 * 🌟 **Sistem Poin Ibadah Fleksibel:** Kumpulkan poin melalui tilawah Al-Quran, putaran Dzikir, maupun tadabbur Hadits.

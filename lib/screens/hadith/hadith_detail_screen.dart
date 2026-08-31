@@ -35,6 +35,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
   bool _hasCompleted = false;
   bool _isDisposed = false;
   bool _isCameraSupported = true;
+  bool _isRequestingPermission = false;
 
   @override
   void initState() {
@@ -47,11 +48,12 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
-      _stopEyeTracking(isDisposing: false);
+      if (!_isRequestingPermission) {
+        _stopEyeTracking(isDisposing: false);
+      }
     } else if (state == AppLifecycleState.resumed) {
-      if (!_hasCompleted && mounted && !_isDisposed) {
+      if (!_isRequestingPermission && !_hasCompleted && mounted && !_isDisposed) {
         _initEyeReading();
       }
     }
@@ -124,18 +126,25 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
     _hasCompleted = false;
     _readingProgress = 0.0;
 
-    final status = await Permission.camera.request();
-    if (!mounted || _isDisposed) return;
+    final status = await Permission.camera.status;
+    if (!status.isGranted) {
+      _isRequestingPermission = true;
+      final requested = await Permission.camera.request();
+      _isRequestingPermission = false;
+      if (!mounted || _isDisposed) return;
 
-    if (status != PermissionStatus.granted) {
-      // Fallback: If camera permission is denied, run timer smoothly without blocking user
-      setState(() {
-        _isCameraSupported = false;
-        _isEyeFocused = true;
-      });
-      _handleEyeTimer(true);
-      return;
+      if (!requested.isGranted) {
+        // Fallback: If camera permission is denied, run timer smoothly without blocking user
+        setState(() {
+          _isCameraSupported = false;
+          _isEyeFocused = true;
+        });
+        _handleEyeTimer(true);
+        return;
+      }
     }
+
+    if (!mounted || _isDisposed) return;
 
     setState(() {
       _isEyeFocused = false;
@@ -650,13 +659,12 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
               ),
               child: Row(
                 children: [
-                  // Next / Done Button
+                  // Next / Reading Progress Button
                   Expanded(
                     child: Container(
                       constraints: const BoxConstraints(minHeight: 52),
                       child: ElevatedButton(
-                        onPressed:
-                            _hasCompleted ? _goToNextHadith : _onReadingCompleted,
+                        onPressed: _hasCompleted ? _goToNextHadith : null,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -664,11 +672,20 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                           ),
                           backgroundColor: _hasCompleted
                               ? const Color(0xFF0F5132)
-                              : Colors.teal.shade700,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
+                              : Colors.teal.shade50,
+                          foregroundColor: _hasCompleted
+                              ? Colors.white
+                              : Colors.teal.shade800,
+                          disabledBackgroundColor: Colors.teal.shade50,
+                          disabledForegroundColor: Colors.teal.shade800,
+                          elevation: _hasCompleted ? 2 : 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: _hasCompleted
+                                  ? Colors.transparent
+                                  : Colors.teal.shade200,
+                            ),
                           ),
                         ),
                         child: Row(
@@ -677,8 +694,11 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                             Icon(
                               _hasCompleted
                                   ? Icons.arrow_forward_rounded
-                                  : Icons.check_rounded,
+                                  : Icons.auto_stories_rounded,
                               size: 18,
+                              color: _hasCompleted
+                                  ? Colors.white
+                                  : Colors.teal.shade700,
                             ),
                             const SizedBox(width: 8),
                             Flexible(
@@ -687,10 +707,13 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                                 child: Text(
                                   _hasCompleted
                                       ? Translations.get(lang, 'next_hadith')
-                                      : "${Translations.get(lang, 'claim_points')} (+$currentPoints)",
-                                  style: const TextStyle(
+                                      : "${Translations.get(lang, 'reading_hadith_progress')} (${(_readingProgress * 100).toInt()}%) • +$currentPoints ${Translations.get(lang, 'points')}",
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                                    fontSize: 14.5,
+                                    color: _hasCompleted
+                                        ? Colors.white
+                                        : Colors.teal.shade900,
                                   ),
                                 ),
                               ),

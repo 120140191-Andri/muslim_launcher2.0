@@ -181,7 +181,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     } else if (b.contains('samsung')) {
       return [
         isEn ? 'Tap "Open Accessibility Settings" below.' : 'Ketuk "Buka Pengaturan Aksesibilitas".',
-        isEn ? 'Select "Installed Apps" or "Installed Services".' : 'Pilih "Layanan Terinstal / Installed Apps".',
+        isEn ? 'Select "Installed Apps" (or "Installed Services").' : 'Pilih "Aplikasi Terinstal" (atau "Layanan Terinstal").',
         isEn ? 'Tap "Muslim Launcher 2" and turn ON.' : 'Pilih "Muslim Launcher 2" lalu aktifkan sakelar.',
       ];
     } else if (b.contains('oppo') || b.contains('oneplus') || b.contains('realme') || b.contains('vivo') || b.contains('iqoo')) {

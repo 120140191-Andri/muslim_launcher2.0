@@ -75,9 +75,9 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
             ? 'Click "Open Settings" below.'
             : 'Klik "Buka Pengaturan" di bawah.',
         isEn
-            ? 'Find "Installed Apps" (Layanan Terinstal).'
-            : 'Cari menu "Layanan Terinstal".',
-        isEn ? 'Select "Muslim Launcher".' : 'Pilih "Muslim Launcher".',
+            ? 'Find "Installed Apps" (or "Installed Services").'
+            : 'Cari menu "Aplikasi Terinstal" (atau "Layanan Terinstal").',
+        isEn ? 'Select "Muslim Launcher 2".' : 'Pilih "Muslim Launcher 2".',
         isEn ? 'Turn the switch to ON.' : 'Geser tombol ke posisi AKTIF.',
       ];
     } else if (manufacturer.contains('oppo') ||

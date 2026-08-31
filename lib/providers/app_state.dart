@@ -231,7 +231,9 @@ class AppState extends ChangeNotifier {
           AppListScreen.preload(forceRefresh: true);
           syncAppsWithCategories(rawApps);
         } else if (call.method == 'onHomePressed') {
-          navigatorKey.currentState?.popUntil((route) => route.isFirst);
+          if (navigatorKey.currentState != null && navigatorKey.currentState!.canPop()) {
+            navigatorKey.currentState!.popUntil((route) => route.isFirst);
+          }
         }
       });
     } catch (_) {}

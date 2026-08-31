@@ -222,33 +222,36 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {
-        val am = getSystemService(Context.ACCESSIBILITY_SERVICE) as android.view.accessibility.AccessibilityManager
-        val enabledServices = am.getEnabledAccessibilityServiceList(android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-        val serviceName = "$packageName/.AppBlockService"
-        
-        // 1. Check via AccessibilityManager (Most reliable)
-        for (service in enabledServices) {
-            if (service.id.contains(packageName)) return true
-        }
+        return try {
+            val am = getSystemService(Context.ACCESSIBILITY_SERVICE) as? android.view.accessibility.AccessibilityManager ?: return false
+            val enabledServices = am.getEnabledAccessibilityServiceList(android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK) ?: emptyList()
+            
+            // 1. Check via AccessibilityManager (Most reliable)
+            for (service in enabledServices) {
+                if (service.id.contains(packageName)) return true
+            }
 
-        // 2. Fallback: Detailed check via Settings.Secure
-        val expectedService = "$packageName/${AppBlockService::class.java.name}"
-        val enabled = Settings.Secure.getInt(contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0)
-        if (enabled == 1) {
-            val settingValue = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
-            if (settingValue != null) {
-                val splitter = TextUtils.SimpleStringSplitter(':')
-                splitter.setString(settingValue)
-                while (splitter.hasNext()) {
-                    val componentName = splitter.next()
-                    if (componentName.equals(expectedService, ignoreCase = true) || 
-                        componentName.contains(packageName)) {
-                        return true
+            // 2. Fallback: Detailed check via Settings.Secure
+            val expectedService = "$packageName/${AppBlockService::class.java.name}"
+            val enabled = Settings.Secure.getInt(contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0)
+            if (enabled == 1) {
+                val settingValue = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+                if (settingValue != null) {
+                    val splitter = TextUtils.SimpleStringSplitter(':')
+                    splitter.setString(settingValue)
+                    while (splitter.hasNext()) {
+                        val componentName = splitter.next()
+                        if (componentName.equals(expectedService, ignoreCase = true) || 
+                            componentName.contains(packageName)) {
+                            return true
+                        }
                     }
                 }
             }
+            false
+        } catch (_: Exception) {
+            false
         }
-        return false
     }
 
 
@@ -413,9 +416,13 @@ class MainActivity : FlutterActivity() {
 
 
     private fun isDefaultLauncher(): Boolean {
-        val intent = Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }
-        val resolveInfo = packageManager.resolveActivity(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
-        return resolveInfo?.activityInfo?.packageName == packageName
+        return try {
+            val intent = Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }
+            val resolveInfo = packageManager.resolveActivity(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+            resolveInfo?.activityInfo?.packageName == packageName
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun drawableToByteArray(drawable: Drawable): ByteArray? {

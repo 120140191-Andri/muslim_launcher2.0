@@ -14,6 +14,7 @@ import '../hadith/hadith_list_screen.dart';
 import '../dzikir/dzikir_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../widgets/language_selection_dialog.dart';
+import '../../widgets/ghadhul_bashar_dialog.dart';
 
 // ── AppInfo model ────────────────────────────────────────────────────────────
 class AppInfo {
@@ -44,13 +45,7 @@ class AppInfo {
   }
 
   bool isNonProductive() {
-    if (packageName == 'com.whatsapp' ||
-        packageName == 'com.whatsapp.w4b' ||
-        packageName == 'com.android.chrome' ||
-        packageName == 'com.google.android.gm') {
-      return false;
-    }
-    return category == 0 || category == 1 || category == 2 || category == 4;
+    return AppState.isNonProductiveApp(packageName, appName, category);
   }
 }
 
@@ -361,6 +356,15 @@ class _AppListScreenState extends State<AppListScreen>
   void _onAppTap(AppInfo app, AppState appState) {
     if (appState.isAppBlocked(app.packageName)) {
       _showBlockedDialog(app, appState);
+    } else if (AppState.shouldShowGhadhulBasharReminder(
+        app.packageName, app.appName, appState.languageCode)) {
+      showGhadhulBasharDialog(
+        context,
+        appName: app.appName,
+        packageName: app.packageName,
+        languageCode: appState.languageCode,
+        onProceed: () => _openApp(app.packageName),
+      );
     } else {
       _openApp(app.packageName);
     }
@@ -424,7 +428,8 @@ class _AppListScreenState extends State<AppListScreen>
                     _confirmUninstall(app, lang);
                   },
                 ),
-                if (!context.read<AppState>().isAppBlocked(app.packageName))
+                if (!context.read<AppState>().isAppBlocked(app.packageName) &&
+                    !AppState.isProductiveApp(app.packageName, app.appName, app.category))
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(12),
@@ -450,6 +455,8 @@ class _AppListScreenState extends State<AppListScreen>
                       Navigator.pop(ctx);
                       context.read<AppState>().toggleAppBlockedStatus(
                         app.packageName,
+                        category: app.category,
+                        appName: app.appName,
                       );
                     },
                   ),

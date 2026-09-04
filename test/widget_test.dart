@@ -1,30 +1,90 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:muslim_launcher_2/main.dart';
+import 'package:muslim_launcher_2/widgets/ghadhul_bashar_dialog.dart';
+import 'package:muslim_launcher_2/utils/translations.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MuslimLauncherApp());
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  testWidgets('Ghadhul Bashar Dialog renders Arabic verse, translations, and buttons', (WidgetTester tester) async {
+    bool proceedCalled = false;
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () {
+                showGhadhulBasharDialog(
+                  context,
+                  appName: 'Chrome',
+                  packageName: 'com.android.chrome',
+                  languageCode: 'id',
+                  onProceed: () {
+                    proceedCalled = true;
+                  },
+                );
+              },
+              child: const Text('Open Dialog'),
+            ),
+          ),
+        ),
+      ),
+    );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Tap button to open dialog
+    await tester.tap(find.text('Open Dialog'));
+    await tester.pumpAndSettle();
+
+    // Verify dialog elements exist
+    expect(find.text(Translations.get('id', 'ghadhul_bashar_title')), findsOneWidget);
+    expect(find.text(Translations.get('id', 'cancel')), findsOneWidget);
+    expect(find.text(Translations.get('id', 'ok')), findsOneWidget);
+
+    // Tap OK
+    await tester.tap(find.text(Translations.get('id', 'ok')));
+    await tester.pumpAndSettle();
+
+    // Verify onProceed was triggered
+    expect(proceedCalled, isTrue);
+  });
+
+  testWidgets('Ghadhul Bashar Dialog can be cancelled', (WidgetTester tester) async {
+    bool proceedCalled = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () {
+                showGhadhulBasharDialog(
+                  context,
+                  appName: 'Firefox',
+                  packageName: 'org.mozilla.firefox',
+                  languageCode: 'id',
+                  onProceed: () {
+                    proceedCalled = true;
+                  },
+                );
+              },
+              child: const Text('Open Dialog'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Tap button to open dialog
+    await tester.tap(find.text('Open Dialog'));
+    await tester.pumpAndSettle();
+
+    // Tap Cancel
+    await tester.tap(find.text(Translations.get('id', 'cancel')));
+    await tester.pumpAndSettle();
+
+    // Verify onProceed was NOT called and dialog dismissed
+    expect(proceedCalled, isFalse);
+    expect(find.text(Translations.get('id', 'ghadhul_bashar_title')), findsNothing);
   });
 }

@@ -156,7 +156,13 @@ class AppState extends ChangeNotifier {
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
     _points = prefs.getInt('points') ?? 0;
-    _blockedApps = (prefs.getStringList('blockedApps') ?? []).toSet();
+    final savedBlocked = prefs.getStringList('blockedApps') ?? [];
+    _blockedApps = savedBlocked
+        .where((pkg) => !isProductiveApp(pkg, ''))
+        .toSet();
+    if (_blockedApps.length != savedBlocked.length) {
+      prefs.setStringList('blockedApps', _blockedApps.toList());
+    }
     _lastReadAyat = prefs.getString('lastReadAyat') ?? '';
     _lastReadSurah = prefs.getString('lastReadSurah') ?? '';
     _lastReadAyahNumber = prefs.getInt('lastReadAyahNumber') ?? 0;
@@ -486,8 +492,11 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> toggleAppBlockedStatus(String packageName, {int? category}) async {
-    final pkg = packageName.toLowerCase();
+  Future<void> toggleAppBlockedStatus(String packageName, {int? category, String? appName}) async {
+    final pkg = packageName.toLowerCase().trim();
+    if (isProductiveApp(pkg, appName ?? '', category ?? -1)) {
+      return; // Do not allow blocking productive apps
+    }
     // Strict Mode: Only allow blocking, not unblocking manually
     if (!_blockedApps.contains(pkg)) {
       _blockedApps.add(pkg);
@@ -508,15 +517,6 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // Pre-defined sets for better performance during sync
-  static const Set<String> _nonProductiveKeywords = {
-    'game', 'social', 'video', 'player', 'tiktok', 'instagram', 'facebook', 
-    'twitter', 'netflix', 'disney', 'mobile.legend', 'freefire', 'pubg', 'genshin',
-    'youtube', 'vimeo', 'hulu', 'twitch', 'discord', 'telegram', 'snapchat', 
-    'reddit', 'pinterest', 'linkedin', 'arcade', 'puzzle', 'racing', 'simulation',
-    'entertainment', 'shotcut', 'capcut', 'snackvideo', 'kwaiviral', 'wattpad'
-  };
-
   static const Set<String> _whitelist = {
     'com.whatsapp', 'com.whatsapp.w4b', 'com.android.chrome', 
     'com.google.android.gm', 'com.android.settings', 'com.android.vending',
@@ -524,18 +524,788 @@ class AppState extends ChangeNotifier {
     'com.google.android.contacts', 'com.android.contacts'
   };
 
-  /// Automatically blocks apps based on categories
-  Future<void> syncAppsWithCategories(List<dynamic> apps) async {
+  static bool isWhitelisted(String packageName) {
+    return isProductiveApp(packageName, '');
+  }
 
+  /// Determines if an app is a music or audio application (both online streaming and offline players).
+  /// Music apps are considered productive / permitted and must never be auto-blocked.
+  static bool isMusicOrAudioApp(String packageName, String appName, [int category = -1]) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.isEmpty) return false;
+
+    // 1. Definite Exclusions: Games and social video platforms
+    if (category == 0) return false; // Android CATEGORY_GAME
+    if (pkg.contains('musically') || pkg.contains('tiktok') || name.contains('tiktok')) {
+      return false; // TikTok / Musical.ly
+    }
+    if (pkg == 'com.google.android.youtube' || name == 'youtube') {
+      return false; // Regular YouTube (video), YouTube Music is handled specifically below
+    }
+
+    // 2. Android OS Category Audio (CATEGORY_AUDIO = 1)
+    if (category == 1) return true;
+
+    // 3. Known online streaming services (keywords in package or app name)
+    const onlineMusicKeywords = [
+      'spotify',
+      'soundcloud',
+      'deezer',
+      'tidal',
+      'joox',
+      'resso',
+      'pandora',
+      'shazam',
+      'bandcamp',
+      'audiomack',
+      'qobuz',
+      'napster',
+      'anghami',
+      'gaana',
+      'saavn',
+      'wynk',
+      'trebel',
+      'idagio',
+      'kkbox',
+      'tunein',
+      'iheartradio',
+      'netease.cloudmusic',
+      'kugou',
+      'kuwo',
+      'boomplay',
+      'podbean',
+      'castbox',
+    ];
+    for (final k in onlineMusicKeywords) {
+      if (pkg.contains(k) || name.contains(k)) return true;
+    }
+
+    // Specific check for YouTube Music & Apple Music
+    if (pkg.contains('youtube.music') ||
+        name.contains('youtube music') ||
+        name.contains('yt music')) {
+      return true;
+    }
+    if (pkg.contains('apple.android.music') || name.contains('apple music')) {
+      return true;
+    }
+    if (pkg == 'com.amazon.mp3' || (pkg.contains('amazon') && name.contains('music'))) {
+      return true;
+    }
+
+    // 4. Known offline music player packages (OEM and popular 3rd party players)
+    const offlineMusicPackages = [
+      'com.sec.android.app.music', // Samsung Music
+      'com.miui.player', // Xiaomi Mi Music
+      'com.sonyericsson.music', // Sony Music / Walkman
+      'com.huawei.music', // Huawei Music
+      'com.android.mediacenter', // Huawei MediaCenter
+      'com.android.bbkmusic', // Vivo i Music
+      'com.vivo.music', // Vivo Music
+      'com.oppo.music', // Oppo Music
+      'com.heytap.music', // Heytap / Realme / Oppo
+      'com.oneplus.music', // OnePlus Music
+      'com.lge.music', // LG Music
+      'com.motorola.mototheme.music', // Moto Music
+      'com.lenovo.music', // Lenovo Music
+      'com.android.music', // AOSP Music
+      'com.google.android.music', // Google Play Music
+      'in.krosbits.musicolet', // Musicolet
+      'com.maxmpz.audioplayer', // Poweramp
+      'com.aimp.player', // AIMP
+      'com.piyush.oto', // Oto Music
+      'code.name.monkey.retromusic', // Retro Music Player
+      'com.rhmsoft.pulsar', // Pulsar
+      'com.rhmsoft.pulsar.pro',
+      'com.rhmsoft.omnia', // Omnia
+      'com.foobar2000.foobar2000', // Foobar2000
+      'ru.stellio.player', // Stellio
+      'com.kodarkooperativet.blackplayerfree', // BlackPlayer
+      'com.kodarkooperativet.blackplayerex',
+      'media.audioplayer.musicplayer', // Muzio Player
+      'com.ringdroid.player', // Lark Player
+      'com.larkplayer',
+      'com.ventismedia.android.mediamonkey',
+      'gonemad.gmmp',
+      'jrtstudio.AnotherMusicPlayer',
+      'com.simplecityapps.shuttle',
+      'org.kreed.vanilla',
+      'com.awedea.nyx',
+      'project.pimusicplayer',
+    ];
+    for (final p in offlineMusicPackages) {
+      if (pkg == p || pkg.contains(p)) return true;
+    }
+
+    // 5. Offline & generic music player keywords in app name
+    const musicPlayerNameKeywords = [
+      'music player',
+      'pemutar musik',
+      'pemutar lagu',
+      'pemutar audio',
+      'audio player',
+      'mp3 player',
+      'pemutar mp3',
+      'offline music',
+      'musik offline',
+      'lagu offline',
+      'music offline',
+      'poweramp',
+      'musicolet',
+      'retromusic',
+      'pulsar',
+      'blackplayer',
+      'stellio',
+      'omnia',
+      'foobar',
+      'aimp',
+    ];
+    for (final k in musicPlayerNameKeywords) {
+      if (name.contains(k) || pkg.contains(k.replaceAll(' ', ''))) return true;
+    }
+
+    // 6. Generic package patterns for music/audio
+    if (pkg.contains('.music') ||
+        pkg.contains('music.') ||
+        pkg.contains('.audioplayer') ||
+        pkg.contains('audio.player') ||
+        pkg.contains('.musicplayer') ||
+        pkg.contains('music.player') ||
+        pkg.contains('mp3player') ||
+        pkg.contains('.mp3') ||
+        pkg.contains('mp3.')) {
+      return true;
+    }
+
+    // 7. General music/audio terms in app name (guarded against games)
+    if (name.contains('music') || name.contains('musik') || name.contains('audio')) {
+      if (!name.contains('game') &&
+          !name.contains('tile') &&
+          !name.contains('piano') &&
+          !pkg.contains('game')) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Checks if an app is a web browser (e.g. Chrome, Firefox, Samsung Internet, Edge, Opera, etc.)
+  static bool isBrowserApp(String packageName, [String appName = '']) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    const browserPackages = [
+      'com.android.chrome',
+      'org.mozilla.firefox',
+      'com.sec.android.app.sbrowser',
+      'com.microsoft.emmx',
+      'com.brave.browser',
+      'com.opera.browser',
+      'com.opera.mini.native',
+      'com.duckduckgo.mobile.android',
+      'com.vivaldi.browser',
+      'com.ucmobile.intl',
+      'com.uc.browser.en',
+      'com.kiwibrowser.browser',
+      'com.cloudmosa.puffinfree',
+      'org.torproject.torbrowser',
+      'com.heytap.browser',
+      'com.mi.globalbrowser',
+    ];
+    if (browserPackages.contains(pkg)) return true;
+    if (pkg.contains('.browser') || pkg.contains('browser.') || pkg.endsWith('browser')) return true;
+    if (name.contains('browser') || name.contains('peramban')) return true;
+    return false;
+  }
+
+  /// Checks if an app is a VPN or Proxy application
+  static bool isVpnApp(String packageName, [String appName = '']) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.contains('vpn') ||
+        name.contains('vpn') ||
+        pkg.contains('proxy') ||
+        name.contains('proxy')) {
+      return true;
+    }
+    const vpnPackages = [
+      'com.cloudflare.onedotonedotonedotone',
+      'com.wireguard.android',
+      'de.blinkt.openvpn',
+      'net.openvpn.openvpn',
+      'com.psiphon3.subscription',
+      'com.nordvpn.android',
+      'com.expressvpn.vpn',
+      'free.vpn.unblock.proxy.turbovpn',
+      'ch.protonvpn.android',
+      'com.surfshark.vpnclient.android',
+    ];
+    for (final p in vpnPackages) {
+      if (pkg == p || pkg.contains(p)) return true;
+    }
+    return false;
+  }
+
+  /// Checks if device's language or locale setting corresponds to a region that blocks adult content
+  /// (e.g. Indonesia 'id', Malaysia 'ms', Arab countries 'ar', etc.) where VPN is commonly used to bypass.
+  static bool isRestrictedAdultContentRegion(String languageCode) {
+    final lang = languageCode.toLowerCase().trim();
+    final sysLocale = ui.PlatformDispatcher.instance.locale;
+    final sysLang = sysLocale.languageCode.toLowerCase();
+    final sysCountry = (sysLocale.countryCode ?? '').toUpperCase();
+
+    const restrictedLangs = ['id', 'ms', 'ar'];
+    const restrictedCountries = [
+      'ID', 'MY', 'SA', 'AE', 'QA', 'KW', 'OM', 'BH', 'EG', 'TR', 'PK', 'BD'
+    ];
+
+    if (restrictedLangs.contains(lang) || restrictedLangs.contains(sysLang)) {
+      return true;
+    }
+    if (restrictedCountries.contains(sysCountry)) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Determines if an app should trigger the Ghadhul Bashar Quran reminder before opening
+  static bool shouldShowGhadhulBasharReminder(
+    String packageName, [
+    String appName = '',
+    String languageCode = 'en',
+  ]) {
+    if (isBrowserApp(packageName, appName)) {
+      return true; // All browsers
+    }
+    if (isVpnApp(packageName, appName) && isRestrictedAdultContentRegion(languageCode)) {
+      return true; // VPNs in countries that block adult content
+    }
+    return false;
+  }
+
+  /// Checks if an app is a productive, essential, utility, communication, educational, or religious app.
+  /// Productive apps must NEVER be blocked by the launcher.
+  static bool isProductiveApp(String packageName, String appName, [int category = -1]) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.isEmpty) return false;
+
+    // 1. Android OS Productive Categories:
+    // CATEGORY_PRODUCTIVITY = 7 (Productivity / Office / Tools)
+    // CATEGORY_MAPS = 6 (Navigation / Maps)
+    // CATEGORY_NEWS = 5 (News / Informational)
+    // CATEGORY_IMAGE = 3 (Photography / Gallery)
+    // CATEGORY_AUDIO = 1 (Audio / Music)
+    if (category == 7 || category == 6 || category == 5 || category == 3 || category == 1) {
+      // Safety check: ensure game or TikTok hasn't somehow spoofed category
+      if (!pkg.contains('musically') && !pkg.contains('tiktok') && !name.contains('tiktok')) {
+        return true;
+      }
+    }
+
+    // 2. Music & Audio apps (both online streaming and offline players)
+    if (isMusicOrAudioApp(pkg, name, category)) {
+      return true;
+    }
+
+    // 3. VPN & Proxy apps (treated as utility tools, with Ghadhul Bashar reminder)
+    if (isVpnApp(pkg, name)) {
+      return true;
+    }
+
+    // 4. Web Browsers (treated as essential research/search tools, with Ghadhul Bashar reminder)
+    if (isBrowserApp(pkg, name)) {
+      return true;
+    }
+
+    // 4. Known Essential Whitelist Packages
+    if (_whitelist.contains(pkg)) return true;
+
+    // 4. Communication & Messaging (Work, Family & Productivity)
+    const communicationPackages = [
+      'com.whatsapp',
+      'com.whatsapp.w4b',
+      'org.telegram.messenger',
+      'org.telegram.messenger.web',
+      'org.thunderdog.challegram',
+      'us.zoom.videomeetings',
+      'com.google.android.apps.tachyon', // Google Meet (Duo)
+      'com.google.android.apps.meetings', // Google Meet
+      'com.microsoft.teams',
+      'com.slack',
+      'com.skype.raider',
+      'org.thoughtcrime.securesms', // Signal
+      'com.google.android.gm', // Gmail
+      'com.microsoft.office.outlook',
+      'com.samsung.android.email.provider',
+      'com.yahoo.mobile.client.android.mail',
+      'ch.protonmail.android',
+    ];
+    for (final p in communicationPackages) {
+      if (pkg == p || pkg.startsWith('$p.')) return true;
+    }
+
+    // 5. Phone, Dialer, SMS, Contacts, Clock, Calendar, Calculator, Camera, Gallery, Files
+    const oemSystemPackages = [
+      'com.google.android.dialer',
+      'com.android.dialer',
+      'com.samsung.android.dialer',
+      'com.google.android.contacts',
+      'com.android.contacts',
+      'com.samsung.android.app.contacts',
+      'com.google.android.apps.messaging',
+      'com.android.mms',
+      'com.samsung.android.messaging',
+      'com.google.android.deskclock',
+      'com.sec.android.app.clockpackage',
+      'com.android.deskclock',
+      'com.google.android.calculator',
+      'com.sec.android.app.popupcalculator',
+      'com.android.calculator2',
+      'com.google.android.calendar',
+      'com.android.calendar',
+      'com.samsung.android.calendar',
+      'com.google.android.googlecamera',
+      'com.sec.android.app.camera',
+      'com.android.camera',
+      'com.android.camera2',
+      'com.google.android.apps.photos',
+      'com.sec.android.gallery3d',
+      'com.android.gallery3d',
+      'com.google.android.apps.nbu.files',
+      'com.sec.android.app.myfiles',
+      'com.android.documentsui',
+      'com.google.android.soundrecorder',
+      'com.sec.android.app.voicenote',
+      'com.android.settings',
+      'com.android.vending',
+    ];
+    for (final p in oemSystemPackages) {
+      if (pkg == p || pkg.contains(p)) return true;
+    }
+
+    // Exclude social video/reel editors from being treated as system camera/photo tools
+    if (pkg.contains('instashot') ||
+        pkg.contains('lemon.lvoverseas') ||
+        pkg.contains('kinemaster') ||
+        pkg.contains('shotcut')) {
+      return false;
+    }
+
+    const systemToolKeywords = [
+      'dialer',
+      'telepon',
+      'phone',
+      'contacts',
+      'kontak',
+      'calculator',
+      'kalkulator',
+      'deskclock',
+      'clockpackage',
+      'clock',
+      'alarm',
+      'calendar',
+      'kalender',
+      'camera',
+      'kamera',
+      'gallery',
+      'galeri',
+      'photos',
+      'documentsui',
+      'myfiles',
+      'filemanager',
+      'soundrecorder',
+      'voicenote',
+      'settings',
+      'pengaturan',
+    ];
+    for (final k in systemToolKeywords) {
+      if (pkg.contains('.$k.') ||
+          pkg.endsWith('.$k') ||
+          pkg.startsWith('$k.') ||
+          name == k ||
+          name == 'google $k' ||
+          name == 'samsung $k') {
+        return true;
+      }
+    }
+
+    // 6. Web Browsers
+    const browserPackages = [
+      'com.android.chrome',
+      'org.mozilla.firefox',
+      'com.sec.android.app.sbrowser',
+      'com.microsoft.emmx',
+      'com.brave.browser',
+      'com.opera.browser',
+      'com.opera.mini.native',
+      'com.duckduckgo.mobile.android',
+      'com.vivaldi.browser',
+    ];
+    for (final b in browserPackages) {
+      if (pkg == b || pkg.contains(b)) return true;
+    }
+    if (name.contains('browser') || name.contains('peramban')) return true;
+
+    // 7. Office, Docs, Notes & Education
+    const officePackages = [
+      'com.google.android.apps.docs',
+      'com.google.android.apps.docs.editors.docs',
+      'com.google.android.apps.docs.editors.sheets',
+      'com.google.android.apps.docs.editors.slides',
+      'com.google.android.keep',
+      'com.microsoft.office.officehubrow',
+      'com.microsoft.office.word',
+      'com.microsoft.office.excel',
+      'com.microsoft.office.powerpoint',
+      'com.microsoft.office.onenote',
+      'com.microsoft.skydrive',
+      'cn.wps.moffice_eng',
+      'so.notion.app',
+      'com.evernote',
+      'com.samsung.android.app.notes',
+      'md.obsidian',
+      'com.intsig.camscanner',
+      'com.adobe.reader',
+      'com.dropbox.android',
+      'com.google.android.apps.classroom',
+      'com.duolingo',
+    ];
+    for (final o in officePackages) {
+      if (pkg == o || pkg.contains(o)) return true;
+    }
+
+    // 8. Navigation & Maps
+    const navigationPackages = [
+      'com.google.android.apps.maps',
+      'com.waze',
+      'com.here.app.maps',
+    ];
+    for (final nav in navigationPackages) {
+      if (pkg == nav || pkg.contains(nav)) return true;
+    }
+    if (name == 'maps' || name == 'peta' || name.contains('navigation') || name.contains('navigasi')) {
+      return true;
+    }
+
+    // 9. Banking, E-Wallets & Financial Services
+    const bankingPackages = [
+      'com.bca',
+      'com.bca.mybca',
+      'id.co.bankmandiri.livin',
+      'id.co.bri.brimo',
+      'id.co.bni.newmobilebanking',
+      'id.co.bankbsi.mobilebanking',
+      'id.dana',
+      'ovo.id',
+      'com.gopay.consumer',
+      'com.telkom.mwallet',
+      'com.bankjago',
+      'com.btpn.dc',
+      'com.seabank.id',
+      'id.blubybcadigital',
+      'com.shopee.id',
+      'com.tokopedia.tkpd',
+      'com.bukalapak.android',
+      'com.lazada.android',
+    ];
+    for (final bp in bankingPackages) {
+      if (pkg == bp || pkg.contains(bp)) return true;
+    }
+
+    // 10. Transportation & Daily Logistics
+    const transportPackages = [
+      'com.gojek.app',
+      'com.grabtaxi.passenger',
+      'com.taxsee.taxsee',
+      'sinet.startup.indriver',
+      'com.keretaapikita',
+      'com.mypertamina.id',
+    ];
+    for (final tp in transportPackages) {
+      if (pkg == tp || pkg.contains(tp)) return true;
+    }
+
+    // 11. Public Services & Healthcare
+    const publicServicePackages = [
+      'com.bpjstku',
+      'app.bpjs.mobile',
+      'com.pln.mobile',
+      'dto.kemkes.satusehat',
+    ];
+    for (final psp in publicServicePackages) {
+      if (pkg == psp || pkg.contains(psp)) return true;
+    }
+
+    // 12. Islamic & Religious Applications
+    const islamicKeywords = [
+      'quran',
+      'qur\'an',
+      'sholat',
+      'salat',
+      'prayer',
+      'adzan',
+      'azan',
+      'hadits',
+      'hadith',
+      'dzikir',
+      'tasbih',
+      'muslim',
+      'islam',
+      'kemenag',
+      'nu online',
+      'muhammadiyah',
+      'surah',
+      'ayat',
+      'tajwid',
+      'kiblat',
+      'qibla',
+      'jadwal sholat',
+      'tafsir',
+      'fiqih',
+      'doa',
+    ];
+    for (final ik in islamicKeywords) {
+      if (name.contains(ik) || pkg.contains(ik.replaceAll(' ', ''))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Checks if an app is non-productive (games, social media, short-video scrolling, video streaming entertainment, gambling, web novels).
+  /// Non-productive apps must be locked by the launcher.
+  static bool isNonProductiveApp(String packageName, String appName, [int category = -1]) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.isEmpty) return false;
+
+    // 1. PRODUCTIVE APPS ARE STRICTLY IMMUNE
+    if (isProductiveApp(pkg, name, category)) {
+      return false;
+    }
+
+    // 2. Android OS Category Game (CATEGORY_GAME = 0)
+    if (category == 0) return true;
+
+    // 3. Social Media & Short Video Platforms (Mindless Scrolling)
+    // TikTok & Musical.ly
+    if (pkg.contains('musically') || pkg.contains('tiktok') || name.contains('tiktok')) {
+      return true;
+    }
+    // Instagram & Threads
+    if (pkg.contains('instagram') || name.contains('instagram') || pkg.contains('barcelona') || name.contains('threads')) {
+      return true;
+    }
+    // Facebook
+    if (pkg.contains('com.facebook.katana') || pkg.contains('com.facebook.lite') || name == 'facebook') {
+      return true;
+    }
+    // Twitter / X
+    if (pkg.contains('twitter') || name == 'twitter' || (name == 'x' && pkg.contains('com.twitter'))) {
+      return true;
+    }
+    // Snapchat
+    if (pkg.contains('snapchat') || name.contains('snapchat')) {
+      return true;
+    }
+    // Pinterest
+    if (pkg.contains('pinterest') || name.contains('pinterest')) {
+      return true;
+    }
+    // Reddit
+    if (pkg.contains('reddit') || name.contains('reddit')) {
+      return true;
+    }
+    // Short Video & Live Platforms (SnackVideo, Likee, Bigo, Kwai)
+    if (pkg.contains('snackvideo') ||
+        name.contains('snackvideo') ||
+        pkg.contains('kwaiviral') ||
+        pkg.contains('kwai.video') ||
+        pkg.contains('video.like') ||
+        name == 'likee' ||
+        pkg.contains('bigo.live') ||
+        name.contains('bigo live') ||
+        pkg.contains('video.chat.ometv') ||
+        name.contains('ometv')) {
+      return true;
+    }
+    // Dating Apps
+    if (pkg.contains('tinder') ||
+        name.contains('tinder') ||
+        pkg.contains('bumble') ||
+        name.contains('bumble') ||
+        pkg.contains('tantan') ||
+        name.contains('tantan') ||
+        pkg.contains('michat') ||
+        name.contains('michat')) {
+      return true;
+    }
+
+    // Android Category Social (CATEGORY_SOCIAL = 4)
+    if (category == 4) return true;
+
+    // 4. Video Streaming & Entertainment Binge-Watching Platforms
+    if (pkg == 'com.google.android.youtube' || pkg == 'com.google.android.youtube.tv' || name == 'youtube') {
+      return true;
+    }
+    const streamingVideoPackages = [
+      'com.netflix.mediaclient',
+      'in.startv.hotstar', // Disney+ Hotstar
+      'com.disney.disneyplus',
+      'tv.twitch.android.app',
+      'com.amazon.avod.thirdpartyclient', // Prime Video
+      'com.hulu.plus',
+      'com.wbd.stream', // Max
+      'com.hbo.hbonow',
+      'com.vidio.android', // Vidio
+      'com.vuclip.viu', // Viu
+      'com.tencent.qqlivei18n', // WeTV
+      'com.qiyi.video', // iQIYI
+      'com.bstar.intl', // Bstation
+      'tv.danmaku.bili',
+      'org.vimeo.android',
+      'com.dailymotion.videoplayer',
+    ];
+    for (final sv in streamingVideoPackages) {
+      if (pkg == sv || pkg.contains(sv)) return true;
+    }
+    // Short Drama & Video Binge keywords
+    const entertainmentKeywords = [
+      'netflix',
+      'hotstar',
+      'disney+',
+      'twitch',
+      'vidio',
+      'wetv',
+      'iqiyi',
+      'bstation',
+      'bilibili',
+      'dramabox',
+      'shortmax',
+      'reelshort',
+      'loklok',
+    ];
+    for (final ek in entertainmentKeywords) {
+      if (name.contains(ek) || pkg.contains(ek)) return true;
+    }
+
+    // Android Category Video (CATEGORY_VIDEO = 2)
+    if (category == 2) return true;
+
+    // 5. Popular Games (even if category is not reported as 0)
+    const popularGameKeywords = [
+      'mobile.legend',
+      'freefire',
+      'pubg',
+      'genshin',
+      'roblox',
+      'subwaysurf',
+      'candycrush',
+      'clashofclans',
+      'clashroyale',
+      'brawlstars',
+      'fallbuddies', // Stumble Guys
+      'neptune.domino', // Higgs Domino
+      'fifamobile',
+      'pesam', // eFootball
+      'minecraft',
+      '8ballpool',
+      'callofduty',
+      'honorofkings',
+      'amongus',
+      'ludoking',
+      'higgs',
+      'supercell',
+      'gameloft',
+      'miniclip',
+      'ea.gp',
+      'konami',
+      'riotgames',
+    ];
+    for (final gk in popularGameKeywords) {
+      if (pkg.contains(gk) || name.contains(gk)) return true;
+    }
+
+    // Gambling, Casino & Slot keywords
+    const gamblingKeywords = [
+      'domino',
+      'slot',
+      'casino',
+      'poker',
+      'jackpot',
+      'pragmatic',
+      'roulette',
+      'judi',
+    ];
+    for (final gam in gamblingKeywords) {
+      if (name.contains(gam) || pkg.contains(gam)) return true;
+    }
+
+    // General game identifiers in package or name
+    if (pkg.contains('.game.') ||
+        pkg.contains('.games.') ||
+        pkg.startsWith('com.game') ||
+        pkg.endsWith('.game') ||
+        name.contains('game') ||
+        name.contains('arcade') ||
+        name.contains('puzzle') ||
+        name.contains('racing') ||
+        name.contains('simulation') ||
+        name.contains('rpg')) {
+      return true;
+    }
+
+    // 6. Time-Wasting Web Novels & Comics
+    const novelKeywords = [
+      'wattpad',
+      'linewebtoon',
+      'webtoon',
+      'mangatoon',
+      'noveltoon',
+      'fizzonovel',
+      'fizzo novel',
+      'dreame',
+      'goodnovel',
+    ];
+    for (final nk in novelKeywords) {
+      if (name.contains(nk) || pkg.contains(nk.replaceAll(' ', ''))) return true;
+    }
+
+    // 7. Video Editors for Social Content
+    const videoEditorPackages = [
+      'com.lemon.lvoverseas', // CapCut
+      'com.camerasideas.instashot', // InShot
+      'com.nexstreaming.app.kinemasterfree', // KineMaster
+      'shotcut',
+    ];
+    for (final ve in videoEditorPackages) {
+      if (pkg.contains(ve) || name.contains(ve)) return true;
+    }
+
+    return false;
+  }
+
+  /// Automatically blocks non-productive apps and strictly protects productive apps
+  Future<void> syncAppsWithCategories(List<dynamic> apps) async {
     bool changed = false;
     for (var app in apps) {
       if (app == null) continue;
-      final pkg = (app['packageName'] as String? ?? '').toLowerCase();
-      final name = (app['appName'] as String? ?? '').toLowerCase();
+      final pkg = (app['packageName'] as String? ?? '').toLowerCase().trim();
+      final name = (app['appName'] as String? ?? '').toLowerCase().trim();
       final cat = app['category'] as int? ?? -1;
-      
-      if (pkg.isEmpty || _whitelist.contains(pkg)) {
-        // Ensure whitelisted apps are NOT blocked
+
+      if (pkg.isEmpty) continue;
+
+      // 1. If productive, ensure it is NEVER blocked
+      if (isProductiveApp(pkg, name, cat)) {
         if (_blockedApps.contains(pkg)) {
           _blockedApps.remove(pkg);
           changed = true;
@@ -543,16 +1313,12 @@ class AppState extends ChangeNotifier {
         continue;
       }
 
-      // Check category: 0: Game, 1: Audio, 2: Video, 4: Social
-      bool isNonProductive = (cat == 0 || cat == 1 || cat == 2 || cat == 4);
-      
-      if (!isNonProductive) {
-        isNonProductive = _nonProductiveKeywords.any((k) => pkg.contains(k) || name.contains(k));
-      }
-
-      if (isNonProductive && !_blockedApps.contains(pkg)) {
-        _blockedApps.add(pkg);
-        changed = true;
+      // 2. If genuinely non-productive, ensure it IS blocked
+      if (isNonProductiveApp(pkg, name, cat)) {
+        if (!_blockedApps.contains(pkg)) {
+          _blockedApps.add(pkg);
+          changed = true;
+        }
       }
     }
 
@@ -797,7 +1563,8 @@ class AppState extends ChangeNotifier {
   }
 
   bool isAppBlocked(String packageName) {
-    final pkg = packageName.toLowerCase();
+    final pkg = packageName.toLowerCase().trim();
+    if (isProductiveApp(pkg, '')) return false;
     if (!_blockedApps.contains(pkg)) return false;
     
     // Check if temporarily allowed

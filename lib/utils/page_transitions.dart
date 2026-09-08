@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 class AppPageRoute<T> extends PageRouteBuilder<T> {
   final Widget child;
 
-  AppPageRoute({required this.child})
-      : super(
+  AppPageRoute({
+    required this.child,
+    RouteSettings? settings,
+  }) : super(
+          settings: settings ?? RouteSettings(name: child.runtimeType.toString()),
           pageBuilder: (context, animation, secondaryAnimation) => child,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             // Subtle slide from 5% down to original position

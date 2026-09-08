@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../providers/app_state.dart';
 import '../../services/eye_tracker_service.dart';
 import '../../utils/translations.dart';
+import '../../services/analytics_service.dart';
 
 class HadithDetailScreen extends StatefulWidget {
   final Map<String, dynamic> hadith;
@@ -40,10 +41,12 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
   bool _isDisposed = false;
   bool _isCameraSupported = true;
   bool _isRequestingPermission = false;
+  DateTime? _readingStartTime;
 
   @override
   void initState() {
     super.initState();
+    AnalyticsService.logScreenView('HadithDetailScreen');
     _currentHadith = widget.hadith;
     _currentHadithIndex = widget.hadithIndex;
     WidgetsBinding.instance.addObserver(this);
@@ -131,6 +134,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
   Future<void> _initEyeReading() async {
     _hasCompleted = false;
     _readingProgress = 0.0;
+    _readingStartTime = DateTime.now();
 
     final status = await Permission.camera.status;
     if (!status.isGranted) {
@@ -224,7 +228,21 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
 
     final points = _pointsEarned;
     final title = "Hadits #$hadithId: $theme";
+    final bool isFirstTime = !appState.isHadithRead(hadithId);
     appState.saveHadithProgress(hadithId, title, points);
+
+    final durationSeconds = _readingStartTime != null
+        ? DateTime.now().difference(_readingStartTime!).inSeconds
+        : 0;
+    _readingStartTime = null;
+
+    AnalyticsService.logHadithSuccess(
+      hadithId: hadithId,
+      hadithTitle: title,
+      pointsEarned: points,
+      isFirstTime: isFirstTime,
+      durationSeconds: durationSeconds,
+    );
 
     if (!mounted) return;
 

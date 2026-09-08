@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
 import '../../widgets/language_selection_dialog.dart';
+import '../../utils/page_transitions.dart';
 import 'hadith_detail_screen.dart';
 
 class HadithListScreen extends StatefulWidget {
@@ -258,8 +259,8 @@ class _HadithListScreenState extends State<HadithListScreen> {
                         final originalIndex = allHadiths.indexOf(item);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => HadithDetailScreen(
+                          AppPageRoute(
+                            child: HadithDetailScreen(
                               hadith: item,
                               hadithIndex:
                                   originalIndex >= 0 ? originalIndex : index,

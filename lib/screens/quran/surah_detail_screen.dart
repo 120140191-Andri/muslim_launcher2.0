@@ -10,6 +10,7 @@ import '../../utils/page_transitions.dart';
 import '../../services/eye_tracker_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../utils/translations.dart';
+import '../../services/analytics_service.dart';
 
 class SurahDetailScreen extends StatefulWidget {
   final Map<String, dynamic> surah;
@@ -48,10 +49,12 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   StreamSubscription? _eyeFocusSubscription;
   bool _isInitializing = false;
   bool _isDisposed = false;
+  DateTime? _readingStartTime;
 
   @override
   void initState() {
     super.initState();
+    AnalyticsService.logScreenView('SurahDetailScreen_${widget.surah['surah_name']}');
     WidgetsBinding.instance.addObserver(this);
     _initSpeech();
 
@@ -101,6 +104,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     } else {
       _stopListening(); // Make sure previous is stopped properly
 
+      _readingStartTime = DateTime.now();
       setState(() {
         _isInitializing = true;
         _recordingAyahIdx = index;
@@ -231,6 +235,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       return;
     }
 
+    _readingStartTime = DateTime.now();
     setState(() {
       _isInitializing = true;
       _eyeReadingAyahIdx = index;
@@ -280,7 +285,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
             if (_eyeReadingProgress >= 1.0) {
               _eyeReadingProgress = 1.0;
               _eyeTimer?.cancel();
-              _onSuccess(_eyeReadingAyahIdx!, arabic);
+              _onSuccess(_eyeReadingAyahIdx!, arabic, method: 'eye_tracker');
               _stopEyeReading();
             }
           });
@@ -320,7 +325,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     }
   }
 
-  void _onSuccess(int index, String arabic) {
+  void _onSuccess(int index, String arabic, {String method = 'voice'}) {
     if (!mounted || _isDisposed) return;
     final appState = Provider.of<AppState>(context, listen: false);
 
@@ -344,6 +349,22 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       widget.surah['surah_name'],
       index + 1,
       pointsEarned,
+    );
+
+    final durationSeconds = _readingStartTime != null
+        ? DateTime.now().difference(_readingStartTime!).inSeconds
+        : 0;
+    _readingStartTime = null;
+
+    // Log to Google Analytics
+    AnalyticsService.logQuranSuccess(
+      surahNumber: surahNumber,
+      surahName: widget.surah['surah_name'] as String? ?? '',
+      ayahNumber: index + 1,
+      pointsEarned: pointsEarned,
+      method: method,
+      isSequential: getsPoints,
+      durationSeconds: durationSeconds,
     );
 
     _stopListening();

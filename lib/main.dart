@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/app_state.dart';
+import 'services/analytics_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/language_screen.dart';
 import 'screens/onboarding/setup_hub_screen.dart';
@@ -11,6 +12,7 @@ import 'screens/home/permission_blocked_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AnalyticsService.initialize();
 
   // Global Error Boundary - Move to main for production safety
   ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -77,6 +79,7 @@ class MuslimLauncherApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
             useMaterial3: true,
           ),
+          navigatorObservers: [AnalyticsService.observer],
           home: homeWidget,
           builder: (context, child) {
             // CRITICAL: Ensure we always have a child to render.

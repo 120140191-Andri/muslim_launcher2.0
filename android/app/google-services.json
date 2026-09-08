@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "483870725060",
+    "firebase_url": "https://coba-23532-default-rtdb.firebaseio.com",
+    "project_id": "coba-23532",
+    "storage_bucket": "coba-23532.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483870725060:android:2ab895b6e314a39aac0a91",
+        "android_client_info": {
+          "package_name": "com.kraftech.muslim_launcher_2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDoMsJxgTKZGePIC8MnZFfN2EPCmuGE31w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

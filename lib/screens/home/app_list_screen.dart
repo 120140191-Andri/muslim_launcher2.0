@@ -1373,16 +1373,16 @@ class _AppTile extends StatelessWidget {
                     ),
                   ),
                 // Timer badge
-                Selector<AppState, int>(
-                  selector: (context, state) =>
-                      state.getUnlockRemainingMinutes(app.packageName),
-                  builder: (context, remaining, child) {
-                    if (remaining <= 0) return const SizedBox.shrink();
+                Positioned(
+                  left: -4,
+                  bottom: -4,
+                  child: Selector<AppState, int>(
+                    selector: (context, state) =>
+                        state.getUnlockRemainingMinutes(app.packageName),
+                    builder: (context, remaining, child) {
+                      if (remaining <= 0) return const SizedBox.shrink();
 
-                    return Positioned(
-                      left: -4,
-                      bottom: -4,
-                      child: Container(
+                      return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 2,
@@ -1400,9 +1400,9 @@ class _AppTile extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ],
             ),

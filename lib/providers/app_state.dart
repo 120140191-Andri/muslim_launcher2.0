@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_block_service.dart';
+import '../services/analytics_service.dart';
 import '../screens/home/app_list_screen.dart';
 import '../utils/translations.dart';
 
@@ -1433,6 +1434,7 @@ class AppState extends ChangeNotifier {
           // KHATM ACHIEVED!
           _khatmCount++;
           await prefs.setInt('khatmCount', _khatmCount);
+          AnalyticsService.logQuranKhatm(khatmCount: _khatmCount);
           
           // Reset progress for new cycle
           _highestSurahIndex = 0;

@@ -16,6 +16,7 @@ import 'accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 import '../../widgets/language_selection_dialog.dart';
+import '../../services/analytics_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.logScreenView('HomeScreen');
     WidgetsBinding.instance.addObserver(this);
 
     // Background sync apps without artificial delay since disk cache is already hydrated

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "123456789012",
+    "project_id": "muslim-launcher-2-example",
+    "storage_bucket": "muslim-launcher-2-example.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123456789012:android:abcdef1234567890",
+        "android_client_info": {
+          "package_name": "com.kraftech.muslim_launcher_2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyEXAMPLE_KEY_REPLACE_WITH_REAL"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

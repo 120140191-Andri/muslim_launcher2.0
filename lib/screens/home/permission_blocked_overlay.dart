@@ -118,13 +118,11 @@ class PermissionBlockedOverlay extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: onTap,
         icon: Icon(icon, size: 20),
-        label: Flexible(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label.toUpperCase(),
-              style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
-            ),
+        label: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label.toUpperCase(),
+            style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
           ),
         ),
         style: ElevatedButton.styleFrom(

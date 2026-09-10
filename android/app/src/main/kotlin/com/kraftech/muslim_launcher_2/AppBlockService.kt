@@ -168,6 +168,8 @@ class AppBlockService : AccessibilityService() {
             prefs.edit().putStringSet("prohibited_packages", prohibitedPackages.toSet()).commit()
         }
 
+        private var facebookBrowserSessionActive = ConcurrentHashMap<String, Boolean>()
+
         fun allowGhadhulBasharSession(packageName: String) {
             val pkg = packageName.trim().lowercase()
             activeGhadhulSessions.add(pkg)
@@ -184,13 +186,56 @@ class AppBlockService : AccessibilityService() {
             val pkg = packageName.trim().lowercase()
             activeGhadhulSessions.remove(pkg)
             lastActiveGhadhulTimes.remove(pkg)
+            facebookBrowserSessionActive.remove(pkg)
             Log.d("AppBlockService", "GHADHUL SESSION RESET: $pkg")
         }
 
         fun clearAllGhadhulSessions() {
             activeGhadhulSessions.clear()
             lastActiveGhadhulTimes.clear()
+            facebookBrowserSessionActive.clear()
             Log.d("AppBlockService", "ALL GHADHUL SESSIONS CLEARED")
+        }
+
+        fun isKeyboardOrTransientOverlay(pkg: String?): Boolean {
+            if (pkg == null) return true
+            val clean = pkg.trim().lowercase()
+            return clean.contains("inputmethod") ||
+                   clean.contains(".ime") ||
+                   clean.contains("keyboard") ||
+                   clean.contains("honeyboard") ||
+                   clean.contains("swiftkey") ||
+                   clean.contains("fleksy") ||
+                   clean == "com.google.android.gms" ||
+                   clean == "com.android.vending" ||
+                   clean == "com.android.intentresolver"
+        }
+
+        fun isKnownBrowser(pkg: String): Boolean {
+            val clean = pkg.trim().lowercase()
+            return clean.contains("browser") ||
+                   clean.contains("chrome") ||
+                   clean.contains("firefox") ||
+                   clean.contains("opera") ||
+                   clean.contains("duckduckgo") ||
+                   clean.contains("vivaldi") ||
+                   clean == "com.microsoft.emmx" ||
+                   clean == "org.torproject.torbrowser" ||
+                   clean == "com.cloudmosa.puffinfree"
+        }
+
+        fun isFacebookInAppBrowser(packageName: String, className: String): Boolean {
+            val isFb = packageName == "com.facebook.katana" ||
+                       packageName == "com.facebook.lite" ||
+                       packageName == "com.facebook.orca"
+            if (!isFb) return false
+
+            val lowerClass = className.lowercase()
+            return lowerClass.contains("browserlite") ||
+                   lowerClass.contains("browser.lite") ||
+                   lowerClass.contains("inappbrowser") ||
+                   lowerClass.contains("browseractivity") ||
+                   lowerClass.contains("browserproxy")
         }
     }
 
@@ -297,11 +342,16 @@ class AppBlockService : AccessibilityService() {
             val packageName = event.packageName?.toString()?.trim()?.lowercase() ?: return
             val className = event.className?.toString()?.lowercase() ?: ""
 
-            val previousPackage = currentForegroundPackage
-            currentForegroundPackage = packageName
-            
+            // Skip transient overlays, keyboards (IMEs), and system dialogs so they don't corrupt foreground state
+            if (isKeyboardOrTransientOverlay(packageName)) {
+                return
+            }
+
             // Skip our own app
             if (packageName == this.packageName) return
+
+            val previousPackage = currentForegroundPackage
+            currentForegroundPackage = packageName
 
             val now = System.currentTimeMillis()
             if (packageName == lastTriggeredPackage && (now - lastTriggeredTime) < 800L) {
@@ -357,42 +407,82 @@ class AppBlockService : AccessibilityService() {
                 
                 if (isIdleExpired) {
                     activeGhadhulSessions.remove(packageName)
+                    facebookBrowserSessionActive.remove(packageName)
                 }
 
                 val hasActiveSession = activeGhadhulSessions.contains(packageName)
+                val isBrowser = isKnownBrowser(packageName)
+                val isFbBrowser = isFacebookInAppBrowser(packageName, className)
 
-                // Deteksi apakah browser dibuka karena klik link dari aplikasi eksternal (WhatsApp, Telegram, IG, dll)
-                val isLauncherOrSystem = previousPackage == null ||
-                    previousPackage == this.packageName ||
-                    previousPackage == "com.android.systemui" ||
-                    previousPackage == packageName ||
-                    previousPackage == "android" ||
-                    previousPackage.endsWith(".launcher") ||
-                    previousPackage.contains("launcher") ||
-                    previousPackage.contains("home")
-
-                val isCustomTab = className.contains("customtab")
-                val isLinkFromExternalApp = (!isLauncherOrSystem) || isCustomTab
-
-                if (hasActiveSession && !isLinkFromExternalApp) {
-                    // Pengguna hanya berpindah aplikasi dan kembali lagi (multitasking biasa) -> izinkan tanpa menampilkan overlay
-                    lastActiveGhadhulTimes[packageName] = now
-                    return 
-                } else if (hasActiveSession && isWithinBypassShield) {
-                    // Baru saja diizinkan dalam 15 detik terakhir untuk link eksternal / customtab -> izinkan tanpa loop
-                    lastActiveGhadhulTimes[packageName] = now
-                    return
-                } else {
-                    // Tampilkan overlay jika:
-                    // 1. Buka link dari aplikasi eksternal (isLinkFromExternalApp == true), ATAU
-                    // 2. Peluncuran baru / idle > 30 menit (!hasActiveSession)
-                    Log.d("AppBlockService", "GHADHUL BASHAR: Triggered for $packageName (isExternalLink=$isLinkFromExternalApp, activeSession=$hasActiveSession)")
-                    lastTriggeredPackage = packageName
-                    lastTriggeredTime = now
-                    MainActivity.notifyGhadhulBashar(packageName)
-                    bringLauncherToFront("ghadhulBasharPackageName", packageName, "triggerGhadhulBasharScreen")
-                    return
+                // Track status sesi Facebook in-app browser
+                if (!isFbBrowser) {
+                    // Berada di feed / aktivitas biasa Facebook (bukan in-app browser)
+                    facebookBrowserSessionActive[packageName] = false
                 }
+
+                if (hasActiveSession) {
+                    if (isFbBrowser) {
+                        // Khusus Facebook & Facebook Lite:
+                        // Deteksi saat pengguna membuka link internal via in-app browser
+                        val isAlreadyInFbBrowser = facebookBrowserSessionActive[packageName] == true
+                        if (isAlreadyInFbBrowser || isWithinBypassShield) {
+                            // Sesi browser saat ini sedang aktif dibaca oleh user -> jangan loop
+                            facebookBrowserSessionActive[packageName] = true
+                            lastActiveGhadhulTimes[packageName] = now
+                            return
+                        } else {
+                            // Link baru saja diklik di dalam Facebook! Tampilkan pengingat Ghadhul Bashar
+                            Log.d("AppBlockService", "GHADHUL BASHAR: Facebook In-App Browser detected for $packageName ($className)")
+                            facebookBrowserSessionActive[packageName] = true
+                            lastTriggeredPackage = packageName
+                            lastTriggeredTime = now
+                            MainActivity.notifyGhadhulBashar(packageName)
+                            bringLauncherToFront("ghadhulBasharPackageName", packageName, "triggerGhadhulBasharScreen")
+                            return
+                        }
+                    } else if (!isBrowser) {
+                        // Aplikasi non-browser (seperti TikTok, Instagram, Twitter/X, atau feed Facebook):
+                        // Selama sesi aktif (idle < 30 menit), izinkan semua aktivitas internal:
+                        // - Menonton video / scrolling
+                        // - Menonton Live streaming
+                        // - Membuka keyboard / komentar / posting ulang (repost)
+                        // - Menjelajah profil, tab, atau keranjang belanja internal
+                        lastActiveGhadhulTimes[packageName] = now
+                        return
+                    } else {
+                        // Aplikasi Browser (Chrome, Firefox, dll):
+                        // Deteksi apakah browser dibuka karena klik link dari aplikasi eksternal (WhatsApp, Telegram, dll)
+                        val isLauncherOrSystem = previousPackage == null ||
+                            previousPackage == this.packageName ||
+                            previousPackage == "com.android.systemui" ||
+                            previousPackage == packageName ||
+                            previousPackage == "android" ||
+                            previousPackage.endsWith(".launcher") ||
+                            previousPackage.contains("launcher") ||
+                            previousPackage.contains("home") ||
+                            isKeyboardOrTransientOverlay(previousPackage)
+
+                        // Chrome Custom Tab dari aplikasi luar
+                        val isCustomTabFromExternal = className.contains("customtab") && previousPackage != packageName
+                        val isLinkFromExternalApp = (!isLauncherOrSystem) || isCustomTabFromExternal
+
+                        if (!isLinkFromExternalApp || isWithinBypassShield) {
+                            // Pengguna hanya berpindah aplikasi dan kembali lagi (multitasking biasa) -> izinkan tanpa menampilkan overlay
+                            lastActiveGhadhulTimes[packageName] = now
+                            return
+                        }
+                    }
+                }
+
+                // Tampilkan overlay jika:
+                // 1. Peluncuran baru / idle > 30 menit (!hasActiveSession), ATAU
+                // 2. Browser dibuka dari klik link aplikasi eksternal / in-app browser Facebook
+                Log.d("AppBlockService", "GHADHUL BASHAR: Triggered for $packageName (isBrowser=$isBrowser, activeSession=$hasActiveSession)")
+                lastTriggeredPackage = packageName
+                lastTriggeredTime = now
+                MainActivity.notifyGhadhulBashar(packageName)
+                bringLauncherToFront("ghadhulBasharPackageName", packageName, "triggerGhadhulBasharScreen")
+                return
             }
         } catch (e: Exception) {
             Log.e("AppBlockService", "Crash in onAccessibilityEvent: ${e.message}")

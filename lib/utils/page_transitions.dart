@@ -1,17 +1,14 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
-/// Instant zero-delay page route for maximum snappiness and low-spec performance.
-class AppPageRoute<T> extends PageRouteBuilder<T> {
-  final Widget child;
-
+/// iOS-standard smooth Cupertino page route with hardware-accelerated glide and native swipe-back.
+class AppPageRoute<T> extends CupertinoPageRoute<T> {
   AppPageRoute({
-    required this.child,
+    required Widget child,
     RouteSettings? settings,
+    super.maintainState = true,
+    super.fullscreenDialog = false,
   }) : super(
+          builder: (context) => child,
           settings: settings ?? RouteSettings(name: child.runtimeType.toString()),
-          pageBuilder: (context, animation, secondaryAnimation) => child,
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
         );
 }
-

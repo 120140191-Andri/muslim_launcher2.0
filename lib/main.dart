@@ -105,6 +105,12 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
       ),
       navigatorObservers: [AnalyticsService.observer],
       home: const _HomeScreenSwitcher(),

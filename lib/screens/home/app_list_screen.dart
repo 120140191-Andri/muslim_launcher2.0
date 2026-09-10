@@ -579,11 +579,45 @@ class _AppListScreenState extends State<AppListScreen>
         scrolledUnderElevation: 2,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: Icon(Icons.language_rounded, size: 22, color: colorScheme.onSurfaceVariant),
-            tooltip: Translations.get(lang, 'language_selection'),
-            onPressed: () => LanguageSelectionDialog.show(context),
+          Center(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => LanguageSelectionDialog.show(context),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.language_rounded,
+                        size: 15,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        lang.toUpperCase(),
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
+          const SizedBox(width: 6),
           Selector<AppState, int>(
             selector: (_, s) => s.points,
             builder: (_, pts, child) => _PointsBadge(points: pts),

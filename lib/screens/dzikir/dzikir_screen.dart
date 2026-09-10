@@ -452,11 +452,12 @@ class _DzikirScreenState extends State<DzikirScreen>
       enableDrag: false,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
+        final colorScheme = Theme.of(context).colorScheme;
         return Container(
           padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Color(0xFF032B25),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHigh,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: SafeArea(
             child: SingleChildScrollView(
@@ -467,7 +468,7 @@ class _DzikirScreenState extends State<DzikirScreen>
                     width: 48,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
@@ -475,12 +476,12 @@ class _DzikirScreenState extends State<DzikirScreen>
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.teal.shade800.withValues(alpha: 0.5),
+                      color: colorScheme.tertiaryContainer,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.stars_rounded,
-                      color: Colors.amber,
+                      color: colorScheme.onTertiaryContainer,
                       size: 48,
                     ),
                   ),
@@ -488,8 +489,8 @@ class _DzikirScreenState extends State<DzikirScreen>
                   Text(
                     Translations.get(lang, 'dzikir_completed_congrats'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
                       fontSize: 19,
                       fontWeight: FontWeight.bold,
                     ),
@@ -501,16 +502,13 @@ class _DzikirScreenState extends State<DzikirScreen>
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.amber.withValues(alpha: 0.15),
+                      color: colorScheme.tertiaryContainer,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.amber.withValues(alpha: 0.4),
-                      ),
                     ),
                     child: Text(
                       '+$pointsEarned ${Translations.get(lang, 'points')}',
-                      style: const TextStyle(
-                        color: Colors.amber,
+                      style: TextStyle(
+                        color: colorScheme.onTertiaryContainer,
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
@@ -533,14 +531,14 @@ class _DzikirScreenState extends State<DzikirScreen>
                           },
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: const BorderSide(color: Colors.white30),
+                            side: BorderSide(color: colorScheme.outlineVariant),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                           child: Text(
                             Translations.get(lang, 'reset_counter'),
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: colorScheme.onSurface),
                           ),
                         ),
                       ),
@@ -553,8 +551,8 @@ class _DzikirScreenState extends State<DzikirScreen>
                           },
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            backgroundColor: Colors.teal.shade500,
-                            foregroundColor: Colors.white,
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -579,11 +577,12 @@ class _DzikirScreenState extends State<DzikirScreen>
 
   void _openDzikirSelector() {
     final lang = Provider.of<AppState>(context, listen: false).languageCode;
+    final colorScheme = Theme.of(context).colorScheme;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF032B25),
+      backgroundColor: colorScheme.surfaceContainerHigh,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -601,7 +600,7 @@ class _DzikirScreenState extends State<DzikirScreen>
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -609,13 +608,13 @@ class _DzikirScreenState extends State<DzikirScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
-                      const Icon(Icons.grain_rounded, color: Color(0xFF34D399)),
+                      Icon(Icons.grain_rounded, color: colorScheme.primary),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           Translations.get(lang, 'change_dzikir'),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -639,13 +638,14 @@ class _DzikirScreenState extends State<DzikirScreen>
                       return Container(
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? Colors.teal.shade700.withValues(alpha: 0.4)
-                              : Colors.white.withValues(alpha: 0.05),
+                              ? colorScheme.primaryContainer
+                              : colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
-                                ? Colors.teal.shade300
-                                : Colors.white10,
+                                ? colorScheme.primary
+                                : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                            width: isSelected ? 1.5 : 1.0,
                           ),
                         ),
                         child: ListTile(
@@ -662,12 +662,12 @@ class _DzikirScreenState extends State<DzikirScreen>
                           },
                           leading: CircleAvatar(
                             backgroundColor: isSelected
-                                ? Colors.teal.shade400
-                                : Colors.white12,
+                                ? colorScheme.primary
+                                : colorScheme.surfaceContainerHighest,
                             child: Text(
                               "${idx + 1}",
                               style: TextStyle(
-                                color: isSelected ? Colors.black : Colors.white70,
+                                color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
@@ -675,8 +675,8 @@ class _DzikirScreenState extends State<DzikirScreen>
                           ),
                           title: Text(
                             item.title,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -685,16 +685,17 @@ class _DzikirScreenState extends State<DzikirScreen>
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
+                              color: colorScheme.onSurfaceVariant,
                               fontSize: 12,
                             ),
                           ),
                           trailing: Text(
                             item.arabic,
-                            style: const TextStyle(
-                              color: Colors.amber,
+                            style: TextStyle(
+                              color: colorScheme.primary,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              fontFamily: 'Amiri',
                             ),
                           ),
                         ),
@@ -714,6 +715,8 @@ class _DzikirScreenState extends State<DzikirScreen>
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final lang = appState.languageCode;
     final currentPreset = kDzikirPresets[_selectedPresetIndex];
     final progress = (_count / _target).clamp(0.0, 1.0);
@@ -721,22 +724,24 @@ class _DzikirScreenState extends State<DzikirScreen>
     final beadSize = (screenHeight * 0.20).clamp(140.0, 185.0);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF031E1B),
+      backgroundColor: colorScheme.surfaceContainerLowest,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        scrolledUnderElevation: 2,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
+            color: colorScheme.onSurface,
           ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           Translations.get(lang, 'dzikir_mode_title'),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -744,7 +749,7 @@ class _DzikirScreenState extends State<DzikirScreen>
         actions: [
           IconButton(
             tooltip: Translations.get(lang, 'reset_counter'),
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
+            icon: Icon(Icons.refresh_rounded, color: colorScheme.onSurfaceVariant),
             onPressed: () {
               _cooldownController.reset();
               setState(() {
@@ -757,439 +762,407 @@ class _DzikirScreenState extends State<DzikirScreen>
           ),
           IconButton(
             tooltip: Translations.get(lang, 'change_dzikir'),
-            icon: const Icon(Icons.format_list_bulleted_rounded, color: Colors.white70),
+            icon: Icon(Icons.format_list_bulleted_rounded, color: colorScheme.onSurfaceVariant),
             onPressed: _openDzikirSelector,
           ),
         ],
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF053831),
-              Color(0xFF031E1B),
-              Colors.black,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, viewportConstraints) {
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: viewportConstraints.maxHeight,
-                  ),
-                  child: IntrinsicHeight(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 8),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, viewportConstraints) {
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: viewportConstraints.maxHeight,
+                ),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
 
-                          // Face Presence Status Pill Indicator
-                          Container(
+                        // Face Presence Status Pill Indicator (M3 Expressive)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _isFacePresent
+                                ? colorScheme.primaryContainer
+                                : colorScheme.tertiaryContainer,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _isFacePresent
+                                  ? colorScheme.primary.withValues(alpha: 0.5)
+                                  : colorScheme.tertiary.withValues(alpha: 0.5),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _isFacePresent
+                                    ? Icons.visibility_rounded
+                                    : Icons.face_retouching_off_rounded,
+                                size: 16,
+                                color: _isFacePresent
+                                    ? colorScheme.onPrimaryContainer
+                                    : colorScheme.onTertiaryContainer,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  _isFacePresent
+                                      ? Translations.get(lang, 'dzikir_face_detected')
+                                      : Translations.get(lang, 'dzikir_face_not_detected'),
+                                  style: TextStyle(
+                                    color: _isFacePresent
+                                        ? colorScheme.onPrimaryContainer
+                                        : colorScheme.onTertiaryContainer,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Rate Limit Warning Badge
+                        AnimatedOpacity(
+                          opacity: _rateLimitMessage.isNotEmpty ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Container(
+                            margin: const EdgeInsets.only(top: 8),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 14,
-                              vertical: 6,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: _isFacePresent
-                                  ? const Color(0xFF065F46).withValues(alpha: 0.8)
-                                  : Colors.amber.shade900.withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(20),
+                              color: colorScheme.errorContainer,
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: _isFacePresent
-                                    ? const Color(0xFF34D399)
-                                    : Colors.amber.shade400,
-                                width: 1,
+                                color: colorScheme.error.withValues(alpha: 0.5),
+                                width: 0.8,
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _isFacePresent
-                                      ? Icons.visibility_off_rounded
-                                      : Icons.face_retouching_off_rounded,
-                                  size: 16,
-                                  color: _isFacePresent
-                                      ? const Color(0xFF34D399)
-                                      : Colors.amber,
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: Text(
-                                    _isFacePresent
-                                        ? Translations.get(lang, 'dzikir_face_detected')
-                                        : Translations.get(lang, 'dzikir_face_not_detected'),
-                                    style: TextStyle(
-                                      color: _isFacePresent
-                                          ? const Color(0xFF34D399)
-                                          : Colors.amber,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                            child: Text(
+                              _rateLimitMessage,
+                              style: TextStyle(
+                                color: colorScheme.onErrorContainer,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Arabic & Latin Main Dzikir Display Card (Material 3 Expressive)
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(28),
+                            border: Border.all(
+                              color: _isInCooldown
+                                  ? colorScheme.outlineVariant.withValues(alpha: 0.6)
+                                  : colorScheme.primary.withValues(alpha: 0.7),
+                              width: _isInCooldown ? 1.0 : 1.8,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _isInCooldown
+                                    ? Colors.black.withValues(alpha: 0.02)
+                                    : colorScheme.primary.withValues(alpha: 0.1),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              // Arabic Matan Display
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  currentPreset.arabic,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: _isInCooldown
+                                        ? colorScheme.onSurface.withValues(alpha: 0.5)
+                                        : colorScheme.primary,
+                                    fontSize: 34,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Amiri',
+                                    height: 1.3,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
+                              const SizedBox(height: 10),
 
-                          // Rate Limit Warning Badge
-                          AnimatedOpacity(
-                            opacity: _rateLimitMessage.isNotEmpty ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 200),
-                            child: Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade900.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.red.shade400, width: 0.8),
-                              ),
-                              child: Text(
-                                _rateLimitMessage,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                              // Latin Transliteration Pill
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.secondaryContainer,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Text(
+                                  currentPreset.transliteration,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: colorScheme.onSecondaryContainer,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
+                              const SizedBox(height: 8),
 
-                          const SizedBox(height: 12),
-
-                          // Arabic & Latin Main Dzikir Display Card (Prominent when Ready to recite!)
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: _isInCooldown
-                                  ? Colors.white.withValues(alpha: 0.04)
-                                  : const Color(0xFF0F766E).withValues(alpha: 0.22),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: _isInCooldown
-                                    ? Colors.white.withValues(alpha: 0.12)
-                                    : const Color(0xFF34D399).withValues(alpha: 0.7),
-                                width: _isInCooldown ? 1.0 : 1.8,
+                              // Translation
+                              Text(
+                                "\"${currentPreset.getTranslation(lang)}\"",
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 12.5,
+                                  fontStyle: FontStyle.italic,
+                                  fontFamily: 'Inter',
+                                ),
                               ),
-                              boxShadow: _isInCooldown
-                                  ? []
-                                  : [
-                                      BoxShadow(
-                                        color: const Color(0xFF34D399).withValues(alpha: 0.22),
-                                        blurRadius: 20,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                            ),
-                            child: Column(
-                              children: [
-                                // Arabic Matan Display (Glows prominently when ready!)
-                                FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: AnimatedDefaultTextStyle(
-                                    duration: const Duration(milliseconds: 300),
-                                    style: TextStyle(
-                                      color: _isInCooldown
-                                          ? Colors.amber.withValues(alpha: 0.5)
-                                          : const Color(0xFFFBBF24),
-                                      fontSize: 34,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Amiri',
-                                      height: 1.3,
-                                      shadows: _isInCooldown
-                                          ? null
-                                          : const [
-                                              Shadow(
-                                                color: Color(0xFFF59E0B),
-                                                blurRadius: 16,
-                                              ),
+                            ],
+                          ),
+                        ),
+
+                        const Spacer(),
+                        const SizedBox(height: 12),
+
+                        // Large Interactive Circular Tasbih Tap Bead (M3 Expressive)
+                        GestureDetector(
+                          onTap: _onTapTasbih,
+                          child: ScaleTransition(
+                            scale: _pulseAnimation,
+                            child: AnimatedBuilder(
+                              animation: _cooldownAnimation,
+                              builder: (context, child) {
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  width: beadSize,
+                                  height: beadSize,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: _isInCooldown
+                                          ? [
+                                              colorScheme.surfaceContainerHigh,
+                                              colorScheme.surfaceContainerHighest,
+                                            ]
+                                          : [
+                                              colorScheme.primary,
+                                              colorScheme.primary.withValues(alpha: 0.85),
                                             ],
                                     ),
-                                    child: Text(
-                                      currentPreset.arabic,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-
-                                // Latin Transliteration
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _isInCooldown
-                                        ? const Color(0xFF0F766E).withValues(alpha: 0.18)
-                                        : const Color(0xFF0D9488).withValues(alpha: 0.5),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    currentPreset.transliteration,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: _isInCooldown
-                                          ? const Color(0xFF5EEAD4).withValues(alpha: 0.6)
-                                          : const Color(0xFF5EEAD4),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-
-                                // Translation
-                                AnimatedDefaultTextStyle(
-                                  duration: const Duration(milliseconds: 300),
-                                  style: TextStyle(
-                                    color: _isInCooldown
-                                        ? Colors.white.withValues(alpha: 0.45)
-                                        : Colors.white.withValues(alpha: 0.95),
-                                    fontSize: 12.5,
-                                    fontStyle: FontStyle.italic,
-                                    fontFamily: 'Inter',
-                                  ),
-                                  child: Text(
-                                    "\"${currentPreset.getTranslation(lang)}\"",
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const Spacer(),
-                          const SizedBox(height: 12),
-
-                          // Large Interactive Circular Tasbih Tap Bead (With Radial Cooldown & Ready Aura)
-                          GestureDetector(
-                            onTap: _onTapTasbih,
-                            child: ScaleTransition(
-                              scale: _pulseAnimation,
-                              child: AnimatedBuilder(
-                                animation: _cooldownAnimation,
-                                builder: (context, child) {
-                                  return AnimatedContainer(
-                                    duration: const Duration(milliseconds: 250),
-                                    width: beadSize,
-                                    height: beadSize,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: RadialGradient(
-                                        colors: _isInCooldown
-                                            ? [
-                                                Colors.teal.shade900,
-                                                const Color(0xFF021B18),
-                                              ]
-                                            : [
-                                                Colors.teal.shade600,
-                                                const Color(0xFF042F2C),
-                                              ],
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: _isInCooldown
+                                            ? Colors.black.withValues(alpha: 0.04)
+                                            : colorScheme.primary.withValues(alpha: 0.3),
+                                        blurRadius: _isInCooldown ? 12 : 28,
+                                        spreadRadius: _isInCooldown ? 1 : 4,
                                       ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: _isInCooldown
-                                              ? const Color(0xFFFBBF24).withValues(alpha: 0.15)
-                                              : const Color(0xFF34D399).withValues(alpha: 0.45),
-                                          blurRadius: _isInCooldown ? 15 : 30,
-                                          spreadRadius: _isInCooldown ? 1 : 4,
+                                    ],
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // Target Progress Ring
+                                      SizedBox(
+width: beadSize - 10,
+                                        height: beadSize - 10,
+                                        child: CircularProgressIndicator(
+                                          value: progress,
+                                          strokeWidth: 7,
+                                          backgroundColor: _isInCooldown
+                                              ? colorScheme.outlineVariant.withValues(alpha: 0.3)
+                                              : Colors.white.withValues(alpha: 0.2),
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            _isInCooldown
+                                                ? colorScheme.outline
+                                                : Colors.white,
+                                          ),
                                         ),
-                                      ],
-                                    ),
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        // Target Progress Ring (Emerald)
+                                      ),
+
+                                      // Radial Cooldown Arc
+                                      if (_isInCooldown)
                                         SizedBox(
-                                          width: beadSize - 10,
-                                          height: beadSize - 10,
+                                          width: beadSize - 2,
+                                          height: beadSize - 2,
                                           child: CircularProgressIndicator(
-                                            value: progress,
-                                            strokeWidth: 7,
-                                            backgroundColor: Colors.white.withValues(alpha: 0.08),
+                                            value: _cooldownAnimation.value,
+                                            strokeWidth: 3.5,
+                                            backgroundColor: Colors.transparent,
                                             valueColor: AlwaysStoppedAnimation<Color>(
-                                              _isInCooldown
-                                                  ? const Color(0xFF34D399).withValues(alpha: 0.4)
-                                                  : const Color(0xFF34D399),
+                                              colorScheme.tertiary,
                                             ),
                                           ),
                                         ),
 
-                                        // Radial Cooldown Recharge Ring (Golden Amber arc filling up while reciting)
-                                        if (_isInCooldown)
-                                          SizedBox(
-                                            width: beadSize - 2,
-                                            height: beadSize - 2,
-                                            child: CircularProgressIndicator(
-                                              value: _cooldownAnimation.value,
-                                              strokeWidth: 3.5,
-                                              backgroundColor: Colors.transparent,
-                                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                                Color(0xFFFBBF24),
-                                              ),
+                                      // Counter
+                                      Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            "$_count",
+                                            style: TextStyle(
+                                              color: _isInCooldown
+                                                  ? colorScheme.onSurfaceVariant
+                                                  : Colors.white,
+                                              fontSize: (beadSize * 0.26).clamp(36.0, 48.0),
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.0,
                                             ),
                                           ),
-
-                                        // Counter
-                                        Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              "$_count",
-                                              style: TextStyle(
-                                                color: _isInCooldown
-                                                    ? Colors.white.withValues(alpha: 0.75)
-                                                    : Colors.white,
-                                                fontSize: (beadSize * 0.26).clamp(36.0, 48.0),
-                                                fontWeight: FontWeight.bold,
-                                                height: 1.0,
-                                                shadows: _isInCooldown
-                                                    ? null
-                                                    : [
-                                                        Shadow(
-                                                          color: const Color(0xFF34D399).withValues(alpha: 0.6),
-                                                          blurRadius: 12,
-                                                        ),
-                                                      ],
-                                              ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            "/ $_target",
+                                            style: TextStyle(
+                                              color: _isInCooldown
+                                                  ? colorScheme.outline
+                                                  : Colors.white.withValues(alpha: 0.7),
+                                              fontSize: (beadSize * 0.085).clamp(12.0, 15.0),
+                                              fontWeight: FontWeight.w600,
                                             ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              "/ $_target",
-                                              style: TextStyle(
-                                                color: Colors.white.withValues(alpha: 0.5),
-                                                fontSize: (beadSize * 0.085).clamp(12.0, 15.0),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 10),
-                          Text(
-                            Translations.get(lang, 'dzikir_tap_instruction'),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              fontSize: 11.5,
-                            ),
-                          ),
-
-                          const Spacer(),
-                          const SizedBox(height: 12),
-
-                          // Virtue (Fadhilah) Card & Switch Dzikir Button
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.06),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.auto_awesome_rounded,
-                                      color: Colors.amber,
-                                      size: 15,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        lang == 'id' ? 'FADHILAH / KEUTAMAAN' : 'VIRTUE OF DHIKR',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.amber,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.8,
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    InkWell(
-                                      onTap: _openDzikirSelector,
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              Translations.get(lang, 'change_dzikir'),
-                                              style: const TextStyle(
-                                                color: Color(0xFF34D399),
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const Icon(
-                                              Icons.chevron_right_rounded,
-                                              color: Color(0xFF34D399),
-                                              size: 15,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  currentPreset.getVirtue(lang),
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    fontSize: 12,
-                                    height: 1.35,
+                                    ],
                                   ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+
+                        const SizedBox(height: 10),
+                        Text(
+                          Translations.get(lang, 'dzikir_tap_instruction'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 11.5,
+                          ),
+                        ),
+
+                        const Spacer(),
+                        const SizedBox(height: 12),
+
+                        // Virtue (Fadhilah) Card (M3 Expressive)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    color: colorScheme.tertiary,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      lang == 'id' ? 'FADHILAH / KEUTAMAAN' : 'VIRTUE OF DHIKR',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: colorScheme.tertiary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  InkWell(
+                                    onTap: _openDzikirSelector,
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primaryContainer,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            Translations.get(lang, 'change_dzikir'),
+                                            style: TextStyle(
+                                              color: colorScheme.onPrimaryContainer,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 2),
+                                          Icon(
+                                            Icons.chevron_right_rounded,
+                                            color: colorScheme.onPrimaryContainer,
+                                            size: 14,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                currentPreset.getVirtue(lang),
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 12,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

@@ -541,26 +541,28 @@ class _AppListScreenState extends State<AppListScreen>
           ),
           child: TextField(
             controller: _searchController,
-            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+            style: TextStyle(color: colorScheme.onSurface, fontSize: 13.5),
             cursorColor: colorScheme.primary,
             textAlignVertical: TextAlignVertical.center,
             decoration: InputDecoration(
               hintText: Translations.get(lang, 'search_apps'),
               hintStyle: TextStyle(
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                fontSize: 14,
+                fontSize: 13.5,
               ),
               border: InputBorder.none,
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              prefixIconConstraints: const BoxConstraints(minWidth: 36, maxHeight: 40),
               prefixIcon: Icon(
                 Icons.search_rounded,
                 color: colorScheme.onSurfaceVariant,
-                size: 19,
+                size: 18,
               ),
+              suffixIconConstraints: const BoxConstraints(minWidth: 36, maxHeight: 40),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      iconSize: 17,
+                      iconSize: 16,
                       padding: EdgeInsets.zero,
                       icon: Icon(Icons.close_rounded, color: colorScheme.onSurfaceVariant),
                       onPressed: () {

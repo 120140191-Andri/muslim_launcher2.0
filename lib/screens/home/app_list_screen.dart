@@ -507,7 +507,6 @@ class _AppListScreenState extends State<AppListScreen>
     );
   }
 
-
   Future<void> _openSupportDeveloperUrl() async {
     try {
       final appState = Provider.of<AppState>(context, listen: false);
@@ -525,52 +524,63 @@ class _AppListScreenState extends State<AppListScreen>
   Widget build(BuildContext context) {
     // Only read language from AppState here; points badge uses Selector below.
     final lang = context.select<AppState, String>((s) => s.languageCode);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F4),
+      backgroundColor: colorScheme.surfaceContainerLowest,
       appBar: AppBar(
-        title: TextField(
-          controller: _searchController,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-          cursorColor: Colors.white,
-          textAlignVertical: TextAlignVertical.center,
-          decoration: InputDecoration(
-            hintText: Translations.get(lang, 'search_apps'),
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-            border: InputBorder.none,
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    iconSize: 20,
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {
-                        _searchQuery = '';
-                        _updateFilter();
-                      });
-                    },
-                  )
-                : const Icon(
-                    Icons.search_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+        titleSpacing: 16,
+        title: Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(24),
           ),
-          onChanged: (val) {
-            setState(() {
-              _searchQuery = val.toLowerCase();
-              _updateFilter();
-            });
-          },
+          child: TextField(
+            controller: _searchController,
+            style: TextStyle(color: colorScheme.onSurface, fontSize: 15),
+            cursorColor: colorScheme.primary,
+            textAlignVertical: TextAlignVertical.center,
+            decoration: InputDecoration(
+              hintText: Translations.get(lang, 'search_apps'),
+              hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
+              border: InputBorder.none,
+              isDense: true,
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                color: colorScheme.onSurfaceVariant,
+                size: 20,
+              ),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      iconSize: 18,
+                      icon: Icon(Icons.close_rounded, color: colorScheme.onSurfaceVariant),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _updateFilter();
+                        });
+                      },
+                    )
+                  : null,
+            ),
+            onChanged: (val) {
+              setState(() {
+                _searchQuery = val.toLowerCase();
+                _updateFilter();
+              });
+            },
+          ),
         ),
-        backgroundColor: Colors.teal.shade800,
-        foregroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        scrolledUnderElevation: 2,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.language_rounded, size: 22),
+            icon: Icon(Icons.language_rounded, size: 22, color: colorScheme.onSurfaceVariant),
             tooltip: Translations.get(lang, 'language_selection'),
             onPressed: () => LanguageSelectionDialog.show(context),
           ),
@@ -583,31 +593,33 @@ class _AppListScreenState extends State<AppListScreen>
       ),
       body: Column(
         children: [
+          // Support Dev Banner (Material 3 Expressive)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.teal.shade800,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
+              color: colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
               ),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.favorite_rounded,
-                  color: Colors.amber.shade300,
-                  size: 15,
+                  color: colorScheme.tertiary,
+                  size: 18,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     Translations.get(lang, 'support_dev_msg'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -615,38 +627,31 @@ class _AppListScreenState extends State<AppListScreen>
                 const SizedBox(width: 8),
                 InkWell(
                   onTap: _openSupportDeveloperUrl,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
+                      horizontal: 12,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.amber.shade700,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 3,
-                          offset: const Offset(0, 1.5),
-                        ),
-                      ],
+                      color: colorScheme.tertiaryContainer,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.coffee_rounded,
-                          color: Colors.white,
-                          size: 13,
+                          color: colorScheme.onTertiaryContainer,
+                          size: 14,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           Translations.get(lang, 'support_feature_request'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onTertiaryContainer,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -848,8 +853,8 @@ class _AppTile extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: isBlocked
-                      ? Colors.grey.shade500
-                      : Colors.teal.shade900,
+                      ? Theme.of(context).colorScheme.outline
+                      : Theme.of(context).colorScheme.onSurface,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -896,42 +901,46 @@ class _AppIconState extends State<_AppIcon> {
   @override
   Widget build(BuildContext context) {
     final bytes = AppListScreen.iconCache[widget.packageName];
+    final colorScheme = Theme.of(context).colorScheme;
 
     if (bytes == null || bytes.isEmpty) {
       return Container(
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.teal.shade50.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
+          color: colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(14),
         ),
-        child: Icon(Icons.apps_rounded, size: 22, color: Colors.teal.shade700),
+        child: Icon(Icons.apps_rounded, size: 22, color: colorScheme.primary),
       );
     }
 
-    Widget img = Image.memory(
-      bytes,
-      width: 48,
-      height: 48,
-      cacheWidth: 96,
-      cacheHeight: 96,
-      fit: BoxFit.contain,
-      gaplessPlayback: true,
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: Colors.teal.shade50.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            Icons.apps_rounded,
-            size: 22,
-            color: Colors.teal.shade700,
-          ),
-        );
-      },
+    Widget img = ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Image.memory(
+        bytes,
+        width: 48,
+        height: 48,
+        cacheWidth: 96,
+        cacheHeight: 96,
+        fit: BoxFit.contain,
+        gaplessPlayback: true,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.apps_rounded,
+              size: 22,
+              color: colorScheme.primary,
+            ),
+          );
+        },
+      ),
     );
 
     if (widget.grayscale) {
@@ -952,22 +961,23 @@ class _PointsBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
+        color: colorScheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.stars_rounded, color: Colors.amber, size: 16),
+          Icon(Icons.stars_rounded, color: colorScheme.onTertiaryContainer, size: 16),
           const SizedBox(width: 4),
           Text(
             points.toString(),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colorScheme.onTertiaryContainer,
               fontWeight: FontWeight.bold,
               fontSize: 13,
             ),

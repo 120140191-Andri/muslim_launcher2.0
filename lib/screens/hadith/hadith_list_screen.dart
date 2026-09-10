@@ -82,16 +82,19 @@ class _HadithListScreenState extends State<HadithListScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final lang = appState.languageCode;
     final allHadiths = appState.hadithData;
     final themeList = _getThemes(allHadiths, lang);
     final filteredHadiths = _getFiltered(allHadiths, lang);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0FDF4),
+      backgroundColor: colorScheme.surfaceContainerLowest,
       appBar: AppBar(
-        backgroundColor: Colors.teal.shade800,
-        foregroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        scrolledUnderElevation: 2,
         elevation: 0,
         title: Text(
           Translations.get(lang, 'hadith_collection'),
@@ -99,7 +102,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.language_rounded, size: 22),
+            icon: Icon(Icons.language_rounded, size: 22, color: colorScheme.onSurfaceVariant),
             tooltip: Translations.get(lang, 'language_selection'),
             onPressed: () {
               LanguageSelectionDialog.show(context);
@@ -110,20 +113,20 @@ class _HadithListScreenState extends State<HadithListScreen> {
           ),
           Container(
             margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
+              color: colorScheme.tertiaryContainer,
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.stars_rounded, color: Colors.amber, size: 16),
+                Icon(Icons.stars_rounded, color: colorScheme.onTertiaryContainer, size: 16),
                 const SizedBox(width: 4),
                 Text(
                   '${appState.points}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colorScheme.onTertiaryContainer,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -135,15 +138,15 @@ class _HadithListScreenState extends State<HadithListScreen> {
       ),
       body: Column(
         children: [
-          // Header Card: Hadith Mode Description
+          // Header Card: Hadith Mode Description (Material 3 Expressive)
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 18),
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.teal.shade800,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(26),
-                bottomRight: Radius.circular(26),
+              color: colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
               ),
             ),
             child: Column(
@@ -152,18 +155,18 @@ class _HadithListScreenState extends State<HadithListScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.spa_rounded, color: Color(0xFF4ADE80), size: 14),
+                      Icon(Icons.spa_rounded, color: colorScheme.onPrimaryContainer, size: 14),
                       const SizedBox(width: 6),
                       Text(
                         Translations.get(lang, 'hadith_mode_title'),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colorScheme.onPrimaryContainer,
                           fontSize: 11.5,
                           fontWeight: FontWeight.bold,
                         ),
@@ -175,7 +178,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
                 Text(
                   Translations.get(lang, 'hadith_mode_desc'),
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: colorScheme.onSurfaceVariant,
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -184,52 +187,53 @@ class _HadithListScreenState extends State<HadithListScreen> {
             ),
           ),
 
-          const SizedBox(height: 4),
-
-          // Theme Filter Chips
+          // Theme Filter Chips (M3 Expressive FilterChips)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
-              children: themeList.map((theme) {
+              children: themeList.map((t) {
                 final isSelected = (_selectedTheme.isEmpty &&
-                        theme == Translations.get(lang, 'theme_all')) ||
-                    _selectedTheme == theme;
+                        t == Translations.get(lang, 'theme_all')) ||
+                    _selectedTheme == t;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(20),
                       onTap: () {
                         setState(() {
-                          _selectedTheme = isSelected ? '' : theme;
+                          _selectedTheme = isSelected ? '' : t;
                         });
                       },
-                      child: Container(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 14,
+                          vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.teal.shade700 : Colors.white,
-                          borderRadius: BorderRadius.circular(14),
+                          color: isSelected
+                              ? colorScheme.primaryContainer
+                              : colorScheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
                                 ? Colors.transparent
-                                : Colors.teal.shade100,
+                                : colorScheme.outlineVariant.withValues(alpha: 0.6),
                           ),
                         ),
                         child: Text(
-                          theme,
+                          t,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight:
                                 isSelected ? FontWeight.bold : FontWeight.w500,
                             color: isSelected
-                                ? Colors.white
-                                : Colors.teal.shade800,
+                                ? colorScheme.onPrimaryContainer
+                                : colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -251,7 +255,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
                 final item = filteredHadiths[index] as Map<String, dynamic>;
                 final hadithId = item['id'] as int? ?? (index + 1);
                 final isRead = appState.isHadithRead(hadithId);
-                final theme = _getHadithTheme(item, lang);
+                final hadithTheme = _getHadithTheme(item, lang);
                 final arabic = item['arabic'] as String? ?? '';
                 final translations =
                     item['translations'] as Map<String, dynamic>? ?? {};
@@ -272,25 +276,26 @@ class _HadithListScreenState extends State<HadithListScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    color: colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color:
-                          isRead ? Colors.teal.shade300 : Colors.teal.shade50,
+                      color: isRead
+                          ? colorScheme.primary.withValues(alpha: 0.5)
+                          : colorScheme.outlineVariant.withValues(alpha: 0.5),
                       width: isRead ? 1.5 : 1.0,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                       onTap: () {
                         final originalIndex = allHadiths.indexOf(item);
                         Navigator.push(
@@ -318,15 +323,13 @@ class _HadithListScreenState extends State<HadithListScreen> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: isRead
-                                        ? Colors.teal.shade700
-                                        : Colors.teal.shade800,
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: colorScheme.secondaryContainer,
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
                                     "#$hadithId",
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: colorScheme.onSecondaryContainer,
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -335,11 +338,11 @@ class _HadithListScreenState extends State<HadithListScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    theme,
+                                    hadithTheme,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: Colors.teal.shade900,
+                                      color: colorScheme.onSurface,
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -352,8 +355,8 @@ class _HadithListScreenState extends State<HadithListScreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.teal.shade50,
-                                      borderRadius: BorderRadius.circular(10),
+                                      color: colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -361,7 +364,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
                                         Icon(
                                           Icons.check_circle_rounded,
                                           size: 14,
-                                          color: Colors.teal.shade700,
+                                          color: colorScheme.onPrimaryContainer,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
@@ -370,7 +373,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
                                             'hadith_completed',
                                           ),
                                           style: TextStyle(
-                                            color: Colors.teal.shade700,
+                                            color: colorScheme.onPrimaryContainer,
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -385,22 +388,22 @@ class _HadithListScreenState extends State<HadithListScreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.amber.shade50,
-                                      borderRadius: BorderRadius.circular(10),
+                                      color: colorScheme.tertiaryContainer,
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.stars_rounded,
                                           size: 14,
-                                          color: Colors.amber,
+                                          color: colorScheme.onTertiaryContainer,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
                                           '+$pts ${Translations.get(lang, 'points')}',
                                           style: TextStyle(
-                                            color: Colors.amber.shade900,
+                                            color: colorScheme.onTertiaryContainer,
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -419,10 +422,10 @@ class _HadithListScreenState extends State<HadithListScreen> {
                               textAlign: TextAlign.right,
                               textDirection: TextDirection.rtl,
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 17,
                                 height: 1.8,
                                 fontFamily: 'Amiri',
-                                color: Colors.teal.shade900,
+                                color: colorScheme.onSurface,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -434,7 +437,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 12.5,
-                                color: Colors.grey.shade700,
+                                color: colorScheme.onSurfaceVariant,
                                 fontStyle: FontStyle.italic,
                                 height: 1.4,
                               ),
@@ -445,8 +448,8 @@ class _HadithListScreenState extends State<HadithListScreen> {
                                 children: [
                                   Icon(
                                     Icons.menu_book_rounded,
-                                    size: 12,
-                                    color: Colors.teal.shade600,
+                                    size: 13,
+                                    color: colorScheme.primary,
                                   ),
                                   const SizedBox(width: 4),
                                   Expanded(
@@ -456,7 +459,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: Colors.teal.shade700,
+                                        color: colorScheme.primary,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -464,7 +467,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
                                   Icon(
                                     Icons.arrow_forward_ios_rounded,
                                     size: 12,
-                                    color: Colors.grey.shade400,
+                                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                                   ),
                                 ],
                               ),

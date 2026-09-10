@@ -33,12 +33,21 @@ class _SurahListScreenState extends State<SurahListScreen> {
     final int unlockedUntilIndex =
         prevFinished ? highestSurah + 1 : highestSurah;
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F4),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: Text(Translations.get(lang, 'select_surah')),
-        backgroundColor: Colors.teal.shade800,
-        foregroundColor: Colors.white,
+        title: Text(
+          Translations.get(lang, 'select_surah'),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        scrolledUnderElevation: 2,
         elevation: 0,
         actions: [
           _PointsBadge(
@@ -51,25 +60,27 @@ class _SurahListScreenState extends State<SurahListScreen> {
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.teal.shade800,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
+              color: colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.menu_book_rounded,
-                  color: Colors.white70,
+                  color: colorScheme.primary,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Text(
                   Translations.get(lang, 'total_surahs'),
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -80,7 +91,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 : ListView.builder(
                     physics: const BouncingScrollPhysics(),
                     cacheExtent: 80,
-                    padding: const EdgeInsets.fromLTRB(0, 12, 0, 60),
+                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 60),
                     itemCount: appState.quranData.length,
                     itemBuilder: (context, index) {
                       final surah = appState.quranData[index];
@@ -137,29 +148,29 @@ class _SurahTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       decoration: BoxDecoration(
-        color: isLastRead ? Colors.teal.shade50 : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: isLastRead
-            ? Border.all(color: Colors.teal.shade200, width: 2)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: isLastRead
+            ? colorScheme.primaryContainer.withValues(alpha: 0.35)
+            : colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isLastRead
+              ? colorScheme.primary
+              : colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: isLastRead ? 1.5 : 1.0,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
                 _SurahNumberShape(
@@ -179,18 +190,16 @@ class _SurahTile extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: isLastRead
-                              ? Colors.teal.shade900
-                              : Colors.black,
+                              ? colorScheme.primary
+                              : colorScheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         "${surah['total_ayah']} ${Translations.get(lang, 'ayah')}",
                         style: TextStyle(
                           fontSize: 12,
-                          color: isLastRead
-                              ? Colors.teal.shade700
-                              : Colors.grey.shade600,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -199,26 +208,26 @@ class _SurahTile extends StatelessWidget {
                 if (isFinished)
                   Icon(
                     Icons.check_circle_rounded,
-                    color: Colors.teal.shade400,
+                    color: colorScheme.primary,
                     size: 20,
                   )
                 else if (isLastRead)
                   Icon(
                     Icons.history_rounded,
-                    color: Colors.teal.shade400,
+                    color: colorScheme.primary,
                     size: 20,
                   )
                 else if (isFuture)
                   Icon(
                     Icons.lock_outline_rounded,
-                    color: Colors.teal.shade100,
+                    color: colorScheme.outlineVariant,
                     size: 20,
                   )
                 else
                   Icon(
                     Icons.arrow_forward_ios_rounded,
-                    color: Colors.teal.shade300,
-                    size: 16,
+                    color: colorScheme.outlineVariant,
+                    size: 14,
                   ),
               ],
             ),
@@ -236,56 +245,61 @@ class _PointsBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.end,
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.auto_awesome_rounded,
-                color: Colors.amber,
-                size: 10,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                "Khatm $khatmCount'x",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
+        if (khatmCount > 0) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  color: colorScheme.onPrimaryContainer,
+                  size: 11,
                 ),
-              ),
-            ],
+                const SizedBox(width: 4),
+                Text(
+                  "Khatm ${khatmCount}x",
+                  style: TextStyle(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10.5,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
+          const SizedBox(width: 6),
+        ],
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            color: colorScheme.tertiaryContainer,
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.stars_rounded, color: Colors.amber, size: 10),
+              Icon(
+                Icons.stars_rounded,
+                color: colorScheme.onTertiaryContainer,
+                size: 13,
+              ),
               const SizedBox(width: 4),
               Text(
                 points.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: colorScheme.onTertiaryContainer,
                   fontWeight: FontWeight.bold,
-                  fontSize: 10,
+                  fontSize: 11,
                 ),
               ),
             ],
@@ -309,12 +323,17 @@ class _SurahNumberShape extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color color = isLastRead ? Colors.teal.shade200 : Colors.teal.shade50;
-    Color textColor = isLastRead ? Colors.teal.shade900 : Colors.teal.shade800;
+    final colorScheme = Theme.of(context).colorScheme;
+    Color color = isLastRead
+        ? colorScheme.primaryContainer
+        : colorScheme.surfaceContainerHighest;
+    Color textColor = isLastRead
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
 
     if (isFuture) {
-      color = Colors.grey.shade200;
-      textColor = Colors.grey.shade400;
+      color = colorScheme.surfaceContainerHigh.withValues(alpha: 0.5);
+      textColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
     }
 
     return SizedBox(

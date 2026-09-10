@@ -175,27 +175,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildHeaderBadge({
+    required BuildContext context,
     required IconData icon,
     required String value,
     required Color color,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
+        color: colorScheme.tertiaryContainer,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.onTertiaryContainer.withValues(alpha: 0.15),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 12),
+          Icon(icon, color: colorScheme.onTertiaryContainer, size: 14),
           const SizedBox(width: 4),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colorScheme.onTertiaryContainer,
               fontWeight: FontWeight.bold,
-              fontSize: 11,
+              fontSize: 11.5,
             ),
           ),
         ],
@@ -225,10 +230,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.teal.shade900,
-                            const Color(0xFFF8FAFA),
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context).colorScheme.surface,
                           ],
-                          stops: const [0.0, 0.5],
+                          stops: const [0.0, 0.45],
                         ),
                       ),
                     ),
@@ -252,76 +257,87 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   const SizedBox(width: 8),
                                   Row(
                                     children: [
-                                      GestureDetector(
-                                        onTap: () =>
-                                            LanguageSelectionDialog.show(
-                                              context,
+                                      Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () =>
+                                              LanguageSelectionDialog.show(
+                                                context,
+                                              ),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 6,
                                             ),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.18,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(14),
-                                            border: Border.all(
+                                            decoration: BoxDecoration(
                                               color: Colors.white.withValues(
-                                                alpha: 0.25,
+                                                alpha: 0.18,
                                               ),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.language_rounded,
-                                                color: Colors.white,
-                                                size: 15,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                lang.toUpperCase(),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.25,
                                                 ),
                                               ),
-                                            ],
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.language_rounded,
+                                                  color: Colors.white,
+                                                  size: 15,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  lang.toUpperCase(),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
-                                      GestureDetector(
-                                        onTap: () => appState
-                                            .navigatorKey.currentState
-                                            ?.push(
-                                          AppPageRoute(
-                                            child:
-                                                const ReadingHistoryScreen(),
-                                          ),
-                                        ),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.15,
+                                      Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () => appState
+                                              .navigatorKey.currentState
+                                              ?.push(
+                                            AppPageRoute(
+                                              child:
+                                                  const ReadingHistoryScreen(),
                                             ),
-                                            shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(
-                                            Icons.history_rounded,
-                                            color: Colors.white,
-                                            size: 18,
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.18,
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.history_rounded,
+                                              color: Colors.white,
+                                              size: 18,
+                                            ),
                                           ),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       _buildHeaderBadge(
+                                        context: context,
                                         icon: Icons.stars_rounded,
                                         value: "${appState.points} Pts",
                                         color: Colors.amber,
@@ -345,9 +361,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         Expanded(
                           child: Container(
                             width: double.infinity,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF8FAFA),
-                              borderRadius: BorderRadius.only(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(32),
                                 topRight: Radius.circular(32),
                               ),
@@ -701,17 +717,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ? 'Dzikir'
         : 'Dhikr';
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Center(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 380),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        constraints: const BoxConstraints(maxWidth: 390),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(32),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 10,
+              color: colorScheme.shadow.withValues(alpha: 0.08),
+              blurRadius: 16,
               offset: const Offset(0, 4),
             ),
           ],
@@ -721,6 +743,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           children: [
             Expanded(
               child: _buildDockItem(
+                context: context,
                 icon: Icons.home_rounded,
                 label: 'Home',
                 isActive: true,
@@ -729,6 +752,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
             Expanded(
               child: _buildDockItem(
+                context: context,
                 icon: Icons.menu_book_rounded,
                 label: 'Quran',
                 isActive: false,
@@ -739,6 +763,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
             Expanded(
               child: _buildDockItem(
+                context: context,
                 icon: Icons.grain_rounded,
                 label: dzikirLabel,
                 isActive: false,
@@ -749,6 +774,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
             Expanded(
               child: _buildDockItem(
+                context: context,
                 icon: Icons.spa_rounded,
                 label: hadithLabel,
                 isActive: false,
@@ -759,6 +785,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
             Expanded(
               child: _buildDockItem(
+                context: context,
                 icon: Icons.apps_rounded,
                 label: 'Apps',
                 isActive: false,
@@ -774,43 +801,57 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildDockItem({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required bool isActive,
     required VoidCallback onTap,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        splashColor: Colors.teal.withValues(alpha: 0.15),
-        highlightColor: Colors.teal.withValues(alpha: 0.08),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          decoration: BoxDecoration(
-            color: isActive
-                ? Colors.teal.withValues(alpha: 0.08)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
+        borderRadius: BorderRadius.circular(24),
+        splashColor: colorScheme.primary.withValues(alpha: 0.12),
+        highlightColor: colorScheme.primary.withValues(alpha: 0.06),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                color: isActive ? Colors.teal : Colors.grey.shade500,
-                size: 22,
+              // M3 Expressive Pill Indicator
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                width: isActive ? 52 : 36,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? colorScheme.primaryContainer
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  icon,
+                  color: isActive
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   label,
                   maxLines: 1,
                   style: TextStyle(
-                    color: isActive ? Colors.teal : Colors.grey.shade500,
-                    fontSize: 10,
+                    color: isActive
+                        ? colorScheme.onSurface
+                        : colorScheme.onSurfaceVariant,
+                    fontSize: 10.5,
                     fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                     letterSpacing: 0.2,
                   ),
@@ -1227,21 +1268,20 @@ class _LastAyatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.teal.shade900.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -1249,36 +1289,27 @@ class _LastAyatCard extends StatelessWidget {
             child: Stack(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(16), // Reduced from 20
+                  padding: const EdgeInsets.all(18),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.teal.shade400,
-                              Colors.teal.shade700,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(18),
+                          color: colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.auto_stories_rounded,
-                          color: Colors.white,
-                          size: 28,
+                          color: colorScheme.onPrimaryContainer,
+                          size: 26,
                         ),
                       ),
-                      const SizedBox(width: 20),
+                      const SizedBox(width: 18),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Add extra padding at the top for the badge if needed,
-                            // but let's see if we can just push the text down a bit
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 4),
                             Text(
                               surah.isEmpty
                                   ? Translations.get(lang, 'start_reading')
@@ -1286,12 +1317,12 @@ class _LastAyatCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: Colors.teal.shade900,
-                                fontSize: 18,
+                                color: colorScheme.onSurface,
+                                fontSize: 17,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 3),
                             Text(
                               surah.isEmpty
                                   ? Translations.get(lang, 'find_guidance_today')
@@ -1299,8 +1330,8 @@ class _LastAyatCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: Colors.teal.shade600,
-                                fontSize: 14,
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 13,
                               ),
                             ),
                             if (surah.isNotEmpty) ...[
@@ -1313,8 +1344,8 @@ class _LastAyatCard extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.teal.shade400,
+                                        fontSize: 10.5,
+                                        color: colorScheme.primary,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -1324,7 +1355,7 @@ class _LastAyatCard extends StatelessWidget {
                                     width: 3,
                                     height: 3,
                                     decoration: BoxDecoration(
-                                      color: Colors.teal.shade200,
+                                      color: colorScheme.outlineVariant,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
@@ -1335,8 +1366,8 @@ class _LastAyatCard extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.teal.shade400,
+                                        fontSize: 10.5,
+                                        color: colorScheme.primary,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -1350,8 +1381,8 @@ class _LastAyatCard extends StatelessWidget {
                       if (surah.isNotEmpty)
                         Icon(
                           Icons.play_circle_fill_rounded,
-                          color: Colors.teal.shade600,
-                          size: 40,
+                          color: colorScheme.primary,
+                          size: 38,
                         ),
                     ],
                   ),
@@ -1365,10 +1396,10 @@ class _LastAyatCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: 8,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade400,
+                        color: colorScheme.tertiaryContainer,
                         borderRadius: const BorderRadius.only(
                           bottomLeft: Radius.circular(16),
                         ),
@@ -1376,17 +1407,17 @@ class _LastAyatCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.auto_awesome_rounded,
-                            color: Color(0xFF5D4037),
-                            size: 10,
+                            color: colorScheme.onTertiaryContainer,
+                            size: 11,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             "Khatm: ${khatmCount}x",
-                            style: const TextStyle(
-                              color: Color(0xFF5D4037),
-                              fontSize: 10,
+                            style: TextStyle(
+                              color: colorScheme.onTertiaryContainer,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1403,11 +1434,11 @@ class _LastAyatCard extends StatelessWidget {
                     right: 0,
                     child: LinearProgressIndicator(
                       value: ayahNumber / totalAyahs,
-                      backgroundColor: Colors.teal.shade50,
+                      backgroundColor: colorScheme.surfaceContainerHighest,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.teal.shade300,
+                        colorScheme.primary,
                       ),
-                      minHeight: 4,
+                      minHeight: 3,
                     ),
                   ),
               ],
@@ -1436,24 +1467,23 @@ class _GridAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       constraints: const BoxConstraints(minHeight: 148),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Column(
@@ -1463,10 +1493,10 @@ class _GridAction extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(18),
                   ),
-                  child: Icon(icon, color: color, size: 28),
+                  child: Icon(icon, color: color, size: 26),
                 ),
                 const SizedBox(height: 12),
                 Column(
@@ -1478,17 +1508,20 @@ class _GridAction extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: Colors.teal.shade900,
+                        color: colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -1519,36 +1552,31 @@ class _DailyInspiration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     final double fontSize = hadithText.length < 60
-        ? 20
+        ? 18
         : hadithText.length < 120
-        ? 17
+        ? 16
         : hadithText.length < 200
-        ? 15
-        : 14;
+        ? 14.5
+        : 13.5;
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.teal.shade800, Colors.teal.shade900],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
         ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.teal.shade900.withValues(alpha: 0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -1556,34 +1584,45 @@ class _DailyInspiration extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: Colors.amber,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        Translations.get(lang, 'insight_of_the_day'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.amber,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.auto_awesome_rounded,
+                            color: colorScheme.onPrimaryContainer,
+                            size: 13,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            Translations.get(lang, 'insight_of_the_day'),
+                            style: TextStyle(
+                              color: colorScheme.onPrimaryContainer,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(
+                    const Spacer(),
+                    Icon(
                       Icons.format_quote_rounded,
-                      color: Colors.amber,
-                      size: 24,
+                      color: colorScheme.primary.withValues(alpha: 0.4),
+                      size: 26,
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Text(
                   hadithText.isNotEmpty
                       ? '"$hadithText"'
@@ -1591,7 +1630,7 @@ class _DailyInspiration extends StatelessWidget {
                   maxLines: 10,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onSurface,
                     fontSize: fontSize,
                     fontWeight: FontWeight.w500,
                     fontStyle: FontStyle.italic,
@@ -1600,21 +1639,21 @@ class _DailyInspiration extends StatelessWidget {
                   ),
                 ),
                 if (narrator.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                      horizontal: 10,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
+                      color: colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       narrator,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11.5,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

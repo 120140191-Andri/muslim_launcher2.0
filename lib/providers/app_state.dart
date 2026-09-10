@@ -238,7 +238,10 @@ class AppState extends ChangeNotifier {
           if (cleanPkg == _lastBlockedAppDismissedPackage && (now - _lastBlockedAppDismissedTime) < 3000) {
             return;
           }
-          if (_lastAttemptedBlockedPackage == cleanPkg) return;
+          // Time-based guard: allow re-trigger for same package if >1.5s has passed
+          // (previously exact-match guard blocked re-triggers from external launches)
+          if (_lastAttemptedBlockedPackage == cleanPkg && (now - _lastBlockedEventTime) < 1500) return;
+          _lastBlockedEventTime = now;
 
           _lastAttemptedBlockedPackage = cleanPkg;
           _lastAttemptedProhibitedPackage = null;
@@ -254,7 +257,9 @@ class AppState extends ChangeNotifier {
           if (cleanPkg == _lastGhadhulBasharDismissedPackage && (now - _lastGhadhulBasharDismissedTime) < 4000) {
             return;
           }
-          if (_lastAttemptedGhadhulBasharPackage == cleanPkg) return;
+          // Time-based guard: allow re-trigger for same package if >1.5s has passed
+          if (_lastAttemptedGhadhulBasharPackage == cleanPkg && (now - _lastGhadhulEventTime) < 1500) return;
+          _lastGhadhulEventTime = now;
 
           _lastAttemptedGhadhulBasharPackage = cleanPkg;
           _lastAttemptedBlockedPackage = null;
@@ -269,7 +274,9 @@ class AppState extends ChangeNotifier {
           if (cleanPkg == _lastProhibitedTriggeredPackage && (now - _lastProhibitedTriggeredTime) < 2000) {
             return;
           }
-          if (_lastAttemptedProhibitedPackage == cleanPkg) return;
+          // Time-based guard: allow re-trigger for same package if >1.5s has passed
+          if (_lastAttemptedProhibitedPackage == cleanPkg && (now - _lastProhibitedEventTime) < 1500) return;
+          _lastProhibitedEventTime = now;
 
           _lastProhibitedTriggeredPackage = cleanPkg;
           _lastProhibitedTriggeredTime = now;
@@ -292,9 +299,13 @@ class AppState extends ChangeNotifier {
         AppListScreen.preload(forceRefresh: true);
         syncAppsWithCategories(rawApps);
       } else if (call.method == 'onHomePressed') {
-        if (hasActiveOverlay) {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final isRecentlyTriggered = (now - _lastBlockedEventTime < 2500) ||
+            (now - _lastGhadhulEventTime < 2500) ||
+            (now - _lastProhibitedEventTime < 2500);
+        if (hasActiveOverlay && !isRecentlyTriggered) {
           clearAllOverlays();
-        } else {
+        } else if (!hasActiveOverlay) {
           goHome();
         }
       }
@@ -364,6 +375,45 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Re-checks for any pending block/prohibited/ghadhul events from native.
+  /// Called on app resume to catch events that were dropped while Flutter was in background.
+  /// This is the last safety net: even if MethodChannel, handleIntent, and debounce all fail,
+  /// this will pick up the pending event.
+  Future<void> checkPendingNativeBlocks() async {
+    try {
+      const blockChannel = MethodChannel('com.muslimlauncher/block');
+      final data = await blockChannel.invokeMethod('getPendingInitialBlock');
+      if (data is Map) {
+        final pendingProhibited = data['prohibited'] as String?;
+        final pendingBlocked = data['blocked'] as String?;
+        final pendingGhadhul = data['ghadhul'] as String?;
+        bool changed = false;
+        if (pendingProhibited != null && pendingProhibited.isNotEmpty) {
+          _lastAttemptedProhibitedPackage = pendingProhibited.toLowerCase();
+          _lastAttemptedBlockedPackage = null;
+          _lastAttemptedGhadhulBasharPackage = null;
+          changed = true;
+        } else if (pendingBlocked != null && pendingBlocked.isNotEmpty) {
+          final cleanBlocked = pendingBlocked.toLowerCase();
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final expiry = _unlockedExpirations[cleanBlocked];
+          if (expiry == null || now >= expiry) {
+            _lastAttemptedBlockedPackage = cleanBlocked;
+            _lastAttemptedProhibitedPackage = null;
+            _lastAttemptedGhadhulBasharPackage = null;
+            changed = true;
+          }
+        } else if (pendingGhadhul != null && pendingGhadhul.isNotEmpty) {
+          _lastAttemptedGhadhulBasharPackage = pendingGhadhul.toLowerCase();
+          _lastAttemptedProhibitedPackage = null;
+          _lastAttemptedBlockedPackage = null;
+          changed = true;
+        }
+        if (changed) notifyListeners();
+      }
+    } catch (_) {}
+  }
+
   void refreshStatus() async {
     bool changed = false;
 
@@ -398,9 +448,35 @@ class AppState extends ChangeNotifier {
       _statusTimer = null;
       return;
     }
-    // Only tick when there are active temporary unlocks to monitor
-    _statusTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    // Adaptive timer: tick every 1 second when near expiry (<2 min), else every 5 seconds
+    final now = DateTime.now().millisecondsSinceEpoch;
+    int nearestExpiryMs = 999999999;
+    for (final expiry in _unlockedExpirations.values) {
+      final remaining = expiry - now;
+      if (remaining > 0 && remaining < nearestExpiryMs) {
+        nearestExpiryMs = remaining;
+      }
+    }
+    final interval = nearestExpiryMs < 120000 ? 1 : 5; // 1s if <2min, else 5s
+    _statusTimer = Timer.periodic(Duration(seconds: interval), (timer) {
       _cleanupExpiredUnlocks();
+      // Re-evaluate interval on next tick
+      if (_unlockedExpirations.isNotEmpty) {
+        final nowInner = DateTime.now().millisecondsSinceEpoch;
+        bool anyNearExpiry = false;
+        for (final exp in _unlockedExpirations.values) {
+          if ((exp - nowInner) < 120000 && (exp - nowInner) > 0) {
+            anyNearExpiry = true;
+            break;
+          }
+        }
+        // Switch interval if needed
+        if (anyNearExpiry && interval != 1) {
+          _startStatusTimer(); // Restart with 1s interval
+        } else if (!anyNearExpiry && interval != 5) {
+          _startStatusTimer(); // Restart with 5s interval
+        }
+      }
     });
   }
 
@@ -442,6 +518,8 @@ class AppState extends ChangeNotifier {
     
     if (changed) {
       prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
+      // Re-sync blocked apps to native so expired unlocks are enforced immediately
+      _appBlockService.setBlockedApps(_blockedApps.toList());
       notifyListeners();
     }
     if (_unlockedExpirations.isEmpty) {
@@ -2017,6 +2095,11 @@ class AppState extends ChangeNotifier {
 
   int _lastProhibitedTriggeredTime = 0;
   String? _lastProhibitedTriggeredPackage;
+
+  // Time-based guard timestamps for re-trigger prevention in callbacks
+  int _lastBlockedEventTime = 0;
+  int _lastGhadhulEventTime = 0;
+  int _lastProhibitedEventTime = 0;
 
   void setProhibitedPackage(String pkg) {
     final cleanPkg = pkg.trim().toLowerCase();

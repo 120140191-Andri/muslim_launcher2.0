@@ -305,14 +305,59 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleIntent(intent)
         
         val isOverlayIntent = intent.getBooleanExtra("triggerBlockScreen", false) ||
             intent.getBooleanExtra("triggerProhibitedScreen", false) ||
             intent.getBooleanExtra("triggerGhadhulBasharScreen", false)
 
+        handleIntent(intent)
+
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME) && !isOverlayIntent) {
-            appsChannel?.invokeMethod("onHomePressed", null)
+            val hasPendingBlock = !pendingBlockedPackage.isNullOrEmpty() ||
+                !pendingProhibitedPackage.isNullOrEmpty() ||
+                !pendingGhadhulBasharPackage.isNullOrEmpty()
+            if (!hasPendingBlock) {
+                appsChannel?.invokeMethod("onHomePressed", null)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Replay any pending block events that arrived while the activity was paused.
+        // The accessibility service may have set pendingBlockedPackage etc. while we were
+        // in background — now that we're back, deliver them to Flutter.
+        replayPendingEvents()
+    }
+
+    private fun replayPendingEvents() {
+        val bc = blockChannel ?: return
+        pendingProhibitedPackage?.let { pkg ->
+            if (pkg.isNotEmpty()) {
+                lastNotifiedProhibitedPkg = null
+                lastNotifiedProhibitedTime = 0L
+                uiHandler.post {
+                    bc.invokeMethod("onProhibitedAppTriggered", mapOf("packageName" to pkg))
+                }
+            }
+        }
+        pendingBlockedPackage?.let { pkg ->
+            if (pkg.isNotEmpty() && pendingProhibitedPackage.isNullOrEmpty()) {
+                lastNotifiedBlockPkg = null
+                lastNotifiedBlockTime = 0L
+                uiHandler.post {
+                    bc.invokeMethod("onAppBlocked", mapOf("packageName" to pkg))
+                }
+            }
+        }
+        pendingGhadhulBasharPackage?.let { pkg ->
+            if (pkg.isNotEmpty() && pendingProhibitedPackage.isNullOrEmpty() && pendingBlockedPackage.isNullOrEmpty()) {
+                lastNotifiedGhadhulPkg = null
+                lastNotifiedGhadhulTime = 0L
+                uiHandler.post {
+                    bc.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to pkg))
+                }
+            }
         }
     }
 
@@ -323,6 +368,11 @@ class MainActivity : FlutterActivity() {
             intent.removeExtra("triggerBlockScreen")
             intent.removeExtra("blockedPackageName")
             if (blockedPackage.isNotEmpty()) {
+                // Reset debounce so this intent-based trigger is never dropped
+                // (the first call from onAccessibilityEvent may have been dropped
+                // because blockChannel was null while Flutter was in background)
+                lastNotifiedBlockPkg = null
+                lastNotifiedBlockTime = 0L
                 notifyAppBlocked(blockedPackage)
             }
         }
@@ -331,6 +381,8 @@ class MainActivity : FlutterActivity() {
             intent.removeExtra("triggerGhadhulBasharScreen")
             intent.removeExtra("ghadhulBasharPackageName")
             if (ghadhulPackage.isNotEmpty()) {
+                lastNotifiedGhadhulPkg = null
+                lastNotifiedGhadhulTime = 0L
                 notifyGhadhulBashar(ghadhulPackage)
             }
         }
@@ -339,6 +391,8 @@ class MainActivity : FlutterActivity() {
             intent.removeExtra("triggerProhibitedScreen")
             intent.removeExtra("prohibitedPackageName")
             if (prohibitedPackage.isNotEmpty()) {
+                lastNotifiedProhibitedPkg = null
+                lastNotifiedProhibitedTime = 0L
                 notifyAppProhibited(prohibitedPackage)
             }
         }

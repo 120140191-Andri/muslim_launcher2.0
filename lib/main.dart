@@ -95,6 +95,18 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
+    if (lifecycleState == AppLifecycleState.resumed) {
+      // Safety net: re-check for any pending block events from native
+      // that may have been dropped while Flutter was in background.
+      // This ensures overlays appear even if MethodChannel delivery failed.
+      final state = Provider.of<AppState>(context, listen: false);
+      state.checkPendingNativeBlocks();
+      state.refreshStatus();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppState>(context, listen: false);
 

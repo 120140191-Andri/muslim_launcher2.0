@@ -288,17 +288,6 @@ class _GhadhulBasharOverlayState extends State<GhadhulBasharOverlay> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Center(
-                        child: TextButton.icon(
-                          onPressed: _isProcessing ? null : () => _safeDismiss(appState),
-                          icon: const Icon(Icons.arrow_back_rounded, size: 16, color: Colors.white60),
-                          label: Text(
-                            Translations.get(lang, 'go_back'),
-                            style: const TextStyle(color: Colors.white60, fontSize: 13),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),

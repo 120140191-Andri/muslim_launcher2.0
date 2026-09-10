@@ -593,38 +593,61 @@ class _AppListScreenState extends State<AppListScreen>
       ),
       body: Column(
         children: [
-          // Support Dev Banner (Material 3 Expressive)
+          // Support Dev Banner (Emerald Sanctuary Hero Style)
           Container(
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHigh,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0F5E3B),
+                  Color(0xFF094027),
+                ],
+              ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0D5C3A).withValues(alpha: 0.22),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                  spreadRadius: -2,
+                ),
+              ],
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.favorite_rounded,
-                  color: colorScheme.tertiary,
-                  size: 18,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.favorite_rounded,
+                    color: Colors.amber,
+                    size: 18,
+                  ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     Translations.get(lang, 'support_dev_msg'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 11.5,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 InkWell(
                   onTap: _openSupportDeveloperUrl,
                   borderRadius: BorderRadius.circular(16),
@@ -634,8 +657,9 @@ class _AppListScreenState extends State<AppListScreen>
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: colorScheme.tertiaryContainer,
-                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

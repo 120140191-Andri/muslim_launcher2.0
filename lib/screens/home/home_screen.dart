@@ -1273,12 +1273,27 @@ class _LastAyatCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0F5E3B),
+            Color(0xFF094027),
+          ],
+        ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          color: Colors.white.withValues(alpha: 0.15),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0D5C3A).withValues(alpha: 0.25),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+            spreadRadius: -2,
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
@@ -1295,12 +1310,16 @@ class _LastAyatCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer,
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            width: 0.8,
+                          ),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.auto_stories_rounded,
-                          color: colorScheme.onPrimaryContainer,
+                          color: Colors.white,
                           size: 26,
                         ),
                       ),
@@ -1316,8 +1335,8 @@ class _LastAyatCard extends StatelessWidget {
                                   : surah,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colorScheme.onSurface,
+                              style: const TextStyle(
+                                color: Color(0xFFFBFDFC),
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1330,7 +1349,7 @@ class _LastAyatCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
+                                color: Colors.white.withValues(alpha: 0.82),
                                 fontSize: 13,
                               ),
                             ),
@@ -1345,7 +1364,7 @@ class _LastAyatCard extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 10.5,
-                                        color: colorScheme.primary,
+                                        color: Colors.white.withValues(alpha: 0.9),
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -1355,7 +1374,7 @@ class _LastAyatCard extends StatelessWidget {
                                     width: 3,
                                     height: 3,
                                     decoration: BoxDecoration(
-                                      color: colorScheme.outlineVariant,
+                                      color: Colors.white.withValues(alpha: 0.4),
                                       shape: BoxShape.circle,
                                     ),
                                   ),
@@ -1367,7 +1386,7 @@ class _LastAyatCard extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 10.5,
-                                        color: colorScheme.primary,
+                                        color: Colors.white.withValues(alpha: 0.9),
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -1379,9 +1398,9 @@ class _LastAyatCard extends StatelessWidget {
                         ),
                       ),
                       if (surah.isNotEmpty)
-                        Icon(
+                        const Icon(
                           Icons.play_circle_fill_rounded,
-                          color: colorScheme.primary,
+                          color: Colors.white,
                           size: 38,
                         ),
                     ],
@@ -1399,24 +1418,28 @@ class _LastAyatCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: colorScheme.tertiaryContainer,
+                        color: Colors.white.withValues(alpha: 0.18),
                         borderRadius: const BorderRadius.only(
                           bottomLeft: Radius.circular(16),
+                        ),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          width: 0.8,
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.auto_awesome_rounded,
-                            color: colorScheme.onTertiaryContainer,
+                            color: Colors.amber,
                             size: 11,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             "Khatm: ${khatmCount}x",
-                            style: TextStyle(
-                              color: colorScheme.onTertiaryContainer,
+                            style: const TextStyle(
+                              color: Colors.white,
                               fontSize: 10.5,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1434,9 +1457,9 @@ class _LastAyatCard extends StatelessWidget {
                     right: 0,
                     child: LinearProgressIndicator(
                       value: ayahNumber / totalAyahs,
-                      backgroundColor: colorScheme.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        colorScheme.primary,
+                      backgroundColor: Colors.white.withValues(alpha: 0.15),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Colors.amber,
                       ),
                       minHeight: 3,
                     ),
@@ -1565,12 +1588,27 @@ class _DailyInspiration extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0F5E3B),
+            Color(0xFF094027),
+          ],
+        ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          color: Colors.white.withValues(alpha: 0.15),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0D5C3A).withValues(alpha: 0.25),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+            spreadRadius: -2,
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -1590,22 +1628,26 @@ class _DailyInspiration extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer,
+                        color: Colors.white.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          width: 0.8,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.auto_awesome_rounded,
-                            color: colorScheme.onPrimaryContainer,
+                            color: Colors.amber,
                             size: 13,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             Translations.get(lang, 'insight_of_the_day'),
-                            style: TextStyle(
-                              color: colorScheme.onPrimaryContainer,
+                            style: const TextStyle(
+                              color: Colors.white,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
@@ -1617,7 +1659,7 @@ class _DailyInspiration extends StatelessWidget {
                     const Spacer(),
                     Icon(
                       Icons.format_quote_rounded,
-                      color: colorScheme.primary.withValues(alpha: 0.4),
+                      color: Colors.white.withValues(alpha: 0.35),
                       size: 26,
                     ),
                   ],
@@ -1630,7 +1672,7 @@ class _DailyInspiration extends StatelessWidget {
                   maxLines: 10,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: colorScheme.onSurface,
+                    color: const Color(0xFFFBFDFC),
                     fontSize: fontSize,
                     fontWeight: FontWeight.w500,
                     fontStyle: FontStyle.italic,
@@ -1646,13 +1688,17 @@ class _DailyInspiration extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
+                      color: Colors.white.withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        width: 0.8,
+                      ),
                     ),
                     child: Text(
                       narrator,
                       style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),

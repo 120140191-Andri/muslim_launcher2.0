@@ -138,49 +138,79 @@ class _HadithListScreenState extends State<HadithListScreen> {
       ),
       body: Column(
         children: [
-          // Header Card: Hadith Mode Description (Material 3 Expressive)
+          // Header Card: Hadith Mode Description (Emerald Sanctuary Hero Card)
           Container(
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHigh,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0F5E3B),
+                  Color(0xFF094027),
+                ],
+              ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0D5C3A).withValues(alpha: 0.22),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                  spreadRadius: -2,
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.spa_rounded, color: colorScheme.onPrimaryContainer, size: 14),
-                      const SizedBox(width: 6),
-                      Text(
-                        Translations.get(lang, 'hadith_mode_title'),
-                        style: TextStyle(
-                          color: colorScheme.onPrimaryContainer,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.bold,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          width: 0.8,
                         ),
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.spa_rounded, color: Colors.amber, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            Translations.get(lang, 'hadith_mode_title'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.auto_stories_rounded,
+                      color: Colors.white.withValues(alpha: 0.3),
+                      size: 20,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Text(
                   Translations.get(lang, 'hadith_mode_desc'),
                   style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 12,
-                    height: 1.4,
+                    color: Colors.white.withValues(alpha: 0.88),
+                    fontSize: 12.5,
+                    height: 1.45,
                   ),
                 ),
               ],

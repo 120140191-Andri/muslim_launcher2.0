@@ -386,9 +386,9 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
     final currentPoints = _pointsEarned;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0FDF4),
+      backgroundColor: const Color(0xFFF7FAF8),
       appBar: AppBar(
-        backgroundColor: Colors.teal.shade800,
+        backgroundColor: const Color(0xFF0F5E3B),
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(
@@ -402,6 +402,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 0.8),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -426,7 +427,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
           children: [
             // Top Sticky Reading Progress & Eye Detection Bar
             Container(
-              color: Colors.teal.shade800,
+              color: const Color(0xFF0F5E3B),
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
               child: Column(
                 children: [
@@ -517,24 +518,30 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Main Hadith Card
+                    // Main Hadith Card (Emerald Sanctuary Hero Style)
                     Container(
                       padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF0F5E3B),
+                            Color(0xFF094027),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.teal.shade900.withValues(alpha: 0.05),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
+                            color: const Color(0xFF0D5C3A).withValues(alpha: 0.25),
+                            blurRadius: 22,
+                            offset: const Offset(0, 8),
+                            spreadRadius: -2,
                           ),
                         ],
                         border: Border.all(
-                          color: isRead
-                              ? Colors.teal.shade200
-                              : Colors.teal.shade50,
-                          width: 1.5,
+                          color: Colors.white.withValues(alpha: 0.15),
+                          width: 1,
                         ),
                       ),
                       child: Column(
@@ -549,13 +556,17 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.teal.shade50,
+                                  color: Colors.white.withValues(alpha: 0.16),
                                   borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    width: 0.8,
+                                  ),
                                 ),
                                 child: Text(
                                   theme,
-                                  style: TextStyle(
-                                    color: Colors.teal.shade800,
+                                  style: const TextStyle(
+                                    color: Colors.white,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -565,9 +576,9 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.amber.shade50,
+                                  color: Colors.white.withValues(alpha: 0.18),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.amber.shade200),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -576,8 +587,8 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                                     const SizedBox(width: 4),
                                     Text(
                                       '+$currentPoints ${Translations.get(lang, 'points')}',
-                                      style: TextStyle(
-                                        color: Colors.amber.shade900,
+                                      style: const TextStyle(
+                                        color: Colors.white,
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -600,12 +611,12 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                               height: 2.1,
                               fontFamily: 'Amiri',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF002B24),
+                              color: Color(0xFFFBFDFC),
                             ),
                           ),
 
                           const SizedBox(height: 20),
-                          const Divider(height: 1),
+                          Divider(height: 1, color: Colors.white.withValues(alpha: 0.2)),
                           const SizedBox(height: 18),
 
                           // Translation in active language
@@ -614,7 +625,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                             style: TextStyle(
                               fontSize: 15,
                               height: 1.6,
-                              color: Colors.grey.shade800,
+                              color: Colors.white.withValues(alpha: 0.88),
                               fontStyle: FontStyle.italic,
                               fontWeight: FontWeight.w500,
                             ),
@@ -630,8 +641,12 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.teal.shade50,
+                                  color: Colors.white.withValues(alpha: 0.14),
                                   borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    width: 0.8,
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -639,14 +654,14 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
                                     Icon(
                                       Icons.menu_book_rounded,
                                       size: 14,
-                                      color: Colors.teal.shade700,
+                                      color: Colors.white.withValues(alpha: 0.9),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
                                       narratorText,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.teal.shade800,
+                                        color: Colors.white.withValues(alpha: 0.9),
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),

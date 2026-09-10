@@ -79,6 +79,13 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                             color: const Color(0xFFE11D48).withValues(alpha: 0.35),
                             width: 2,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFE11D48).withValues(alpha: 0.25),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: const Icon(
                           Icons.gpp_bad_rounded,
@@ -161,6 +168,13 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                             color: const Color(0xFFE11D48).withValues(alpha: 0.3),
                             width: 1.2,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: Column(
                           children: [

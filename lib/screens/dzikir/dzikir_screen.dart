@@ -865,27 +865,38 @@ class _DzikirScreenState extends State<DzikirScreen>
 
                         const SizedBox(height: 12),
 
-                        // Arabic & Latin Main Dzikir Display Card (Material 3 Expressive)
+                        // Arabic & Latin Main Dzikir Display Card (Option 1: Emerald Sanctuary)
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                           decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerLow,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: _isInCooldown
+                                  ? [
+                                      const Color(0xFF1E3A2F),
+                                      const Color(0xFF142B22),
+                                    ]
+                                  : [
+                                      const Color(0xFF0F5E3B),
+                                      const Color(0xFF094027),
+                                    ],
+                            ),
                             borderRadius: BorderRadius.circular(28),
                             border: Border.all(
-                              color: _isInCooldown
-                                  ? colorScheme.outlineVariant.withValues(alpha: 0.6)
-                                  : colorScheme.primary.withValues(alpha: 0.7),
-                              width: _isInCooldown ? 1.0 : 1.8,
+                              color: Colors.white.withValues(alpha: _isInCooldown ? 0.08 : 0.15),
+                              width: 1.0,
                             ),
                             boxShadow: [
                               BoxShadow(
                                 color: _isInCooldown
-                                    ? Colors.black.withValues(alpha: 0.02)
-                                    : colorScheme.primary.withValues(alpha: 0.1),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
+                                    ? Colors.black.withValues(alpha: 0.06)
+                                    : const Color(0xFF0D5C3A).withValues(alpha: 0.28),
+                                blurRadius: 22,
+                                offset: const Offset(0, 8),
+                                spreadRadius: -2,
                               ),
                             ],
                           ),
@@ -899,8 +910,8 @@ class _DzikirScreenState extends State<DzikirScreen>
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: _isInCooldown
-                                        ? colorScheme.onSurface.withValues(alpha: 0.5)
-                                        : colorScheme.primary,
+                                        ? Colors.white.withValues(alpha: 0.5)
+                                        : const Color(0xFFFBFDFC),
                                     fontSize: 34,
                                     fontWeight: FontWeight.bold,
                                     fontFamily: 'Amiri',
@@ -908,30 +919,34 @@ class _DzikirScreenState extends State<DzikirScreen>
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 12),
 
-                              // Latin Transliteration Pill
+                              // Latin Transliteration Pill (Frosted glass effect)
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
                                   vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.secondaryContainer,
+                                  color: Colors.white.withValues(alpha: 0.14),
                                   borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    width: 0.8,
+                                  ),
                                 ),
                                 child: Text(
                                   currentPreset.transliteration,
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: colorScheme.onSecondaryContainer,
-                                    fontSize: 15,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14.5,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 10),
 
                               // Translation
                               Text(
@@ -940,7 +955,7 @@ class _DzikirScreenState extends State<DzikirScreen>
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant,
+                                  color: Colors.white.withValues(alpha: 0.82),
                                   fontSize: 12.5,
                                   fontStyle: FontStyle.italic,
                                   fontFamily: 'Inter',
@@ -1073,16 +1088,24 @@ width: beadSize - 10,
                         const Spacer(),
                         const SizedBox(height: 12),
 
-                        // Virtue (Fadhilah) Card (M3 Expressive)
+                        // Virtue (Fadhilah) Card
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerLow,
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                              width: 0.8,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

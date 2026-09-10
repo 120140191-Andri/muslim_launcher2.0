@@ -865,39 +865,32 @@ class _DzikirScreenState extends State<DzikirScreen>
 
                         const SizedBox(height: 12),
 
-                        // Arabic & Latin Main Dzikir Display Card (Option 1: Emerald Sanctuary)
+                        // Arabic & Latin Main Dzikir Display Card (Option 2: Mosque Marble / Alabaster)
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: _isInCooldown
-                                  ? [
-                                      const Color(0xFF1E3A2F),
-                                      const Color(0xFF142B22),
-                                    ]
-                                  : [
-                                      const Color(0xFF0F5E3B),
-                                      const Color(0xFF094027),
-                                    ],
-                            ),
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(28),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: _isInCooldown ? 0.08 : 0.15),
+                              color: colorScheme.outlineVariant.withValues(
+                                alpha: _isInCooldown ? 0.3 : 0.5,
+                              ),
                               width: 1.0,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: _isInCooldown
-                                    ? Colors.black.withValues(alpha: 0.06)
-                                    : const Color(0xFF0D5C3A).withValues(alpha: 0.28),
-                                blurRadius: 22,
-                                offset: const Offset(0, 8),
-                                spreadRadius: -2,
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
                               ),
+                              if (!_isInCooldown)
+                                BoxShadow(
+                                  color: colorScheme.primary.withValues(alpha: 0.05),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 2),
+                                ),
                             ],
                           ),
                           child: Column(
@@ -910,8 +903,8 @@ class _DzikirScreenState extends State<DzikirScreen>
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: _isInCooldown
-                                        ? Colors.white.withValues(alpha: 0.5)
-                                        : const Color(0xFFFBFDFC),
+                                        ? colorScheme.onSurface.withValues(alpha: 0.4)
+                                        : const Color(0xFF0B4D31),
                                     fontSize: 34,
                                     fontWeight: FontWeight.bold,
                                     fontFamily: 'Amiri',
@@ -921,28 +914,28 @@ class _DzikirScreenState extends State<DzikirScreen>
                               ),
                               const SizedBox(height: 12),
 
-                              // Latin Transliteration Pill (Frosted glass effect)
+                              // Latin Transliteration Pill (Soft Mint Tonal Pill)
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
                                   vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.14),
+                                  color: const Color(0xFFE8F5EE),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.15),
+                                    color: const Color(0xFFC7E6D6),
                                     width: 0.8,
                                   ),
                                 ),
-                                child: Text(
+                                child: const Text(
                                   currentPreset.transliteration,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: Color(0xFF0D5C3A),
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
+                                    letterSpacing: 0.4,
                                   ),
                                 ),
                               ),
@@ -954,8 +947,8 @@ class _DzikirScreenState extends State<DzikirScreen>
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.82),
+                                style: const TextStyle(
+                                  color: Color(0xFF5A6A63),
                                   fontSize: 12.5,
                                   fontStyle: FontStyle.italic,
                                   fontFamily: 'Inter',

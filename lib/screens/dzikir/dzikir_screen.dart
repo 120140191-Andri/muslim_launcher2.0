@@ -918,19 +918,21 @@ class _DzikirScreenState extends State<DzikirScreen>
                           child: Column(
                             children: [
                               // Arabic Matan Display
-                              FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  currentPreset.arabic,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: _isInCooldown
-                                        ? Colors.white.withValues(alpha: 0.5)
-                                        : const Color(0xFFFBFDFC),
-                                    fontSize: 34,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Amiri',
-                                    height: 1.3,
+                              AnimatedOpacity(
+                                duration: const Duration(milliseconds: 250),
+                                opacity: _isInCooldown ? 0.45 : 1.0,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    currentPreset.arabic,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Color(0xFFFBFDFC),
+                                      fontSize: 34,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Amiri',
+                                      height: 1.3,
+                                    ),
                                   ),
                                 ),
                               ),

@@ -104,7 +104,7 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0D5C3A),
+          seedColor: const Color(0xFF0A6847),
           brightness: Brightness.light,
         ),
         useMaterial3: true,

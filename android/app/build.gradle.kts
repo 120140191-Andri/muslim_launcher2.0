@@ -21,7 +21,7 @@ if (file("google-services.json").exists()) {
 android {
     namespace = "com.kraftech.muslim_launcher_2"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -58,6 +58,12 @@ android {
             ndk {
                 debugSymbolLevel = "none"
             }
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 }

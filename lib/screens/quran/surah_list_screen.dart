@@ -70,7 +70,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     physics: const BouncingScrollPhysics(),
-                    cacheExtent: 600,
+                    cacheExtent: 200,
                     padding: const EdgeInsets.fromLTRB(0, 12, 0, 60),
                     itemCount: appState.quranData.length,
                     itemBuilder: (context, index) {

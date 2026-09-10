@@ -283,7 +283,11 @@ class _DzikirScreenState extends State<DzikirScreen>
       }
     });
 
-    _initFaceTracker();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initFaceTracker();
+      }
+    });
   }
 
   Future<void> _initFaceTracker() async {

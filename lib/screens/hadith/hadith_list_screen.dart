@@ -34,13 +34,18 @@ class _HadithListScreenState extends State<HadithListScreen> {
     return (3 + arabicBonus + translationBonus).clamp(3, 8);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    final lang = appState.languageCode;
-    final allHadiths = appState.hadithData;
+  String _lastLang = '';
+  List<dynamic>? _lastHadiths;
+  List<String> _cachedThemes = [];
+  String _lastTheme = '';
+  List<dynamic> _cachedFiltered = [];
 
-    // Extract unique localized themes
+  List<String> _getThemes(List<dynamic> allHadiths, String lang) {
+    if (_lastLang == lang && identical(_lastHadiths, allHadiths) && _cachedThemes.isNotEmpty) {
+      return _cachedThemes;
+    }
+    _lastLang = lang;
+    _lastHadiths = allHadiths;
     final themes = <String>{};
     for (final item in allHadiths) {
       if (item is Map<String, dynamic>) {
@@ -48,19 +53,35 @@ class _HadithListScreenState extends State<HadithListScreen> {
         if (t.isNotEmpty) themes.add(t);
       }
     }
-    final themeList = [Translations.get(lang, 'theme_all'), ...themes];
+    _cachedThemes = [Translations.get(lang, 'theme_all'), ...themes];
+    return _cachedThemes;
+  }
 
-    // Filter hadiths based on selected theme
-    final filteredHadiths = allHadiths.where((item) {
+  List<dynamic> _getFiltered(List<dynamic> allHadiths, String lang) {
+    if (_lastLang == lang &&
+        identical(_lastHadiths, allHadiths) &&
+        _lastTheme == _selectedTheme &&
+        _cachedFiltered.isNotEmpty) {
+      return _cachedFiltered;
+    }
+    _lastTheme = _selectedTheme;
+    _cachedFiltered = allHadiths.where((item) {
       if (item is! Map<String, dynamic>) return false;
       final theme = _getHadithTheme(item, lang);
-
-      final matchesTheme = _selectedTheme.isEmpty ||
+      return _selectedTheme.isEmpty ||
           _selectedTheme == Translations.get(lang, 'theme_all') ||
           theme == _selectedTheme;
-
-      return matchesTheme;
     }).toList();
+    return _cachedFiltered;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final lang = appState.languageCode;
+    final allHadiths = appState.hadithData;
+    final themeList = _getThemes(allHadiths, lang);
+    final filteredHadiths = _getFiltered(allHadiths, lang);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0FDF4),
@@ -208,7 +229,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
           Expanded(
             child: ListView.builder(
               physics: const BouncingScrollPhysics(),
-              cacheExtent: 500,
+              cacheExtent: 200,
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
               itemCount: filteredHadiths.length,
               itemBuilder: (context, index) {

@@ -25,7 +25,7 @@ import java.util.concurrent.Executors
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.muslimlauncher/apps"
     private val BLOCK_CHANNEL = "com.muslimlauncher/block"
-    private val threadPool = Executors.newCachedThreadPool()
+    private val threadPool = Executors.newFixedThreadPool(4)
 
     private var appsChannel: MethodChannel? = null
 
@@ -37,11 +37,30 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private var blockChannel: MethodChannel? = null
+        private val uiHandler = android.os.Handler(android.os.Looper.getMainLooper())
         var pendingBlockedPackage: String? = null
+        var pendingGhadhulBasharPackage: String? = null
+        var pendingProhibitedPackage: String? = null
         
         fun notifyAppBlocked(packageName: String) {
             pendingBlockedPackage = packageName
-            blockChannel?.invokeMethod("onAppBlocked", mapOf("packageName" to packageName))
+            uiHandler.post {
+                blockChannel?.invokeMethod("onAppBlocked", mapOf("packageName" to packageName))
+            }
+        }
+
+        fun notifyGhadhulBashar(packageName: String) {
+            pendingGhadhulBasharPackage = packageName
+            uiHandler.post {
+                blockChannel?.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to packageName))
+            }
+        }
+
+        fun notifyAppProhibited(packageName: String) {
+            pendingProhibitedPackage = packageName
+            uiHandler.post {
+                blockChannel?.invokeMethod("onProhibitedAppTriggered", mapOf("packageName" to packageName))
+            }
         }
     }
 
@@ -190,6 +209,55 @@ class MainActivity : FlutterActivity() {
                         result.error("ERROR", "Package name missing", null)
                     }
                 }
+                "setGhadhulBasharPackages" -> {
+                    val apps = call.argument<List<String>>("packages") ?: emptyList()
+                    AppBlockService.updateGhadhulBasharPackages(this, apps)
+                    result.success(true)
+                }
+                "allowGhadhulBasharSession" -> {
+                    val pkg = call.argument<String>("packageName")
+                    if (pkg != null) {
+                        AppBlockService.allowGhadhulBasharSession(pkg)
+                        val intent = Intent("com.muslimlauncher.ALLOW_GHADHUL_BASHAR").apply {
+                            setPackage(packageName)
+                            putExtra("packageName", pkg)
+                        }
+                        sendBroadcast(intent)
+                        result.success(true)
+                    } else {
+                        result.error("ERROR", "Package name missing", null)
+                    }
+                }
+                "resetGhadhulBasharSession" -> {
+                    val pkg = call.argument<String>("packageName")
+                    if (pkg != null) {
+                        AppBlockService.resetGhadhulBasharSession(pkg)
+                        val intent = Intent("com.muslimlauncher.RESET_GHADHUL_BASHAR").apply {
+                            setPackage(packageName)
+                            putExtra("packageName", pkg)
+                        }
+                        sendBroadcast(intent)
+                        result.success(true)
+                    } else {
+                        result.error("ERROR", "Package name missing", null)
+                    }
+                }
+                "setProhibitedPackages" -> {
+                    val apps = call.argument<List<String>>("packages") ?: emptyList()
+                    AppBlockService.updateProhibitedPackages(this, apps)
+                    result.success(true)
+                }
+                "getPendingInitialBlock" -> {
+                    val resultData = mapOf(
+                        "blocked" to pendingBlockedPackage,
+                        "ghadhul" to pendingGhadhulBasharPackage,
+                        "prohibited" to pendingProhibitedPackage
+                    )
+                    pendingBlockedPackage = null
+                    pendingGhadhulBasharPackage = null
+                    pendingProhibitedPackage = null
+                    result.success(resultData)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -203,7 +271,11 @@ class MainActivity : FlutterActivity() {
         setIntent(intent)
         handleIntent(intent)
         
-        if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
+        val isOverlayIntent = intent.getBooleanExtra("triggerBlockScreen", false) ||
+            intent.getBooleanExtra("triggerProhibitedScreen", false) ||
+            intent.getBooleanExtra("triggerGhadhulBasharScreen", false)
+
+        if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME) && !isOverlayIntent) {
             appsChannel?.invokeMethod("onHomePressed", null)
         }
     }
@@ -214,9 +286,21 @@ class MainActivity : FlutterActivity() {
             val blockedPackage = intent.getStringExtra("blockedPackageName") ?: ""
             if (blockedPackage.isNotEmpty()) {
                 pendingBlockedPackage = blockedPackage
-                window?.decorView?.post {
-                    notifyAppBlocked(blockedPackage)
-                }
+                notifyAppBlocked(blockedPackage)
+            }
+        }
+        if (intent.getBooleanExtra("triggerGhadhulBasharScreen", false)) {
+            val ghadhulPackage = intent.getStringExtra("ghadhulBasharPackageName") ?: ""
+            if (ghadhulPackage.isNotEmpty()) {
+                pendingGhadhulBasharPackage = ghadhulPackage
+                notifyGhadhulBashar(ghadhulPackage)
+            }
+        }
+        if (intent.getBooleanExtra("triggerProhibitedScreen", false)) {
+            val prohibitedPackage = intent.getStringExtra("prohibitedPackageName") ?: ""
+            if (prohibitedPackage.isNotEmpty()) {
+                pendingProhibitedPackage = prohibitedPackage
+                notifyAppProhibited(prohibitedPackage)
             }
         }
     }

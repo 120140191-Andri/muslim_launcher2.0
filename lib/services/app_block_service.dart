@@ -8,9 +8,17 @@ class AppBlockService {
   AppBlockService._internal();
 
   Function(String)? _onAppBlocked;
+  Function(String)? _onGhadhulBasharTriggered;
+  Function(String)? _onProhibitedAppTriggered;
 
-  void init({required Function(String) onAppBlocked}) {
+  void init({
+    required Function(String) onAppBlocked,
+    Function(String)? onGhadhulBasharTriggered,
+    Function(String)? onProhibitedAppTriggered,
+  }) {
     _onAppBlocked = onAppBlocked;
+    _onGhadhulBasharTriggered = onGhadhulBasharTriggered;
+    _onProhibitedAppTriggered = onProhibitedAppTriggered;
     _channel.setMethodCallHandler(_handleMethod);
   }
 
@@ -20,6 +28,18 @@ class AppBlockService {
         final String? packageName = call.arguments['packageName'];
         if (packageName != null && _onAppBlocked != null) {
           _onAppBlocked!(packageName);
+        }
+        break;
+      case 'onGhadhulBasharTriggered':
+        final String? packageName = call.arguments['packageName'];
+        if (packageName != null && _onGhadhulBasharTriggered != null) {
+          _onGhadhulBasharTriggered!(packageName);
+        }
+        break;
+      case 'onProhibitedAppTriggered':
+        final String? packageName = call.arguments['packageName'];
+        if (packageName != null && _onProhibitedAppTriggered != null) {
+          _onProhibitedAppTriggered!(packageName);
         }
         break;
       default:
@@ -68,6 +88,42 @@ class AppBlockService {
       });
     } on PlatformException catch (_) {
       // Failed to allow app
+    }
+  }
+
+  Future<void> setGhadhulBasharPackages(List<String> packages) async {
+    try {
+      await _channel.invokeMethod('setGhadhulBasharPackages', {'packages': packages});
+    } on PlatformException catch (_) {
+      // Failed to sync
+    }
+  }
+
+  Future<void> allowGhadhulBasharSession(String packageName) async {
+    try {
+      await _channel.invokeMethod('allowGhadhulBasharSession', {
+        'packageName': packageName,
+      });
+    } on PlatformException catch (_) {
+      // Failed to allow session
+    }
+  }
+
+  Future<void> resetGhadhulBasharSession(String packageName) async {
+    try {
+      await _channel.invokeMethod('resetGhadhulBasharSession', {
+        'packageName': packageName,
+      });
+    } on PlatformException catch (_) {
+      // Failed to reset session
+    }
+  }
+
+  Future<void> setProhibitedPackages(List<String> packages) async {
+    try {
+      await _channel.invokeMethod('setProhibitedPackages', {'packages': packages});
+    } on PlatformException catch (_) {
+      // Failed to sync
     }
   }
 }

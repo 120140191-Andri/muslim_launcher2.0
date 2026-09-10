@@ -17,9 +17,22 @@ class AppBlockService : AccessibilityService() {
         private var blockedPackages = Collections.synchronizedSet(mutableSetOf<String>())
         private var temporaryAllowedPackages = ConcurrentHashMap<String, Long>()
         
+        // Ghadhul Bashar state tracking
+        private var ghadhulBasharPackages = Collections.synchronizedSet(mutableSetOf<String>())
+        private var activeGhadhulSessions = Collections.synchronizedSet(mutableSetOf<String>())
+        private var lastActiveGhadhulTimes = ConcurrentHashMap<String, Long>()
+
+        // Prohibited bypass browsers (Permanently blocked in restricted regions)
+        private var prohibitedPackages = Collections.synchronizedSet(mutableSetOf<String>())
+
         // Transition Shield: Prevent loop during the first 10 seconds of unlock
         private var lastBypassPackage: String? = null
         private var lastBypassTime: Long = 0
+        private var currentForegroundPackage: String? = null
+
+        // Debounce to prevent multiple back-to-back startActivity calls on rapid accessibility events
+        private var lastTriggeredPackage: String? = null
+        private var lastTriggeredTime: Long = 0
 
         fun checkAndKickExpiredApp(packageName: String) {
             val s = instance ?: return
@@ -27,13 +40,12 @@ class AppBlockService : AccessibilityService() {
             val expiry = temporaryAllowedPackages[packageName]
             if (expiry != null && now >= expiry) {
                 temporaryAllowedPackages.remove(packageName)
-                val activePackage = try { s.rootInActiveWindow?.packageName?.toString()?.trim()?.lowercase() } catch (e: Exception) { null }
+                val activePackage = currentForegroundPackage
                 if (activePackage == packageName && blockedPackages.contains(packageName)) {
                     Log.d("AppBlockService", "EXPIRED WHILE IN APP: Kicking $packageName")
                     MainActivity.notifyAppBlocked(packageName)
-                    s.performGlobalAction(GLOBAL_ACTION_HOME)
                     val launchIntent = s.packageManager.getLaunchIntentForPackage(s.packageName)?.apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
                         putExtra("blockedPackageName", packageName)
                         putExtra("triggerBlockScreen", true)
                     }
@@ -75,6 +87,49 @@ class AppBlockService : AccessibilityService() {
             }, durationMillis)
             
             Log.d("AppBlockService", "ALLOW_TEMP: $pkg until $expiry (Shield ON, Scheduler Active)")
+        }
+
+        fun updateGhadhulBasharPackages(context: Context, packages: List<String>) {
+            Log.d("AppBlockService", "Flutter updateGhadhulBasharPackages: ${packages.size} apps")
+            ghadhulBasharPackages.clear()
+            for (p in packages) {
+                ghadhulBasharPackages.add(p.trim().lowercase())
+            }
+            val prefs = context.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putStringSet("ghadhul_bashar_packages", ghadhulBasharPackages.toSet()).commit()
+        }
+
+        fun updateProhibitedPackages(context: Context, packages: List<String>) {
+            Log.d("AppBlockService", "Flutter updateProhibitedPackages: ${packages.size} apps")
+            prohibitedPackages.clear()
+            for (p in packages) {
+                prohibitedPackages.add(p.trim().lowercase())
+            }
+            val prefs = context.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putStringSet("prohibited_packages", prohibitedPackages.toSet()).commit()
+        }
+
+        fun allowGhadhulBasharSession(packageName: String) {
+            val pkg = packageName.trim().lowercase()
+            activeGhadhulSessions.add(pkg)
+            val now = System.currentTimeMillis()
+            lastActiveGhadhulTimes[pkg] = now
+            lastBypassPackage = pkg
+            lastBypassTime = now
+            Log.d("AppBlockService", "GHADHUL SESSION ALLOWED: $pkg")
+        }
+
+        fun resetGhadhulBasharSession(packageName: String) {
+            val pkg = packageName.trim().lowercase()
+            activeGhadhulSessions.remove(pkg)
+            lastActiveGhadhulTimes.remove(pkg)
+            Log.d("AppBlockService", "GHADHUL SESSION RESET: $pkg")
+        }
+
+        fun clearAllGhadhulSessions() {
+            activeGhadhulSessions.clear()
+            lastActiveGhadhulTimes.clear()
+            Log.d("AppBlockService", "ALL GHADHUL SESSIONS CLEARED")
         }
     }
 
@@ -118,24 +173,50 @@ class AppBlockService : AccessibilityService() {
                 blockedPackages.add(pkg.trim().lowercase())
             }
         }
+        val savedGhadhul = prefs.getStringSet("ghadhul_bashar_packages", null)
+        if (savedGhadhul != null) {
+            ghadhulBasharPackages.clear()
+            for (pkg in savedGhadhul) {
+                ghadhulBasharPackages.add(pkg.trim().lowercase())
+            }
+        }
+        val savedProhibited = prefs.getStringSet("prohibited_packages", null)
+        if (savedProhibited != null) {
+            prohibitedPackages.clear()
+            for (pkg in savedProhibited) {
+                prohibitedPackages.add(pkg.trim().lowercase())
+            }
+        }
         loadTemporaryAllowed()
     }
 
     private val allowReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == "com.muslimlauncher.ALLOW_PACKAGE") {
-                val pkg = intent.getStringExtra("packageName")?.trim()?.lowercase()
-                val duration = intent.getLongExtra("durationMillis", 3600000L)
-                if (pkg != null) {
-                    val now = System.currentTimeMillis()
-                    val expiry = now + duration
-                    temporaryAllowedPackages[pkg] = expiry
-                    
-                    // Activate Shield via Broadcast too
-                    lastBypassPackage = pkg
-                    lastBypassTime = now
-                    
-                    Log.d("AppBlockService", "BROADCAST RECEIVED: Allowed $pkg (Shield ON)")
+            val action = intent?.action ?: return
+            when (action) {
+                "com.muslimlauncher.ALLOW_PACKAGE" -> {
+                    val pkg = intent.getStringExtra("packageName")?.trim()?.lowercase()
+                    val duration = intent.getLongExtra("durationMillis", 3600000L)
+                    if (pkg != null) {
+                        val now = System.currentTimeMillis()
+                        val expiry = now + duration
+                        temporaryAllowedPackages[pkg] = expiry
+                        lastBypassPackage = pkg
+                        lastBypassTime = now
+                        Log.d("AppBlockService", "BROADCAST RECEIVED: Allowed $pkg (Shield ON)")
+                    }
+                }
+                "com.muslimlauncher.ALLOW_GHADHUL_BASHAR" -> {
+                    val pkg = intent.getStringExtra("packageName")?.trim()?.lowercase()
+                    if (pkg != null) {
+                        allowGhadhulBasharSession(pkg)
+                    }
+                }
+                "com.muslimlauncher.RESET_GHADHUL_BASHAR" -> {
+                    val pkg = intent.getStringExtra("packageName")?.trim()?.lowercase()
+                    if (pkg != null) {
+                        resetGhadhulBasharSession(pkg)
+                    }
                 }
             }
         }
@@ -143,52 +224,118 @@ class AppBlockService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        
-        // OPTIMIZATION: Only process window state changes (app switches)
-        // This avoids processing every click, scroll, or focus event.
-        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         try {
-            val eventPackage = event.packageName?.toString()?.trim()?.lowercase()
-            val sourcePackage = try { event.source?.packageName?.toString()?.trim()?.lowercase() } catch (e: Exception) { null }
-            val activePackage = try { rootInActiveWindow?.packageName?.toString()?.trim()?.lowercase() } catch (e: Exception) { null }
-            
-            val packageName = eventPackage ?: sourcePackage ?: activePackage ?: return
+            // Only process window state changes (app switches)
+            if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+
+            val packageName = event.packageName?.toString()?.trim()?.lowercase() ?: return
+            val className = event.className?.toString()?.lowercase() ?: ""
+
+            val previousPackage = currentForegroundPackage
+            currentForegroundPackage = packageName
             
             // Skip our own app
             if (packageName == this.packageName) return
 
             val now = System.currentTimeMillis()
+            if (packageName == lastTriggeredPackage && (now - lastTriggeredTime) < 1200L) {
+                return
+            }
+
+            // 0. PRIORITAS 0: PROHIBITED BYPASS BROWSER CHECK (Dilarang Total - Tanpa Poin/Waktu)
+            if (prohibitedPackages.contains(packageName)) {
+                Log.d("AppBlockService", "PROHIBITED BROWSER DETECTED: $packageName")
+                lastTriggeredPackage = packageName
+                lastTriggeredTime = now
+                MainActivity.notifyAppProhibited(packageName)
+                
+                val launchIntent = packageManager.getLaunchIntentForPackage(this.packageName)?.apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    putExtra("prohibitedPackageName", packageName)
+                    putExtra("triggerProhibitedScreen", true)
+                }
+                startActivity(launchIntent)
+                return // DILARANG TOTAL SAMA SEKALI!
+            }
 
             // 1. TRANSITION SHIELD (Highest Priority)
-            // Immunity period for recently unlocked apps
-            if (packageName == lastBypassPackage && (now - lastBypassTime) < 10000) {
+            // Immunity period for recently unlocked apps (10 seconds)
+            // Hanya aktif jika transisi berasal dari launcher kita sendiri atau aplikasi itu sendiri
+            val isFromOurLauncher = previousPackage == null || previousPackage == this.packageName || previousPackage == packageName
+            if (packageName == lastBypassPackage && (now - lastBypassTime) < 10000 && isFromOurLauncher) {
+                if (ghadhulBasharPackages.contains(packageName)) {
+                    lastActiveGhadhulTimes[packageName] = now
+                }
                 return 
             }
 
-            // 2. BYPASS LIST CHECK
-            val expiry = temporaryAllowedPackages[packageName]
-            if (expiry != null) {
-                if (now < expiry) {
-                    return // ALLOWED
-                } else {
-                    temporaryAllowedPackages.remove(packageName)
+            // 2. PRIORITAS 1: NON-PRODUCTIVE BLOCK CHECK (Kunci Utama)
+            if (blockedPackages.contains(packageName)) {
+                val expiry = temporaryAllowedPackages[packageName]
+                val isAllowed = expiry != null && now < expiry
+                if (!isAllowed) {
+                    Log.d("AppBlockService", "BLOCK (Non-Productive): Detect $packageName")
+                    lastTriggeredPackage = packageName
+                    lastTriggeredTime = now
+                    MainActivity.notifyAppBlocked(packageName)
+                    
+                    val launchIntent = packageManager.getLaunchIntentForPackage(this.packageName)?.apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                        putExtra("blockedPackageName", packageName)
+                        putExtra("triggerBlockScreen", true)
+                    }
+                    startActivity(launchIntent)
+                    return // KUNCI NON-PRODUKTIF ADALAH YANG UTAMA!
                 }
             }
 
-            // 3. BLOCK CHECK
-            if (blockedPackages.contains(packageName)) {
-                Log.d("AppBlockService", "BLOCK: Detect $packageName")
+            // 3. PRIORITAS 2: GHADHUL BASHAR CHECK (Pengingat Murni)
+            // Hanya dieksekusi jika aplikasi bukan aplikasi non-produktif terkunci (atau sudah dibuka kuncinya)
+            if (ghadhulBasharPackages.contains(packageName)) {
+                val lastActive = lastActiveGhadhulTimes[packageName]
+                val isIdleExpired = lastActive != null && (now - lastActive) > (30 * 60 * 1000)
                 
-                MainActivity.notifyAppBlocked(packageName)
-                performGlobalAction(GLOBAL_ACTION_HOME)
-                
-                val launchIntent = packageManager.getLaunchIntentForPackage(this.packageName)?.apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    putExtra("blockedPackageName", packageName)
-                    putExtra("triggerBlockScreen", true)
+                if (isIdleExpired) {
+                    activeGhadhulSessions.remove(packageName)
                 }
-                startActivity(launchIntent)
+
+                val hasActiveSession = activeGhadhulSessions.contains(packageName)
+
+                // Deteksi apakah browser dibuka karena klik link dari aplikasi eksternal (WhatsApp, Telegram, IG, dll)
+                val isLauncherOrSystem = previousPackage == null ||
+                    previousPackage == this.packageName ||
+                    previousPackage == "com.android.systemui" ||
+                    previousPackage == packageName ||
+                    previousPackage == "android" ||
+                    previousPackage.endsWith(".launcher") ||
+                    previousPackage.contains("launcher") ||
+                    previousPackage.contains("home")
+
+                val isCustomTab = className.contains("customtab")
+                val isLinkFromExternalApp = (!isLauncherOrSystem) || isCustomTab
+
+                if (hasActiveSession && !isLinkFromExternalApp) {
+                    // Pengguna hanya berpindah aplikasi dan kembali lagi (multitasking biasa) -> izinkan tanpa menampilkan overlay
+                    lastActiveGhadhulTimes[packageName] = now
+                    return 
+                } else {
+                    // Tampilkan overlay jika:
+                    // 1. Buka link dari aplikasi eksternal (isLinkFromExternalApp == true), ATAU
+                    // 2. Peluncuran baru / idle > 30 menit (!hasActiveSession)
+                    Log.d("AppBlockService", "GHADHUL BASHAR: Triggered for $packageName (isExternalLink=$isLinkFromExternalApp, activeSession=$hasActiveSession)")
+                    lastTriggeredPackage = packageName
+                    lastTriggeredTime = now
+                    MainActivity.notifyGhadhulBashar(packageName)
+                    
+                    val launchIntent = packageManager.getLaunchIntentForPackage(this.packageName)?.apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                        putExtra("ghadhulBasharPackageName", packageName)
+                        putExtra("triggerGhadhulBasharScreen", true)
+                    }
+                    startActivity(launchIntent)
+                    return
+                }
             }
         } catch (e: Exception) {
             Log.e("AppBlockService", "Crash in onAccessibilityEvent: ${e.message}")
@@ -202,8 +349,12 @@ class AppBlockService : AccessibilityService() {
         instance = this
         loadBlockedPackages()
         
-        // Register receiver for instant unlock signals
-        val filter = IntentFilter("com.muslimlauncher.ALLOW_PACKAGE")
+        // Register receiver for instant unlock & session signals
+        val filter = IntentFilter().apply {
+            addAction("com.muslimlauncher.ALLOW_PACKAGE")
+            addAction("com.muslimlauncher.ALLOW_GHADHUL_BASHAR")
+            addAction("com.muslimlauncher.RESET_GHADHUL_BASHAR")
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(allowReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {

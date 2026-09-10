@@ -12,9 +12,9 @@ class AppPageRoute<T> extends PageRouteBuilder<T> {
           pageBuilder: (context, animation, secondaryAnimation) => child,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             // Subtle slide from 5% down to original position
-            const begin = Offset(0.0, 0.05);
+            const begin = Offset(0.0, 0.04);
             const end = Offset.zero;
-            const curve = Curves.easeOutCubic;
+            const curve = Curves.easeOutQuad;
 
             final tween = Tween(begin: begin, end: end).chain(
               CurveTween(curve: curve),
@@ -28,6 +28,6 @@ class AppPageRoute<T> extends PageRouteBuilder<T> {
               ),
             );
           },
-          transitionDuration: const Duration(milliseconds: 350),
+          transitionDuration: const Duration(milliseconds: 250),
         );
 }

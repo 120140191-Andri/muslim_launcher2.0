@@ -9,12 +9,7 @@ import 'package:android_intent_plus/android_intent.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
-import '../quran/surah_list_screen.dart';
-import '../hadith/hadith_list_screen.dart';
-import '../dzikir/dzikir_screen.dart';
-import '../../utils/page_transitions.dart';
 import '../../widgets/language_selection_dialog.dart';
-import '../../widgets/ghadhul_bashar_dialog.dart';
 
 // ── AppInfo model ────────────────────────────────────────────────────────────
 class AppInfo {
@@ -110,7 +105,8 @@ class AppListScreen extends StatefulWidget {
 
       // 2) Hydrate icon bytes from internal app storage
       try {
-        final path = await _channel.invokeMethod<String>('getAppStoragePath');
+        final resPath = await _channel.invokeMethod('getAppStoragePath');
+        final path = resPath is String ? resPath : null;
         if (path != null && path.isNotEmpty) {
           _storagePath = path;
           final iconDir = Directory('$path/app_icons');
@@ -158,18 +154,23 @@ class AppListScreen extends StatefulWidget {
       // Ensure storage path is known
       if (_storagePath == null) {
         try {
-          _storagePath = await _channel.invokeMethod<String>('getAppStoragePath');
-          if (_storagePath != null) {
-            final iconDir = Directory('$_storagePath/app_icons');
+          final resPath = await _channel.invokeMethod('getAppStoragePath');
+          final path = resPath is String ? resPath : null;
+          if (path != null && path.isNotEmpty) {
+            _storagePath = path;
+            final iconDir = Directory('$path/app_icons');
             if (!await iconDir.exists()) await iconDir.create(recursive: true);
           }
         } catch (_) {}
       }
 
       // 1) Fetch app list immediately
-      final List<dynamic> raw = await _channel.invokeMethod('getApps');
+      final rawRes = await _channel.invokeMethod('getApps');
+      final List<dynamic> raw = rawRes is List ? rawRes : <dynamic>[];
       onRawAppsFetched?.call(raw);
-      final List<AppInfo> apps = await compute(_processApps, raw);
+      final List<AppInfo> apps = (raw.length > 200)
+          ? await compute(_processApps, raw)
+          : _processApps(raw);
       _cache = apps;
 
       // Persist app list to SharedPreferences
@@ -214,24 +215,26 @@ class AppListScreen extends StatefulWidget {
           final batch = missing.sublist(i, end);
 
           try {
-            final Map<dynamic, dynamic> icons = await _channel.invokeMethod(
+            final resIcons = await _channel.invokeMethod(
               'getAllAppIcons',
               {'packages': batch},
             );
-            icons.forEach((pkg, bytes) {
-              final pkgStr = pkg as String;
-              final byteData = bytes as Uint8List;
-              iconCache[pkgStr] = byteData;
+            if (resIcons is Map) {
+              resIcons.forEach((pkg, bytes) {
+                if (pkg is String && bytes is Uint8List) {
+                  iconCache[pkg] = bytes;
 
-              // Save to persistent disk storage asynchronously
-              if (_storagePath != null) {
-                try {
-                  final file = File('$_storagePath/app_icons/$pkgStr.bin');
-                  file.writeAsBytes(byteData, flush: false).catchError((_) => file);
-                } catch (_) {}
-              }
-            });
-            onProgress?.call();
+                  // Save to persistent disk storage asynchronously
+                  if (_storagePath != null) {
+                    try {
+                      final file = File('$_storagePath/app_icons/$pkg.bin');
+                      file.writeAsBytes(bytes, flush: false).catchError((_) => file);
+                    } catch (_) {}
+                  }
+                }
+              });
+              onProgress?.call();
+            }
           } catch (e) {
             debugPrint("Batch icon load error at $i: $e");
           }
@@ -247,7 +250,10 @@ class AppListScreen extends StatefulWidget {
   }
 
   static List<AppInfo> _processApps(List<dynamic> raw) {
-    return raw.map((a) => AppInfo.fromMap(a as Map<dynamic, dynamic>)).toList()
+    return raw
+        .whereType<Map>()
+        .map((a) => AppInfo.fromMap(a))
+        .toList()
       ..sort(
         (a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()),
       );
@@ -354,20 +360,19 @@ class _AppListScreenState extends State<AppListScreen>
   }
 
   void _onAppTap(AppInfo app, AppState appState) {
-    if (appState.isAppBlocked(app.packageName)) {
-      _showBlockedDialog(app, appState);
-    } else if (AppState.shouldShowGhadhulBasharReminder(
-        app.packageName, app.appName, appState.languageCode)) {
-      showGhadhulBasharDialog(
-        context,
-        appName: app.appName,
-        packageName: app.packageName,
-        languageCode: appState.languageCode,
-        onProceed: () => _openApp(app.packageName),
-      );
-    } else {
-      _openApp(app.packageName);
+    if (appState.isAppProhibited(app.packageName, app.appName)) {
+      appState.setProhibitedPackage(app.packageName);
+      return;
     }
+    if (appState.isAppBlocked(app.packageName)) {
+      appState.setBlockedPackage(app.packageName);
+      return;
+    }
+    if (AppState.shouldShowGhadhulBasharReminder(app.packageName, app.appName, appState.languageCode)) {
+      appState.setGhadhulBasharPackage(app.packageName);
+      return;
+    }
+    _openApp(app.packageName);
   }
 
   void _onAppLongPress(AppInfo app) {
@@ -502,616 +507,11 @@ class _AppListScreenState extends State<AppListScreen>
     );
   }
 
-  void _showEarnPointsOptionsModal(BuildContext context, AppState appState) {
-    final lang = appState.languageCode;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF032B25),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.stars_rounded, color: Colors.amber, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            Translations.get(lang, 'earn_points_modal_title'),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            lang == 'id'
-                                ? 'Pilih aktivitas ibadah untuk menambah poin'
-                                : 'Select worship activity to earn points',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // 1. Primary Option: Baca Al-Quran
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F766E).withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.teal.shade300.withValues(alpha: 0.4)),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        appState.navigatorKey.currentState?.push(
-                          AppPageRoute(child: const SurahListScreen()),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 22),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    Translations.get(lang, 'read_quran'),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    lang == 'id'
-                                        ? 'Tilawah ayat suci dengan pelafalan & tatapan'
-                                        : 'Recite verses with eye tracking & audio',
-                                    style: TextStyle(
-                                      color: Colors.teal.shade100,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.amber.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                '+10-25 Poin',
-                                style: TextStyle(
-                                  color: Colors.amber,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Divider: Pilihan Jika Sedang Berhalangan
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.15))),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(
-                        Translations.get(lang, 'excused_options_title'),
-                        style: TextStyle(
-                          color: Colors.teal.shade200,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.15))),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                // 2. Excused Option A: Dzikir Khusyu' (33x)
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF04433A).withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFF2DD4BF).withValues(alpha: 0.5)),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        appState.navigatorKey.currentState?.push(
-                          AppPageRoute(child: const DzikirScreen()),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2DD4BF).withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.grain_rounded, color: Color(0xFF2DD4BF), size: 22),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    Translations.get(lang, 'dzikir'),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    lang == 'id'
-                                        ? 'Tasbih 33x & deteksi wajah (Boleh meram)'
-                                        : '33x Tasbih with face presence tracking',
-                                    style: TextStyle(
-                                      color: Colors.teal.shade200,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.amber.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                '+10 Poin',
-                                style: TextStyle(
-                                  color: Colors.amber,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // 3. Excused Option B: Baca Hadits Shahih
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF064E3B).withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.5)),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        appState.navigatorKey.currentState?.push(
-                          AppPageRoute(child: const HadithListScreen()),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF34D399).withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.spa_rounded, color: Color(0xFF34D399), size: 22),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    Translations.get(lang, 'read_hadith'),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    lang == 'id'
-                                        ? '50 Kumpulan Hadits Shahih Harian'
-                                        : '50 Authentic Daily Hadith Collection',
-                                    style: TextStyle(
-                                      color: Colors.teal.shade200,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.amber.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                '+3-8 Poin',
-                                style: TextStyle(
-                                  color: Colors.amber,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showBlockedDialog(AppInfo app, AppState appState) {
-    final lang = appState.languageCode;
-    final hasEnoughPoints = appState.points >= 50;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.white,
-        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-        contentPadding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.lock_clock_rounded,
-                color: Colors.red.shade700,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    Translations.get(lang, 'app_is_non_productive'),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red.shade900,
-                    ),
-                  ),
-                  Text(
-                    app.appName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "${app.appName} ${Translations.get(lang, 'app_blocked_custom_desc')}",
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.4,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Status Points Card
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: hasEnoughPoints
-                      ? Colors.teal.shade50
-                      : Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: hasEnoughPoints
-                        ? Colors.teal.shade200
-                        : Colors.amber.shade300,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      hasEnoughPoints
-                          ? Icons.check_circle_rounded
-                          : Icons.info_outline_rounded,
-                      color: hasEnoughPoints
-                          ? Colors.teal.shade700
-                          : Colors.amber.shade800,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                "${Translations.get(lang, 'points')}: ",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                              Text(
-                                "${appState.points} / 50",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: hasEnoughPoints
-                                      ? Colors.teal.shade900
-                                      : Colors.amber.shade900,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            hasEnoughPoints
-                                ? Translations.get(lang, 'points_sufficient')
-                                : "${Translations.get(lang, 'points_insufficient')} (${50 - appState.points} lagi)",
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w500,
-                              color: hasEnoughPoints
-                                  ? Colors.teal.shade700
-                                  : Colors.amber.shade900,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (hasEnoughPoints) ...[
-                SizedBox(
-                  width: double.infinity,
-                  height: 44,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      final navigator = Navigator.of(ctx);
-                      await appState.deductPoints(50);
-                      await appState.allowAppTemporarily(app.packageName);
-                      navigator.pop();
-                      await Future.delayed(const Duration(milliseconds: 800));
-                      _openApp(app.packageName);
-                    },
-                    icon: const Icon(Icons.lock_open_rounded, size: 18),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal.shade700,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 1,
-                    ),
-                    label: Text(
-                      "${Translations.get(lang, 'use_50_points')} (${Translations.get(lang, 'unlock_60m')})",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          Translations.get(lang, 'cancel'),
-                          style: TextStyle(
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _showEarnPointsOptionsModal(context, appState);
-                        },
-                        icon: const Icon(Icons.add_circle_outline_rounded, size: 16),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          side: BorderSide(color: Colors.teal.shade600),
-                          foregroundColor: Colors.teal.shade800,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        label: Text(
-                          Translations.get(lang, 'earn_points'),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                SizedBox(
-                  width: double.infinity,
-                  height: 44,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _showEarnPointsOptionsModal(context, appState);
-                    },
-                    icon: const Icon(Icons.stars_rounded, size: 18),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal.shade700,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 1,
-                    ),
-                    label: Text(
-                      Translations.get(lang, 'earn_points'),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(
-                      Translations.get(lang, 'cancel'),
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _openSupportDeveloperUrl() async {
     try {
       final appState = Provider.of<AppState>(context, listen: false);
-      final url = appState.languageCode == 'id'
-          ? 'https://trakteer.id/andri_setiawan108/tip'
-          : 'https://ko-fi.com/andrisetiawan84153';
+      final url = appState.supportUrl;
       final intent = AndroidIntent(
         action: 'android.intent.action.VIEW',
         data: url,
@@ -1294,6 +694,7 @@ class _AppListScreenState extends State<AppListScreen>
       physics: const AlwaysScrollableScrollPhysics(
         parent: ClampingScrollPhysics(),
       ),
+      cacheExtent: 300,
       addAutomaticKeepAlives: true,
       addRepaintBoundaries: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1306,13 +707,17 @@ class _AppListScreenState extends State<AppListScreen>
       itemBuilder: (context, index) {
         final app = _filtered[index];
         return RepaintBoundary(
-          child: Selector<AppState, bool>(
-            selector: (context, state) => state.isAppBlocked(app.packageName),
-            builder: (context, isBlocked, child) {
+          child: Selector<AppState, ({bool isBlocked, bool isProhibited})>(
+            selector: (context, state) => (
+              isBlocked: state.isAppBlocked(app.packageName),
+              isProhibited: state.isAppProhibited(app.packageName, app.appName),
+            ),
+            builder: (context, status, child) {
               return _AppTile(
                 key: ValueKey(app.packageName),
                 app: app,
-                isBlocked: isBlocked,
+                isBlocked: status.isBlocked,
+                isProhibited: status.isProhibited,
                 onTap: () => _onAppTap(app, context.read<AppState>()),
                 onLongPress: () => _onAppLongPress(app),
               );
@@ -1328,6 +733,7 @@ class _AppListScreenState extends State<AppListScreen>
 class _AppTile extends StatelessWidget {
   final AppInfo app;
   final bool isBlocked;
+  final bool isProhibited;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -1335,6 +741,7 @@ class _AppTile extends StatelessWidget {
     super.key,
     required this.app,
     required this.isBlocked,
+    this.isProhibited = false,
     required this.onTap,
     required this.onLongPress,
   });
@@ -1353,8 +760,35 @@ class _AppTile extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                _AppIcon(packageName: app.packageName, grayscale: isBlocked),
-                if (isBlocked)
+                _AppIcon(
+                  packageName: app.packageName,
+                  grayscale: isBlocked || isProhibited,
+                ),
+                if (isProhibited)
+                  Positioned(
+                    right: -6,
+                    top: -6,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE11D48),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFE11D48).withValues(alpha: 0.5),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.block_rounded,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                    ),
+                  )
+                else if (isBlocked)
                   Positioned(
                     right: -6,
                     top: -6,
@@ -1373,37 +807,38 @@ class _AppTile extends StatelessWidget {
                     ),
                   ),
                 // Timer badge
-                Positioned(
-                  left: -4,
-                  bottom: -4,
-                  child: Selector<AppState, int>(
-                    selector: (context, state) =>
-                        state.getUnlockRemainingMinutes(app.packageName),
-                    builder: (context, remaining, child) {
-                      if (remaining <= 0) return const SizedBox.shrink();
+                if (!isProhibited)
+                  Positioned(
+                    left: -4,
+                    bottom: -4,
+                    child: Selector<AppState, int>(
+                      selector: (context, state) =>
+                          state.getUnlockRemainingMinutes(app.packageName),
+                      builder: (context, remaining, child) {
+                        if (remaining <= 0) return const SizedBox.shrink();
 
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade700,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                        child: Text(
-                          "${remaining}m",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
                           ),
-                        ),
-                      );
-                    },
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade700,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          child: Text(
+                            "${remaining}m",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 10),

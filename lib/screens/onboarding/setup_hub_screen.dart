@@ -111,9 +111,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
 
   Future<void> _openSupportDeveloperUrl(String lang) async {
     try {
-      final url = lang == 'id'
-          ? 'https://trakteer.id/andri_setiawan108/tip'
-          : 'https://ko-fi.com/andrisetiawan84153';
+      final url = AppState.getSupportUrl(lang);
       final intent = AndroidIntent(
         action: 'android.intent.action.VIEW',
         data: url,
@@ -550,7 +548,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                             label: FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
-                                isEn ? 'Support / Request Features via Ko-fi' : 'Dukung / Usulkan Fitur via Trakteer',
+                                AppState.getSupportButtonText(lang),
                                 style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),

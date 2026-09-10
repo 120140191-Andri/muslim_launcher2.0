@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../quran/surah_list_screen.dart';
@@ -18,26 +17,6 @@ class BlockedAppScreen extends StatefulWidget {
 }
 
 class _BlockedAppScreenState extends State<BlockedAppScreen> {
-  late final Future<String> _appNameFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _appNameFuture = _getAppName(widget.packageName);
-  }
-
-  Future<String> _getAppName(String pkg) async {
-    const channel = MethodChannel('com.muslimlauncher/apps');
-    try {
-      final List<dynamic> apps = await channel.invokeMethod('getApps');
-      for (var app in apps) {
-        if (app != null && app['packageName'] == pkg) {
-          return app['appName'] as String;
-        }
-      }
-    } catch (_) {}
-    return pkg;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,10 +52,26 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
             child: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Top Navigation Header (Kembali & Home)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            onPressed: () => appState.clearBlockedApp(),
+                            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white70),
+                          ),
+                          IconButton(
+                            onPressed: () => appState.clearBlockedApp(),
+                            icon: const Icon(Icons.home_rounded, color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
                       // Lock Icon Badge
                       Container(
                         padding: const EdgeInsets.all(18),
@@ -97,23 +92,15 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                       const SizedBox(height: 16),
 
                       // 1. App Name (ABOVE the blocked label)
-                      FutureBuilder<String>(
-                        future: _appNameFuture,
-                        builder: (context, snapshot) {
-                          final name = (snapshot.hasData && snapshot.data!.isNotEmpty)
-                              ? snapshot.data!
-                              : widget.packageName;
-                          return Text(
-                            name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                            ),
-                            textAlign: TextAlign.center,
-                          );
-                        },
+                      Text(
+                        appState.getAppNameSync(widget.packageName),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 6),
 
@@ -186,8 +173,18 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                 await appState.deductPoints(50);
                                 await appState.allowAppTemporarily(widget.packageName);
                                 await Future.delayed(const Duration(milliseconds: 800));
-                                appState.openApp(widget.packageName);
+                                final appName = appState.getAppNameSync(widget.packageName);
+                                final isGhadhulTarget = AppState.shouldShowGhadhulBasharReminder(
+                                  widget.packageName,
+                                  appName,
+                                  appState.languageCode,
+                                );
                                 appState.clearBlockedApp();
+                                if (isGhadhulTarget) {
+                                  appState.setGhadhulBasharPackage(widget.packageName);
+                                } else {
+                                  appState.openApp(widget.packageName);
+                                }
                               }
                             : null,
                           icon: Icon(
@@ -527,11 +524,14 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                       ),
 
                       const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () => appState.clearBlockedApp(),
-                        child: Text(
-                          Translations.get(lang, 'go_back'),
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: () => appState.clearBlockedApp(),
+                          icon: const Icon(Icons.arrow_back_rounded, size: 18, color: Colors.white70),
+                          label: Text(
+                            Translations.get(lang, 'go_back'),
+                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
                         ),
                       ),
                     ],

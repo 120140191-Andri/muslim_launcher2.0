@@ -29,9 +29,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _openSupportDeveloperUrl() async {
     try {
       final appState = Provider.of<AppState>(context, listen: false);
-      final url = appState.languageCode == 'id'
-          ? 'https://trakteer.id/andri_setiawan108/tip'
-          : 'https://ko-fi.com/andrisetiawan84153';
+      final url = appState.supportUrl;
       final intent = AndroidIntent(
         action: 'android.intent.action.VIEW',
         data: url,
@@ -1164,12 +1162,9 @@ class _DockIcon extends StatefulWidget {
 }
 
 class _DockIconState extends State<_DockIcon> {
-  static const _channel = MethodChannel('com.muslimlauncher/apps');
-
   Future<void> _openApp(String pkg) async {
-    try {
-      await _channel.invokeMethod('openApp', {'packageName': pkg});
-    } catch (_) {}
+    final appState = Provider.of<AppState>(context, listen: false);
+    await appState.openApp(pkg);
   }
 
   @override
@@ -1728,9 +1723,7 @@ class _SupportDeveloperCard extends StatelessWidget {
               label: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  lang == 'id'
-                      ? 'Dukung / Usulkan Fitur via Trakteer'
-                      : 'Support / Request Features via Ko-fi',
+                  AppState.getSupportButtonText(lang),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

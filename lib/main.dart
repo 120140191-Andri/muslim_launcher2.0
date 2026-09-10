@@ -8,6 +8,8 @@ import 'screens/home/home_screen.dart';
 import 'screens/onboarding/language_screen.dart';
 import 'screens/onboarding/setup_hub_screen.dart';
 import 'screens/home/blocked_app_screen.dart';
+import 'screens/home/ghadhul_bashar_overlay.dart';
+import 'screens/home/prohibited_app_overlay.dart';
 import 'screens/home/permission_blocked_overlay.dart';
 
 void main() async {
@@ -48,9 +50,9 @@ void main() async {
     );
   };
 
-  // Increase image cache limits
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024;
-  PaintingBinding.instance.imageCache.maximumSize = 500;
+  // Optimized image cache limits for low-spec and standard Android devices
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 20 * 1024 * 1024;
+  PaintingBinding.instance.imageCache.maximumSize = 200;
 
   final prefs = await SharedPreferences.getInstance();
 
@@ -62,78 +64,125 @@ void main() async {
   );
 }
 
-class MuslimLauncherApp extends StatelessWidget {
+class MuslimLauncherApp extends StatefulWidget {
   const MuslimLauncherApp({super.key});
 
   @override
+  State<MuslimLauncherApp> createState() => _MuslimLauncherAppState();
+}
+
+class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Future<bool> didPopRoute() async {
+    final state = Provider.of<AppState>(context, listen: false);
+    if (state.hasActiveOverlay) {
+      state.clearAllOverlays();
+      return true; // Handled: dismiss overlay without popping underlying screen
+    }
+    return false; // Let normal route popping occur
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Consumer<AppState>(
-      builder: (context, state, child) {
-        final homeWidget = _determineHome(state);
-        
-        return MaterialApp(
-          navigatorKey: state.navigatorKey,
-          title: 'Muslim Launcher 2',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-            useMaterial3: true,
+    final state = Provider.of<AppState>(context, listen: false);
+
+    return MaterialApp(
+      navigatorKey: state.navigatorKey,
+      title: 'Muslim Launcher 2',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        useMaterial3: true,
+      ),
+      navigatorObservers: [AnalyticsService.observer],
+      home: const _HomeScreenSwitcher(),
+      builder: (context, child) {
+        final rootWidget = child ?? const _HomeScreenSwitcher();
+
+        // Clamp text scale factor to prevent layout overflows on extreme accessibility font settings
+        final mediaQuery = MediaQuery.of(context);
+        final clampedMediaQuery = mediaQuery.copyWith(
+          textScaler: mediaQuery.textScaler.clamp(
+            minScaleFactor: 0.85,
+            maxScaleFactor: 1.15,
           ),
-          navigatorObservers: [AnalyticsService.observer],
-          home: homeWidget,
-          builder: (context, child) {
-            // CRITICAL: Ensure we always have a child to render.
-            // If child is null, something in MaterialApp initialization failed.
-            final rootWidget = child ?? homeWidget;
+        );
 
-            // Clamp text scale factor to prevent layout overflows on extreme accessibility font settings
-            final mediaQuery = MediaQuery.of(context);
-            final clampedMediaQuery = mediaQuery.copyWith(
-              textScaler: mediaQuery.textScaler.clamp(
-                minScaleFactor: 0.85,
-                maxScaleFactor: 1.15,
-              ),
-            );
-
-            return MediaQuery(
-              data: clampedMediaQuery,
-              child: PermissionBlockedOverlay(
-                appState: state,
+        return MediaQuery(
+          data: clampedMediaQuery,
+          child: Consumer<AppState>(
+            builder: (context, appState, _) {
+              return PermissionBlockedOverlay(
+                appState: appState,
                 child: Stack(
                   children: [
                     rootWidget,
-                    if (state.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
+                    if (appState.lastAttemptedProhibitedPackage?.isNotEmpty ?? false)
+                      ProhibitedAppOverlay(
+                        packageName: appState.lastAttemptedProhibitedPackage!,
+                      )
+                    else if (appState.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
                       BlockedAppScreen(
-                        packageName: state.lastAttemptedBlockedPackage!,
+                        packageName: appState.lastAttemptedBlockedPackage!,
+                      )
+                    else if (appState.lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false)
+                      GhadhulBasharOverlay(
+                        packageName: appState.lastAttemptedGhadhulBasharPackage!,
                       ),
                   ],
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
   }
+}
 
-  Widget _determineHome(AppState appState) {
-    if (!appState.isReady) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF052C28),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.mosque_rounded, size: 72, color: Color(0xFF34D399)),
-              SizedBox(height: 24),
-              CircularProgressIndicator(color: Color(0xFF34D399)),
-            ],
-          ),
-        ),
-      );
-    }
-    if (appState.hasCompletedOnboarding) return const HomeScreen();
-    if (appState.hasSelectedLanguage) return const SetupHubScreen();
-    return const LanguageScreen();
+class _HomeScreenSwitcher extends StatelessWidget {
+  const _HomeScreenSwitcher();
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<AppState, ({bool isReady, bool hasCompletedOnboarding, bool hasSelectedLanguage})>(
+      selector: (context, state) => (
+        isReady: state.isReady,
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
+        hasSelectedLanguage: state.hasSelectedLanguage,
+      ),
+      builder: (context, status, _) {
+        if (!status.isReady) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF052C28),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.mosque_rounded, size: 72, color: Color(0xFF34D399)),
+                  SizedBox(height: 24),
+                  CircularProgressIndicator(color: Color(0xFF34D399)),
+                ],
+              ),
+            ),
+          );
+        }
+        if (status.hasCompletedOnboarding) return const HomeScreen();
+        if (status.hasSelectedLanguage) return const SetupHubScreen();
+        return const LanguageScreen();
+      },
+    );
   }
 }

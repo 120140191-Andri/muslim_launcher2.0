@@ -14,7 +14,23 @@ class Translations {
       'cancel': 'Batal',
       'ok': 'Oke',
       'ghadhul_bashar_title': 'Peringatan Menjaga Pandangan',
-      'ghadhul_bashar_subtitle': 'Ingatlah Allah dan tundukkan pandangan sebelum melanjutkan.',
+      'ghadhul_bashar_subtitle':
+          'Ingatlah Allah dan tundukkan pandangan sebelum melanjutkan.',
+      'prohibited_app_title': 'Aplikasi Dilarang Dibuka',
+      'prohibited_app_desc':
+          'Peramban anti-blokir / bypass ini diblokir secara total demi menjaga kesucian diri dan melindungi pandangan dari kemungkaran.',
+      'prohibited_adult_desc':
+          'Aplikasi konten dewasa ini dilarang dan diblokir secara total demi menjaga kesucian diri dan menjauhi perbuatan keji yang diharamkan Allah SWT.',
+      'prohibited_app_verse':
+          'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"Dan janganlah kamu mendekati perbuatan-perbuatan yang keji, baik yang nampak di antaranya maupun yang tersembunyi." (QS. Al-An\'am: 151)',
+      'prohibited_suggestion_title': 'Saran Peramban Aman',
+      'prohibited_suggestion_desc':
+          'Gunakan peramban resmi seperti Google Chrome, Mozilla Firefox, Samsung Internet, atau Microsoft Edge untuk kebutuhan browsing positif Anda.',
+      'prohibited_adult_suggestion_title': 'Nasihat Syariat',
+      'prohibited_adult_suggestion_desc':
+          'Tinggalkanlah kemaksiatan semata-mata karena Allah SWT. Sangat disarankan untuk segera menghapus aplikasi ini dari perangkat Anda demi menjaga kesucian diri.',
+      'uninstall_prohibited_app': 'Hapus Aplikasi Ini',
+      'back_to_home': 'Kembali ke Beranda',
       'save': 'Simpan',
       'points': 'Poin',
       'points_available': 'Poin Tersedia',
@@ -25,19 +41,23 @@ class Translations {
       'search_apps': 'Cari Aplikasi...',
       'no_apps_found': 'Aplikasi tidak ditemukan',
       'uninstall_app': 'Hapus Aplikasi',
-      'uninstall_confirm': 'Apakah Anda yakin ingin menghapus aplikasi ini dari perangkat?',
+      'uninstall_confirm':
+          'Apakah Anda yakin ingin menghapus aplikasi ini dari perangkat?',
       'uninstall': 'Hapus',
       'app_blocked': 'APLIKASI DIBATASI',
-      'app_blocked_desc': 'Untuk membuka aplikasi ini, baca Al-Quran, berdzikir khusyu\', atau tadabbur hadits untuk mengumpulkan poin.',
+      'app_blocked_desc':
+          'Untuk membuka aplikasi ini, baca Al-Quran, berdzikir khusyu\', atau tadabbur hadits untuk mengumpulkan poin.',
       'unlock_60m': 'Buka 60m (50 Poin)',
       'need_50_points': 'Butuh 50 Poin',
       'read_quran_earn_points': 'Baca Al-Quran (+ Poin)',
       'read_hadith_earn_points': 'Sedang Berhalangan? Baca Hadits (+ Poin)',
-      'hadith_excused_hint': 'Sedang berhalangan / haid? Anda tetap bisa mengumpulkan poin dengan Dzikir Khusyu\' atau membaca Hadits Shahih.',
+      'hadith_excused_hint':
+          'Sedang berhalangan / haid? Anda tetap bisa mengumpulkan poin dengan Dzikir Khusyu\' atau membaca Hadits Shahih.',
       'read_hadith': 'Baca Hadits',
       'hadith_collection': 'Kumpulan Hadits Shahih',
       'hadith_mode_title': 'Mode Hadits Pilihan',
-      'hadith_mode_desc': 'Alternatif ibadah saat berhalangan / hadast besar untuk tetap fokus dan mendapatkan poin.',
+      'hadith_mode_desc':
+          'Alternatif ibadah saat berhalangan / hadast besar untuk tetap fokus dan mendapatkan poin.',
       'silent_reading': 'Membaca Dalam Hati...',
       'claim_points': 'Klaim Poin',
       'next_hadith': 'Hadits Selanjutnya',
@@ -55,24 +75,28 @@ class Translations {
       'dzikir_claimed_points': 'Klaim +10 Poin',
       'change_dzikir': 'Pilih Dzikir',
       'reset_counter': 'Ulangi',
-      'read_dzikir_earn_points': 'Sedang Berhalangan? Dzikir Khusyu\' (+10 Poin)',
+      'read_dzikir_earn_points':
+          'Sedang Berhalangan? Dzikir Khusyu\' (+10 Poin)',
       'earn_points': 'Tambah Poin',
       'use_50_points': 'Pakai 50 Poin',
       'earn_points_modal_title': 'Pilihan Tambah Poin',
       'excused_options_title': 'Sedang Berhalangan / Haid / Rukhsah?',
       'app_is_non_productive': 'Aplikasi Non-Produktif',
-      'app_blocked_custom_desc': 'adalah aplikasi non-produktif yang dibatasi untuk menjaga fokus ibadah & produktivitas Anda. Membuka aplikasi ini memerlukan 50 poin (aktif selama 60 menit).',
+      'app_blocked_custom_desc':
+          'adalah aplikasi non-produktif yang dibatasi untuk menjaga fokus ibadah & produktivitas Anda. Membuka aplikasi ini memerlukan 50 poin (aktif selama 60 menit).',
       'points_sufficient': 'Poin mencukupi untuk membuka aplikasi',
       'points_insufficient': 'Poin belum cukup untuk membuka aplikasi',
       'theme_all': 'Semua',
       'go_back': 'Kembali',
       'open_settings': 'Buka Pengaturan',
       'settings': 'Pengaturan',
-      'support_dev_msg': 'Dukung pengembang agar aplikasi tetap gratis & tanpa iklan',
+      'support_dev_msg':
+          'Dukung pengembang agar aplikasi tetap gratis & tanpa iklan',
       'support_dev_btn': 'Dukung / Usulkan Fitur via Trakteer',
       'support_feature_request': 'Dukung / Usulkan Fitur',
       'free_ad_free_app': 'Aplikasi 100% Gratis & Tanpa Iklan',
-      'support_dev_long_desc': 'Dukungan Anda sangat berarti untuk menjaga Muslim Launcher tetap gratis, mandiri, dan terus berkembang dengan fitur-fitur kebaikan.',
+      'support_dev_long_desc':
+          'Dukungan Anda sangat berarti untuk menjaga Muslim Launcher tetap gratis, mandiri, dan terus berkembang dengan fitur-fitur kebaikan.',
       'good_morning': 'Selamat Pagi',
       'good_afternoon': 'Selamat Siang',
       'good_evening': 'Selamat Sore',
@@ -92,33 +116,43 @@ class Translations {
       'your_apps': 'Semua Aplikasi',
       'open_apps': 'Buka Aplikasi',
       'setup_now': 'Atur Sekarang',
-      'accessibility_required_banner': 'Layanan aksesibilitas diperlukan agar fitur blokir bekerja di luar Launcher.',
+      'accessibility_required_banner':
+          'Layanan aksesibilitas diperlukan agar fitur blokir bekerja di luar Launcher.',
       'next_surah': 'Surah Selanjutnya',
       'voice': 'Suara',
       'listening': 'Mendengarkan...',
       'initializing': 'Menyiapkan...',
       'no_history_title': 'Belum ada riwayat',
       'no_history_desc': 'Mulai membaca untuk melihat progresmu!',
-      'daily_inspiration_default': 'Sesungguhnya setiap amalan tergantung pada niatnya.',
+      'daily_inspiration_default':
+          'Sesungguhnya setiap amalan tergantung pada niatnya.',
       'ready_to_focus': 'Siap Beribadah!',
       'enable_app_blocker': 'Aktifkan Fokus',
-      'ready_to_focus_desc': 'Aplikasi akan otomatis membatasi gangguan saat Anda sedang belajar Al-Quran.',
-      'enable_app_blocker_desc': 'Agar fitur pembatas gangguan bekerja, kami perlu izin di menu Aksesibilitas HP Anda.',
+      'ready_to_focus_desc':
+          'Aplikasi akan otomatis membatasi gangguan saat Anda sedang belajar Al-Quran.',
+      'enable_app_blocker_desc':
+          'Agar fitur pembatas gangguan bekerja, kami perlu izin di menu Aksesibilitas HP Anda.',
       'change_language': 'Ubah Bahasa',
       'set_default_home': 'Jadikan Launcher Utama',
-      'set_default_home_desc': 'Agar pembatasan gangguan bekerja maksimal, jadikan aplikasi ini sebagai Beranda Utama Anda.',
+      'set_default_home_desc':
+          'Agar pembatasan gangguan bekerja maksimal, jadikan aplikasi ini sebagai Beranda Utama Anda.',
       'home_app_ready': 'Launcher Utama Aktif!',
-      'home_app_ready_desc': 'Muslim Launcher sudah menjadi beranda utama HP Anda. Fitur fokus kini siap digunakan.',
+      'home_app_ready_desc':
+          'Muslim Launcher sudah menjadi beranda utama HP Anda. Fitur fokus kini siap digunakan.',
       'accessibility_service_title': 'Layanan Aksesibilitas (Pemblokir)',
-      'accessibility_service_active': 'Sistem pemblokir aktif di latar belakang',
-      'accessibility_service_required': 'Dibutuhkan agar pemblokir berfungsi real-time',
+      'accessibility_service_active':
+          'Sistem pemblokir aktif di latar belakang',
+      'accessibility_service_required':
+          'Dibutuhkan agar pemblokir berfungsi real-time',
       'autostart_title': 'Mulai Otomatis & Opt. Baterai',
       'autostart_active': 'Autostart sudah disesuaikan',
-      'autostart_required': 'Cegah sistem mematikan pemblokir di latar belakang',
+      'autostart_required':
+          'Cegah sistem mematikan pemblokir di latar belakang',
       'mark_as_configured': 'Tandai Sudah Selesai',
       'start_exploring': 'MULAI SEKARANG',
       'action_required': 'Aksi Diperlukan',
-      'permission_disabled_desc': 'Beberapa izin utama dinonaktifkan. Agar Anda tetap fokus, silakan aktifkan kembali.',
+      'permission_disabled_desc':
+          'Beberapa izin utama dinonaktifkan. Agar Anda tetap fokus, silakan aktifkan kembali.',
       'open_setup_hub': 'Buka Pusat Pengaturan',
       'continue_without_protection': 'Lanjutkan tanpa Proteksi',
       'setup_preparing_home': 'Menyiapkan Beranda Anda...',
@@ -138,7 +172,23 @@ class Translations {
       'cancel': 'Cancel',
       'ok': 'OK',
       'ghadhul_bashar_title': 'Guard Your Gaze',
-      'ghadhul_bashar_subtitle': 'Remember Allah and lower your gaze before proceeding.',
+      'ghadhul_bashar_subtitle':
+          'Remember Allah and lower your gaze before proceeding.',
+      'prohibited_app_title': 'Application Prohibited',
+      'prohibited_app_desc':
+          'This bypass / anti-censorship browser is permanently blocked to safeguard purity and protect your gaze from unlawful content.',
+      'prohibited_adult_desc':
+          'This adult content application is strictly prohibited and blocked completely to preserve moral purity and avoid forbidden acts.',
+      'prohibited_app_verse':
+          'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"And do not approach immoralities - what is apparent of them and what is concealed." (Surah Al-An\'am: 151)',
+      'prohibited_suggestion_title': 'Safe Browser Recommendation',
+      'prohibited_suggestion_desc':
+          'Please use official browsers such as Google Chrome, Mozilla Firefox, Samsung Internet, or Microsoft Edge for your positive browsing needs.',
+      'prohibited_adult_suggestion_title': 'Islamic Guidance',
+      'prohibited_adult_suggestion_desc':
+          'Abandon sin solely for the sake of Allah SWT. It is strongly recommended to uninstall this application from your device immediately.',
+      'uninstall_prohibited_app': 'Uninstall This App',
+      'back_to_home': 'Back to Home',
       'save': 'Save',
       'points': 'Points',
       'points_available': 'Points Available',
@@ -149,19 +199,23 @@ class Translations {
       'search_apps': 'Search Apps...',
       'no_apps_found': 'No apps found',
       'uninstall_app': 'Uninstall App',
-      'uninstall_confirm': 'Are you sure you want to uninstall this application from your device?',
+      'uninstall_confirm':
+          'Are you sure you want to uninstall this application from your device?',
       'uninstall': 'Uninstall',
       'app_blocked': 'RESTRICTED APP',
-      'app_blocked_desc': 'To open this app, read the Quran, recite Khusyu\' Dhikr, or read Hadiths to earn points.',
+      'app_blocked_desc':
+          'To open this app, read the Quran, recite Khusyu\' Dhikr, or read Hadiths to earn points.',
       'unlock_60m': 'Unlock 60m (50 Pts)',
       'need_50_points': 'Need 50 Points',
       'read_quran_earn_points': 'Read Quran (+ Points)',
       'read_hadith_earn_points': 'Excused? Read Hadith (+ Points)',
-      'hadith_excused_hint': 'Excused / on leave? You can still earn points by Khusyu\' Dhikr or reading authentic Hadiths.',
+      'hadith_excused_hint':
+          'Excused / on leave? You can still earn points by Khusyu\' Dhikr or reading authentic Hadiths.',
       'read_hadith': 'Read Hadith',
       'hadith_collection': 'Authentic Hadith Collection',
       'hadith_mode_title': 'Hadith Reading Mode',
-      'hadith_mode_desc': 'Alternative worship mode when unable to recite Quran to earn points and stay focused.',
+      'hadith_mode_desc':
+          'Alternative worship mode when unable to recite Quran to earn points and stay focused.',
       'silent_reading': 'Reading in Silence...',
       'claim_points': 'Claim Points',
       'next_hadith': 'Next Hadith',
@@ -185,7 +239,8 @@ class Translations {
       'earn_points_modal_title': 'Earn Points Options',
       'excused_options_title': 'Excused / On Leave / Rukhsah?',
       'app_is_non_productive': 'Non-Productive App',
-      'app_blocked_custom_desc': 'is a non-productive app restricted to safeguard your worship focus & productivity. Unlocking requires 50 points (active 60 mins).',
+      'app_blocked_custom_desc':
+          'is a non-productive app restricted to safeguard your worship focus & productivity. Unlocking requires 50 points (active 60 mins).',
       'points_sufficient': 'Sufficient points to unlock app',
       'points_insufficient': 'Insufficient points to unlock app',
       'theme_all': 'All',
@@ -196,7 +251,8 @@ class Translations {
       'support_dev_btn': 'Support / Request Features via Ko-fi',
       'support_feature_request': 'Support / Request Features',
       'free_ad_free_app': '100% Free & Ad-Free App',
-      'support_dev_long_desc': 'Your support helps us keep Muslim Launcher free, independent, and continuously updated with new Islamic features.',
+      'support_dev_long_desc':
+          'Your support helps us keep Muslim Launcher free, independent, and continuously updated with new Islamic features.',
       'good_morning': 'Good Morning',
       'good_afternoon': 'Good Afternoon',
       'good_evening': 'Good Evening',
@@ -216,7 +272,8 @@ class Translations {
       'your_apps': 'Your Apps',
       'open_apps': 'Open Apps',
       'setup_now': 'Setup Now',
-      'accessibility_required_banner': 'Accessibility service is required for global app blocking.',
+      'accessibility_required_banner':
+          'Accessibility service is required for global app blocking.',
       'next_surah': 'Next Surah',
       'voice': 'Voice',
       'listening': 'Listening...',
@@ -226,13 +283,17 @@ class Translations {
       'daily_inspiration_default': 'Actions are judged by motives.',
       'ready_to_focus': 'Ready to Focus!',
       'enable_app_blocker': 'Enable App Blocker',
-      'ready_to_focus_desc': 'Muslim Launcher will help you stay away from distractions while reading Quran.',
-      'enable_app_blocker_desc': 'To block disruptive apps, we need your permission in Accessibility settings.',
+      'ready_to_focus_desc':
+          'Muslim Launcher will help you stay away from distractions while reading Quran.',
+      'enable_app_blocker_desc':
+          'To block disruptive apps, we need your permission in Accessibility settings.',
       'change_language': 'Change Language',
       'set_default_home': 'Set Default Home',
-      'set_default_home_desc': 'To block distractions effectively, Muslim Launcher must be your default Home App.',
+      'set_default_home_desc':
+          'To block distractions effectively, Muslim Launcher must be your default Home App.',
       'home_app_ready': 'Home App Ready!',
-      'home_app_ready_desc': 'Muslim Launcher is now your main home app. You can now use all focus features.',
+      'home_app_ready_desc':
+          'Muslim Launcher is now your main home app. You can now use all focus features.',
       'accessibility_service_title': 'Accessibility Service (Blocker)',
       'accessibility_service_active': 'App blocker service is running',
       'accessibility_service_required': 'Required for real-time app blocking',
@@ -242,7 +303,8 @@ class Translations {
       'mark_as_configured': 'Mark as Configured',
       'start_exploring': 'START EXPLORING',
       'action_required': 'Action Required',
-      'permission_disabled_desc': 'Some essential permissions were disabled. To keep you focused, please re-enable them.',
+      'permission_disabled_desc':
+          'Some essential permissions were disabled. To keep you focused, please re-enable them.',
       'open_setup_hub': 'Open Setup Hub',
       'continue_without_protection': 'Continue without Protection',
       'setup_preparing_home': 'Preparing Your Home...',
@@ -260,9 +322,25 @@ class Translations {
       'next': 'Seterusnya',
       'done': 'Selesai',
       'cancel': 'Batal',
-      'ok': 'Oke',
-      'ghadhul_bashar_title': 'Pelihara Pandangan',
-      'ghadhul_bashar_subtitle': 'Ingatlah Allah dan tundukkan pandangan sebelum meneruskan.',
+      'ok': 'Ok',
+      'ghadhul_bashar_title': 'Jaga Pandangan',
+      'ghadhul_bashar_subtitle':
+          'Ingatlah Allah dan tundukkan pandangan sebelum meneruskan.',
+      'prohibited_app_title': 'Aplikasi Dilarang Dibuka',
+      'prohibited_app_desc':
+          'Pelayar anti-sekat / pintasan ini disekat sepenuhnya demi memelihara kesucian diri dan melindungi pandangan daripada kemungkaran.',
+      'prohibited_adult_desc':
+          'Aplikasi kandungan dewasa ini dilarang dan disekat sepenuhnya demi memelihara kesucian diri dan menjauhi perbuatan keji yang diharamkan Allah SWT.',
+      'prohibited_app_verse':
+          'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"Dan janganlah kamu mendekati perbuatan-perbuatan yang keji, sama ada yang nyata daripadanya mahupun yang tersembunyi." (Surah Al-An\'am: 151)',
+      'prohibited_suggestion_title': 'Cadangan Pelayar Selamat',
+      'prohibited_suggestion_desc':
+          'Sila gunakan pelayar rasmi seperti Google Chrome, Mozilla Firefox, Samsung Internet, atau Microsoft Edge untuk keperluan pelayaran yang bermanfaat.',
+      'prohibited_adult_suggestion_title': 'Nasihat Syariat',
+      'prohibited_adult_suggestion_desc':
+          'Tinggalkanlah kemungkaran semata-mata kerana Allah SWT. Amat disarankan untuk segera menyahpasang aplikasi ini dari peranti anda demi menjaga kesucian diri.',
+      'uninstall_prohibited_app': 'Nyahpasang Aplikasi Ini',
+      'back_to_home': 'Kembali ke Laman Utama',
       'save': 'Simpan',
       'points': 'Mata',
       'points_available': 'Mata Tersedia',
@@ -273,19 +351,23 @@ class Translations {
       'search_apps': 'Cari Aplikasi...',
       'no_apps_found': 'Aplikasi tidak dijumpai',
       'uninstall_app': 'Nyahpasang Aplikasi',
-      'uninstall_confirm': 'Adakah anda pasti mahu menyahpasang aplikasi ini dari peranti?',
+      'uninstall_confirm':
+          'Adakah anda pasti mahu menyahpasang aplikasi ini dari peranti?',
       'uninstall': 'Nyahpasang',
       'app_blocked': 'APLIKASI DIBATASI',
-      'app_blocked_desc': 'Untuk membuka aplikasi ini, sila baca Al-Quran, berzikir khusyuk, atau tadabbur hadis untuk mengumpul mata.',
+      'app_blocked_desc':
+          'Untuk membuka aplikasi ini, sila baca Al-Quran, berzikir khusyuk, atau tadabbur hadis untuk mengumpul mata.',
       'unlock_60m': 'Buka 60m (50 Mata)',
       'need_50_points': 'Perlu 50 Mata',
       'read_quran_earn_points': 'Baca Al-Quran (+ Mata)',
       'read_hadith_earn_points': 'Sedang Berhalangan? Baca Hadis (+ Mata)',
-      'hadith_excused_hint': 'Sedang uzur / haid? Anda tetap boleh mengumpul mata dengan Zikir Khusyuk atau membaca Hadis Sahih.',
+      'hadith_excused_hint':
+          'Sedang uzur / haid? Anda tetap boleh mengumpul mata dengan Zikir Khusyuk atau membaca Hadis Sahih.',
       'read_hadith': 'Baca Hadis',
       'hadith_collection': 'Koleksi Hadis Sahih',
       'hadith_mode_title': 'Mod Bacaan Hadis',
-      'hadith_mode_desc': 'Alternatif ibadah ketika berhalangan untuk terus fokus dan mengumpul mata.',
+      'hadith_mode_desc':
+          'Alternatif ibadah ketika berhalangan untuk terus fokus dan mengumpul mata.',
       'silent_reading': 'Membaca Dalam Hati...',
       'claim_points': 'Tuntut Mata',
       'next_hadith': 'Hadis Seterusnya',
@@ -309,18 +391,21 @@ class Translations {
       'earn_points_modal_title': 'Pilihan Tambah Mata',
       'excused_options_title': 'Sedang Berhalangan / Haid / Rukhsah?',
       'app_is_non_productive': 'Aplikasi Tidak Produktif',
-      'app_blocked_custom_desc': 'adalah aplikasi tidak produktif yang dihadkan untuk menjaga fokus ibadah & produktiviti anda. Membuka aplikasi ini memerlukan 50 mata (aktif selama 60 minit).',
+      'app_blocked_custom_desc':
+          'adalah aplikasi tidak produktif yang dihadkan untuk menjaga fokus ibadah & produktiviti anda. Membuka aplikasi ini memerlukan 50 mata (aktif selama 60 minit).',
       'points_sufficient': 'Mata mencukupi untuk membuka aplikasi',
       'points_insufficient': 'Mata belum mencukupi untuk membuka aplikasi',
       'theme_all': 'Semua',
       'go_back': 'Kembali',
       'open_settings': 'Buka Tetapan',
       'settings': 'Tetapan',
-      'support_dev_msg': 'Sokong pembangun agar aplikasi kekal percuma & tanpa iklan',
+      'support_dev_msg':
+          'Sokong pembangun agar aplikasi kekal percuma & tanpa iklan',
       'support_dev_btn': 'Sokong / Cadang Ciri via Ko-fi',
       'support_feature_request': 'Sokong / Cadang Ciri',
       'free_ad_free_app': 'Aplikasi 100% Percuma & Tanpa Iklan',
-      'support_dev_long_desc': 'Sokongan anda sangat bermakna untuk mengekalkan Muslim Launcher percuma, berdikari, dan sentiasa dikemas kini.',
+      'support_dev_long_desc':
+          'Sokongan anda sangat bermakna untuk mengekalkan Muslim Launcher percuma, berdikari, dan sentiasa dikemas kini.',
       'good_morning': 'Selamat Pagi',
       'good_afternoon': 'Selamat Tengah Hari',
       'good_evening': 'Selamat Petang',
@@ -340,33 +425,42 @@ class Translations {
       'your_apps': 'Semua Aplikasi',
       'open_apps': 'Buka Aplikasi',
       'setup_now': 'Sediakan Sekarang',
-      'accessibility_required_banner': 'Perkhidmatan kebolehcapaian diperlukan untuk penyekatan aplikasi di luar Pelancar.',
+      'accessibility_required_banner':
+          'Perkhidmatan kebolehcapaian diperlukan untuk penyekatan aplikasi di luar Pelancar.',
       'next_surah': 'Surah Seterusnya',
       'voice': 'Suara',
       'listening': 'Mendengar...',
       'initializing': 'Menyediakan...',
       'no_history_title': 'Tiada sejarah lagi',
       'no_history_desc': 'Mula membaca untuk melihat kemajuan anda!',
-      'daily_inspiration_default': 'Sesungguhnya setiap amalan itu bergantung kepada niat.',
+      'daily_inspiration_default':
+          'Sesungguhnya setiap amalan itu bergantung kepada niat.',
       'ready_to_focus': 'Sedia untuk Fokus!',
       'enable_app_blocker': 'Aktifkan Penyekat Aplikasi',
-      'ready_to_focus_desc': 'Muslim Launcher akan membantu anda mengelak gangguan semasa membaca Al-Quran.',
-      'enable_app_blocker_desc': 'Untuk menyekat aplikasi yang mengganggu, kami memerlukan kebenaran dalam tetapan Kebolehcapaian.',
+      'ready_to_focus_desc':
+          'Muslim Launcher akan membantu anda mengelak gangguan semasa membaca Al-Quran.',
+      'enable_app_blocker_desc':
+          'Untuk menyekat aplikasi yang mengganggu, kami memerlukan kebenaran dalam tetapan Kebolehcapaian.',
       'change_language': 'Tukar Bahasa',
       'set_default_home': 'Jadikan Pelancar Utama',
-      'set_default_home_desc': 'Untuk menyekat gangguan dengan berkesan, Muslim Launcher mestilah menjadi Aplikasi Utama lalai anda.',
+      'set_default_home_desc':
+          'Untuk menyekat gangguan dengan berkesan, Muslim Launcher mestilah menjadi Aplikasi Utama lalai anda.',
       'home_app_ready': 'Pelancar Utama Sedia!',
-      'home_app_ready_desc': 'Muslim Launcher kini menjadi aplikasi utama peranti anda.',
+      'home_app_ready_desc':
+          'Muslim Launcher kini menjadi aplikasi utama peranti anda.',
       'accessibility_service_title': 'Perkhidmatan Kebolehcapaian (Penyekat)',
-      'accessibility_service_active': 'Perkhidmatan penyekat aplikasi sedang berjalan',
-      'accessibility_service_required': 'Diperlukan untuk penyekatan masa nyata',
+      'accessibility_service_active':
+          'Perkhidmatan penyekat aplikasi sedang berjalan',
+      'accessibility_service_required':
+          'Diperlukan untuk penyekatan masa nyata',
       'autostart_title': 'Mula Automatik & Opt. Bateri',
       'autostart_active': 'Mula automatik telah dikonfigurasikan',
       'autostart_required': 'Cegah sistem mematikan penyekat di latar belakang',
       'mark_as_configured': 'Tandakan Selesai',
       'start_exploring': 'MULA SEKARANG',
       'action_required': 'Tindakan Diperlukan',
-      'permission_disabled_desc': 'Beberapa kebenaran penting telah dinyahaktifkan. Untuk memastikan anda kekal fokus, sila aktifkan semula.',
+      'permission_disabled_desc':
+          'Beberapa kebenaran penting telah dinyahaktifkan. Untuk memastikan anda kekal fokus, sila aktifkan semula.',
       'open_setup_hub': 'Buka Pusat Tetapan',
       'continue_without_protection': 'Teruskan tanpa Perlindungan',
       'setup_preparing_home': 'Menyediakan Halaman Utama...',
@@ -386,7 +480,22 @@ class Translations {
       'cancel': 'إلغاء',
       'ok': 'حسناً',
       'ghadhul_bashar_title': 'تذكير غض البصر',
-      'ghadhul_bashar_subtitle': 'اتقِ الله واغضض بصرك قبل المتابعة.',
+      'ghadhul_bashar_subtitle': 'اذكر الله واغضض بصرك قبل المتابعة.',
+      'prohibited_app_title': 'التطبيق محظور تماماً',
+      'prohibited_app_desc':
+          'تم حظر متصفح تخطي الحجب هذا تماماً حفاظاً على الطهارة وغض البصر عن المعاصي.',
+      'prohibited_adult_desc':
+          'هذا التطبيق للمحتوى الإباحي محظور تماماً لحفظ طهارة النفس والابتعاد عن الفواحش التي حرمها الله تعالى.',
+      'prohibited_app_verse':
+          'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n(سورة الأنعام: 151)',
+      'prohibited_suggestion_title': 'نصيحة: استخدام متصفح آمن',
+      'prohibited_suggestion_desc':
+          'يُرجى استخدام المتصفحات الرسمية مثل Google Chrome أو Mozilla Firefox أو Samsung Internet أو Microsoft Edge لتصفح آمن ومفيد.',
+      'prohibited_adult_suggestion_title': 'نصيحة شرعية',
+      'prohibited_adult_suggestion_desc':
+          'اتق الله ودع المعاصي لوجه الله تعالى. يُنصح بشدة بإلغاء تثبيت هذا التطبيق من جهازك فوراً لحفظ طهارة قلبك ونفسك.',
+      'uninstall_prohibited_app': 'إلغاء تثبيت هذا التطبيق',
+      'back_to_home': 'العودة إلى الشاشة الرئيسية',
       'save': 'حفظ',
       'points': 'نقاط',
       'points_available': 'النقاط المتاحة',
@@ -397,15 +506,18 @@ class Translations {
       'search_apps': 'البحث عن التطبيقات...',
       'no_apps_found': 'لم يتم العثور على تطبيقات',
       'uninstall_app': 'إلغاء تثبيت التطبيق',
-      'uninstall_confirm': 'هل أنت متأكد أنك تريد إلغاء تثبيت هذا التطبيق من جهازك؟',
+      'uninstall_confirm':
+          'هل أنت متأكد أنك تريد إلغاء تثبيت هذا التطبيق من جهازك؟',
       'uninstall': 'إلغاء التثبيت',
       'app_blocked': 'التطبيق مقيد',
-      'app_blocked_desc': 'لفتح هذا التطبيق، يرجى قراءة القرآن، أو الذكر الخاشع، أو تدبر الأحاديث لكسب النقاط.',
+      'app_blocked_desc':
+          'لفتح هذا التطبيق، يرجى قراءة القرآن، أو الذكر الخاشع، أو تدبر الأحاديث لكسب النقاط.',
       'unlock_60m': 'فتح 60 د (50 نقطة)',
       'need_50_points': 'تحتاج 50 نقطة',
       'read_quran_earn_points': 'اقرأ القرآن (+ نقاط)',
       'read_hadith_earn_points': 'معذور؟ اقرأ الحديث (+ نقاط)',
-      'hadith_excused_hint': 'في حال العذر الشرعي، يمكنك كسب النقاط عبر الذكر الخاشع أو تدبر الأحاديث الصحيحة.',
+      'hadith_excused_hint':
+          'في حال العذر الشرعي، يمكنك كسب النقاط عبر الذكر الخاشع أو تدبر الأحاديث الصحيحة.',
       'read_hadith': 'قراءة الحديث',
       'hadith_collection': 'مجموعة الأحاديث النبوية الصحيحة',
       'hadith_mode_title': 'وضع قراءة الأحاديث',
@@ -433,7 +545,8 @@ class Translations {
       'earn_points_modal_title': 'خيارات كسب النقاط',
       'excused_options_title': 'معذور / رخصة شرعية؟',
       'app_is_non_productive': 'تطبيق غير إنتاجي',
-      'app_blocked_custom_desc': 'هو تطبيق غير إنتاجي مقيد للحفاظ على تركيزك وإنتاجيتك. يتطلب فتحه 50 نقطة (لمدة 60 دقيقة).',
+      'app_blocked_custom_desc':
+          'هو تطبيق غير إنتاجي مقيد للحفاظ على تركيزك وإنتاجيتك. يتطلب فتحه 50 نقطة (لمدة 60 دقيقة).',
       'points_sufficient': 'النقاط كافية لفتح التطبيق',
       'points_insufficient': 'النقاط غير كافية لفتح التطبيق',
       'theme_all': 'الكل',
@@ -444,7 +557,8 @@ class Translations {
       'support_dev_btn': 'دعم المطور عبر Ko-fi',
       'support_feature_request': 'دعم / اقتراح ميزات',
       'free_ad_free_app': 'تطبيق مجاني 100% وبدون إعلانات',
-      'support_dev_long_desc': 'دعمكم يساعدنا في إبقاء مشغل مسلم مجانياً ومستقلاً وتحديثه دائماً بميزات إسلامية مفيدة.',
+      'support_dev_long_desc':
+          'دعمكم يساعدنا في إبقاء مشغل مسلم مجانياً ومستقلاً وتحديثه دائماً بميزات إسلامية مفيدة.',
       'good_morning': 'صباح الخير',
       'good_afternoon': 'طاب يومك',
       'good_evening': 'مساء الخير',
@@ -464,7 +578,8 @@ class Translations {
       'your_apps': 'جميع التطبيقات',
       'open_apps': 'فتح التطبيقات',
       'setup_now': 'الإعداد الآن',
-      'accessibility_required_banner': 'خدمة إمكانية الوصول مطلوبة لتفعيل حظر التطبيقات خارج المشغل.',
+      'accessibility_required_banner':
+          'خدمة إمكانية الوصول مطلوبة لتفعيل حظر التطبيقات خارج المشغل.',
       'next_surah': 'السورة التالية',
       'voice': 'صوت',
       'listening': 'جارٍ الاستماع...',
@@ -474,11 +589,14 @@ class Translations {
       'daily_inspiration_default': 'إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ',
       'ready_to_focus': 'جاهز للتركيز والعبادة!',
       'enable_app_blocker': 'تفعيل حظر المشتتات',
-      'ready_to_focus_desc': 'سيساعدك مشغل مسلم على البقاء بعيداً عن المشتتات أثناء تلاوة القرآن.',
-      'enable_app_blocker_desc': 'لحظر التطبيقات المشتتة، نحتاج إلى إذنك في إعدادات إمكانية الوصول.',
+      'ready_to_focus_desc':
+          'سيساعدك مشغل مسلم على البقاء بعيداً عن المشتتات أثناء تلاوة القرآن.',
+      'enable_app_blocker_desc':
+          'لحظر التطبيقات المشتتة، نحتاج إلى إذنك في إعدادات إمكانية الوصول.',
       'change_language': 'تغيير اللغة',
       'set_default_home': 'تعيين كمشغل رئيسي',
-      'set_default_home_desc': 'لحظر المشتتات بكفاءة، يجب تعيين مشغل مسلم كتطبيق رئيسي افتراضي.',
+      'set_default_home_desc':
+          'لحظر المشتتات بكفاءة، يجب تعيين مشغل مسلم كتطبيق رئيسي افتراضي.',
       'home_app_ready': 'المشغل الرئيسي جاهز!',
       'home_app_ready_desc': 'مشغل مسلم الآن هو التطبيق الرئيسي لهاتفك.',
       'accessibility_service_title': 'خدمة إمكانية الوصول (الحاظر)',
@@ -490,7 +608,8 @@ class Translations {
       'mark_as_configured': 'تحديد كمكتمل',
       'start_exploring': 'ابدأ الآن',
       'action_required': 'إجراء مطلوب',
-      'permission_disabled_desc': 'تم تعطيل بعض الأذونات الأساسية. للبقاء في تركيز، يرجى إعادة تفعيلها.',
+      'permission_disabled_desc':
+          'تم تعطيل بعض الأذونات الأساسية. للبقاء في تركيز، يرجى إعادة تفعيلها.',
       'open_setup_hub': 'فتح مركز الإعدادات',
       'continue_without_protection': 'المتابعة بدون حماية',
       'setup_preparing_home': 'جارٍ إعداد الشاشة الرئيسية...',
@@ -510,7 +629,23 @@ class Translations {
       'cancel': 'Kanselleer',
       'ok': 'OK',
       'ghadhul_bashar_title': 'Bewaak Jou Oë',
-      'ghadhul_bashar_subtitle': 'Onthou Allah en slaan jou oë neer voordat jy voortgaan.',
+      'ghadhul_bashar_subtitle':
+          'Onthou Allah en slaan jou oë neer voor jy voortgaan.',
+      'prohibited_app_title': 'Toepassing Verbode',
+      'prohibited_app_desc':
+          'Hierdie blaaier is heeltemal geblokkeer om kuisheid te bewaar en jou oë teen onwettige inhoud te beskerm.',
+      'prohibited_adult_desc':
+          'Hierdie volwasse inhoud toepassing is streng verbode en geblokkeer om sedelike reinheid te bewaar.',
+      'prohibited_app_verse':
+          'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"En moenie onsedelikhede nader nie - hetsy openlik of verborge." (Soera Al-An\'am: 151)',
+      'prohibited_suggestion_title': 'Veilige Blaaier Aanbeveling',
+      'prohibited_suggestion_desc':
+          'Gebruik asseblief amptelike blaaiers soos Google Chrome, Mozilla Firefox, Samsung Internet, of Microsoft Edge vir nuttige blaai-aktiwiteite.',
+      'prohibited_adult_suggestion_title': 'Godsdienstige Raad',
+      'prohibited_adult_suggestion_desc':
+          'Laat vaar sonde ter wille van Allah SWT. Dit word sterk aanbeveel om hierdie toepassing dadelik van jou toestel te deïnstalleer.',
+      'uninstall_prohibited_app': 'Deïnstalleer Toepassing',
+      'back_to_home': 'Terug na Tuisblad',
       'save': 'Stoor',
       'points': 'Punte',
       'points_available': 'Punte Beskikbaar',
@@ -521,19 +656,23 @@ class Translations {
       'search_apps': 'Soek Toepassings...',
       'no_apps_found': 'Geen toepassings gevind nie',
       'uninstall_app': 'Deïnstalleer Toepassing',
-      'uninstall_confirm': 'Is jy seker jy wil hierdie toepassing van jou toestel deïnstalleer?',
+      'uninstall_confirm':
+          'Is jy seker jy wil hierdie toepassing van jou toestel deïnstalleer?',
       'uninstall': 'Deïnstalleer',
       'app_blocked': 'TOEPASSING BEPERK',
-      'app_blocked_desc': 'Om hierdie toepassing oop te maak, lees die Koran, resiteer Dhikr, of lees Hadiete om punte te verdien.',
+      'app_blocked_desc':
+          'Om hierdie toepassing oop te maak, lees die Koran, resiteer Dhikr, of lees Hadiete om punte te verdien.',
       'unlock_60m': 'Ontsluit 60m (50 Punte)',
       'need_50_points': 'Benodig 50 Punte',
       'read_quran_earn_points': 'Lees Koran (+ Punte)',
       'read_hadith_earn_points': 'Verskoon? Lees Hadieth (+ Punte)',
-      'hadith_excused_hint': 'Verskoon? Jy kan steeds punte verdien met Dhikr of die lees van Hadiete.',
+      'hadith_excused_hint':
+          'Verskoon? Jy kan steeds punte verdien met Dhikr of die lees van Hadiete.',
       'read_hadith': 'Lees Hadieth',
       'hadith_collection': 'Outeurste Hadieth-versameling',
       'hadith_mode_title': 'Hadieth Leesmodus',
-      'hadith_mode_desc': 'Alternatiewe aanbiddingsmodus om punte te verdien en gefokus te bly.',
+      'hadith_mode_desc':
+          'Alternatiewe aanbiddingsmodus om punte te verdien en gefokus te bly.',
       'silent_reading': 'Stil Lees...',
       'claim_points': 'Eis Punte',
       'next_hadith': 'Volgende Hadieth',
@@ -557,18 +696,21 @@ class Translations {
       'earn_points_modal_title': 'Opsies om punte te verdien',
       'excused_options_title': 'Verskoon / Op verlof / Rukhsah?',
       'app_is_non_productive': 'Nie-produktiewe toepassing',
-      'app_blocked_custom_desc': 'is \'n nie-produktiewe toepassing wat beperk is om jou fokus te beskerm. Ontsluit met 50 punte (60 minute).',
+      'app_blocked_custom_desc':
+          'is \'n nie-produktiewe toepassing wat beperk is om jou fokus te beskerm. Ontsluit met 50 punte (60 minute).',
       'points_sufficient': 'Voldoende punte om toepassing te ontsluit',
       'points_insufficient': 'Onvoldoende punte om toepassing te ontsluit',
       'theme_all': 'Alles',
       'go_back': 'Gaan Terug',
       'open_settings': 'Maak Instellings Oop',
       'settings': 'Instellings',
-      'support_dev_msg': 'Ondersteun ontwikkelaar om toepassing gratis en advertensievry te hou',
+      'support_dev_msg':
+          'Ondersteun ontwikkelaar om toepassing gratis en advertensievry te hou',
       'support_dev_btn': 'Ondersteun ontwikkelaar via Ko-fi',
       'support_feature_request': 'Ondersteun / Vra Kenmerke Aan',
       'free_ad_free_app': '100% Gratis en Advertensievrye Toepassing',
-      'support_dev_long_desc': 'Jou ondersteuning help ons om Muslim Launcher gratis, onafhanklik en voortdurend opgedateer te hou.',
+      'support_dev_long_desc':
+          'Jou ondersteuning help ons om Muslim Launcher gratis, onafhanklik en voortdurend opgedateer te hou.',
       'good_morning': 'Goeiemôre',
       'good_afternoon': 'Goeiemiddag',
       'good_evening': 'Goeienaand',
@@ -588,7 +730,8 @@ class Translations {
       'your_apps': 'Jou Toepassings',
       'open_apps': 'Maak Toepassings Oop',
       'setup_now': 'Stel Nou Op',
-      'accessibility_required_banner': 'Toeganklikheidsdiens word vereis vir globale toepassingblokkering.',
+      'accessibility_required_banner':
+          'Toeganklikheidsdiens word vereis vir globale toepassingblokkering.',
       'next_surah': 'Volgende Soera',
       'voice': 'Stem',
       'listening': 'Luister tans...',
@@ -598,23 +741,29 @@ class Translations {
       'daily_inspiration_default': 'Dade word volgens voornemens beoordeel.',
       'ready_to_focus': 'Gereed om te fokus!',
       'enable_app_blocker': 'Aktiveer Toepassingblokker',
-      'ready_to_focus_desc': 'Muslim Launcher sal jou help om afleidings te vermy terwyl jy die Koran lees.',
-      'enable_app_blocker_desc': 'Om afleidings te blokkeer, benodig ons jou toestemming in Toeganklikheid-instellings.',
+      'ready_to_focus_desc':
+          'Muslim Launcher sal jou help om afleidings te vermy terwyl jy die Koran lees.',
+      'enable_app_blocker_desc':
+          'Om afleidings te blokkeer, benodig ons jou toestemming in Toeganklikheid-instellings.',
       'change_language': 'Verander Taal',
       'set_default_home': 'Stel as Verstek Tuistoepassing',
-      'set_default_home_desc': 'Om afleidings doeltreffend te blokkeer, moet Muslim Launcher jou verstek Tuistoepassing wees.',
+      'set_default_home_desc':
+          'Om afleidings doeltreffend te blokkeer, moet Muslim Launcher jou verstek Tuistoepassing wees.',
       'home_app_ready': 'Tuistoepassing Gereed!',
       'home_app_ready_desc': 'Muslim Launcher is nou jou hoof tuistoepassing.',
       'accessibility_service_title': 'Toeganklikheidsdiens (Blokker)',
       'accessibility_service_active': 'Toepassingblokkerdiens loop',
-      'accessibility_service_required': 'Vereis vir intydse toepassingblokkering',
+      'accessibility_service_required':
+          'Vereis vir intydse toepassingblokkering',
       'autostart_title': 'Outobegin & Batteryoptimalisering',
       'autostart_active': 'Outobegin is gekonfigureer',
-      'autostart_required': 'Verhoed dat die stelsel die blokker in die agtergrond stop',
+      'autostart_required':
+          'Verhoed dat die stelsel die blokker in die agtergrond stop',
       'mark_as_configured': 'Merk as Voltooi',
       'start_exploring': 'BEGIN NOU',
       'action_required': 'Aksie Vereis',
-      'permission_disabled_desc': 'Sommige noodsaaklike toestemmings is gedeaktiveer. Heraktiveer dit asseblief om gefokus te bly.',
+      'permission_disabled_desc':
+          'Sommige noodsaaklike toestemmings is gedeaktiveer. Heraktiveer dit asseblief om gefokus te bly.',
       'open_setup_hub': 'Maak Instellingshub Oop',
       'continue_without_protection': 'Gaan voort sonder Beskerming',
       'setup_preparing_home': 'Berei tans jou tuisskerm voor...',
@@ -634,7 +783,23 @@ class Translations {
       'cancel': 'Ghairi',
       'ok': 'Sawa',
       'ghadhul_bashar_title': 'Ukumbusho wa Kulinda Macho',
-      'ghadhul_bashar_subtitle': 'Mkumbuke Mwenyezi Mungu na inamisha macho kabla ya kuendelea.',
+      'ghadhul_bashar_subtitle':
+          'Mkumbuke Mwenyezi Mungu na uinamishe macho yako kabla ya kuendelea.',
+      'prohibited_app_title': 'Programu Imepigwa Marufuku',
+      'prohibited_app_desc':
+          'Kivinjari hiki kimezuiwa kabisa ili kulinda usafi wa moyo na kuzuia macho kutokana na yaliyoharamishwa.',
+      'prohibited_adult_desc':
+          'Programu hii ya maudhui ya watu wazima imepigwa marufuku kabisa ili kulinda usafi wa moyo na kuepuka maovu yaliyoharamishwa na Mwenyezi Mungu.',
+      'prohibited_app_verse':
+          'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"Wala msikaribie mambo maovu - yaliyo dhahiri na yaliyofichika." (Surah Al-An\'am: 151)',
+      'prohibited_suggestion_title': 'Pendekezo la Kivinjari Salama',
+      'prohibited_suggestion_desc':
+          'Tafadhali tumia vivinjari rasmi kama Google Chrome, Mozilla Firefox, Samsung Internet, au Microsoft Edge kwa matumizi yenye manufaa.',
+      'prohibited_adult_suggestion_title': 'Nasiha ya Kisharia',
+      'prohibited_adult_suggestion_desc':
+          'Acha maasi kwa ajili ya Mwenyezi Mungu. Inapendekezwa sana kuondoa programu hii kwenye kifaa chako mara moja ili kulinda usafi wa nafsi yako.',
+      'uninstall_prohibited_app': 'Ondoa Programu Hii',
+      'back_to_home': 'Rudi Nyumbani',
       'save': 'Hifadhi',
       'points': 'Pointi',
       'points_available': 'Pointi Zinazopatikana',
@@ -645,19 +810,23 @@ class Translations {
       'search_apps': 'Tafuta Programu...',
       'no_apps_found': 'Hakuna programu zilizopatikana',
       'uninstall_app': 'Ondoa Programu',
-      'uninstall_confirm': 'Je, una uhakika unataka kuondoa programu hii kwenye kifaa chako?',
+      'uninstall_confirm':
+          'Je, una uhakika unataka kuondoa programu hii kwenye kifaa chako?',
       'uninstall': 'Ondoa',
       'app_blocked': 'PROGRAMU IMEZUILIWA',
-      'app_blocked_desc': 'Kufungua programu hii, soma Quran, fanya Dhikri, au soma Hadithi ili kupata pointi.',
+      'app_blocked_desc':
+          'Kufungua programu hii, soma Quran, fanya Dhikri, au soma Hadithi ili kupata pointi.',
       'unlock_60m': 'Fungua dkk 60 (Pointi 50)',
       'need_50_points': 'Unahitaji Pointi 50',
       'read_quran_earn_points': 'Soma Quran (+ Pointi)',
       'read_hadith_earn_points': 'Umezuiwa? Soma Hadithi (+ Pointi)',
-      'hadith_excused_hint': 'Umezuiwa? Bado unaweza kupata pointi kwa Dhikri au kusoma Hadithi Sahihi.',
+      'hadith_excused_hint':
+          'Umezuiwa? Bado unaweza kupata pointi kwa Dhikri au kusoma Hadithi Sahihi.',
       'read_hadith': 'Soma Hadithi',
       'hadith_collection': 'Mkusanyiko wa Hadithi Sahihi',
       'hadith_mode_title': 'Hali ya Kusoma Hadithi',
-      'hadith_mode_desc': 'Njia mbadala ya ibada ili kupata pointi na kubaki makini.',
+      'hadith_mode_desc':
+          'Njia mbadala ya ibada ili kupata pointi na kubaki makini.',
       'silent_reading': 'Kusoma kwa Utulivu...',
       'claim_points': 'Chukua Pointi',
       'next_hadith': 'Hadithi Inayofuata',
@@ -671,7 +840,8 @@ class Translations {
       'dzikir_face_detected': 'Uso Umetambuliwa (Unaweza kufumba macho)',
       'dzikir_face_not_detected': 'Elekeza uso kwenye kamera...',
       'dzikir_too_fast': 'Soma kwa utulivu na bila haraka...',
-      'dzikir_completed_congrats': 'Alhamdulillah! Mzunguko wa Dhikri Umekamilika',
+      'dzikir_completed_congrats':
+          'Alhamdulillah! Mzunguko wa Dhikri Umekamilika',
       'dzikir_claimed_points': 'Chukua +10 Pointi',
       'change_dzikir': 'Chagua Dhikri',
       'reset_counter': 'Weka Upya',
@@ -681,18 +851,21 @@ class Translations {
       'earn_points_modal_title': 'Chaguo za Kupata Pointi',
       'excused_options_title': 'Umezuiwa / Udhuru wa Kisheria?',
       'app_is_non_productive': 'Programu Isiyo na Tija',
-      'app_blocked_custom_desc': 'ni programu isiyo na tija iliyozuiliwa kulinda umakini wako. Fungua kwa pointi 50 (dakika 60).',
+      'app_blocked_custom_desc':
+          'ni programu isiyo na tija iliyozuiliwa kulinda umakini wako. Fungua kwa pointi 50 (dakika 60).',
       'points_sufficient': 'Pointi zinatosha kufungua programu',
       'points_insufficient': 'Pointi hazitoshi kufungua programu',
       'theme_all': 'Zote',
       'go_back': 'Rudi Nyuma',
       'open_settings': 'Fungua Mipangilio',
       'settings': 'Mipangilio',
-      'support_dev_msg': 'Msaidie msanidi ili programu ibaki bure na bila matangazo',
+      'support_dev_msg':
+          'Msaidie msanidi ili programu ibaki bure na bila matangazo',
       'support_dev_btn': 'Msaidie msanidi kupitia Ko-fi',
       'support_feature_request': 'Msaidie / Pendekeza Vipengele',
       'free_ad_free_app': 'Programu Bure 100% & Bila Matangazo',
-      'support_dev_long_desc': 'Msaada wako unatusaidia kuweka Muslim Launcher bure, huru, na kusasishwa daima.',
+      'support_dev_long_desc':
+          'Msaada wako unatusaidia kuweka Muslim Launcher bure, huru, na kusasishwa daima.',
       'good_morning': 'Habari za Asubuhi',
       'good_afternoon': 'Habari za Mchana',
       'good_evening': 'Habari za Jioni',
@@ -712,7 +885,8 @@ class Translations {
       'your_apps': 'Programu Zote',
       'open_apps': 'Fungua Programu',
       'setup_now': 'Weka Sasa',
-      'accessibility_required_banner': 'Huduma ya ufikiaji inahitajika kwa uzuiaji wa programu nje ya Kizindua.',
+      'accessibility_required_banner':
+          'Huduma ya ufikiaji inahitajika kwa uzuiaji wa programu nje ya Kizindua.',
       'next_surah': 'Sura Inayofuata',
       'voice': 'Sauti',
       'listening': 'Inasikiliza...',
@@ -722,23 +896,29 @@ class Translations {
       'daily_inspiration_default': 'Hakika matendo hutegemea nia.',
       'ready_to_focus': 'Uko tayari kuzingatia!',
       'enable_app_blocker': 'Washa Kizuia Programu',
-      'ready_to_focus_desc': 'Muslim Launcher itakusaidia kuepuka vikwazo wakati unasoma Quran.',
-      'enable_app_blocker_desc': 'Ili kuzuia programu zenye usumbufu, tunahitaji ruhusa katika mipangilio ya Ufikiaji.',
+      'ready_to_focus_desc':
+          'Muslim Launcher itakusaidia kuepuka vikwazo wakati unasoma Quran.',
+      'enable_app_blocker_desc':
+          'Ili kuzuia programu zenye usumbufu, tunahitaji ruhusa katika mipangilio ya Ufikiaji.',
       'change_language': 'Badilisha Lugha',
       'set_default_home': 'Weka kama Kizindua Chaguo-msingi',
-      'set_default_home_desc': 'Ili kuzuia vikwazo kwa ufanisi, Muslim Launcher lazima iwe Programu yako chaguomsingi ya Nyumbani.',
+      'set_default_home_desc':
+          'Ili kuzuia vikwazo kwa ufanisi, Muslim Launcher lazima iwe Programu yako chaguomsingi ya Nyumbani.',
       'home_app_ready': 'Kizindua Kiko Tayari!',
-      'home_app_ready_desc': 'Muslim Launcher sasa ni kizindua chako kikuu cha nyumbani.',
+      'home_app_ready_desc':
+          'Muslim Launcher sasa ni kizindua chako kikuu cha nyumbani.',
       'accessibility_service_title': 'Huduma ya Ufikiaji (Kizuia)',
       'accessibility_service_active': 'Huduma ya kuzuia programu inafanya kazi',
-      'accessibility_service_required': 'Inahitajika kwa kuzuia programu papo hapo',
+      'accessibility_service_required':
+          'Inahitajika kwa kuzuia programu papo hapo',
       'autostart_title': 'Kuanza Kiotomatiki & Betri',
       'autostart_active': 'Kuanza kiotomatiki kumewekwa',
       'autostart_required': 'Zuia mfumo usizime kizuia nyuma ya pazia',
       'mark_as_configured': 'Weka alama kama Tayari',
       'start_exploring': 'ANZA SASA',
       'action_required': 'Hatua Inahitajika',
-      'permission_disabled_desc': 'Baadhi ya ruhusa muhimu zimezimwa. Ili ubaki makini, tafadhali ziweshe tena.',
+      'permission_disabled_desc':
+          'Baadhi ya ruhusa muhimu zimezimwa. Ili ubaki makini, tafadhali ziweshe tena.',
       'open_setup_hub': 'Fungua Kituo cha Mipangilio',
       'continue_without_protection': 'Endelea bila Ulinzi',
       'setup_preparing_home': 'Inaandaa Skrini Kuu...',

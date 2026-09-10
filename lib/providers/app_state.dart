@@ -40,6 +40,7 @@ class AppState extends ChangeNotifier {
   List<Map<String, dynamic>> _readingHistory = [];
   Map<String, int> _unlockedExpirations = {};
   String? _lastAttemptedBlockedPackage;
+  String? _lastAttemptedGhadhulBasharPackage;
   bool _isAccessibilityEnabled = false;
   bool _isDefaultLauncher = false;
   bool _hasSeenAccessibilitySetup = false;
@@ -82,6 +83,9 @@ class AppState extends ChangeNotifier {
 
 
   String get languageCode => _languageCode;
+  bool get isIndonesian => isIndonesianUser(_languageCode);
+  String get supportUrl => getSupportUrl(_languageCode);
+  String get supportButtonText => getSupportButtonText(_languageCode);
   bool get hasSelectedLanguage => _hasSelectedLanguage;
   bool get hasCompletedOnboarding => _hasCompletedOnboarding;
   int get points => _points;
@@ -107,6 +111,7 @@ class AppState extends ChangeNotifier {
   int get khatmCount => _khatmCount;
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
   String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
+  String? get lastAttemptedGhadhulBasharPackage => _lastAttemptedGhadhulBasharPackage;
   bool get isAccessibilityEnabled => _isAccessibilityEnabled;
   bool get isDefaultLauncher => _isDefaultLauncher;
   bool get hasSeenAccessibilitySetup => _hasSeenAccessibilitySetup;
@@ -201,6 +206,65 @@ class AppState extends ChangeNotifier {
       _unlockedExpirations = {};
     }
 
+    // Initialize App Block Service immediately so no platform signals are dropped
+    _appBlockService.init(
+      onAppBlocked: (pkg) {
+        if (pkg.trim().isNotEmpty) {
+          _lastAttemptedBlockedPackage = pkg.toLowerCase();
+          notifyListeners();
+        }
+      },
+      onGhadhulBasharTriggered: (pkg) {
+        if (pkg.trim().isNotEmpty) {
+          _lastAttemptedGhadhulBasharPackage = pkg.toLowerCase();
+          notifyListeners();
+        }
+      },
+      onProhibitedAppTriggered: (pkg) {
+        if (pkg.trim().isNotEmpty) {
+          _lastAttemptedProhibitedPackage = pkg.toLowerCase();
+          notifyListeners();
+        }
+      },
+    );
+    _appBlockService.setBlockedApps(_blockedApps.toList());
+    syncGhadhulBasharPackages();
+    syncProhibitedPackages();
+
+    const appsChannel = MethodChannel('com.muslimlauncher/apps');
+    appsChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onAppListChanged') {
+        AppListScreen.invalidateFull();
+        final rawApps = await appsChannel.invokeMethod('getApps');
+        AppListScreen.preload(forceRefresh: true);
+        syncAppsWithCategories(rawApps);
+      } else if (call.method == 'onHomePressed') {
+        if (hasActiveOverlay) {
+          clearAllOverlays();
+        } else {
+          goHome();
+        }
+      }
+    });
+
+    // Check if launch was triggered by cold-boot block intent
+    try {
+      const blockChannel = MethodChannel('com.muslimlauncher/block');
+      final initialData = await blockChannel.invokeMethod('getPendingInitialBlock');
+      if (initialData is Map) {
+        final pendingProhibited = initialData['prohibited'] as String?;
+        final pendingBlocked = initialData['blocked'] as String?;
+        final pendingGhadhul = initialData['ghadhul'] as String?;
+        if (pendingProhibited != null && pendingProhibited.isNotEmpty) {
+          _lastAttemptedProhibitedPackage = pendingProhibited.toLowerCase();
+        } else if (pendingBlocked != null && pendingBlocked.isNotEmpty) {
+          _lastAttemptedBlockedPackage = pendingBlocked.toLowerCase();
+        } else if (pendingGhadhul != null && pendingGhadhul.isNotEmpty) {
+          _lastAttemptedGhadhulBasharPackage = pendingGhadhul.toLowerCase();
+        }
+      }
+    } catch (_) {}
+
     // Await crucial initialization
     await Future.wait([
       loadQuranData(),
@@ -216,33 +280,11 @@ class AppState extends ChangeNotifier {
     AppListScreen.preload(
       onRawAppsFetched: (raw) => syncAppsWithCategories(raw),
     );
-    
-    // Initialize App Block Service
-    _appBlockService.init(onAppBlocked: (pkg) {
-      if (pkg.trim().isNotEmpty) {
-        _lastAttemptedBlockedPackage = pkg.toLowerCase();
-        notifyListeners();
-      }
-    });
-    _appBlockService.setBlockedApps(_blockedApps.toList());
-    
+
     try {
       _isAccessibilityEnabled = await _appBlockService.isAccessibilityEnabled();
-      const appsChannel = MethodChannel('com.muslimlauncher/apps');
-      _isDefaultLauncher = await appsChannel.invokeMethod('isDefaultLauncher');
-      
-      appsChannel.setMethodCallHandler((call) async {
-        if (call.method == 'onAppListChanged') {
-          AppListScreen.invalidateFull();
-          final rawApps = await appsChannel.invokeMethod('getApps');
-          AppListScreen.preload(forceRefresh: true);
-          syncAppsWithCategories(rawApps);
-        } else if (call.method == 'onHomePressed') {
-          if (navigatorKey.currentState != null && navigatorKey.currentState!.canPop()) {
-            navigatorKey.currentState!.popUntil((route) => route.isFirst);
-          }
-        }
-      });
+      final defRes = await appsChannel.invokeMethod('isDefaultLauncher');
+      _isDefaultLauncher = defRes is bool ? defRes : false;
     } catch (_) {}
 
     _isInitialized = true;
@@ -307,10 +349,10 @@ class AppState extends ChangeNotifier {
   Future<void> _fetchDeviceInfo() async {
     const appsChannel = MethodChannel('com.muslimlauncher/apps');
     try {
-      final Map<dynamic, dynamic>? info = await appsChannel.invokeMethod('getDeviceInfo');
-      if (info != null) {
-        _manufacturer = (info['manufacturer'] as String? ?? '').toLowerCase();
-        _deviceModel = (info['model'] as String? ?? '').toLowerCase();
+      final res = await appsChannel.invokeMethod('getDeviceInfo');
+      if (res is Map) {
+        _manufacturer = (res['manufacturer']?.toString() ?? '').toLowerCase();
+        _deviceModel = (res['model']?.toString() ?? '').toLowerCase();
         notifyListeners();
       }
     } catch (e) {
@@ -462,6 +504,8 @@ class AppState extends ChangeNotifier {
     _hasSelectedLanguage = true;
     await prefs.setString('languageCode', code);
     await prefs.setBool('hasSelectedLanguage', true);
+    await syncGhadhulBasharPackages();
+    await syncProhibitedPackages();
     notifyListeners();
   }
 
@@ -508,14 +552,65 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> openApp(String packageName) async {
-    final pkg = packageName.toLowerCase();
-    const appsChannel = MethodChannel('com.muslimlauncher/apps');
+  bool _isOpeningApp = false;
+
+  Future<void> openApp(String packageName, {bool bypassGuards = false}) async {
+    if (_isOpeningApp) return;
+    _isOpeningApp = true;
     try {
-      await appsChannel.invokeMethod('openApp', {'packageName': pkg});
-    } catch (e) {
-      debugPrint("Failed to open app $pkg: $e");
+      final pkg = packageName.toLowerCase().trim();
+      if (!bypassGuards) {
+        if (isAppProhibited(pkg)) {
+          setProhibitedPackage(pkg);
+          return;
+        }
+        if (isAppBlocked(pkg)) {
+          setBlockedPackage(pkg);
+          return;
+        }
+        if (AppState.shouldShowGhadhulBasharReminder(pkg, '', _languageCode)) {
+          setGhadhulBasharPackage(pkg);
+          return;
+        }
+      }
+      const appsChannel = MethodChannel('com.muslimlauncher/apps');
+      try {
+        await appsChannel.invokeMethod('openApp', {'packageName': pkg});
+      } catch (e) {
+        debugPrint("Failed to open app $pkg: $e");
+      }
+    } finally {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        _isOpeningApp = false;
+      });
     }
+  }
+
+  static String cleanPackageName(String packageName) {
+    if (packageName.isEmpty) return '';
+    final parts = packageName.split('.');
+    String candidate = parts.last;
+    if ((candidate == 'android' || candidate == 'app') && parts.length > 1) {
+      candidate = parts[parts.length - 2];
+    }
+    if (candidate.isNotEmpty) {
+      return candidate[0].toUpperCase() + candidate.substring(1);
+    }
+    return packageName;
+  }
+
+  String getAppNameSync(String packageName) {
+    final pkg = packageName.trim().toLowerCase();
+    final cached = AppListScreen.cachedApps;
+    if (cached != null) {
+      for (final app in cached) {
+        if (app.packageName.toLowerCase() == pkg) {
+          final name = app.appName.trim();
+          if (name.isNotEmpty) return name;
+        }
+      }
+    }
+    return cleanPackageName(packageName);
   }
 
   static const Set<String> _whitelist = {
@@ -536,6 +631,11 @@ class AppState extends ChangeNotifier {
     final name = appName.toLowerCase().trim();
 
     if (pkg.isEmpty) return false;
+
+    // Explicit adult apps must NEVER be considered productive under any circumstances
+    if (isExplicitAdultApp(pkg, name)) {
+      return false;
+    }
 
     // 1. Definite Exclusions: Games and social video platforms
     if (category == 0) return false; // Android CATEGORY_GAME
@@ -693,6 +793,53 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
+  /// Checks if an app is a pure VPN/Proxy utility (e.g. Turbo VPN, 1.1.1.1, Psiphon, WireGuard, OpenVPN, NordVPN, etc.)
+  /// Pure VPN applications must NEVER be prohibited/blocked permanently, but are protected with Ghadhul Bashar reminders.
+  static bool isPureVpnApp(String packageName, [String appName = '']) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.isEmpty) return false;
+
+    // Known bypass browsers that have built-in VPNs (these are browsers, NOT pure VPN apps)
+    if (pkg.contains('opera') ||
+        name.contains('opera') ||
+        pkg.contains('alohamobile') ||
+        name.contains('aloha') ||
+        pkg.contains('com.upx.browser') ||
+        name.contains('upx') ||
+        pkg.contains('puffin') ||
+        name.contains('puffin') ||
+        pkg.contains('torproject') ||
+        pkg.contains('torbrowser') ||
+        name.contains('tor browser') ||
+        pkg.contains('epicbrowser') ||
+        name.contains('epic browser') ||
+        pkg.contains('tenta.android') ||
+        name.contains('tenta browser') ||
+        pkg.contains('cake.browser') ||
+        name.contains('cake browser') ||
+        pkg.contains('blueproxy') ||
+        name.contains('blue proxy') ||
+        pkg.contains('bf.browser') ||
+        name.contains('bf browser') ||
+        pkg.contains('xnx.browser') ||
+        name.contains('xnx browser')) {
+      return false;
+    }
+
+    // Any app containing "browser" or "peramban" is a browser, not a pure VPN app
+    final hasBrowserKeyword = pkg.contains('browser') ||
+        name.contains('browser') ||
+        name.contains('peramban');
+    if (hasBrowserKeyword) {
+      return false;
+    }
+
+    // Must be a VPN or proxy utility
+    return isVpnApp(pkg, name);
+  }
+
   /// Checks if an app is a web browser (e.g. Chrome, Firefox, Samsung Internet, Edge, Opera, etc.)
   static bool isBrowserApp(String packageName, [String appName = '']) {
     final pkg = packageName.toLowerCase().trim();
@@ -730,7 +877,29 @@ class AppState extends ChangeNotifier {
     if (pkg.contains('vpn') ||
         name.contains('vpn') ||
         pkg.contains('proxy') ||
-        name.contains('proxy')) {
+        name.contains('proxy') ||
+        pkg.contains('wireguard') ||
+        name.contains('wireguard') ||
+        pkg.contains('openvpn') ||
+        name.contains('openvpn') ||
+        pkg.contains('shadowsocks') ||
+        name.contains('shadowsocks') ||
+        pkg.contains('v2ray') ||
+        name.contains('v2ray') ||
+        pkg.contains('kr328.clash') ||
+        pkg.contains('clashforandroid') ||
+        pkg.contains('clash.meta') ||
+        name == 'clash' ||
+        name == 'clash for android' ||
+        name == 'clash meta' ||
+        pkg.contains('psiphon') ||
+        name.contains('psiphon') ||
+        pkg.contains('cloudflare') ||
+        name.contains('1.1.1.1') ||
+        pkg.contains('tunnelbear') ||
+        name.contains('tunnelbear') ||
+        pkg.contains('windscribe') ||
+        name.contains('windscribe')) {
       return true;
     }
     const vpnPackages = [
@@ -739,11 +908,15 @@ class AppState extends ChangeNotifier {
       'de.blinkt.openvpn',
       'net.openvpn.openvpn',
       'com.psiphon3.subscription',
+      'com.psiphon3',
+      'ca.psiphon',
       'com.nordvpn.android',
       'com.expressvpn.vpn',
       'free.vpn.unblock.proxy.turbovpn',
       'ch.protonvpn.android',
       'com.surfshark.vpnclient.android',
+      'com.jrzheng.supervpnfree',
+      'org.hola',
     ];
     for (final p in vpnPackages) {
       if (pkg == p || pkg.contains(p)) return true;
@@ -752,24 +925,444 @@ class AppState extends ChangeNotifier {
   }
 
   /// Checks if device's language or locale setting corresponds to a region that blocks adult content
-  /// (e.g. Indonesia 'id', Malaysia 'ms', Arab countries 'ar', etc.) where VPN is commonly used to bypass.
+  /// specifically comparing app language and phone language/country for Indonesia, Malaysia, and Arab countries.
   static bool isRestrictedAdultContentRegion(String languageCode) {
-    final lang = languageCode.toLowerCase().trim();
-    final sysLocale = ui.PlatformDispatcher.instance.locale;
-    final sysLang = sysLocale.languageCode.toLowerCase();
-    final sysCountry = (sysLocale.countryCode ?? '').toUpperCase();
+    try {
+      final appLang = languageCode.toLowerCase().trim();
 
-    const restrictedLangs = ['id', 'ms', 'ar'];
-    const restrictedCountries = [
-      'ID', 'MY', 'SA', 'AE', 'QA', 'KW', 'OM', 'BH', 'EG', 'TR', 'PK', 'BD'
-    ];
+      // Bahasa aplikasi yang terdeteksi
+      const indonesianLangs = ['id', 'in'];
+      const malaysianLangs = ['ms', 'zlm'];
+      const arabicLangs = ['ar'];
 
-    if (restrictedLangs.contains(lang) || restrictedLangs.contains(sysLang)) {
+      if (indonesianLangs.contains(appLang) ||
+          malaysianLangs.contains(appLang) ||
+          arabicLangs.contains(appLang)) {
+        return true;
+      }
+
+      // Bahasa & Negara Sistem HP
+      final sysLocale = ui.PlatformDispatcher.instance.locale;
+      final sysLang = sysLocale.languageCode.toLowerCase();
+      final sysCountry = (sysLocale.countryCode ?? '').toUpperCase();
+
+      const arabCountries = [
+        'SA', 'AE', 'QA', 'KW', 'OM', 'BH', 'EG', 'IQ', 'JO', 'LB', 'LY', 'MA', 'SD', 'SY', 'TN', 'YE', 'DZ'
+      ];
+      const otherRestrictedCountries = ['TR', 'PK', 'BD'];
+
+      if (indonesianLangs.contains(sysLang) || sysCountry == 'ID') {
+        return true;
+      }
+      if (malaysianLangs.contains(sysLang) || sysCountry == 'MY') {
+        return true;
+      }
+      if (arabicLangs.contains(sysLang) || arabCountries.contains(sysCountry)) {
+        return true;
+      }
+      if (otherRestrictedCountries.contains(sysCountry)) {
+        return true;
+      }
+
+      // Periksa seluruh preferensi bahasa pengguna di perangkat
+      for (final locale in ui.PlatformDispatcher.instance.locales) {
+        final lang = locale.languageCode.toLowerCase();
+        final country = (locale.countryCode ?? '').toUpperCase();
+
+        if (indonesianLangs.contains(lang) || country == 'ID') return true;
+        if (malaysianLangs.contains(lang) || country == 'MY') return true;
+        if (arabicLangs.contains(lang) || arabCountries.contains(country)) return true;
+        if (otherRestrictedCountries.contains(country)) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// Checks if the user is likely from Indonesia by comparing:
+  /// 1. The selected app language ('id' or 'in')
+  /// 2. The device system language ('id' or 'in')
+  /// 3. The device system country code ('ID', e.g. en_ID)
+  /// 4. Any locales in the device's preferred locale list
+  static bool isIndonesianUser([String? appLanguageCode]) {
+    try {
+      final appLang = (appLanguageCode ?? '').toLowerCase().trim();
+      if (appLang == 'id' || appLang == 'in') {
+        return true;
+      }
+
+      final sysLocale = ui.PlatformDispatcher.instance.locale;
+      final sysLang = sysLocale.languageCode.toLowerCase();
+      final sysCountry = (sysLocale.countryCode ?? '').toUpperCase();
+
+      if (sysLang == 'id' || sysLang == 'in' || sysCountry == 'ID') {
+        return true;
+      }
+
+      for (final locale in ui.PlatformDispatcher.instance.locales) {
+        final lang = locale.languageCode.toLowerCase();
+        final country = (locale.countryCode ?? '').toUpperCase();
+        if (lang == 'id' || lang == 'in' || country == 'ID') {
+          return true;
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// Returns the support / donation URL (Trakteer for Indonesian users, Ko-fi for others)
+  static String getSupportUrl([String? appLanguageCode]) {
+    return isIndonesianUser(appLanguageCode)
+        ? 'https://trakteer.id/andri_setiawan108/tip'
+        : 'https://ko-fi.com/andrisetiawan84153';
+  }
+
+  /// Returns the button label for supporting the developer based on language and detected platform
+  static String getSupportButtonText(String lang) {
+    final isIndo = isIndonesianUser(lang);
+    if (isIndo) {
+      return lang == 'id'
+          ? 'Dukung / Usulkan Fitur via Trakteer'
+          : 'Support / Request Features via Trakteer';
+    }
+    return Translations.get(lang, 'support_dev_btn');
+  }
+
+  /// Checks if an app is a bypass/anti-censorship browser frequently abused to circumvent adult content blocks
+  /// (e.g. Yandex, Aloha Browser, UPX, Puffin, Tor Browser, Blue Proxy, etc.)
+  static bool isProhibitedBypassBrowser(String packageName, [String appName = '']) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.isEmpty) return false;
+
+    // Pure VPN apps must NEVER be blocked permanently.
+    // They are utility tools protected by the Ghadhul Bashar reminder in restricted regions.
+    if (isPureVpnApp(pkg, name)) {
+      return false;
+    }
+
+    // 1. Yandex (search plugin & browser)
+    if (pkg.contains('yandex') || name.contains('yandex')) {
       return true;
     }
-    if (restrictedCountries.contains(sysCountry)) {
+
+    // 2. Aloha Browser (built-in VPN)
+    if (pkg.contains('alohamobile') || name.contains('aloha')) {
       return true;
     }
+
+    // 3. UPX Proxy Browser
+    if (pkg.contains('com.upx.browser') || name.contains('upx')) {
+      return true;
+    }
+
+    // 4. Puffin Cloud Browser (Cloud rendering bypass)
+    if (pkg.contains('puffin') || name.contains('puffin')) {
+      return true;
+    }
+
+    // 5. Tor Browser (Onion routing)
+    if (pkg.contains('torproject') ||
+        pkg.contains('torbrowser') ||
+        name.contains('tor browser') ||
+        name == 'tor') {
+      return true;
+    }
+
+    // 6. Opera Browser Family (built-in free VPN & data saving proxy)
+    if (pkg.contains('opera') || name.contains('opera')) {
+      return true;
+    }
+
+    // 7. UC Browser Family (built-in cloud acceleration proxy & bypass)
+    if (pkg.contains('ucmobile') ||
+        pkg.contains('uc.browser') ||
+        pkg.contains('ucturbo') ||
+        name.contains('uc browser') ||
+        name.contains('uc mini') ||
+        name.contains('uc turbo') ||
+        name == 'uc') {
+      return true;
+    }
+
+    // 8. Dedicated Privacy / VPN Browsers (Epic, Avast, AVG, Tenta, Cake, Hola Browser, InBrowser)
+    if (pkg.contains('epicbrowser') ||
+        name.contains('epic browser') ||
+        pkg.contains('avast.android.secure.browser') ||
+        pkg.contains('avg.android.secure.browser') ||
+        pkg.contains('tenta.android') ||
+        name.contains('tenta browser') ||
+        pkg.contains('cake.browser') ||
+        name.contains('cake browser') ||
+        pkg.contains('hola.browser') ||
+        name.contains('hola browser') ||
+        pkg.contains('nuplayer.inbrowser') ||
+        name.contains('inbrowser')) {
+      return true;
+    }
+
+    // 9. Video Downloader / Bypass / Cloud Proxy Browsers (Phoenix, CM Browser, Baidu, Cốc Cốc, Maxthon, Dolphin, Bro Browser, Croxy)
+    if (pkg.contains('transsion.phoenix') ||
+        name.contains('phoenix browser') ||
+        pkg.contains('ksmobile.cb') ||
+        pkg.contains('cmcm.browser') ||
+        name.contains('cm browser') ||
+        pkg.contains('baidu.browser') ||
+        name.contains('baidu browser') ||
+        pkg.contains('coccoc') ||
+        name.contains('coc coc') ||
+        name.contains('cốc cốc') ||
+        pkg.contains('maxthon') ||
+        pkg.contains('mx.browser') ||
+        name.contains('maxthon') ||
+        pkg.contains('dolphin.browser') ||
+        pkg.contains('mobi.mfront.android.browser') ||
+        name.contains('dolphin browser') ||
+        pkg.contains('brobrowser') ||
+        pkg.contains('bro.browser') ||
+        name.contains('bro browser') ||
+        pkg.contains('croxy') ||
+        name.contains('croxy')) {
+      return true;
+    }
+
+    // 10. Blue Proxy / Anti-blokir / Bokeh / Proxy Browsers
+    if (pkg.contains('blueproxy') ||
+        name.contains('blue proxy') ||
+        pkg.contains('antiblokir') ||
+        name.contains('anti blokir') ||
+        name.contains('anti-blokir') ||
+        pkg.contains('buka.blokir') ||
+        name.contains('buka blokir') ||
+        pkg.contains('vpn.proxy.browser') ||
+        pkg.contains('unblock.proxy.browser') ||
+        name.contains('proxy browser') ||
+        pkg.contains('bf.browser') ||
+        name.contains('bf browser') ||
+        pkg.contains('xnx.browser') ||
+        name.contains('xnx browser') ||
+        pkg.contains('bokeh') ||
+        name.contains('bokeh')) {
+      return true;
+    }
+
+    // 11. General heuristic: Any app identifying as a browser that also features VPN, Proxy, Unblock, Incognito/Secret/Stealth/Bypass capabilities
+    final hasBrowserKeyword = pkg.contains('browser') ||
+        name.contains('browser') ||
+        name.contains('peramban');
+    final hasVpnOrProxyKeyword = pkg.contains('vpn') ||
+        name.contains('vpn') ||
+        pkg.contains('proxy') ||
+        name.contains('proxy') ||
+        pkg.contains('unblock') ||
+        name.contains('unblock') ||
+        pkg.contains('bypass') ||
+        name.contains('bypass') ||
+        pkg.contains('tunnel') ||
+        name.contains('tunnel') ||
+        pkg.contains('incognito') ||
+        name.contains('incognito') ||
+        pkg.contains('secret') ||
+        name.contains('secret browser') ||
+        pkg.contains('stealth') ||
+        name.contains('stealth browser') ||
+        pkg.contains('hideme') ||
+        name.contains('hideme');
+    if (hasBrowserKeyword && hasVpnOrProxyKeyword) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Checks if an app is a dedicated explicit adult content application (e.g. Pornhub, Nekopoi, Simontox, XVideos, etc.)
+  /// These apps are strictly prohibited under Islamic law and must NEVER be opened under any circumstances across all regions.
+  static bool isExplicitAdultApp(String packageName, [String appName = '']) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.isEmpty) return false;
+
+    // 1. Nekopoi & Adult Anime / Hentai / Doujin (very common in Indonesia & SE Asia)
+    if (pkg.contains('nekopoi') ||
+        name.contains('nekopoi') ||
+        pkg.contains('poi.care') ||
+        pkg.contains('hanime') ||
+        name.contains('hanime') ||
+        pkg.contains('doujindesu') ||
+        name.contains('doujindesu') ||
+        pkg.contains('mangasusu') ||
+        name.contains('mangasusu') ||
+        pkg.contains('hentaihaven') ||
+        name.contains('hentaihaven') ||
+        pkg.contains('hentaistream') ||
+        name.contains('hentaistream') ||
+        pkg.contains('hentai') ||
+        name.contains('hentai') ||
+        pkg.contains('kucingpoi') ||
+        name.contains('kucingpoi')) {
+      return true;
+    }
+
+    // 2. Major Global Adult Tubes & Video Platforms (Pornhub, XVideos, XHamster, etc.)
+    if (pkg.contains('pornhub') ||
+        name.contains('pornhub') ||
+        pkg.contains('xvideos') ||
+        name.contains('xvideos') ||
+        pkg.contains('xhamster') ||
+        name.contains('xhamster') ||
+        pkg.contains('redtube') ||
+        name.contains('redtube') ||
+        pkg.contains('youporn') ||
+        name.contains('youporn') ||
+        pkg.contains('spankbang') ||
+        name.contains('spankbang') ||
+        pkg.contains('brazzers') ||
+        name.contains('brazzers') ||
+        pkg.contains('xnxx') ||
+        name.contains('xnxx') ||
+        pkg.contains('eporner') ||
+        name.contains('eporner') ||
+        pkg.contains('tnaflix') ||
+        name.contains('tnaflix') ||
+        pkg.contains('thumbzilla') ||
+        name.contains('thumbzilla') ||
+        pkg.contains('beeg') ||
+        name == 'beeg') {
+      return true;
+    }
+
+    // 3. Regional / Indonesian Adult Video APKs (Simontox, SiMontok, Maxtube, Overhot, etc.)
+    if (pkg.contains('simontox') ||
+        name.contains('simontox') ||
+        pkg.contains('simontok') ||
+        name.contains('simontok') ||
+        pkg.contains('simont9k') ||
+        name.contains('simont9k') ||
+        pkg.contains('maxtube') ||
+        name.contains('maxtube') ||
+        pkg.contains('overhot') ||
+        name.contains('overhot')) {
+      return true;
+    }
+
+    // 4. Adult Cam, Streaming & Paywall Platforms (Stripchat, Chaturbate, BongaCams, OnlyFans)
+    if (pkg.contains('stripchat') ||
+        name.contains('stripchat') ||
+        pkg.contains('chaturbate') ||
+        name.contains('chaturbate') ||
+        pkg.contains('bongacams') ||
+        name.contains('bongacams') ||
+        pkg.contains('cam4') ||
+        name.contains('cam4') ||
+        pkg.contains('livejasmin') ||
+        name.contains('livejasmin') ||
+        pkg.contains('onlyfans') ||
+        name.contains('onlyfans') ||
+        pkg.contains('fancentro') ||
+        name.contains('fancentro')) {
+      return true;
+    }
+
+    // 5. Adult Solicitation & Prostitution Platforms (MiChat)
+    if (pkg.contains('michat') || name.contains('michat')) {
+      return true;
+    }
+
+    // 6. Adult Leaked Content & Storage Hubs (TeraBox)
+    if (pkg.contains('terabox') ||
+        name.contains('terabox') ||
+        pkg.contains('dubox') ||
+        name.contains('dubox')) {
+      return true;
+    }
+
+    // 6. Explicit adult keywords (Indonesian and global)
+    if (pkg.contains('bokep') ||
+        name.contains('bokep') ||
+        pkg.contains('.porn') ||
+        pkg.contains('porn.') ||
+        name.contains('porno') ||
+        name.contains('video dewasa') ||
+        name.contains('film dewasa') ||
+        pkg.contains('javhd') ||
+        name.contains('javhd')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Checks if an app is permanently prohibited from being opened.
+  /// 1. Dedicated explicit adult content apps (Pornhub, Nekopoi, Simontox, XVideos, etc.) are strictly prohibited across ALL countries.
+  /// 2. Bypass/anti-censorship browsers are prohibited in restricted adult content / VPN regions (Indonesia, Malaysia, Arab countries, etc.).
+  bool isAppProhibited(String packageName, [String appName = '']) {
+    if (isExplicitAdultApp(packageName, appName)) {
+      return true;
+    }
+    return isProhibitedBypassBrowser(packageName, appName) &&
+        isRestrictedAdultContentRegion(_languageCode);
+  }
+
+  static bool isProhibitedAppStatic(
+    String packageName, [
+    String appName = '',
+    String languageCode = 'id',
+  ]) {
+    if (isExplicitAdultApp(packageName, appName)) {
+      return true;
+    }
+    return isProhibitedBypassBrowser(packageName, appName) &&
+        isRestrictedAdultContentRegion(languageCode);
+  }
+
+  /// Checks if an app is one of the major social or messaging platforms with high adult content / indecency risk:
+  /// Facebook, Twitter/X, Instagram, TikTok, Telegram, and Telegram X (all countries).
+  static bool isHighRiskSocialMediaApp(String packageName, [String appName = '']) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.isEmpty) return false;
+
+    // 1. Facebook (Katana, Lite, Web wrapper)
+    if (pkg.contains('com.facebook.katana') ||
+        pkg.contains('com.facebook.lite') ||
+        (name.contains('facebook') && !name.contains('messenger') && !name.contains('meta'))) {
+      return true;
+    }
+
+    // 2. Twitter / X
+    if (pkg.contains('twitter') ||
+        name.contains('twitter') ||
+        pkg == 'com.twitter.android' ||
+        pkg == 'com.twitter.android.lite' ||
+        (name == 'x' && pkg.contains('twitter'))) {
+      return true;
+    }
+
+    // 3. Instagram & Threads
+    if (pkg.contains('instagram') ||
+        name.contains('instagram') ||
+        pkg.contains('barcelona') ||
+        name.contains('threads')) {
+      return true;
+    }
+
+    // 4. TikTok
+    if (pkg.contains('musically') ||
+        pkg.contains('tiktok') ||
+        name.contains('tiktok') ||
+        pkg.contains('trill')) {
+      return true;
+    }
+
+    // 5. Telegram & Telegram X
+    if (pkg.contains('telegram') ||
+        pkg.contains('org.thunderdog.challegram') ||
+        name.contains('telegram')) {
+      return true;
+    }
+
     return false;
   }
 
@@ -780,7 +1373,10 @@ class AppState extends ChangeNotifier {
     String languageCode = 'en',
   ]) {
     if (isBrowserApp(packageName, appName)) {
-      return true; // All browsers
+      return true; // All browsers (all countries)
+    }
+    if (isHighRiskSocialMediaApp(packageName, appName)) {
+      return true; // Facebook, Twitter/X, Instagram, TikTok, Telegram/Telegram X (all countries)
     }
     if (isVpnApp(packageName, appName) && isRestrictedAdultContentRegion(languageCode)) {
       return true; // VPNs in countries that block adult content
@@ -795,6 +1391,11 @@ class AppState extends ChangeNotifier {
     final name = appName.toLowerCase().trim();
 
     if (pkg.isEmpty) return false;
+
+    // Explicit adult apps are strictly excluded from being productive
+    if (isExplicitAdultApp(pkg, name)) {
+      return false;
+    }
 
     // 1. Android OS Productive Categories:
     // CATEGORY_PRODUCTIVITY = 7 (Productivity / Office / Tools)
@@ -821,6 +1422,10 @@ class AppState extends ChangeNotifier {
 
     // 4. Web Browsers (treated as essential research/search tools, with Ghadhul Bashar reminder)
     if (isBrowserApp(pkg, name)) {
+      // Prohibited bypass browsers are not immune as productive apps
+      if (isProhibitedBypassBrowser(pkg, name)) {
+        return false;
+      }
       return true;
     }
 
@@ -1328,11 +1933,298 @@ class AppState extends ChangeNotifier {
       await _appBlockService.setBlockedApps(_blockedApps.toList());
       notifyListeners();
     }
+    await syncGhadhulBasharPackages(apps);
+    await syncProhibitedPackages(apps);
+  }
+
+  String? _lastAttemptedProhibitedPackage;
+  String? get lastAttemptedProhibitedPackage => _lastAttemptedProhibitedPackage;
+
+  void setProhibitedPackage(String pkg) {
+    if (pkg.trim().isNotEmpty) {
+      _lastAttemptedProhibitedPackage = pkg.toLowerCase();
+      notifyListeners();
+    }
+  }
+
+  bool get hasActiveOverlay =>
+      (_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
+      (_lastAttemptedBlockedPackage?.isNotEmpty ?? false) ||
+      (_lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false);
+
+  void clearAllOverlays() {
+    bool changed = false;
+    if (_lastAttemptedProhibitedPackage != null) {
+      _lastAttemptedProhibitedPackage = null;
+      changed = true;
+    }
+    if (_lastAttemptedBlockedPackage != null) {
+      _lastAttemptedBlockedPackage = null;
+      changed = true;
+    }
+    if (_lastAttemptedGhadhulBasharPackage != null) {
+      _lastAttemptedGhadhulBasharPackage = null;
+      changed = true;
+    }
+    if (changed) {
+      notifyListeners();
+    }
+  }
+
+  void goHome() {
+    clearAllOverlays();
+    if (navigatorKey.currentState != null && navigatorKey.currentState!.canPop()) {
+      navigatorKey.currentState!.popUntil((route) => route.isFirst);
+    }
+  }
+
+  void clearProhibitedPackage() {
+    _lastAttemptedProhibitedPackage = null;
+    notifyListeners();
+  }
+
+  void setBlockedPackage(String pkg) {
+    if (pkg.trim().isNotEmpty) {
+      _lastAttemptedBlockedPackage = pkg.toLowerCase();
+      notifyListeners();
+    }
   }
 
   void clearBlockedApp() {
     _lastAttemptedBlockedPackage = null;
     notifyListeners();
+  }
+
+  void clearGhadhulBashar() {
+    _lastAttemptedGhadhulBasharPackage = null;
+    notifyListeners();
+  }
+
+  void setGhadhulBasharPackage(String pkg) {
+    if (pkg.trim().isNotEmpty) {
+      _lastAttemptedGhadhulBasharPackage = pkg.toLowerCase();
+      notifyListeners();
+    }
+  }
+
+  Future<void> confirmGhadhulBashar(String packageName) async {
+    final pkg = packageName.toLowerCase();
+    try {
+      await _appBlockService.allowGhadhulBasharSession(pkg);
+    } catch (_) {}
+    clearGhadhulBashar();
+    await openApp(pkg, bypassGuards: true);
+  }
+
+  Future<void> resetGhadhulBasharSession(String packageName) async {
+    final pkg = packageName.toLowerCase();
+    try {
+      await _appBlockService.resetGhadhulBasharSession(pkg);
+    } catch (_) {}
+  }
+
+  Future<void> syncGhadhulBasharPackages([List<dynamic>? rawApps]) async {
+    try {
+      final targets = <String>{};
+      final appsToScan = rawApps ?? [];
+
+      for (var app in appsToScan) {
+        if (app == null) continue;
+        final pkg = (app['packageName'] as String? ?? '').toLowerCase().trim();
+        final name = (app['appName'] as String? ?? '').toLowerCase().trim();
+        if (pkg.isNotEmpty && shouldShowGhadhulBasharReminder(pkg, name, _languageCode)) {
+          targets.add(pkg);
+        }
+      }
+
+      // Always include well-known browsers
+      const commonBrowsers = [
+        'com.android.chrome',
+        'org.mozilla.firefox',
+        'com.sec.android.app.sbrowser',
+        'com.microsoft.emmx',
+        'com.brave.browser',
+        'com.opera.browser',
+        'com.opera.mini.native',
+        'com.duckduckgo.mobile.android',
+        'com.vivaldi.browser',
+        'com.ucmobile.intl',
+        'com.uc.browser.en',
+        'com.kiwibrowser.browser',
+        'com.cloudmosa.puffinfree',
+        'org.torproject.torbrowser',
+        'com.heytap.browser',
+        'com.mi.globalbrowser',
+      ];
+      targets.addAll(commonBrowsers);
+
+      // Always include Facebook, Twitter/X, Instagram, TikTok, and Telegram (all countries)
+      const commonSocialMedia = [
+        // Facebook
+        'com.facebook.katana',
+        'com.facebook.lite',
+        // Twitter / X
+        'com.twitter.android',
+        'com.twitter.android.lite',
+        // Instagram
+        'com.instagram.android',
+        'com.instagram.lite',
+        'com.instagram.threadsapp',
+        // TikTok
+        'com.zhiliaoapp.musically',
+        'com.zhiliaoapp.musically.go',
+        'com.ss.android.ugc.trill',
+        // Telegram & Telegram X
+        'org.telegram.messenger',
+        'org.telegram.messenger.web',
+        'org.thunderdog.challegram',
+        'org.telegram.plus',
+      ];
+      targets.addAll(commonSocialMedia);
+
+      // If adult content restricted region, also include well-known VPNs
+      if (isRestrictedAdultContentRegion(_languageCode)) {
+        const commonVpns = [
+          'com.cloudflare.onedotonedotonedotone',
+          'com.wireguard.android',
+          'de.blinkt.openvpn',
+          'net.openvpn.openvpn',
+          'com.psiphon3.subscription',
+          'com.psiphon3',
+          'org.hola',
+          'com.nordvpn.android',
+          'com.expressvpn.vpn',
+          'free.vpn.unblock.proxy.turbovpn',
+          'ch.protonvpn.android',
+          'com.surfshark.vpnclient.android',
+          'com.jrzheng.supervpnfree',
+          'com.fast.free.unblock.thunder.vpn',
+          'com.windscribe.vpn',
+        ];
+        targets.addAll(commonVpns);
+      }
+
+      await _appBlockService.setGhadhulBasharPackages(targets.toList());
+    } catch (_) {}
+  }
+
+  Future<void> syncProhibitedPackages([List<dynamic>? rawApps]) async {
+    try {
+      final targets = <String>{};
+      final isRestricted = isRestrictedAdultContentRegion(_languageCode);
+
+      final appsToScan = rawApps ?? [];
+      for (var app in appsToScan) {
+        if (app == null) continue;
+        final pkg = (app['packageName'] as String? ?? '').toLowerCase().trim();
+        final name = (app['appName'] as String? ?? '').toLowerCase().trim();
+        if (pkg.isNotEmpty) {
+          // Explicit adult apps are ALWAYS prohibited across all regions
+          if (isExplicitAdultApp(pkg, name)) {
+            targets.add(pkg);
+          } else if (isRestricted && isProhibitedBypassBrowser(pkg, name)) {
+            targets.add(pkg);
+          }
+        }
+      }
+
+      // Always include well-known explicit adult apps in native system block list
+      const commonAdultApps = [
+        'com.pornhub.android',
+        'com.pornhub',
+        'com.mph.pornhub',
+        'app.pornhub',
+        'com.nekopoi.care',
+        'com.nekopoi',
+        'app.nekopoi',
+        'com.poi.care',
+        'com.simontox.app',
+        'com.simontox',
+        'com.simontok.app',
+        'com.simontok',
+        'com.simont9k',
+        'com.xvideos.app',
+        'com.xvideos',
+        'com.xhamster.app',
+        'com.xhamster',
+        'com.redtube',
+        'com.youporn',
+        'com.spankbang',
+        'com.brazzers',
+        'com.hanime',
+        'tv.hanime',
+        'com.doujindesu',
+        'com.mangasusu',
+        'com.stripchat',
+        'com.chaturbate',
+        'com.bongacams',
+        'com.onlyfans',
+        'com.maxtube',
+        'com.overhot',
+        'com.michat',
+        'com.michat.lite',
+      ];
+      targets.addAll(commonAdultApps);
+
+      if (isRestricted) {
+        const commonProhibited = [
+          'ru.yandex.searchplugin',
+          'com.yandex.browser',
+          'com.yandex.browser.alpha',
+          'com.yandex.browser.beta',
+          'com.alohamobile.browser',
+          'com.alohamobile.browser.lite',
+          'com.upx.browser',
+          'com.cloudmosa.puffinfree',
+          'com.cloudmosa.puffin',
+          'org.torproject.torbrowser',
+          'org.torproject.android',
+          'org.torproject.torbrowser_alpha',
+          'com.app.blueproxy',
+          'com.sec.vpn.proxy.browser',
+          // Opera browser family (built-in VPN)
+          'com.opera.browser',
+          'com.opera.mini.native',
+          'com.opera.touch',
+          'com.opera.gx',
+          'com.opera.browser.beta',
+          // UC browser family (cloud proxy / bypass)
+          'com.UCMobile.intl',
+          'com.uc.browser.en',
+          'com.uc.browser.hd',
+          'com.UCMobile',
+          'com.ucturbo',
+          // Dedicated privacy / VPN browsers
+          'net.epicbrowser.epic',
+          'com.avast.android.secure.browser',
+          'com.avg.android.secure.browser',
+          'com.tenta.android',
+          'com.cake.browser',
+          'org.hola.browser',
+          'org.nuplayer.inbrowser',
+          // Video downloader / bypass / cloud proxy browsers
+          'com.transsion.phoenix',
+          'com.ksmobile.cb',
+          'com.cmcm.browser',
+          'com.baidu.browser.inter',
+          'com.coccoc.trinhduyet',
+          'com.mx.browser',
+          'com.dolphin.browser.express.web',
+          'mobi.mfront.android.browser',
+          'com.brobrowser',
+          'com.croxyproxy',
+          // Anti-blokir & bokeh browsers
+          'com.bf.browser',
+          'com.bf.browser.antiblokir',
+          'com.xnx.browser',
+          'com.xnx.browser.antiblokir',
+          'com.browser.antiblokir.tercepat',
+        ];
+        targets.addAll(commonProhibited);
+      }
+
+      await _appBlockService.setProhibitedPackages(targets.toList());
+    } catch (_) {}
   }
 
   Future<bool> allowAppTemporarily(String packageName, {int durationMinutes = 60}) async {

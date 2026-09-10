@@ -123,7 +123,9 @@ void main() {
   group('Restricted Adult Content Region Detection', () {
     test('Identifies Indonesian, Malaysian, and Arabic language settings as restricted regions', () {
       expect(AppState.isRestrictedAdultContentRegion('id'), isTrue);
+      expect(AppState.isRestrictedAdultContentRegion('in'), isTrue);
       expect(AppState.isRestrictedAdultContentRegion('ms'), isTrue);
+      expect(AppState.isRestrictedAdultContentRegion('zlm'), isTrue);
       expect(AppState.isRestrictedAdultContentRegion('ar'), isTrue);
     });
   });
@@ -144,6 +146,42 @@ void main() {
       );
     });
 
+    test('Always triggers for Facebook, Twitter/X, Instagram, TikTok, and Telegram for all countries', () {
+      // Facebook
+      expect(
+        AppState.shouldShowGhadhulBasharReminder('com.facebook.katana', 'Facebook', 'en'),
+        isTrue,
+      );
+      expect(
+        AppState.shouldShowGhadhulBasharReminder('com.facebook.lite', 'Facebook Lite', 'id'),
+        isTrue,
+      );
+      // Twitter / X
+      expect(
+        AppState.shouldShowGhadhulBasharReminder('com.twitter.android', 'X', 'en'),
+        isTrue,
+      );
+      // Instagram
+      expect(
+        AppState.shouldShowGhadhulBasharReminder('com.instagram.android', 'Instagram', 'fr'),
+        isTrue,
+      );
+      // TikTok
+      expect(
+        AppState.shouldShowGhadhulBasharReminder('com.zhiliaoapp.musically', 'TikTok', 'de'),
+        isTrue,
+      );
+      // Telegram & Telegram X
+      expect(
+        AppState.shouldShowGhadhulBasharReminder('org.telegram.messenger', 'Telegram', 'en'),
+        isTrue,
+      );
+      expect(
+        AppState.shouldShowGhadhulBasharReminder('org.thunderdog.challegram', 'Telegram X', 'id'),
+        isTrue,
+      );
+    });
+
     test('Triggers for VPN apps when language is from restricted region (id, ms, ar)', () {
       expect(
         AppState.shouldShowGhadhulBasharReminder('com.cloudflare.onedotonedotonedotone', '1.1.1.1', 'id'),
@@ -159,7 +197,7 @@ void main() {
       );
     });
 
-    test('Does not trigger for general non-browser, non-VPN apps', () {
+    test('Does not trigger for general non-browser, non-VPN, non-social apps', () {
       expect(
         AppState.shouldShowGhadhulBasharReminder('com.spotify.music', 'Spotify', 'id'),
         isFalse,

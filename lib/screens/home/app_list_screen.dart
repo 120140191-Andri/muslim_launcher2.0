@@ -624,13 +624,6 @@ class _AppListScreenState extends State<AppListScreen>
                     decoration: BoxDecoration(
                       color: Colors.amber.shade700,
                       borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -774,12 +767,6 @@ class _AppTile extends StatelessWidget {
                         color: const Color(0xFFE11D48),
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFE11D48).withValues(alpha: 0.5),
-                            blurRadius: 6,
-                          ),
-                        ],
                       ),
                       child: const Icon(
                         Icons.block_rounded,

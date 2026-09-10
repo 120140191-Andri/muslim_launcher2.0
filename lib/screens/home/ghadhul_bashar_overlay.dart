@@ -85,13 +85,6 @@ class _GhadhulBasharOverlayState extends State<GhadhulBasharOverlay> {
                             color: const Color(0xFF10B981).withValues(alpha: 0.35),
                             width: 2,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.2),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                            ),
-                          ],
                         ),
                         child: const Icon(
                           Icons.visibility_off_rounded,

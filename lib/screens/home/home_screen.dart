@@ -212,14 +212,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       canPop: false,
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFA),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 600),
-        switchInCurve: Curves.easeInOut,
-        switchOutCurve: Curves.easeInOut,
-        child: !appState.isReady
-            ? _buildLoadingState()
-            : Stack(
-                key: const ValueKey('home_content'),
+      body: !appState.isReady
+          ? _buildLoadingState()
+          : Stack(
+              key: const ValueKey('home_content'),
                 children: [
                   // Background Gradient
                   Positioned.fill(
@@ -637,7 +633,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ],
               ),
       ),
-      ),
     );
   }
 
@@ -713,13 +708,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(32),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 25,
-              offset: const Offset(0, 10),
-            ),
-          ],
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.08),
+            width: 1,
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1122,13 +1114,10 @@ class _QuickDock extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.teal.shade900.withValues(alpha: 0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        border: Border.all(
+          color: Colors.teal.shade900.withValues(alpha: 0.08),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1233,13 +1222,10 @@ class _LastAyatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.teal.shade900.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        border: Border.all(
+          color: Colors.teal.shade900.withValues(alpha: 0.08),
+          width: 1,
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -1442,13 +1428,10 @@ class _GridAction extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(
+          color: color.withValues(alpha: 0.15),
+          width: 1,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -1537,13 +1520,10 @@ class _DailyInspiration extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.teal.shade900.withValues(alpha: 0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(
+          color: Colors.teal.shade700,
+          width: 1,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -1649,13 +1629,10 @@ class _SupportDeveloperCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFEA580C).withValues(alpha: 0.25),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        border: Border.all(
+          color: const Color(0xFFEA580C).withValues(alpha: 0.5),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

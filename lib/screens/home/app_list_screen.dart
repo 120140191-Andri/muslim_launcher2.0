@@ -593,10 +593,9 @@ class _AppListScreenState extends State<AppListScreen>
       ),
       body: Column(
         children: [
-          // Support Dev Banner (Emerald Sanctuary Hero Style)
+          // Support Dev Banner (Saran 1: Sleek Compact Hero Pill)
           Container(
             margin: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
@@ -606,7 +605,7 @@ class _AppListScreenState extends State<AppListScreen>
                   Color(0xFF094027),
                 ],
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.15),
                 width: 1,
@@ -614,97 +613,84 @@ class _AppListScreenState extends State<AppListScreen>
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF0D5C3A).withValues(alpha: 0.22),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
                   spreadRadius: -2,
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.favorite_rounded,
-                        color: Colors.amber,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        Translations.get(lang, 'support_dev_msg'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: InkWell(
-                    onTap: _openSupportDeveloperUrl,
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.coffee_rounded,
-                            color: Colors.amber,
-                            size: 15,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _openSupportDeveloperUrl,
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            width: 0.8,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            Translations.get(lang, 'support_feature_request'),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3,
+                        ),
+                        child: const Icon(
+                          Icons.coffee_rounded,
+                          color: Colors.amber,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              Translations.get(lang, 'support_feature_request'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.open_in_new_rounded,
-                            color: Colors.white70,
-                            size: 13,
-                          ),
-                        ],
+                            const SizedBox(height: 1),
+                            Text(
+                              Translations.get(lang, 'free_ad_free_app'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.14),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
           Expanded(

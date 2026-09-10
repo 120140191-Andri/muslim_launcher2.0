@@ -158,12 +158,23 @@ class _SetupHubScreenState extends State<SetupHubScreen>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             decoration: BoxDecoration(
-              color: const Color(0xFF00382E),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0F5E3B),
+                  Color(0xFF083C25),
+                ],
+              ),
               borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.18),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 20,
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 24,
                   offset: const Offset(0, 10),
                 ),
               ],
@@ -251,349 +262,509 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     final String modelDisplay = model.isNotEmpty ? model.toUpperCase() : "";
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F6),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5132),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: !widget.isOnboarding,
-        title: Text(
-          isEn ? 'Launcher Setup Hub' : 'Pusat Pengaturan Launcher',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Top Header with Progress & Device Info ────────────────────────
-            Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xFF0F5132),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(28),
-                  bottomRight: Radius.circular(28),
-                ),
+      backgroundColor: const Color(0xFFF7FAF8),
+      body: Column(
+        children: [
+          // ── Top Header with Emerald Gradient, Progress & Device Info ─────
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0F5E3B),
+                  Color(0xFF083C25),
+                ],
               ),
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
-              child: Column(
-                children: [
-                  // Phone badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0D5C3A).withValues(alpha: 0.25),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                child: Column(
+                  children: [
+                    // Top Appbar Row
+                    Row(
                       children: [
-                        const Icon(Icons.smartphone_rounded, color: Color(0xFF34D399), size: 16),
-                        const SizedBox(width: 8),
-                        Flexible(
+                        if (!widget.isOnboarding)
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            onPressed: () => Navigator.maybePop(context),
+                          )
+                        else
+                          const SizedBox(width: 4),
+                        Expanded(
                           child: Text(
-                            isEn
-                                ? 'Device: $brandDisplay $modelDisplay'
-                                : 'HP Anda: $brandDisplay $modelDisplay',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            isEn ? 'Launcher Setup Hub' : 'Pusat Pengaturan Launcher',
+                            textAlign: widget.isOnboarding ? TextAlign.center : TextAlign.start,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              letterSpacing: -0.3,
                             ),
+                          ),
+                        ),
+                        if (!widget.isOnboarding)
+                          const SizedBox(width: 48)
+                        else
+                          const SizedBox(width: 4),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Phone badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.smartphone_rounded, color: Color(0xFF34D399), size: 16),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              isEn
+                                  ? 'Device: $brandDisplay $modelDisplay'
+                                  : 'HP Anda: $brandDisplay $modelDisplay',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Progress text & count pill
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isEn ? 'Setup Progress' : 'Progres Pengaturan',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: progress == 1.0
+                                ? Colors.amber.withValues(alpha: 0.25)
+                                : Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: progress == 1.0
+                                  ? Colors.amber.withValues(alpha: 0.5)
+                                  : Colors.white.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (progress == 1.0) ...[
+                                const Icon(Icons.check_circle_rounded, color: Colors.amber, size: 14),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(
+                                '$completedCount / 4 ${Translations.get(lang, 'done')}',
+                                style: TextStyle(
+                                  color: progress == 1.0 ? Colors.amber : Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Progress text
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        isEn ? 'Setup Progress' : 'Progres Pengaturan',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 14,
+                    const SizedBox(height: 12),
+
+                    // Progress bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 8,
+                        backgroundColor: Colors.white.withValues(alpha: 0.18),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          progress == 1.0 ? Colors.amber : const Color(0xFF34D399),
                         ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // ── Interactive Checklist Items ───────────────────────────────────
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 20),
+              children: [
+                // STEP 1: Language
+                _buildStepCard(
+                  index: 0,
+                  stepNum: 1,
+                  title: Translations.get(lang, 'language_selection'),
+                  subtitle: '${_getLanguageDisplayName(lang)} • ${Translations.get(lang, 'done')}',
+                  icon: Icons.language_rounded,
+                  isDone: true,
+                  instructions: const [],
+                  brandDisplay: brandDisplay,
+                  isEn: isEn,
+                  lang: lang,
+                  actionWidget: OutlinedButton.icon(
+                    onPressed: () => LanguageSelectionDialog.show(context),
+                    icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                    label: Text(Translations.get(lang, 'change_language')),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF0D5C3A),
+                      side: const BorderSide(color: Color(0xFF0D5C3A), width: 1.4),
+                      backgroundColor: const Color(0xFF0D5C3A).withValues(alpha: 0.04),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // STEP 2: Default Launcher
+                _buildStepCard(
+                  index: 1,
+                  stepNum: 2,
+                  title: isEn ? 'Set Default Home Launcher' : 'Jadikan Launcher Utama',
+                  subtitle: isDefault
+                      ? (isEn ? 'Muslim Launcher 2 is active' : 'Muslim Launcher 2 sudah aktif')
+                      : (isEn ? 'Action required for home screen' : 'Tindakan diperlukan untuk layar beranda'),
+                  icon: Icons.home_rounded,
+                  isDone: isDefault,
+                  instructions: DeviceInstructions.getHomeInstructions(manufacturer, lang),
+                  brandDisplay: brandDisplay,
+                  isEn: isEn,
+                  lang: lang,
+                  actionWidget: isDefault
+                      ? OutlinedButton.icon(
+                          onPressed: _openHomeSettings,
+                          icon: const Icon(Icons.check_circle_rounded, size: 18),
+                          label: Text(isEn ? 'Check Home Settings' : 'Cek Pengaturan Beranda'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF0D5C3A),
+                            side: BorderSide(color: const Color(0xFF0D5C3A).withValues(alpha: 0.4)),
+                            backgroundColor: const Color(0xFF0D5C3A).withValues(alpha: 0.04),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: _openHomeSettings,
+                          icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                          label: Text(isEn ? 'Open Home Settings' : 'Buka Pengaturan Beranda'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0D5C3A),
+                            foregroundColor: Colors.white,
+                            elevation: 2,
+                            shadowColor: const Color(0xFF0D5C3A).withValues(alpha: 0.3),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 14),
+
+                // STEP 3: Accessibility Service
+                _buildStepCard(
+                  index: 2,
+                  stepNum: 3,
+                  title: isEn ? 'Accessibility Service (Blocker)' : 'Layanan Aksesibilitas (Pemblokir)',
+                  subtitle: isAccess
+                      ? (isEn ? 'App blocker service is running' : 'Sistem pemblokir aktif di latar belakang')
+                      : (isEn ? 'Required for real-time app blocking' : 'Dibutuhkan agar pemblokir berfungsi real-time'),
+                  icon: Icons.security_rounded,
+                  isDone: isAccess,
+                  instructions: DeviceInstructions.getAccessibilityInstructions(manufacturer, lang),
+                  brandDisplay: brandDisplay,
+                  isEn: isEn,
+                  lang: lang,
+                  actionWidget: isAccess
+                      ? OutlinedButton.icon(
+                          onPressed: _openAccessibilitySettings,
+                          icon: const Icon(Icons.verified_rounded, size: 18),
+                          label: Text(isEn ? 'View Accessibility Settings' : 'Lihat Pengaturan Aksesibilitas'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF0D5C3A),
+                            side: BorderSide(color: const Color(0xFF0D5C3A).withValues(alpha: 0.4)),
+                            backgroundColor: const Color(0xFF0D5C3A).withValues(alpha: 0.04),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: _openAccessibilitySettings,
+                          icon: const Icon(Icons.lock_open_rounded, size: 18),
+                          label: Text(isEn ? 'Open Accessibility Settings' : 'Buka Pengaturan Aksesibilitas'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0D5C3A),
+                            foregroundColor: Colors.white,
+                            elevation: 2,
+                            shadowColor: const Color(0xFF0D5C3A).withValues(alpha: 0.3),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 14),
+
+                // STEP 4: Autostart & Battery
+                _buildStepCard(
+                  index: 3,
+                  stepNum: 4,
+                  title: isEn ? 'Autostart & Battery Opt.' : 'Mulai Otomatis & Opt. Baterai',
+                  subtitle: isAutostart
+                      ? (isEn ? 'Autostart configured for $brandDisplay' : 'Autostart sudah disesuaikan untuk $brandDisplay')
+                      : (isEn ? 'Prevent OS from killing background blocker' : 'Cegah sistem mematikan pemblokir di latar belakang'),
+                  icon: Icons.bolt_rounded,
+                  isDone: isAutostart,
+                  instructions: DeviceInstructions.getAutostartInstructions(manufacturer, lang),
+                  brandDisplay: brandDisplay,
+                  isEn: isEn,
+                  lang: lang,
+                  actionWidget: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          _openAutostartSettings();
+                          appState.setHasAcknowledgedAutostart(true);
+                        },
+                        icon: const Icon(Icons.speed_rounded, size: 18),
+                        label: Text(
+                          isEn ? 'Configure Autostart & Battery' : 'Atur Autostart & Baterai',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0D5C3A),
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shadowColor: const Color(0xFF0D5C3A).withValues(alpha: 0.3),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                      if (!isAutostart) ...[
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => appState.setHasAcknowledgedAutostart(true),
+                          child: Text(
+                            Translations.get(lang, 'mark_as_configured'),
+                            style: const TextStyle(
+                              color: Color(0xFF0D5C3A),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ── Support Developer Card (Matching HomeScreen) ──────────
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFEA580C), Color(0xFFD97706)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEA580C).withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.favorite_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  Translations.get(lang, 'support_feature_request'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  Translations.get(lang, 'free_ad_free_app'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
                       Text(
-                        '$completedCount / 4 ${isEn ? 'Completed' : 'Selesai'}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                        Translations.get(lang, 'support_dev_long_desc'),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          fontSize: 12.5,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _openSupportDeveloperUrl(lang),
+                          icon: const Icon(Icons.coffee_rounded, size: 20),
+                          label: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              AppState.getSupportButtonText(lang),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFFC2410C),
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  
-                  // Progress bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 10,
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        progress == 1.0 ? Colors.amber : const Color(0xFF4ADE80),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
+          ),
 
-            // ── Interactive Checklist Items ───────────────────────────────────
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  // STEP 1: Language
-                  _buildStepCard(
-                    index: 0,
-                    stepNum: 1,
-                    title: Translations.get(lang, 'language_selection'),
-                    subtitle: '${_getLanguageDisplayName(lang)} - ${Translations.get(lang, 'done')}',
-                    icon: Icons.language_rounded,
-                    isDone: true,
-                    instructions: [],
-                    actionWidget: OutlinedButton.icon(
-                      onPressed: () => LanguageSelectionDialog.show(context),
-                      icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                      label: Text(Translations.get(lang, 'change_language')),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF0F5132),
-                        side: const BorderSide(color: Color(0xFF0F5132)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // STEP 2: Default Launcher
-                  _buildStepCard(
-                    index: 1,
-                    stepNum: 2,
-                    title: isEn ? 'Set Default Home Launcher' : 'Jadikan Launcher Utama',
-                    subtitle: isDefault
-                        ? (isEn ? 'Muslim Launcher 2 is active' : 'Muslim Launcher 2 sudah aktif')
-                        : (isEn ? 'Action required for home screen' : 'Tindakan diperlukan untuk layar beranda'),
-                    icon: Icons.home_rounded,
-                    isDone: isDefault,
-                    instructions: DeviceInstructions.getHomeInstructions(manufacturer, lang),
-                    actionWidget: ElevatedButton.icon(
-                      onPressed: _openHomeSettings,
-                      icon: Icon(isDefault ? Icons.settings_rounded : Icons.open_in_new_rounded, size: 18),
-                      label: Text(
-                        isDefault
-                            ? (isEn ? 'Check Home Settings' : 'Cek Pengaturan Beranda')
-                            : (isEn ? 'Open Home Settings' : 'Buka Pengaturan Beranda'),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDefault ? Colors.grey.shade200 : const Color(0xFF0F5132),
-                        foregroundColor: isDefault ? const Color(0xFF0F5132) : Colors.white,
-                        elevation: isDefault ? 0 : 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // STEP 3: Accessibility Service
-                  _buildStepCard(
-                    index: 2,
-                    stepNum: 3,
-                    title: isEn ? 'Accessibility Service (Blocker)' : 'Layanan Aksesibilitas (Pemblokir)',
-                    subtitle: isAccess
-                        ? (isEn ? 'App blocker service is running' : 'Sistem pemblokir aktif di latar belakang')
-                        : (isEn ? 'Required for real-time app blocking' : 'Dibutuhkan agar pemblokir berfungsi real-time'),
-                    icon: Icons.security_rounded,
-                    isDone: isAccess,
-                    instructions: DeviceInstructions.getAccessibilityInstructions(manufacturer, lang),
-                    actionWidget: ElevatedButton.icon(
-                      onPressed: _openAccessibilitySettings,
-                      icon: Icon(isAccess ? Icons.verified_rounded : Icons.lock_open_rounded, size: 18),
-                      label: Text(
-                        isAccess
-                            ? (isEn ? 'View Accessibility Settings' : 'Lihat Pengaturan Aksesibilitas')
-                            : (isEn ? 'Open Accessibility Settings' : 'Buka Pengaturan Aksesibilitas'),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isAccess ? Colors.grey.shade200 : const Color(0xFF0F5132),
-                        foregroundColor: isAccess ? const Color(0xFF0F5132) : Colors.white,
-                        elevation: isAccess ? 0 : 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // STEP 4: Autostart & Battery
-                  _buildStepCard(
-                    index: 3,
-                    stepNum: 4,
-                    title: isEn ? 'Autostart & Battery Opt.' : 'Mulai Otomatis & Opt. Baterai',
-                    subtitle: isAutostart
-                        ? (isEn ? 'Autostart configured for $brandDisplay' : 'Autostart sudah disesuaikan untuk $brandDisplay')
-                        : (isEn ? 'Prevent OS from killing background blocker' : 'Cegah sistem mematikan pemblokir di latar belakang'),
-                    icon: Icons.bolt_rounded,
-                    isDone: isAutostart,
-                    instructions: DeviceInstructions.getAutostartInstructions(manufacturer, lang),
-                    actionWidget: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            _openAutostartSettings();
-                            appState.setHasAcknowledgedAutostart(true);
-                          },
-                          icon: const Icon(Icons.speed_rounded, size: 18),
-                          label: Text(
-                            isEn ? 'Configure Autostart & Battery' : 'Atur Autostart & Baterai',
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0F5132),
-                            foregroundColor: Colors.white,
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                        if (!isAutostart) ...[
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: () => appState.setHasAcknowledgedAutostart(true),
-                            child: Text(
-                              isEn ? 'Mark as Configured' : 'Tandai Sudah Selesai',
-                              style: TextStyle(color: Colors.teal.shade800, fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Support Developer Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.amber.shade700, Colors.orange.shade800],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.orange.shade900.withValues(alpha: 0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    isEn ? 'Support / Request Features' : 'Dukung / Usulkan Fitur',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    isEn
-                                        ? 'Help us keep this app free & ad-free'
-                                        : 'Bantu kami menjaga aplikasi ini tetap gratis & tanpa iklan',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _openSupportDeveloperUrl(lang),
-                            icon: const Icon(Icons.coffee_rounded, size: 18),
-                            label: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                AppState.getSupportButtonText(lang),
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.orange.shade900,
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
+          // ── Bottom Completion Action ──────────────────────────────────────
+          Container(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              14,
+              20,
+              14 + MediaQuery.of(context).padding.bottom,
             ),
-
-            // ── Bottom Completion Action ──────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                top: BorderSide(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  width: 1,
+                ),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: (isDefault && isAccess)
+                      ? const LinearGradient(
+                          colors: [Color(0xFF0F5E3B), Color(0xFF094027)],
+                        )
+                      : null,
+                  boxShadow: (isDefault && isAccess)
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF0D5C3A).withValues(alpha: 0.28),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
                 child: ElevatedButton(
                   onPressed: (isDefault && isAccess) ? _finishSetup : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F5132),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey.shade300,
-                    elevation: (isDefault && isAccess) ? 4 : 0,
+                    backgroundColor: (isDefault && isAccess) ? Colors.transparent : Colors.grey.shade200,
+                    foregroundColor: (isDefault && isAccess) ? Colors.white : Colors.grey.shade500,
+                    disabledBackgroundColor: Colors.grey.shade200,
+                    disabledForegroundColor: Colors.grey.shade400,
+                    shadowColor: Colors.transparent,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -608,25 +779,26 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                             (isDefault && isAccess)
                                 ? (isEn ? 'START USING MUSLIM LAUNCHER 2' : 'MULAI GUNAKAN MUSLIM LAUNCHER 2')
                                 : (isEn ? 'COMPLETE SETTINGS (STEP 2 & 3)' : 'SELESAIKAN PENGATURAN UTAMA (LANGKAH 2 & 3)'),
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: TextStyle(
+                              fontSize: 13.5,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
+                              letterSpacing: 0.6,
+                              color: (isDefault && isAccess) ? Colors.white : Colors.grey.shade600,
                             ),
                           ),
                         ),
                       ),
                       if (isDefault && isAccess) ...[
                         const SizedBox(width: 8),
-                        const Icon(Icons.arrow_forward_rounded, size: 20),
+                        const Icon(Icons.arrow_forward_rounded, size: 20, color: Colors.white),
                       ],
                     ],
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -642,6 +814,9 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     required bool isDone,
     required List<String> instructions,
     required Widget actionWidget,
+    String brandDisplay = 'Android',
+    bool isEn = false,
+    String? lang,
   }) {
     final bool isExpanded = _expandedStepIndex == index;
 
@@ -649,15 +824,19 @@ class _SetupHubScreenState extends State<SetupHubScreen>
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDone ? const Color(0xFF86EFAC) : (isExpanded ? const Color(0xFF0F5132) : Colors.grey.shade200),
-          width: isExpanded ? 2 : 1,
+          color: isDone
+              ? const Color(0xFF0D5C3A).withValues(alpha: 0.22)
+              : (isExpanded ? const Color(0xFF0D5C3A) : Colors.black.withValues(alpha: 0.06)),
+          width: isExpanded ? 1.8 : 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: isExpanded ? const Color(0xFF0F5132).withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.02),
-            blurRadius: 12,
+            color: isExpanded
+                ? const Color(0xFF0D5C3A).withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.025),
+            blurRadius: isExpanded ? 16 : 8,
             offset: const Offset(0, 4),
           ),
         ],
@@ -671,7 +850,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                 _expandedStepIndex = isExpanded ? null : index;
               });
             },
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(22),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -682,14 +861,18 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                     height: 44,
                     decoration: BoxDecoration(
                       color: isDone
-                          ? const Color(0xFFDCFCE7)
-                          : (isExpanded ? const Color(0xFFE6F4EA) : Colors.grey.shade100),
+                          ? const Color(0xFF0D5C3A).withValues(alpha: 0.1)
+                          : (isExpanded
+                              ? const Color(0xFF0D5C3A).withValues(alpha: 0.08)
+                              : Colors.grey.shade100),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isDone ? Icons.check_circle_rounded : icon,
-                      color: isDone ? const Color(0xFF166534) : const Color(0xFF0F5132),
-                      size: 24,
+                      color: isDone
+                          ? const Color(0xFF0D5C3A)
+                          : (isExpanded ? const Color(0xFF0D5C3A) : Colors.grey.shade600),
+                      size: 22,
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -702,38 +885,49 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                         Row(
                           children: [
                             Text(
-                              'STEP $stepNum',
+                              isEn ? 'STEP $stepNum' : 'LANGKAH $stepNum',
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                                color: isDone ? const Color(0xFF166534) : const Color(0xFF0F5132),
+                                letterSpacing: 1.1,
+                                color: isDone
+                                    ? const Color(0xFF0D5C3A)
+                                    : const Color(0xFF0D5C3A).withValues(alpha: 0.75),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            if (isDone)
+                            if (isDone) ...[
+                              const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFDCFCE7),
-                                  borderRadius: BorderRadius.circular(10),
+                                  color: const Color(0xFF0D5C3A).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text(
-                                  'AKTIF / READY',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF166534),
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.check_rounded, color: Color(0xFF0D5C3A), size: 11),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      Translations.get(lang ?? 'id', 'done').toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                        color: Color(0xFF0D5C3A),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                            ],
                           ],
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           title,
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: 15.5,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1F2937),
                           ),
@@ -742,8 +936,9 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                         Text(
                           subtitle,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.5,
                             color: Colors.grey.shade600,
+                            height: 1.3,
                           ),
                         ),
                       ],
@@ -751,9 +946,20 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                   ),
 
                   // Expand Chevron
-                  Icon(
-                    isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                    color: Colors.grey.shade400,
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: isExpanded
+                          ? const Color(0xFF0D5C3A).withValues(alpha: 0.08)
+                          : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      color: isExpanded ? const Color(0xFF0D5C3A) : Colors.grey.shade400,
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
@@ -762,44 +968,44 @@ class _SetupHubScreenState extends State<SetupHubScreen>
 
           // Expanded Content
           if (isExpanded) ...[
-            const Divider(height: 1, indent: 16, endIndent: 16),
+            Divider(height: 1, indent: 16, endIndent: 16, color: Colors.grey.shade200),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (instructions.isNotEmpty) ...[
                     Text(
-                      'INSTRUKSI KHUSUS HP ANDA:',
-                      style: TextStyle(
+                      isEn ? 'SPECIAL INSTRUCTIONS FOR $brandDisplay:' : 'PANDUAN KHUSUS HP $brandDisplay:',
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
-                        color: Colors.teal.shade800,
+                        color: Color(0xFF0D5C3A),
                       ),
                     ),
                     const SizedBox(height: 10),
                     ...List.generate(instructions.length, (i) {
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.only(bottom: 10),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              width: 20,
-                              height: 20,
-                              margin: const EdgeInsets.only(top: 2),
+                              width: 22,
+                              height: 22,
+                              margin: const EdgeInsets.only(top: 1),
                               decoration: BoxDecoration(
-                                color: Colors.teal.shade50,
+                                color: const Color(0xFF0D5C3A).withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
                                 child: Text(
                                   '${i + 1}',
-                                  style: TextStyle(
-                                    fontSize: 11,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.teal.shade900,
+                                    color: Color(0xFF0D5C3A),
                                   ),
                                 ),
                               ),
@@ -811,7 +1017,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: Color(0xFF374151),
-                                  height: 1.4,
+                                  height: 1.45,
                                 ),
                               ),
                             ),

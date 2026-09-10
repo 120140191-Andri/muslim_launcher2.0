@@ -115,8 +115,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
                       const SizedBox(height: 2),
                       Text(
                         lang == 'id'
-                            ? '114 Surah • Terjemahan & Audio'
-                            : '114 Surahs • Translation & Audio',
+                            ? '114 Surah • Terjemahan'
+                            : '114 Surahs • Translation',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 11.5,
@@ -125,43 +125,6 @@ class _SurahListScreenState extends State<SurahListScreen> {
                     ],
                   ),
                 ),
-                if (lastReadIdx >= 0 && lastReadIdx < appState.quranData.length)
-                  InkWell(
-                    onTap: () {
-                      appState.navigatorKey.currentState?.push(
-                        AppPageRoute(
-                          child: SurahDetailScreen(
-                            surah: appState.quranData[lastReadIdx],
-                            initialAyahIndex: appState.currentAyahIndex,
-                          ),
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.history_rounded, color: Colors.white, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            lang == 'id' ? 'Lanjut' : 'Resume',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),

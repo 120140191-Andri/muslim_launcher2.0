@@ -54,7 +54,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   @override
   void initState() {
     super.initState();
-    AnalyticsService.logScreenView('SurahDetailScreen_${widget.surah['surah_name']}');
+    AnalyticsService.logScreenView(
+      'SurahDetailScreen_${widget.surah['surah_name']}',
+    );
     WidgetsBinding.instance.addObserver(this);
     _initSpeech();
 
@@ -72,21 +74,24 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         onError: (val) {
           if (mounted) {
             if (_recordingAyahIdx != null && !_isDisposed) {
-               Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted && _recordingAyahIdx != null) _startListeningSession();
-               });
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted && _recordingAyahIdx != null)
+                  _startListeningSession();
+              });
             } else {
-               setState(() => _recordingAyahIdx = null);
+              setState(() => _recordingAyahIdx = null);
             }
           }
         },
         onStatus: (val) {
           if (val == 'done' || val == 'notListening') {
             if (mounted && _recordingAyahIdx != null && !_isDisposed) {
-              _cumulativeRecognizedText = "$_cumulativeRecognizedText $_currentSessionText".trim();
+              _cumulativeRecognizedText =
+                  "$_cumulativeRecognizedText $_currentSessionText".trim();
               _currentSessionText = "";
               Future.delayed(const Duration(milliseconds: 500), () {
-                 if (mounted && _recordingAyahIdx != null) _startListeningSession();
+                if (mounted && _recordingAyahIdx != null)
+                  _startListeningSession();
               });
             }
           }
@@ -119,57 +124,72 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   }
 
   void _startListeningSession() async {
-      try {
-        if (!await _speech.initialize()) {
-           if (mounted) setState(() => _isInitializing = false);
-           return;
-        }
-        if (mounted && !_isDisposed && _recordingAyahIdx != null) {
-          _speech.listen(
-            onResult: (val) {
-              if (mounted && !_isDisposed && _recordingAyahIdx != null) {
-                setState(() {
-                  _currentSessionText = val.recognizedWords;
-                  _recognizedText = "$_cumulativeRecognizedText $_currentSessionText".trim();
-                  
-                  if (_checkMatch(_recognizedText, _targetArabicText)) {
-                    _onSuccess(_recordingAyahIdx!, _targetArabicText);
-                    _stopListening();
-                  }
-                });
-              }
-            },
-            localeId: 'ar_SA',
-            pauseFor: const Duration(seconds: 5), // Provide enough time to breathe
-          );
-        }
-      } finally {
-        if (mounted && !_isDisposed) {
-          setState(() => _isInitializing = false);
-        }
+    try {
+      if (!await _speech.initialize()) {
+        if (mounted) setState(() => _isInitializing = false);
+        return;
       }
+      if (mounted && !_isDisposed && _recordingAyahIdx != null) {
+        _speech.listen(
+          onResult: (val) {
+            if (mounted && !_isDisposed && _recordingAyahIdx != null) {
+              setState(() {
+                _currentSessionText = val.recognizedWords;
+                _recognizedText =
+                    "$_cumulativeRecognizedText $_currentSessionText".trim();
+
+                if (_checkMatch(_recognizedText, _targetArabicText)) {
+                  _onSuccess(_recordingAyahIdx!, _targetArabicText);
+                  _stopListening();
+                }
+              });
+            }
+          },
+          localeId: 'ar_SA',
+          pauseFor: const Duration(
+            seconds: 5,
+          ), // Provide enough time to breathe
+        );
+      }
+    } finally {
+      if (mounted && !_isDisposed) {
+        setState(() => _isInitializing = false);
+      }
+    }
   }
 
   String _normalizeArabicText(String text) {
     if (text.isEmpty) return text;
-    String normalized = text.replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), ''); // Remove tashkeel
+    String normalized = text.replaceAll(
+      RegExp(r'[\u064B-\u065F\u0670]'),
+      '',
+    ); // Remove tashkeel
     normalized = normalized.replaceAll(RegExp(r'[أإآ]'), 'ا'); // Normalize Alif
     normalized = normalized.replaceAll('ة', 'ه'); // Normalize Ta Marbuta
-    normalized = normalized.replaceAll(RegExp(r'[^\u0600-\u06FF\s]'), ''); // Remove punctuation
+    normalized = normalized.replaceAll(
+      RegExp(r'[^\u0600-\u06FF\s]'),
+      '',
+    ); // Remove punctuation
     return normalized.trim();
   }
 
   bool _checkMatch(String recognized, String target) {
     if (recognized.trim().isEmpty) return false;
-    
+
     final normRecognized = _normalizeArabicText(recognized);
     final normTarget = _normalizeArabicText(target);
-    
-    final recWords = normRecognized.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-    final targetWords = normTarget.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-    
+
+    final recWords = normRecognized
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+    final targetWords = normTarget
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+
     if (targetWords.isEmpty) return false;
-    
+
     int matchCount = 0;
     List<String> remainingRecWords = List.from(recWords);
     for (String word in targetWords) {
@@ -178,14 +198,16 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         matchCount++;
         remainingRecWords.removeAt(idx);
       } else if (word.length >= 3) {
-         int partialIdx = remainingRecWords.indexWhere((rw) => rw.length >= 3 && (rw.contains(word) || word.contains(rw)));
-         if (partialIdx != -1) {
-            matchCount++;
-            remainingRecWords.removeAt(partialIdx);
-         }
+        int partialIdx = remainingRecWords.indexWhere(
+          (rw) => rw.length >= 3 && (rw.contains(word) || word.contains(rw)),
+        );
+        if (partialIdx != -1) {
+          matchCount++;
+          remainingRecWords.removeAt(partialIdx);
+        }
       }
     }
-    
+
     double matchPercentage = matchCount / targetWords.length;
     if (targetWords.length <= 4) {
       return matchCount >= 1; // 1 word for very short ayahs
@@ -224,12 +246,16 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     // Request permission
     final status = await Permission.camera.request();
     if (!mounted) return;
-    
+
     if (status != PermissionStatus.granted) {
       final lang = Provider.of<AppState>(context, listen: false).languageCode;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(lang == 'en' ? "Camera permission is required for eye tracking" : "Izin kamera diperlukan untuk deteksi mata"),
+          content: Text(
+            lang == 'en'
+                ? "Camera permission is required for eye tracking"
+                : "Izin kamera diperlukan untuk deteksi mata",
+          ),
         ),
       );
       return;
@@ -313,7 +339,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     _vibrationTimer = null;
     await _eyeFocusSubscription?.cancel();
     _eyeFocusSubscription = null;
-    
+
     await _eyeTrackerService.dispose();
 
     if (!isDisposing && mounted) {
@@ -499,13 +525,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     final int surahIndex = widget.surah['surah_number'] - 1;
 
     final progress = context.select<AppState, (int, int)>(
-      (s) => (s.highestSurahIndex, s.highestAyahIndex)
+      (s) => (s.highestSurahIndex, s.highestAyahIndex),
     );
     final highestSurahIdx = progress.$1;
     final highestAyahIdx = progress.$2;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerLowest,
       appBar: AppBar(
@@ -517,10 +543,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         actions: [
           Selector<AppState, (int, int)>(
             selector: (_, s) => (s.points, s.khatmCount),
-            builder: (_, values, child) => _PointsBadge(
-              points: values.$1,
-              khatmCount: values.$2,
-            ),
+            builder: (_, values, child) =>
+                _PointsBadge(points: values.$1, khatmCount: values.$2),
           ),
           const SizedBox(width: 8),
         ],
@@ -532,279 +556,319 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                 ayahs.length +
                 (highestSurahIdx >= surahIndex &&
                         highestAyahIdx == ayahs.length - 1 &&
-                        surahIndex < context.read<AppState>().quranData.length - 1
+                        surahIndex <
+                            context.read<AppState>().quranData.length - 1
                     ? 1
                     : 0),
             itemScrollController: _itemScrollController,
             itemPositionsListener: _itemPositionsListener,
             padding: const EdgeInsets.only(top: 8, bottom: 64),
 
-        itemBuilder: (context, index) {
-          if (index == ayahs.length) {
-            return Consumer<AppState>(
-              builder: (context, state, _) => _buildNextSurahButton(context, state, surahIndex),
-            );
-          }
+            itemBuilder: (context, index) {
+              if (index == ayahs.length) {
+                return Consumer<AppState>(
+                  builder: (context, state, _) =>
+                      _buildNextSurahButton(context, state, surahIndex),
+                );
+              }
 
-          final ayah = ayahs[index];
-          final isRecording = _recordingAyahIdx == index;
+              final ayah = ayahs.isEmpty ? null : ayahs[index < 0 ? 0 : index];
+              final isRecording = _recordingAyahIdx == index;
 
-          return Selector<AppState, (bool, bool, bool)>(
-            selector: (_, state) => (
-              state.isAyahReached(surahIndex, index),
-              state.isNextAyah(surahIndex, index),
-              state.currentSurahIndex == surahIndex && index == state.currentAyahIndex
-            ),
-            builder: (context, values, child) {
-              final bool isDone = values.$1;
-              final bool isNext = values.$2;
-              final bool isLastReadAyah = values.$3;
-              final bool isFuture = !isDone && !isNext;
+              return Selector<AppState, (bool, bool, bool)>(
+                selector: (_, state) => (
+                  state.isAyahReached(surahIndex, index),
+                  state.isNextAyah(surahIndex, index),
+                  state.currentSurahIndex == surahIndex &&
+                      index == state.currentAyahIndex,
+                ),
+                builder: (context, values, child) {
+                  final bool isDone = values.$1;
+                  final bool isNext = values.$2;
+                  final bool isLastReadAyah = values.$3;
+                  final bool isFuture = !isDone && !isNext;
 
-              return RepaintBoundary(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isDone ? colorScheme.primaryContainer.withValues(alpha: 0.3) : colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isLastReadAyah
-                          ? colorScheme.primary
-                          : colorScheme.outlineVariant.withValues(alpha: 0.5),
-                      width: isLastReadAyah ? 2 : 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
+                  return RepaintBoundary(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                    ],
-                  ),
-                  child: Opacity(
-                    opacity: isFuture && !isNext && !isRecording ? 0.6 : 1.0,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Ayah Header
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDone
-                                ? colorScheme.primaryContainer.withValues(alpha: 0.5)
-                                : colorScheme.surfaceContainerHigh,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(24),
-                              topRight: Radius.circular(24),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.secondaryContainer,
-                                  shape: BoxShape.circle,
+                      decoration: BoxDecoration(
+                        color: isDone
+                            ? colorScheme.primaryContainer.withValues(
+                                alpha: 0.3,
+                              )
+                            : colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: isLastReadAyah
+                              ? colorScheme.primary
+                              : colorScheme.outlineVariant.withValues(
+                                  alpha: 0.5,
                                 ),
-                                child: Text(
-                                  "${index + 1}",
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: colorScheme.onSecondaryContainer,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              if (isLastReadAyah)
-                                Text(
-                                  lang == 'en' ? 'Last Read' : 'Terakhir Dibaca',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )
-                              else if (isNext)
-                                Text(
-                                  lang == 'en' ? 'Read with:' : 'Baca dengan:',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              const Spacer(),
-                              _MicButton(
-                                lang: lang,
-                                isRecording: isRecording,
-                                onPressed: () =>
-                                    _onAyahMicPressed(index, ayah['arabic']),
-                              ),
-                              const SizedBox(width: 8),
-                              _EyeButton(
-                                lang: lang,
-                                isActive: _eyeReadingAyahIdx == index,
-                                isFocused: _isEyeFocused,
-                                onPressed: () =>
-                                    _onEyeReadingPressed(index, ayah['arabic']),
-                              ),
-                            ],
-                          ),
+                          width: isLastReadAyah ? 2 : 1,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              TajweedText(
-                                text: ayah['arabic'],
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: isDone
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
-                                  height: 2.2,
-                                  fontFamily: 'Amiri',
-                                  color: isDone
-                                      ? Colors.teal.shade900
-                                      : Colors.black,
-                                ),
-                                textDirection: TextDirection.rtl,
-                              ),
-                              if (_eyeReadingAyahIdx == index) ...[
-                                const SizedBox(height: 12),
-                                // Progress bar hidden based on user request for cleaner UI
-                                const SizedBox(height: 8),
-                                Text(
-                                  _isEyeFocused
-                                      ? (lang == 'en' ? "Eye Detected: Reading..." : "Mata Terdeteksi: Membaca...")
-                                      : (lang == 'en' ? "NOT FOCUSED: Look at Ayah to read" : "TIDAK FOKUS: Tatap Ayat untuk Membaca"),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: _isEyeFocused
-                                        ? Colors.green.shade800
-                                        : Colors.red.shade700,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 12),
-                              Text(
-                                ayah['latin'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: isDone
-                                      ? Colors.teal.shade800
-                                      : Colors.teal.shade700,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.5,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                (lang == 'id' || lang == 'ms')
-                                    ? (ayah['translation_id'] ?? '')
-                                    : (ayah['translation_en'] ?? ''),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: isDone
-                                      ? Colors.teal.shade800
-                                      : isFuture
-                                      ? Colors.grey.shade500
-                                      : Colors.grey.shade700,
-                                  fontStyle: FontStyle.italic,
-                                  height: 1.5,
-                                ),
-                              ),
-                              if (isRecording) ...[
-                                const SizedBox(height: 16),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.teal.shade50,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        _recognizedText.isEmpty
-                                            ? Icons.mic_none_rounded
-                                            : Icons.hearing_rounded,
-                                        size: 16,
-                                        color: Colors.teal,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          _recognizedText.isEmpty
-                                              ? Translations.get(lang, 'listening')
-                                              : _recognizedText,
-                                          style: TextStyle(
-                                            color: Colors.teal.shade800,
-                                            fontWeight: FontWeight.bold,
-                                            fontStyle: _recognizedText.isEmpty
-                                                ? FontStyle.italic
-                                                : FontStyle.normal,
-                                          ),
-                                          textDirection: TextDirection.rtl,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
+                        ],
+                      ),
+                      child: Opacity(
+                        opacity: isFuture && !isNext && !isRecording
+                            ? 0.6
+                            : 1.0,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Ayah Header
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDone
+                                    ? colorScheme.primaryContainer.withValues(
+                                        alpha: 0.5,
+                                      )
+                                    : colorScheme.surfaceContainerHigh,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(24),
+                                  topRight: Radius.circular(24),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.secondaryContainer,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      "${index + 1}",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: colorScheme.onSecondaryContainer,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  if (isLastReadAyah)
+                                    Text(
+                                      lang == 'en'
+                                          ? 'Last Read'
+                                          : 'Terakhir Dibaca',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: colorScheme.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  else if (isNext)
+                                    Text(
+                                      lang == 'en'
+                                          ? 'Read with:'
+                                          : 'Baca dengan:',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: colorScheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  const Spacer(),
+                                  _MicButton(
+                                    lang: lang,
+                                    isRecording: isRecording,
+                                    onPressed: () => _onAyahMicPressed(
+                                      index,
+                                      ayah['arabic'],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _EyeButton(
+                                    lang: lang,
+                                    isActive: _eyeReadingAyahIdx == index,
+                                    isFocused: _isEyeFocused,
+                                    onPressed: () => _onEyeReadingPressed(
+                                      index,
+                                      ayah['arabic'],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                20,
+                                16,
+                                20,
+                                20,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  TajweedText(
+                                    text: ayah['arabic'],
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: isDone
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      height: 2.2,
+                                      fontFamily: 'Amiri',
+                                      color: isDone
+                                          ? Colors.teal.shade900
+                                          : Colors.black,
+                                    ),
+                                    textDirection: TextDirection.rtl,
+                                  ),
+                                  if (_eyeReadingAyahIdx == index) ...[
+                                    const SizedBox(height: 12),
+                                    // Progress bar hidden based on user request for cleaner UI
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _isEyeFocused
+                                          ? (lang == 'en'
+                                                ? "Eye Detected: Reading..."
+                                                : "Mata Terdeteksi: Membaca...")
+                                          : (lang == 'en'
+                                                ? "NOT FOCUSED: Look at Ayah to read"
+                                                : "TIDAK FOKUS: Tatap Ayat untuk Membaca"),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: _isEyeFocused
+                                            ? Colors.green.shade800
+                                            : Colors.red.shade700,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    ayah['latin'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: isDone
+                                          ? Colors.teal.shade800
+                                          : Colors.teal.shade700,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    (lang == 'id' || lang == 'ms')
+                                        ? (ayah['translation_id'] ?? '')
+                                        : (ayah['translation_en'] ?? ''),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: isDone
+                                          ? Colors.teal.shade800
+                                          : isFuture
+                                          ? Colors.grey.shade500
+                                          : Colors.grey.shade700,
+                                      fontStyle: FontStyle.italic,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                  if (isRecording) ...[
+                                    const SizedBox(height: 16),
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.teal.shade50,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            _recognizedText.isEmpty
+                                                ? Icons.mic_none_rounded
+                                                : Icons.hearing_rounded,
+                                            size: 16,
+                                            color: Colors.teal,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              _recognizedText.isEmpty
+                                                  ? Translations.get(
+                                                      lang,
+                                                      'listening',
+                                                    )
+                                                  : _recognizedText,
+                                              style: TextStyle(
+                                                color: Colors.teal.shade800,
+                                                fontWeight: FontWeight.bold,
+                                                fontStyle:
+                                                    _recognizedText.isEmpty
+                                                    ? FontStyle.italic
+                                                    : FontStyle.normal,
+                                              ),
+                                              textDirection: TextDirection.rtl,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+          if (_isInitializing)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.3),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          Translations.get(lang, 'initializing'),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
                   ),
                 ),
-              );
-            },
-          );
-        },
-      ),
-      if (_isInitializing)
-        Positioned.fill(
-          child: Container(
-            color: Colors.black.withValues(alpha: 0.3),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      Translations.get(lang, 'initializing'),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
               ),
             ),
-          ),
-        ),
-    ],
-  ),
-);
-}
+        ],
+      ),
+    );
+  }
 
   Widget _buildNextSurahButton(
     BuildContext context,
@@ -860,13 +924,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   void dispose() {
     _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
-    
+
     // Cancel all timers immediately
     _eyeTimer?.cancel();
     _eyeTimer = null;
     _vibrationTimer?.cancel();
     _vibrationTimer = null;
-    
+
     // Stop services without setState
     _stopListening(isDisposing: true);
     _stopEyeReading(isDisposing: true);
@@ -880,7 +944,11 @@ class _MicButton extends StatelessWidget {
   final bool isRecording;
   final VoidCallback onPressed;
 
-  const _MicButton({required this.lang, required this.isRecording, required this.onPressed});
+  const _MicButton({
+    required this.lang,
+    required this.isRecording,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -964,7 +1032,11 @@ class _PointsBadge extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.stars_rounded, color: colorScheme.onTertiaryContainer, size: 10),
+              Icon(
+                Icons.stars_rounded,
+                color: colorScheme.onTertiaryContainer,
+                size: 10,
+              ),
               const SizedBox(width: 4),
               Text(
                 points.toString(),

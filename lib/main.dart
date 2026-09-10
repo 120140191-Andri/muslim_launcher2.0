@@ -104,11 +104,11 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF006A60),
+          seedColor: const Color(0xFF0D5C3A),
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF7FAF9),
+        scaffoldBackgroundColor: const Color(0xFFF7FAF8),
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
             TargetPlatform.android: ZoomPageTransitionsBuilder(),

@@ -17,6 +17,12 @@ class BlockedAppScreen extends StatefulWidget {
 }
 
 class _BlockedAppScreenState extends State<BlockedAppScreen> {
+  bool _isUnlocking = false;
+
+  void _safeDismiss(AppState appState) {
+    if (_isUnlocking) return;
+    appState.clearBlockedApp();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +34,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
       canPop: false, // Prevent back button from bypassing block
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          appState.clearBlockedApp();
+          _safeDismiss(appState);
         }
       },
       child: Material(
@@ -61,11 +67,11 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           IconButton(
-                            onPressed: () => appState.clearBlockedApp(),
+                            onPressed: _isUnlocking ? null : () => _safeDismiss(appState),
                             icon: const Icon(Icons.arrow_back_rounded, color: Colors.white70),
                           ),
                           IconButton(
-                            onPressed: () => appState.clearBlockedApp(),
+                            onPressed: _isUnlocking ? null : () => _safeDismiss(appState),
                             icon: const Icon(Icons.home_rounded, color: Colors.white70),
                           ),
                         ],
@@ -168,11 +174,11 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                         width: double.infinity,
                         constraints: const BoxConstraints(minHeight: 50),
                         child: ElevatedButton.icon(
-                          onPressed: canUnlock
+                          onPressed: (canUnlock && !_isUnlocking)
                             ? () async {
+                                setState(() => _isUnlocking = true);
                                 await appState.deductPoints(50);
                                 await appState.allowAppTemporarily(widget.packageName);
-                                await Future.delayed(const Duration(milliseconds: 800));
                                 final appName = appState.getAppNameSync(widget.packageName);
                                 final isGhadhulTarget = AppState.shouldShowGhadhulBasharReminder(
                                   widget.packageName,
@@ -183,7 +189,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                 if (isGhadhulTarget) {
                                   appState.setGhadhulBasharPackage(widget.packageName);
                                 } else {
-                                  appState.openApp(widget.packageName);
+                                  await appState.openApp(widget.packageName, bypassGuards: true);
                                 }
                               }
                             : null,

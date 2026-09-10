@@ -41,25 +41,61 @@ class MainActivity : FlutterActivity() {
         var pendingBlockedPackage: String? = null
         var pendingGhadhulBasharPackage: String? = null
         var pendingProhibitedPackage: String? = null
+
+        private var lastNotifiedBlockPkg: String? = null
+        private var lastNotifiedBlockTime: Long = 0L
+
+        private var lastNotifiedGhadhulPkg: String? = null
+        private var lastNotifiedGhadhulTime: Long = 0L
+
+        private var lastNotifiedProhibitedPkg: String? = null
+        private var lastNotifiedProhibitedTime: Long = 0L
         
         fun notifyAppBlocked(packageName: String) {
-            pendingBlockedPackage = packageName
+            val now = System.currentTimeMillis()
+            val cleanPkg = packageName.trim().lowercase()
+            if (cleanPkg.isEmpty()) return
+            if (cleanPkg == lastNotifiedBlockPkg && (now - lastNotifiedBlockTime) < 2000L) {
+                Log.d("MainActivity", "Duplicate notifyAppBlocked dropped for $cleanPkg")
+                return
+            }
+            lastNotifiedBlockPkg = cleanPkg
+            lastNotifiedBlockTime = now
+            pendingBlockedPackage = cleanPkg
             uiHandler.post {
-                blockChannel?.invokeMethod("onAppBlocked", mapOf("packageName" to packageName))
+                blockChannel?.invokeMethod("onAppBlocked", mapOf("packageName" to cleanPkg))
             }
         }
 
         fun notifyGhadhulBashar(packageName: String) {
-            pendingGhadhulBasharPackage = packageName
+            val now = System.currentTimeMillis()
+            val cleanPkg = packageName.trim().lowercase()
+            if (cleanPkg.isEmpty()) return
+            if (cleanPkg == lastNotifiedGhadhulPkg && (now - lastNotifiedGhadhulTime) < 2000L) {
+                Log.d("MainActivity", "Duplicate notifyGhadhulBashar dropped for $cleanPkg")
+                return
+            }
+            lastNotifiedGhadhulPkg = cleanPkg
+            lastNotifiedGhadhulTime = now
+            pendingGhadhulBasharPackage = cleanPkg
             uiHandler.post {
-                blockChannel?.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to packageName))
+                blockChannel?.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to cleanPkg))
             }
         }
 
         fun notifyAppProhibited(packageName: String) {
-            pendingProhibitedPackage = packageName
+            val now = System.currentTimeMillis()
+            val cleanPkg = packageName.trim().lowercase()
+            if (cleanPkg.isEmpty()) return
+            if (cleanPkg == lastNotifiedProhibitedPkg && (now - lastNotifiedProhibitedTime) < 2000L) {
+                Log.d("MainActivity", "Duplicate notifyAppProhibited dropped for $cleanPkg")
+                return
+            }
+            lastNotifiedProhibitedPkg = cleanPkg
+            lastNotifiedProhibitedTime = now
+            pendingProhibitedPackage = cleanPkg
             uiHandler.post {
-                blockChannel?.invokeMethod("onProhibitedAppTriggered", mapOf("packageName" to packageName))
+                blockChannel?.invokeMethod("onProhibitedAppTriggered", mapOf("packageName" to cleanPkg))
             }
         }
     }
@@ -284,22 +320,25 @@ class MainActivity : FlutterActivity() {
         if (intent == null) return
         if (intent.getBooleanExtra("triggerBlockScreen", false)) {
             val blockedPackage = intent.getStringExtra("blockedPackageName") ?: ""
+            intent.removeExtra("triggerBlockScreen")
+            intent.removeExtra("blockedPackageName")
             if (blockedPackage.isNotEmpty()) {
-                pendingBlockedPackage = blockedPackage
                 notifyAppBlocked(blockedPackage)
             }
         }
         if (intent.getBooleanExtra("triggerGhadhulBasharScreen", false)) {
             val ghadhulPackage = intent.getStringExtra("ghadhulBasharPackageName") ?: ""
+            intent.removeExtra("triggerGhadhulBasharScreen")
+            intent.removeExtra("ghadhulBasharPackageName")
             if (ghadhulPackage.isNotEmpty()) {
-                pendingGhadhulBasharPackage = ghadhulPackage
                 notifyGhadhulBashar(ghadhulPackage)
             }
         }
         if (intent.getBooleanExtra("triggerProhibitedScreen", false)) {
             val prohibitedPackage = intent.getStringExtra("prohibitedPackageName") ?: ""
+            intent.removeExtra("triggerProhibitedScreen")
+            intent.removeExtra("prohibitedPackageName")
             if (prohibitedPackage.isNotEmpty()) {
-                pendingProhibitedPackage = prohibitedPackage
                 notifyAppProhibited(prohibitedPackage)
             }
         }

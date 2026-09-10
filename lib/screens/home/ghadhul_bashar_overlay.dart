@@ -15,11 +15,24 @@ class GhadhulBasharOverlay extends StatefulWidget {
 
 class _GhadhulBasharOverlayState extends State<GhadhulBasharOverlay> {
   late final GhadhulBasharVerse _verse;
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
     _verse = GhadhulBasharData.getRandomVerse();
+  }
+
+  void _safeDismiss(AppState appState) {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    appState.clearGhadhulBashar();
+  }
+
+  Future<void> _safeProceed(AppState appState) async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    await appState.confirmGhadhulBashar(widget.packageName);
   }
 
   @override
@@ -31,7 +44,7 @@ class _GhadhulBasharOverlayState extends State<GhadhulBasharOverlay> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          appState.clearGhadhulBashar();
+          _safeDismiss(appState);
         }
       },
       child: Material(
@@ -64,11 +77,11 @@ class _GhadhulBasharOverlayState extends State<GhadhulBasharOverlay> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           IconButton(
-                            onPressed: () => appState.clearGhadhulBashar(),
+                            onPressed: _isProcessing ? null : () => _safeDismiss(appState),
                             icon: const Icon(Icons.arrow_back_rounded, color: Colors.white70),
                           ),
                           IconButton(
-                            onPressed: () => appState.clearGhadhulBashar(),
+                            onPressed: _isProcessing ? null : () => _safeDismiss(appState),
                             icon: const Icon(Icons.home_rounded, color: Colors.white70),
                           ),
                         ],
@@ -236,7 +249,7 @@ class _GhadhulBasharOverlayState extends State<GhadhulBasharOverlay> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              onPressed: () => appState.clearGhadhulBashar(),
+                              onPressed: _isProcessing ? null : () => _safeDismiss(appState),
                               child: Text(
                                 Translations.get(lang, 'cancel'),
                                 style: const TextStyle(
@@ -262,7 +275,7 @@ class _GhadhulBasharOverlayState extends State<GhadhulBasharOverlay> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              onPressed: () => appState.confirmGhadhulBashar(widget.packageName),
+                              onPressed: _isProcessing ? null : () => _safeProceed(appState),
                               icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                               label: Text(
                                 Translations.get(lang, 'ok'),
@@ -278,7 +291,7 @@ class _GhadhulBasharOverlayState extends State<GhadhulBasharOverlay> {
                       const SizedBox(height: 12),
                       Center(
                         child: TextButton.icon(
-                          onPressed: () => appState.clearGhadhulBashar(),
+                          onPressed: _isProcessing ? null : () => _safeDismiss(appState),
                           icon: const Icon(Icons.arrow_back_rounded, size: 16, color: Colors.white60),
                           label: Text(
                             Translations.get(lang, 'go_back'),

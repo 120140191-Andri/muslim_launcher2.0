@@ -209,20 +209,56 @@ class AppState extends ChangeNotifier {
     // Initialize App Block Service immediately so no platform signals are dropped
     _appBlockService.init(
       onAppBlocked: (pkg) {
-        if (pkg.trim().isNotEmpty) {
-          _lastAttemptedBlockedPackage = pkg.toLowerCase();
+        final cleanPkg = pkg.trim().toLowerCase();
+        if (cleanPkg.isNotEmpty) {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          // Guard: if package is currently unlocked, ignore block event!
+          final expiry = _unlockedExpirations[cleanPkg];
+          if (expiry != null && now < expiry) {
+            return;
+          }
+          // Guard: if recently dismissed within 3 seconds
+          if (cleanPkg == _lastBlockedAppDismissedPackage && (now - _lastBlockedAppDismissedTime) < 3000) {
+            return;
+          }
+          if (_lastAttemptedBlockedPackage == cleanPkg) return;
+
+          _lastAttemptedBlockedPackage = cleanPkg;
+          _lastAttemptedProhibitedPackage = null;
+          _lastAttemptedGhadhulBasharPackage = null;
           notifyListeners();
         }
       },
       onGhadhulBasharTriggered: (pkg) {
-        if (pkg.trim().isNotEmpty) {
-          _lastAttemptedGhadhulBasharPackage = pkg.toLowerCase();
+        final cleanPkg = pkg.trim().toLowerCase();
+        if (cleanPkg.isNotEmpty) {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          // Guard: if recently dismissed or allowed within 4 seconds, ignore duplicate trigger
+          if (cleanPkg == _lastGhadhulBasharDismissedPackage && (now - _lastGhadhulBasharDismissedTime) < 4000) {
+            return;
+          }
+          if (_lastAttemptedGhadhulBasharPackage == cleanPkg) return;
+
+          _lastAttemptedGhadhulBasharPackage = cleanPkg;
+          _lastAttemptedBlockedPackage = null;
+          _lastAttemptedProhibitedPackage = null;
           notifyListeners();
         }
       },
       onProhibitedAppTriggered: (pkg) {
-        if (pkg.trim().isNotEmpty) {
-          _lastAttemptedProhibitedPackage = pkg.toLowerCase();
+        final cleanPkg = pkg.trim().toLowerCase();
+        if (cleanPkg.isNotEmpty) {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          if (cleanPkg == _lastProhibitedTriggeredPackage && (now - _lastProhibitedTriggeredTime) < 2000) {
+            return;
+          }
+          if (_lastAttemptedProhibitedPackage == cleanPkg) return;
+
+          _lastProhibitedTriggeredPackage = cleanPkg;
+          _lastProhibitedTriggeredTime = now;
+          _lastAttemptedProhibitedPackage = cleanPkg;
+          _lastAttemptedBlockedPackage = null;
+          _lastAttemptedGhadhulBasharPackage = null;
           notifyListeners();
         }
       },
@@ -257,10 +293,21 @@ class AppState extends ChangeNotifier {
         final pendingGhadhul = initialData['ghadhul'] as String?;
         if (pendingProhibited != null && pendingProhibited.isNotEmpty) {
           _lastAttemptedProhibitedPackage = pendingProhibited.toLowerCase();
+          _lastAttemptedBlockedPackage = null;
+          _lastAttemptedGhadhulBasharPackage = null;
         } else if (pendingBlocked != null && pendingBlocked.isNotEmpty) {
-          _lastAttemptedBlockedPackage = pendingBlocked.toLowerCase();
+          final cleanBlocked = pendingBlocked.toLowerCase();
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final expiry = _unlockedExpirations[cleanBlocked];
+          if (expiry == null || now >= expiry) {
+            _lastAttemptedBlockedPackage = cleanBlocked;
+            _lastAttemptedProhibitedPackage = null;
+            _lastAttemptedGhadhulBasharPackage = null;
+          }
         } else if (pendingGhadhul != null && pendingGhadhul.isNotEmpty) {
           _lastAttemptedGhadhulBasharPackage = pendingGhadhul.toLowerCase();
+          _lastAttemptedProhibitedPackage = null;
+          _lastAttemptedBlockedPackage = null;
         }
       }
     } catch (_) {}
@@ -1940,9 +1987,22 @@ class AppState extends ChangeNotifier {
   String? _lastAttemptedProhibitedPackage;
   String? get lastAttemptedProhibitedPackage => _lastAttemptedProhibitedPackage;
 
+  // Debounce & Guard timestamps to prevent double-triggers and race conditions
+  int _lastGhadhulBasharDismissedTime = 0;
+  String? _lastGhadhulBasharDismissedPackage;
+
+  int _lastBlockedAppDismissedTime = 0;
+  String? _lastBlockedAppDismissedPackage;
+
+  int _lastProhibitedTriggeredTime = 0;
+  String? _lastProhibitedTriggeredPackage;
+
   void setProhibitedPackage(String pkg) {
-    if (pkg.trim().isNotEmpty) {
-      _lastAttemptedProhibitedPackage = pkg.toLowerCase();
+    final cleanPkg = pkg.trim().toLowerCase();
+    if (cleanPkg.isNotEmpty) {
+      _lastAttemptedProhibitedPackage = cleanPkg;
+      _lastAttemptedBlockedPackage = null;
+      _lastAttemptedGhadhulBasharPackage = null;
       notifyListeners();
     }
   }
@@ -1959,10 +2019,14 @@ class AppState extends ChangeNotifier {
       changed = true;
     }
     if (_lastAttemptedBlockedPackage != null) {
+      _lastBlockedAppDismissedPackage = _lastAttemptedBlockedPackage;
+      _lastBlockedAppDismissedTime = DateTime.now().millisecondsSinceEpoch;
       _lastAttemptedBlockedPackage = null;
       changed = true;
     }
     if (_lastAttemptedGhadhulBasharPackage != null) {
+      _lastGhadhulBasharDismissedPackage = _lastAttemptedGhadhulBasharPackage;
+      _lastGhadhulBasharDismissedTime = DateTime.now().millisecondsSinceEpoch;
       _lastAttemptedGhadhulBasharPackage = null;
       changed = true;
     }
@@ -1984,31 +2048,56 @@ class AppState extends ChangeNotifier {
   }
 
   void setBlockedPackage(String pkg) {
-    if (pkg.trim().isNotEmpty) {
-      _lastAttemptedBlockedPackage = pkg.toLowerCase();
+    final cleanPkg = pkg.trim().toLowerCase();
+    if (cleanPkg.isNotEmpty) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final expiry = _unlockedExpirations[cleanPkg];
+      if (expiry != null && now < expiry) {
+        return;
+      }
+      _lastAttemptedBlockedPackage = cleanPkg;
+      _lastAttemptedProhibitedPackage = null;
+      _lastAttemptedGhadhulBasharPackage = null;
       notifyListeners();
     }
   }
 
   void clearBlockedApp() {
+    if (_lastAttemptedBlockedPackage != null) {
+      _lastBlockedAppDismissedPackage = _lastAttemptedBlockedPackage;
+      _lastBlockedAppDismissedTime = DateTime.now().millisecondsSinceEpoch;
+    }
     _lastAttemptedBlockedPackage = null;
     notifyListeners();
   }
 
   void clearGhadhulBashar() {
+    if (_lastAttemptedGhadhulBasharPackage != null) {
+      _lastGhadhulBasharDismissedPackage = _lastAttemptedGhadhulBasharPackage;
+      _lastGhadhulBasharDismissedTime = DateTime.now().millisecondsSinceEpoch;
+    }
     _lastAttemptedGhadhulBasharPackage = null;
     notifyListeners();
   }
 
   void setGhadhulBasharPackage(String pkg) {
-    if (pkg.trim().isNotEmpty) {
-      _lastAttemptedGhadhulBasharPackage = pkg.toLowerCase();
+    final cleanPkg = pkg.trim().toLowerCase();
+    if (cleanPkg.isNotEmpty) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      if (cleanPkg == _lastGhadhulBasharDismissedPackage && (now - _lastGhadhulBasharDismissedTime) < 4000) {
+        return;
+      }
+      _lastAttemptedGhadhulBasharPackage = cleanPkg;
+      _lastAttemptedBlockedPackage = null;
+      _lastAttemptedProhibitedPackage = null;
       notifyListeners();
     }
   }
 
   Future<void> confirmGhadhulBashar(String packageName) async {
     final pkg = packageName.toLowerCase();
+    _lastGhadhulBasharDismissedPackage = pkg;
+    _lastGhadhulBasharDismissedTime = DateTime.now().millisecondsSinceEpoch;
     try {
       await _appBlockService.allowGhadhulBasharSession(pkg);
     } catch (_) {}

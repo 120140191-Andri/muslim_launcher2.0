@@ -71,9 +71,11 @@ class AppBlockService : AccessibilityService() {
             
             temporaryAllowedPackages[pkg] = expiry
             
-            // Activate Shield
+            // Activate Shield & Debounce
             lastBypassPackage = pkg
             lastBypassTime = now
+            lastTriggeredPackage = pkg
+            lastTriggeredTime = now
             
             // Persist to SharedPreferences to prevent loss on service restart
             val prefs = context.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
@@ -116,7 +118,9 @@ class AppBlockService : AccessibilityService() {
             lastActiveGhadhulTimes[pkg] = now
             lastBypassPackage = pkg
             lastBypassTime = now
-            Log.d("AppBlockService", "GHADHUL SESSION ALLOWED: $pkg")
+            lastTriggeredPackage = pkg
+            lastTriggeredTime = now
+            Log.d("AppBlockService", "GHADHUL SESSION ALLOWED: $pkg (Shield & Debounce Active)")
         }
 
         fun resetGhadhulBasharSession(packageName: String) {
@@ -239,7 +243,7 @@ class AppBlockService : AccessibilityService() {
             if (packageName == this.packageName) return
 
             val now = System.currentTimeMillis()
-            if (packageName == lastTriggeredPackage && (now - lastTriggeredTime) < 1200L) {
+            if (packageName == lastTriggeredPackage && (now - lastTriggeredTime) < 3000L) {
                 return
             }
 
@@ -260,10 +264,10 @@ class AppBlockService : AccessibilityService() {
             }
 
             // 1. TRANSITION SHIELD (Highest Priority)
-            // Immunity period for recently unlocked apps (10 seconds)
-            // Hanya aktif jika transisi berasal dari launcher kita sendiri atau aplikasi itu sendiri
-            val isFromOurLauncher = previousPackage == null || previousPackage == this.packageName || previousPackage == packageName
-            if (packageName == lastBypassPackage && (now - lastBypassTime) < 10000 && isFromOurLauncher) {
+            // Immunity period for recently unlocked or allowed apps (15 seconds)
+            // Memastikan transisi awal ke aplikasi yang baru dibuka kunci / diizinkan tidak memantul
+            val isWithinBypassShield = (packageName == lastBypassPackage && (now - lastBypassTime) < 15000L)
+            if (isWithinBypassShield) {
                 if (ghadhulBasharPackages.contains(packageName)) {
                     lastActiveGhadhulTimes[packageName] = now
                 }
@@ -319,6 +323,10 @@ class AppBlockService : AccessibilityService() {
                     // Pengguna hanya berpindah aplikasi dan kembali lagi (multitasking biasa) -> izinkan tanpa menampilkan overlay
                     lastActiveGhadhulTimes[packageName] = now
                     return 
+                } else if (hasActiveSession && isWithinBypassShield) {
+                    // Baru saja diizinkan dalam 15 detik terakhir untuk link eksternal / customtab -> izinkan tanpa loop
+                    lastActiveGhadhulTimes[packageName] = now
+                    return
                 } else {
                     // Tampilkan overlay jika:
                     // 1. Buka link dari aplikasi eksternal (isLinkFromExternalApp == true), ATAU

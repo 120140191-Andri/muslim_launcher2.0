@@ -34,17 +34,17 @@ class _HadithListScreenState extends State<HadithListScreen> {
     return (3 + arabicBonus + translationBonus).clamp(3, 8);
   }
 
+  static final Map<String, List<String>> _staticThemesCache = {};
   String _lastLang = '';
   List<dynamic>? _lastHadiths;
-  List<String> _cachedThemes = [];
   String _lastTheme = '';
   List<dynamic> _cachedFiltered = [];
 
   List<String> _getThemes(List<dynamic> allHadiths, String lang) {
-    if (_lastLang == lang && identical(_lastHadiths, allHadiths) && _cachedThemes.isNotEmpty) {
-      return _cachedThemes;
+    final cached = _staticThemesCache[lang];
+    if (cached != null && identical(_lastHadiths, allHadiths)) {
+      return cached;
     }
-    _lastLang = lang;
     _lastHadiths = allHadiths;
     final themes = <String>{};
     for (final item in allHadiths) {
@@ -53,8 +53,9 @@ class _HadithListScreenState extends State<HadithListScreen> {
         if (t.isNotEmpty) themes.add(t);
       }
     }
-    _cachedThemes = [Translations.get(lang, 'theme_all'), ...themes];
-    return _cachedThemes;
+    final result = [Translations.get(lang, 'theme_all'), ...themes];
+    _staticThemesCache[lang] = result;
+    return result;
   }
 
   List<dynamic> _getFiltered(List<dynamic> allHadiths, String lang) {
@@ -64,13 +65,16 @@ class _HadithListScreenState extends State<HadithListScreen> {
         _cachedFiltered.isNotEmpty) {
       return _cachedFiltered;
     }
+    _lastLang = lang;
     _lastTheme = _selectedTheme;
+    final allStr = Translations.get(lang, 'theme_all');
+    if (_selectedTheme.isEmpty || _selectedTheme == allStr) {
+      _cachedFiltered = allHadiths;
+      return _cachedFiltered;
+    }
     _cachedFiltered = allHadiths.where((item) {
       if (item is! Map<String, dynamic>) return false;
-      final theme = _getHadithTheme(item, lang);
-      return _selectedTheme.isEmpty ||
-          _selectedTheme == Translations.get(lang, 'theme_all') ||
-          theme == _selectedTheme;
+      return _getHadithTheme(item, lang) == _selectedTheme;
     }).toList();
     return _cachedFiltered;
   }
@@ -194,31 +198,42 @@ class _HadithListScreenState extends State<HadithListScreen> {
                     _selectedTheme == theme;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(
-                      theme,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected ? Colors.white : Colors.teal.shade800,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () {
+                        setState(() {
+                          _selectedTheme = isSelected ? '' : theme;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.teal.shade700 : Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.transparent
+                                : Colors.teal.shade100,
+                          ),
+                        ),
+                        child: Text(
+                          theme,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.teal.shade800,
+                          ),
+                        ),
                       ),
                     ),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedTheme = selected ? theme : '';
-                      });
-                    },
-                    backgroundColor: Colors.white,
-                    selectedColor: Colors.teal.shade700,
-                    checkmarkColor: Colors.white,
-                    side: BorderSide(
-                      color: isSelected ? Colors.transparent : Colors.teal.shade100,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   ),
                 );
               }).toList(),
@@ -229,7 +244,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
           Expanded(
             child: ListView.builder(
               physics: const BouncingScrollPhysics(),
-              cacheExtent: 200,
+              cacheExtent: 80,
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
               itemCount: filteredHadiths.length,
               itemBuilder: (context, index) {

@@ -689,12 +689,15 @@ class _AppListScreenState extends State<AppListScreen>
       );
     }
 
+    final appState = Provider.of<AppState>(context);
+    final blocked = appState.blockedApps;
+
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
       physics: const AlwaysScrollableScrollPhysics(
         parent: ClampingScrollPhysics(),
       ),
-      cacheExtent: 300,
+      cacheExtent: 50,
       addAutomaticKeepAlives: true,
       addRepaintBoundaries: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -706,22 +709,21 @@ class _AppListScreenState extends State<AppListScreen>
       itemCount: _filtered.length,
       itemBuilder: (context, index) {
         final app = _filtered[index];
+        final isBlocked = blocked.contains(app.packageName);
+        final isProhibited =
+            appState.isAppProhibited(app.packageName, app.appName);
+        final remainingMins =
+            appState.getUnlockRemainingMinutes(app.packageName);
+
         return RepaintBoundary(
-          child: Selector<AppState, ({bool isBlocked, bool isProhibited})>(
-            selector: (context, state) => (
-              isBlocked: state.isAppBlocked(app.packageName),
-              isProhibited: state.isAppProhibited(app.packageName, app.appName),
-            ),
-            builder: (context, status, child) {
-              return _AppTile(
-                key: ValueKey(app.packageName),
-                app: app,
-                isBlocked: status.isBlocked,
-                isProhibited: status.isProhibited,
-                onTap: () => _onAppTap(app, context.read<AppState>()),
-                onLongPress: () => _onAppLongPress(app),
-              );
-            },
+          child: _AppTile(
+            key: ValueKey(app.packageName),
+            app: app,
+            isBlocked: isBlocked,
+            isProhibited: isProhibited,
+            remainingMinutes: remainingMins,
+            onTap: () => _onAppTap(app, appState),
+            onLongPress: () => _onAppLongPress(app),
           ),
         );
       },
@@ -734,6 +736,7 @@ class _AppTile extends StatelessWidget {
   final AppInfo app;
   final bool isBlocked;
   final bool isProhibited;
+  final int remainingMinutes;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -742,6 +745,7 @@ class _AppTile extends StatelessWidget {
     required this.app,
     required this.isBlocked,
     this.isProhibited = false,
+    this.remainingMinutes = 0,
     required this.onTap,
     required this.onLongPress,
   });
@@ -776,7 +780,8 @@ class _AppTile extends StatelessWidget {
                         border: Border.all(color: Colors.white, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFE11D48).withValues(alpha: 0.35),
+                            color:
+                                const Color(0xFFE11D48).withValues(alpha: 0.35),
                             blurRadius: 4,
                           ),
                         ],
@@ -807,36 +812,28 @@ class _AppTile extends StatelessWidget {
                     ),
                   ),
                 // Timer badge
-                if (!isProhibited)
+                if (!isProhibited && remainingMinutes > 0)
                   Positioned(
                     left: -4,
                     bottom: -4,
-                    child: Selector<AppState, int>(
-                      selector: (context, state) =>
-                          state.getUnlockRemainingMinutes(app.packageName),
-                      builder: (context, remaining, child) {
-                        if (remaining <= 0) return const SizedBox.shrink();
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.shade700,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white, width: 1.5),
-                          ),
-                          child: Text(
-                            "${remaining}m",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        );
-                      },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade700,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: Text(
+                        "${remainingMinutes}m",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
               ],
@@ -889,6 +886,13 @@ class _AppIconState extends State<_AppIcon> {
     }
   }
 
+  static const ColorFilter _grayscaleFilter = ColorFilter.matrix(<double>[
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0,      0,      0,      1, 0,
+  ]);
+
   @override
   Widget build(BuildContext context) {
     final bytes = AppListScreen.iconCache[widget.packageName];
@@ -932,28 +936,7 @@ class _AppIconState extends State<_AppIcon> {
 
     if (widget.grayscale) {
       img = ColorFiltered(
-        colorFilter: const ColorFilter.matrix(<double>[
-          0.2126,
-          0.7152,
-          0.0722,
-          0,
-          0,
-          0.2126,
-          0.7152,
-          0.0722,
-          0,
-          0,
-          0.2126,
-          0.7152,
-          0.0722,
-          0,
-          0,
-          0,
-          0,
-          0,
-          1,
-          0,
-        ]),
+        colorFilter: _grayscaleFilter,
         child: img,
       );
     }

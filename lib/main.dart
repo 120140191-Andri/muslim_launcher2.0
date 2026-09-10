@@ -11,6 +11,7 @@ import 'screens/home/blocked_app_screen.dart';
 import 'screens/home/ghadhul_bashar_overlay.dart';
 import 'screens/home/prohibited_app_overlay.dart';
 import 'screens/home/permission_blocked_overlay.dart';
+import 'utils/page_transitions.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,8 +108,8 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
         useMaterial3: true,
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
-            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.android: NoTransitionsBuilder(),
+            TargetPlatform.iOS: NoTransitionsBuilder(),
           },
         ),
       ),

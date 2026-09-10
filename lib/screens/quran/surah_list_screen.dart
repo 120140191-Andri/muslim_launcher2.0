@@ -23,6 +23,15 @@ class _SurahListScreenState extends State<SurahListScreen> {
     final appState = Provider.of<AppState>(context);
     final lang = appState.languageCode;
     final lastReadIdx = appState.currentSurahIndex;
+    final int highestSurah = appState.highestSurahIndex;
+    final int highestAyah = appState.highestAyahIndex;
+    final int quranLength = appState.quranData.length;
+    final bool prevFinished = (highestSurah >= 0 && highestSurah < quranLength)
+        ? (highestAyah ==
+            (appState.quranData[highestSurah]['total_ayah'] as int) - 1)
+        : false;
+    final int unlockedUntilIndex =
+        prevFinished ? highestSurah + 1 : highestSurah;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F4),
@@ -70,15 +79,16 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     physics: const BouncingScrollPhysics(),
-                    cacheExtent: 200,
+                    cacheExtent: 80,
                     padding: const EdgeInsets.fromLTRB(0, 12, 0, 60),
                     itemCount: appState.quranData.length,
                     itemBuilder: (context, index) {
                       final surah = appState.quranData[index];
 
                       final isLastRead = index == lastReadIdx;
-                      final isFuture = !appState.isSurahUnlocked(index);
-                      final isFinished = appState.isSurahFinished(index);
+                      final isFuture = index > unlockedUntilIndex;
+                      final isFinished = index < highestSurah ||
+                          (index == highestSurah && prevFinished);
 
                       return RepaintBoundary(
                         child: Opacity(

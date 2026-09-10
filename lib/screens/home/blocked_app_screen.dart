@@ -176,9 +176,15 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                         child: ElevatedButton.icon(
                           onPressed: (canUnlock && !_isUnlocking)
                             ? () async {
+                                if (appState.points < 50) return;
                                 setState(() => _isUnlocking = true);
-                                await appState.deductPoints(50);
-                                await appState.allowAppTemporarily(widget.packageName);
+                                final success = await appState.unlockAppWithPoints(widget.packageName, cost: 50);
+                                if (!success) {
+                                  if (mounted) {
+                                    setState(() => _isUnlocking = false);
+                                  }
+                                  return;
+                                }
                                 final appName = appState.getAppNameSync(widget.packageName);
                                 final isGhadhulTarget = AppState.shouldShowGhadhulBasharReminder(
                                   widget.packageName,

@@ -162,6 +162,10 @@ class AppState extends ChangeNotifier {
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
     _points = prefs.getInt('points') ?? 0;
+    if (_points < 0) {
+      _points = 0;
+      await prefs.setInt('points', 0);
+    }
     final savedBlocked = prefs.getStringList('blockedApps') ?? [];
     _blockedApps = savedBlocked
         .where((pkg) => !isProductiveApp(pkg, ''))
@@ -201,7 +205,20 @@ class AppState extends ChangeNotifier {
     final unlockedJson = prefs.getString('unlockedExpirations') ?? '{}';
     try {
       final decoded = json.decode(unlockedJson) as Map<String, dynamic>;
-      _unlockedExpirations = decoded.map((key, value) => MapEntry(key, value as int));
+      final now = DateTime.now().millisecondsSinceEpoch;
+      _unlockedExpirations = {};
+      bool pruned = false;
+      decoded.forEach((key, value) {
+        final exp = value as int;
+        if (exp > now) {
+          _unlockedExpirations[key] = exp;
+        } else {
+          pruned = true;
+        }
+      });
+      if (pruned) {
+        await prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
+      }
     } catch (e) {
       _unlockedExpirations = {};
     }
@@ -576,12 +593,16 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deductPoints(int amount) async {
+  Future<bool> deductPoints(int amount) async {
+    if (amount <= 0) return true;
     if (_points >= amount) {
       _points -= amount;
+      if (_points < 0) _points = 0;
       await prefs.setInt('points', _points);
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
   Future<void> toggleAppBlockedStatus(String packageName, {int? category, String? appName}) async {
@@ -2314,6 +2335,41 @@ class AppState extends ChangeNotifier {
 
       await _appBlockService.setProhibitedPackages(targets.toList());
     } catch (_) {}
+  }
+
+  /// Unlocks a blocked non-productive app using user points in a strictly atomic transaction.
+  /// Prevents any bypass or free unlock if points < cost.
+  Future<bool> unlockAppWithPoints(
+    String packageName, {
+    int cost = 50,
+    int durationMinutes = 60,
+  }) async {
+    final pkg = packageName.toLowerCase().trim();
+    if (pkg.isEmpty) return false;
+
+    // 1. Strict validation: Points MUST be at least the cost
+    if (_points < cost || cost <= 0) {
+      debugPrint("Security guard rejected unlock: User has $_points points, required $cost points for $pkg");
+      return false;
+    }
+
+    // 2. Deduct points first
+    _points -= cost;
+    if (_points < 0) _points = 0;
+    await prefs.setInt('points', _points);
+
+    // 3. Register native and local unlock
+    final success = await allowAppTemporarily(pkg, durationMinutes: durationMinutes);
+    if (!success) {
+      // Rollback points if native registration failed
+      _points += cost;
+      await prefs.setInt('points', _points);
+      notifyListeners();
+      return false;
+    }
+
+    notifyListeners();
+    return true;
   }
 
   Future<bool> allowAppTemporarily(String packageName, {int durationMinutes = 60}) async {

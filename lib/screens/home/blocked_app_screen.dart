@@ -330,7 +330,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                           color: const Color(0xFF04433A).withValues(alpha: 0.7),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: const Color(0xFF2DD4BF).withValues(alpha: 0.5),
+                            color: Colors.amber.withValues(alpha: 0.5),
                             width: 1.2,
                           ),
                         ),
@@ -351,12 +351,12 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF2DD4BF).withValues(alpha: 0.2),
+                                      color: Colors.amber.withValues(alpha: 0.2),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
                                       Icons.grain_rounded,
-                                      color: Color(0xFF2DD4BF),
+                                      color: Colors.amber,
                                       size: 20,
                                     ),
                                   ),
@@ -402,7 +402,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                               ? 'Tasbih 33x & Deteksi Wajah (Boleh Meram)'
                                               : Translations.get(lang, 'dzikir_mode_title'),
                                           style: TextStyle(
-                                            color: Colors.teal.shade200,
+                                            color: Colors.amber.shade100,
                                             fontSize: 11.5,
                                           ),
                                         ),
@@ -412,7 +412,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                   const SizedBox(width: 6),
                                   const Icon(
                                     Icons.arrow_forward_ios_rounded,
-                                    color: Color(0xFF2DD4BF),
+                                    color: Colors.amber,
                                     size: 13,
                                   ),
                                 ],

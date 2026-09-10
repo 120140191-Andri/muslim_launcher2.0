@@ -85,11 +85,11 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: _isDefaultLauncher ? const Color(0xFFD8F3DC) : const Color(0xFFE9F5F2),
+                        color: _isDefaultLauncher ? const Color(0xFFD8F3DC) : const Color(0xFFFEF3C7),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: (_isDefaultLauncher ? Colors.green : Colors.teal).withValues(alpha: 0.1),
+                            color: (_isDefaultLauncher ? Colors.green : Colors.amber).withValues(alpha: 0.1),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -97,7 +97,7 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                       ),
                       child: Icon(
                         _isDefaultLauncher ? Icons.home_work_rounded : Icons.home_rounded,
-                        color: _isDefaultLauncher ? const Color(0xFF2D6A4F) : const Color(0xFF0891B2),
+                        color: _isDefaultLauncher ? const Color(0xFF2D6A4F) : const Color(0xFFD97706),
                         size: 48,
                       ),
                     ),
@@ -140,7 +140,7 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                     if (!_isDefaultLauncher) ...[
                       Row(
                         children: [
-                          const Icon(Icons.touch_app_rounded, size: 18, color: Color(0xFF0891B2)),
+                          const Icon(Icons.touch_app_rounded, size: 18, color: Color(0xFFD97706)),
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
@@ -150,7 +150,7 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                                 fontWeight: FontWeight.w800, 
                                 letterSpacing: 0.5,
                                 fontSize: 12,
-                                color: Color(0xFF0891B2),
+                                color: Color(0xFFD97706),
                               ),
                             ),
                           ),
@@ -276,13 +276,13 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
             height: 24,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
-              color: Color(0xFFE9F5F2),
+              color: Color(0xFFFEF3C7),
               shape: BoxShape.circle,
             ),
             child: Text(
               "$num", 
               style: const TextStyle(
-                color: Color(0xFF0891B2), 
+                color: Color(0xFF92400E), 
                 fontSize: 12, 
                 fontWeight: FontWeight.w900,
               )

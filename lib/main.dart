@@ -106,6 +106,15 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF0D5C3A),
           brightness: Brightness.light,
+        ).copyWith(
+          tertiary: const Color(0xFFD97706),
+          onTertiary: Colors.white,
+          tertiaryContainer: const Color(0xFFFEF3C7),
+          onTertiaryContainer: const Color(0xFF92400E),
+          tertiaryFixed: const Color(0xFFFEF3C7),
+          onTertiaryFixed: const Color(0xFF92400E),
+          tertiaryFixedDim: const Color(0xFFFDE68A),
+          onTertiaryFixedVariant: const Color(0xFF78350F),
         ),
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF7FAF8),

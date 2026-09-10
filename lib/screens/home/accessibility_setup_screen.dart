@@ -91,11 +91,11 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                     decoration: BoxDecoration(
                       color: _isEnabled
                           ? const Color(0xFFD8F3DC)
-                          : const Color(0xFFE9F5F2),
+                          : const Color(0xFFFEF3C7),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: (_isEnabled ? Colors.green : Colors.teal)
+                          color: (_isEnabled ? Colors.green : Colors.amber)
                               .withValues(alpha: 0.1),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
@@ -108,7 +108,7 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                           : Icons.app_blocking_rounded,
                       color: _isEnabled
                           ? const Color(0xFF2D6A4F)
-                          : const Color(0xFF0891B2),
+                          : const Color(0xFFD97706),
                       size: 48,
                     ),
                   ),
@@ -154,7 +154,7 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                         const Icon(
                           Icons.info_outline,
                           size: 18,
-                          color: Color(0xFF0891B2),
+                          color: Color(0xFFD97706),
                         ),
                         const SizedBox(width: 8),
                         Flexible(
@@ -167,7 +167,7 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.5,
                               fontSize: 12,
-                              color: Color(0xFF0891B2),
+                              color: Color(0xFFD97706),
                             ),
                           ),
                         ),

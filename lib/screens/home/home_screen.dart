@@ -180,25 +180,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     required String value,
     required Color color,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: colorScheme.tertiaryContainer,
+        color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: colorScheme.onTertiaryContainer.withValues(alpha: 0.15),
+          color: Colors.white.withValues(alpha: 0.25),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: colorScheme.onTertiaryContainer, size: 14),
+          Icon(icon, color: Colors.amber, size: 14),
           const SizedBox(width: 4),
           Text(
             value,
-            style: TextStyle(
-              color: colorScheme.onTertiaryContainer,
+            style: const TextStyle(
+              color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 11.5,
             ),

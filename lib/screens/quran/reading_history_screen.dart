@@ -63,7 +63,7 @@ class ReadingHistoryScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: isDzikir
-                            ? const Color(0xFFCCFBF1)
+                            ? const Color(0xFFFEF3C7)
                             : isHadith
                             ? const Color(0xFFD8F3DC)
                             : Colors.teal.shade50,
@@ -76,7 +76,7 @@ class ReadingHistoryScreen extends StatelessWidget {
                             ? Icons.spa_rounded
                             : Icons.menu_book_rounded,
                         color: isDzikir
-                            ? const Color(0xFF0F766E)
+                            ? const Color(0xFF92400E)
                             : isHadith
                             ? const Color(0xFF1B4332)
                             : Colors.teal.shade700,

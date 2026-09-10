@@ -865,33 +865,16 @@ class _DzikirScreenState extends State<DzikirScreen>
 
                         const SizedBox(height: 12),
 
-                        // Arabic & Latin Main Dzikir Display Card (Option 2: Mosque Marble / Alabaster)
+                        // Arabic & Latin Main Dzikir Display Card (Option 3: M3 Expressive Tonal Mint)
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: _isInCooldown
+                                ? colorScheme.surfaceContainerHigh
+                                : colorScheme.primaryContainer.withValues(alpha: 0.75),
                             borderRadius: BorderRadius.circular(28),
-                            border: Border.all(
-                              color: colorScheme.outlineVariant.withValues(
-                                alpha: _isInCooldown ? 0.3 : 0.5,
-                              ),
-                              width: 1.0,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 20,
-                                offset: const Offset(0, 6),
-                              ),
-                              if (!_isInCooldown)
-                                BoxShadow(
-                                  color: colorScheme.primary.withValues(alpha: 0.05),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 2),
-                                ),
-                            ],
                           ),
                           child: Column(
                             children: [
@@ -904,7 +887,7 @@ class _DzikirScreenState extends State<DzikirScreen>
                                   style: TextStyle(
                                     color: _isInCooldown
                                         ? colorScheme.onSurface.withValues(alpha: 0.4)
-                                        : const Color(0xFF0B4D31),
+                                        : colorScheme.onPrimaryContainer,
                                     fontSize: 34,
                                     fontWeight: FontWeight.bold,
                                     fontFamily: 'Amiri',
@@ -914,25 +897,25 @@ class _DzikirScreenState extends State<DzikirScreen>
                               ),
                               const SizedBox(height: 12),
 
-                              // Latin Transliteration Pill (Soft Mint Tonal Pill)
+                              // Latin Transliteration Pill (Clean White Surface on Tonal Mint)
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
                                   vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFE8F5EE),
+                                  color: colorScheme.surface,
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: const Color(0xFFC7E6D6),
+                                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                                     width: 0.8,
                                   ),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   currentPreset.transliteration,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: Color(0xFF0D5C3A),
+                                    color: colorScheme.onPrimaryContainer,
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 0.4,
@@ -947,8 +930,8 @@ class _DzikirScreenState extends State<DzikirScreen>
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFF5A6A63),
+                                style: TextStyle(
+                                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.75),
                                   fontSize: 12.5,
                                   fontStyle: FontStyle.italic,
                                   fontFamily: 'Inter',
@@ -1086,19 +1069,12 @@ width: beadSize - 10,
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: colorScheme.surfaceContainerLow,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                              color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                               width: 0.8,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.03),
-                                blurRadius: 12,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

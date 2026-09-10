@@ -11,6 +11,8 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+.kotlin/
+android/.kotlin/
 
 # IntelliJ related
 *.iml
@@ -49,3 +51,18 @@ app.*.map.json
 *.aab
 **/*.apk
 **/*.aab
+
+# Firebase & Google API secrets
+android/app/google-services.json
+**/google-services.json
+!**/google-services.json.example
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+firebase_options.dart
+*.jks
+*.keystore
+key.properties
+.env
+.env.*
+!.env.example
+

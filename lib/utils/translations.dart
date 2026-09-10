@@ -98,7 +98,7 @@ class Translations {
       'support_feature_request': 'Dukung / Usulkan Fitur',
       'free_ad_free_app': 'Agar tetap gratis & tanpa iklan',
       'support_dev_long_desc':
-          'Dukungan Anda sangat berarti untuk menjaga Muslim Launcher tetap gratis, mandiri, dan terus berkembang dengan fitur-fitur kebaikan.',
+          'Dukungan Anda sangat berarti untuk menjaga Muslim Launcher tetap gratis, tanpa iklan, mandiri, dan terus berkembang dengan fitur-fitur kebaikan.',
       'good_morning': 'Selamat Pagi',
       'good_afternoon': 'Selamat Siang',
       'good_evening': 'Selamat Sore',
@@ -256,7 +256,7 @@ class Translations {
       'support_feature_request': 'Support / Request Features',
       'free_ad_free_app': 'To keep it free & ad-free',
       'support_dev_long_desc':
-          'Your support helps us keep Muslim Launcher free, independent, and continuously updated with new Islamic features.',
+          'Your support helps us keep Muslim Launcher free, ad-free, independent, and continuously updated with new Islamic features.',
       'good_morning': 'Good Morning',
       'good_afternoon': 'Good Afternoon',
       'good_evening': 'Good Evening',
@@ -411,7 +411,7 @@ class Translations {
       'support_feature_request': 'Sokong / Cadang Ciri',
       'free_ad_free_app': 'Agar kekal percuma & tanpa iklan',
       'support_dev_long_desc':
-          'Sokongan anda sangat bermakna untuk mengekalkan Muslim Launcher percuma, berdikari, dan sentiasa dikemas kini.',
+          'Sokongan anda sangat bermakna untuk mengekalkan Muslim Launcher percuma, tanpa iklan, berdikari, dan sentiasa dikemas kini.',
       'good_morning': 'Selamat Pagi',
       'good_afternoon': 'Selamat Tengah Hari',
       'good_evening': 'Selamat Petang',
@@ -566,7 +566,7 @@ class Translations {
       'support_feature_request': 'دعم / اقتراح ميزات',
       'free_ad_free_app': 'ليبقى مجانياً وبدون إعلانات',
       'support_dev_long_desc':
-          'دعمكم يساعدنا في إبقاء مشغل مسلم مجانياً ومستقلاً وتحديثه دائماً بميزات إسلامية مفيدة.',
+          'دعمكم يساعدنا في إبقاء مشغل مسلم مجانياً، بدون إعلانات، ومستقلاً وتحديثه دائماً بميزات إسلامية مفيدة.',
       'good_morning': 'صباح الخير',
       'good_afternoon': 'طاب يومك',
       'good_evening': 'مساء الخير',
@@ -720,7 +720,7 @@ class Translations {
       'support_feature_request': 'Ondersteun / Vra Kenmerke Aan',
       'free_ad_free_app': 'Om dit gratis en advertensievry te hou',
       'support_dev_long_desc':
-          'Jou ondersteuning help ons om Muslim Launcher gratis, onafhanklik en voortdurend opgedateer te hou.',
+          'Jou ondersteuning help ons om Muslim Launcher gratis, advertensievry, onafhanklik en voortdurend opgedateer te hou.',
       'good_morning': 'Goeiemôre',
       'good_afternoon': 'Goeiemiddag',
       'good_evening': 'Goeienaand',
@@ -877,7 +877,7 @@ class Translations {
       'support_feature_request': 'Msaidie / Pendekeza Vipengele',
       'free_ad_free_app': 'Ili ibaki bure & bila matangazo',
       'support_dev_long_desc':
-          'Msaada wako unatusaidia kuweka Muslim Launcher bure, huru, na kusasishwa daima.',
+          'Msaada wako unatusaidia kuweka Muslim Launcher bure, bila matangazo, huru, na kusasishwa daima.',
       'good_morning': 'Habari za Asubuhi',
       'good_afternoon': 'Habari za Mchana',
       'good_evening': 'Habari za Jioni',

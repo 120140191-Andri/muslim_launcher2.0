@@ -530,31 +530,38 @@ class _AppListScreenState extends State<AppListScreen>
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerLowest,
       appBar: AppBar(
-        titleSpacing: 16,
+        leadingWidth: 44,
+        titleSpacing: 0,
         title: Container(
-          height: 44,
+          height: 40,
+          margin: const EdgeInsets.only(right: 6),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: TextField(
             controller: _searchController,
-            style: TextStyle(color: colorScheme.onSurface, fontSize: 15),
+            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
             cursorColor: colorScheme.primary,
             textAlignVertical: TextAlignVertical.center,
             decoration: InputDecoration(
               hintText: Translations.get(lang, 'search_apps'),
-              hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
+              hintStyle: TextStyle(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                fontSize: 14,
+              ),
               border: InputBorder.none,
               isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
               prefixIcon: Icon(
                 Icons.search_rounded,
                 color: colorScheme.onSurfaceVariant,
-                size: 20,
+                size: 19,
               ),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      iconSize: 18,
+                      iconSize: 17,
+                      padding: EdgeInsets.zero,
                       icon: Icon(Icons.close_rounded, color: colorScheme.onSurfaceVariant),
                       onPressed: () {
                         _searchController.clear();
@@ -586,12 +593,14 @@ class _AppListScreenState extends State<AppListScreen>
                 onTap: () => LanguageSelectionDialog.show(context),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  height: 32,
+                  padding: const EdgeInsets.symmetric(horizontal: 9),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                      width: 0.8,
                     ),
                   ),
                   child: Row(
@@ -599,7 +608,7 @@ class _AppListScreenState extends State<AppListScreen>
                     children: [
                       Icon(
                         Icons.language_rounded,
-                        size: 15,
+                        size: 14,
                         color: colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
@@ -607,7 +616,7 @@ class _AppListScreenState extends State<AppListScreen>
                         lang.toUpperCase(),
                         style: TextStyle(
                           color: colorScheme.onSurfaceVariant,
-                          fontSize: 11,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -622,7 +631,7 @@ class _AppListScreenState extends State<AppListScreen>
             selector: (_, s) => s.points,
             builder: (_, pts, child) => _PointsBadge(points: pts),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
         ],
       ),
       body: Column(
@@ -1026,27 +1035,29 @@ class _PointsBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: colorScheme.tertiaryContainer,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.stars_rounded, color: colorScheme.onTertiaryContainer, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            points.toString(),
-            style: TextStyle(
-              color: colorScheme.onTertiaryContainer,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+    return Center(
+      child: Container(
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        decoration: BoxDecoration(
+          color: colorScheme.tertiaryContainer,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.stars_rounded, color: colorScheme.onTertiaryContainer, size: 15),
+            const SizedBox(width: 4),
+            Text(
+              points.toString(),
+              style: TextStyle(
+                color: colorScheme.onTertiaryContainer,
+                fontWeight: FontWeight.bold,
+                fontSize: 11.5,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

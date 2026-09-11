@@ -22,10 +22,11 @@ class AppBlockService : AccessibilityService() {
         private var blockedPackages = Collections.synchronizedSet(mutableSetOf<String>())
         private var temporaryAllowedPackages = ConcurrentHashMap<String, Long>()
         
-        // Countdown vibration alert tracking (3m -> 3x, 2m -> 2x, 1m -> 1x)
+        // Countdown vibration alert tracking (3m -> 3x, 2m -> 2x, final kick -> 1x long ending at exit)
         private val notified3Min = Collections.synchronizedSet(mutableSetOf<String>())
         private val notified2Min = Collections.synchronizedSet(mutableSetOf<String>())
         private val notified1Min = Collections.synchronizedSet(mutableSetOf<String>())
+        private const val FINAL_VIBRATION_MS = 1200L
         
         // Ghadhul Bashar state tracking
         private var ghadhulBasharPackages = Collections.synchronizedSet(mutableSetOf<String>())
@@ -119,9 +120,9 @@ class AppBlockService : AccessibilityService() {
 
         /**
          * Checks remaining time for temporarily allowed apps and triggers countdown vibrations:
-         * 3 minutes remaining -> 3 vibrations
-         * 2 minutes remaining -> 2 vibrations
-         * 1 minute remaining  -> 1 vibration
+         * 3 minutes remaining -> 3 vibrations (300ms each)
+         * 2 minutes remaining -> 2 vibrations (600ms each)
+         * Final countdown     -> 1 long vibration (1200ms) that finishes EXACTLY when the app is kicked out!
          * Only triggers if the app is currently in the foreground.
          */
         fun checkCountdownVibrations() {
@@ -145,18 +146,72 @@ class AppBlockService : AccessibilityService() {
                         vibrateAlert(s, 2)
                         Log.d("AppBlockService", "COUNTDOWN VIBRATION: 2m remaining for $pkg (2x)")
                     }
-                } else if (remaining in 1..60_000) {
+                } else if (remaining in 1..FINAL_VIBRATION_MS) {
                     if (!notified1Min.contains(pkg)) {
                         notified1Min.add(pkg)
-                        vibrateAlert(s, 1)
-                        Log.d("AppBlockService", "COUNTDOWN VIBRATION: 1m remaining for $pkg (1x)")
+                        val exactDuration = remaining.coerceIn(200L, FINAL_VIBRATION_MS)
+                        vibrateSinglePulse(s, exactDuration)
+                        Log.d("AppBlockService", "COUNTDOWN VIBRATION: Final $exactDuration ms for $pkg (finishes at kick)")
                     }
                 }
             }
         }
 
+        fun triggerFinalKickVibration(packageName: String) {
+            val s = instance ?: return
+            val cleanPkg = packageName.trim().lowercase()
+            val expiry = temporaryAllowedPackages[cleanPkg] ?: return
+            val now = System.currentTimeMillis()
+            val remaining = expiry - now
+
+            if (remaining > 0 && !notified1Min.contains(cleanPkg)) {
+                val isForeground = currentForegroundPackage?.equals(cleanPkg, ignoreCase = true) == true
+                if (isForeground) {
+                    notified1Min.add(cleanPkg)
+                    val exactDuration = remaining.coerceIn(200L, FINAL_VIBRATION_MS)
+                    vibrateSinglePulse(s, exactDuration)
+                    Log.d("AppBlockService", "FINAL KICK VIBRATION: $cleanPkg for ${exactDuration}ms (finishes exactly at kick)")
+                }
+            }
+        }
+
+        fun vibrateSinglePulse(context: Context, durationMs: Long) {
+            try {
+                val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                    vibratorManager?.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                } ?: return
+
+                if (!vibrator.hasVibrator()) return
+
+                val timings = longArrayOf(0L, durationMs)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val effect = if (vibrator.hasAmplitudeControl()) {
+                        val amplitudes = intArrayOf(0, 255)
+                        VibrationEffect.createWaveform(timings, amplitudes, -1)
+                    } else {
+                        VibrationEffect.createWaveform(timings, -1)
+                    }
+                    vibrator.vibrate(effect)
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(durationMs)
+                }
+            } catch (e: Exception) {
+                Log.e("AppBlockService", "vibrateSinglePulse failed: ${e.message}")
+            }
+        }
+
         fun vibrateAlert(context: Context, count: Int) {
             try {
+                if (count == 1) {
+                    vibrateSinglePulse(context, FINAL_VIBRATION_MS)
+                    return
+                }
+
                 val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
                     vibratorManager?.defaultVibrator
@@ -170,11 +225,9 @@ class AppBlockService : AccessibilityService() {
                 // Semakin sedikit jumlahnya, semakin panjang durasi getarnya:
                 // 3x getar (sisa 3m) -> 300ms getar, 150ms jeda (3 ketukan tegas)
                 // 2x getar (sisa 2m) -> 600ms getar, 200ms jeda (2 getaran mantap & lebih panjang)
-                // 1x getar (sisa 1m) -> 1200ms getar (1 getaran panjang peringatan terakhir)
                 val pulseMs = when (count) {
                     3 -> 300L
                     2 -> 600L
-                    1 -> 1200L
                     else -> 400L
                 }
                 val sleepMs = when (count) {
@@ -246,7 +299,7 @@ class AppBlockService : AccessibilityService() {
             notified1Min.remove(pkg)
             if (durationMillis <= 180_000L) notified3Min.add(pkg)
             if (durationMillis <= 120_000L) notified2Min.add(pkg)
-            if (durationMillis <= 60_000L) notified1Min.add(pkg)
+            if (durationMillis <= FINAL_VIBRATION_MS) notified1Min.add(pkg)
             
             // Persist to SharedPreferences to prevent loss on service restart
             val prefs = context.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
@@ -254,6 +307,14 @@ class AppBlockService : AccessibilityService() {
             allowedMap.add("$pkg|$expiry")
             prefs.edit().putStringSet("allowed_temp_packages", allowedMap).commit()
             
+            // Schedule final vibration right before kick so it finishes exactly when app is kicked
+            val delayForFinalVibe = durationMillis - FINAL_VIBRATION_MS
+            if (delayForFinalVibe > 0) {
+                handler.postDelayed({
+                    triggerFinalKickVibration(pkg)
+                }, delayForFinalVibe)
+            }
+
             // Schedule instant kick when duration expires & activate continuous watchdog
             startWatchdog()
             handler.postDelayed({
@@ -373,7 +434,14 @@ class AppBlockService : AccessibilityService() {
                         val remaining = expiry - now
                         if (remaining <= 180_000L) notified3Min.add(pkg)
                         if (remaining <= 120_000L) notified2Min.add(pkg)
-                        if (remaining <= 60_000L) notified1Min.add(pkg)
+                        if (remaining <= FINAL_VIBRATION_MS) notified1Min.add(pkg)
+
+                        val delayForFinalVibe = remaining - FINAL_VIBRATION_MS
+                        if (delayForFinalVibe > 0) {
+                            handler.postDelayed({
+                                triggerFinalKickVibration(pkg)
+                            }, delayForFinalVibe)
+                        }
 
                         handler.postDelayed({
                             checkAndKickExpiredApp(pkg)
@@ -436,7 +504,15 @@ class AppBlockService : AccessibilityService() {
                         notified1Min.remove(pkg)
                         if (duration <= 180_000L) notified3Min.add(pkg)
                         if (duration <= 120_000L) notified2Min.add(pkg)
-                        if (duration <= 60_000L) notified1Min.add(pkg)
+                        if (duration <= FINAL_VIBRATION_MS) notified1Min.add(pkg)
+
+                        val delayForFinalVibe = duration - FINAL_VIBRATION_MS
+                        if (delayForFinalVibe > 0) {
+                            handler.postDelayed({
+                                triggerFinalKickVibration(pkg)
+                            }, delayForFinalVibe)
+                        }
+
                         startWatchdog()
                         Log.d("AppBlockService", "BROADCAST RECEIVED: Allowed $pkg (Shield ON)")
                     }

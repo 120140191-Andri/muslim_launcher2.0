@@ -53,10 +53,12 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   bool _isInitializing = false;
   bool _isDisposed = false;
   DateTime? _readingStartTime;
+  DateTime _lastTrackedAyahTime = DateTime.now();
 
   @override
   void initState() {
     super.initState();
+    _lastTrackedAyahTime = DateTime.now();
     AnalyticsService.logScreenView(
       'SurahDetailScreen_${widget.surah['surah_name']}',
     );
@@ -382,10 +384,21 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       pointsEarned,
     );
 
-    final durationSeconds = _readingStartTime != null
-        ? DateTime.now().difference(_readingStartTime!).inSeconds
-        : 0;
+    final now = DateTime.now();
+    int durationSeconds = _readingStartTime != null
+        ? now.difference(_readingStartTime!).inSeconds
+        : now.difference(_lastTrackedAyahTime).inSeconds;
     _readingStartTime = null;
+    _lastTrackedAyahTime = now;
+
+    // Sensible bounds for reading duration
+    if (durationSeconds < 3) {
+      durationSeconds = (arabic.length * 0.35).ceil().clamp(5, 60);
+    } else if (durationSeconds > 600) {
+      durationSeconds = 600;
+    }
+
+    appState.addTodayQuranDurationSeconds(durationSeconds);
 
     // Check if user completed the entire Surah!
     final totalAyahsInSurah = (widget.surah['ayahs'] as List).length;
@@ -893,6 +906,15 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     // Stop services without setState
     _stopListening(isDisposing: true);
     _stopEyeReading(isDisposing: true);
+
+    // Record any remaining reading duration
+    final remaining = DateTime.now().difference(_lastTrackedAyahTime).inSeconds;
+    if (remaining >= 5 && remaining <= 1800) {
+      try {
+        final appState = Provider.of<AppState>(context, listen: false);
+        appState.addTodayQuranDurationSeconds(remaining);
+      } catch (_) {}
+    }
 
     super.dispose();
   }

@@ -2067,6 +2067,81 @@ class _MindfulBalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
+          // Visual Ratio Indicator
+          Builder(
+            builder: (context) {
+              final total = quranMinutes + screenMinutes;
+              final double quranRatio = total > 0
+                  ? (quranMinutes / total).clamp(0.0, 1.0)
+                  : (quranMinutes > 0 ? 1.0 : 0.0);
+              final int quranPercent = (quranRatio * 100).round();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        total > 0
+                            ? 'Keseimbangan: $quranPercent% Tilawah'
+                            : 'Mulai tilawah untuk mengisi rasio berkah',
+                        style: TextStyle(
+                          color: Colors.teal.shade800,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (total > 0)
+                        Text(
+                          quranMinutes >= screenMinutes
+                              ? '🟢 Positif'
+                              : '🟡 Butuh Tilawah',
+                          style: TextStyle(
+                            color: quranMinutes >= screenMinutes
+                                ? Colors.teal.shade700
+                                : Colors.amber.shade800,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: SizedBox(
+                      height: 7,
+                      child: total == 0
+                          ? Container(
+                              color: Colors.teal.shade100.withValues(alpha: 0.5),
+                            )
+                          : Row(
+                              children: [
+                                if (quranPercent > 0)
+                                  Expanded(
+                                    flex: quranPercent,
+                                    child: Container(
+                                      color: Colors.teal.shade600,
+                                    ),
+                                  ),
+                                if (100 - quranPercent > 0)
+                                  Expanded(
+                                    flex: 100 - quranPercent,
+                                    child: Container(
+                                      color: Colors.amber.shade600,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
           // Titration Session Info Footer
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

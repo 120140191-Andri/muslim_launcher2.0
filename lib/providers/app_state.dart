@@ -125,7 +125,11 @@ class AppState extends ChangeNotifier {
   int get dailyDzikirRounds => _dailyDzikirRounds;
   int get dailyDzikirPoints => _dailyDzikirPoints;
   int get dailyUnlockSessionCount => _dailyUnlockSessionCount;
-  int get todayQuranDurationMinutes => _todayQuranDurationSeconds ~/ 60;
+  int get todayQuranDurationMinutes {
+    if (_todayQuranDurationSeconds <= 0) return 0;
+    if (_todayQuranDurationSeconds < 60) return 1;
+    return _todayQuranDurationSeconds ~/ 60;
+  }
   int get todayScreenTimeMinutes => _todayScreenTimeMinutes;
   bool get canUseEmergencyGracePass {
     final today = DateTime.now().toIso8601String().split('T')[0];
@@ -3200,6 +3204,7 @@ class AppState extends ChangeNotifier {
 
     _dailyUnlockSessionCount++;
     await prefs.setInt('dailyUnlockSessionCount', _dailyUnlockSessionCount);
+    addTodayScreenTimeMinutes(effectiveDuration);
     _addToHistory("Buka Aplikasi: $pkg (${effectiveDuration}m)", effectiveDuration, -effectiveCost);
 
     notifyListeners();

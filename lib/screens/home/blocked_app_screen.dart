@@ -34,7 +34,9 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final lang = appState.languageCode;
-    final canUnlock = appState.points >= 50;
+    final requiredCost = appState.currentUnlockPointCost;
+    final unlockDuration = appState.dynamicUnlockDurationMinutes;
+    final canUnlock = appState.points >= requiredCost;
     final appName = appState.getAppNameSync(widget.packageName);
     final category = appState.getAppCategorySync(widget.packageName);
     final isStrictlyNonProductive = AppState.isStrictlyNonProductive(widget.packageName, appName, category);
@@ -166,12 +168,16 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                           children: [
                             const Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
                             const SizedBox(width: 8),
-                            Text(
-                              "${appState.points} ${Translations.get(lang, 'points_available')}",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                            Flexible(
+                              child: Text(
+                                "${appState.points} ${Translations.get(lang, 'points_available')}",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
                           ],
@@ -180,16 +186,20 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                       
                       const SizedBox(height: 22),
                       
-                      // 1. Unlock Button (Active if points >= 50)
+                      // 1. Dynamic Unlock Button
                       Container(
                         width: double.infinity,
                         constraints: const BoxConstraints(minHeight: 50),
                         child: ElevatedButton.icon(
                           onPressed: (canUnlock && !_isUnlocking)
                             ? () async {
-                                if (appState.points < 50) return;
+                                if (appState.points < requiredCost) return;
                                 setState(() => _isUnlocking = true);
-                                final success = await appState.unlockAppWithPoints(widget.packageName, cost: 50);
+                                final success = await appState.unlockAppWithPoints(
+                                  widget.packageName,
+                                  cost: requiredCost,
+                                  durationMinutes: unlockDuration,
+                                );
                                 if (!success) {
                                   if (mounted) {
                                     setState(() => _isUnlocking = false);
@@ -225,13 +235,68 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                           ),
                           label: Text(
                             canUnlock
-                              ? Translations.get(lang, 'unlock_60m')
-                              : Translations.get(lang, 'need_50_points'),
+                              ? 'Buka $unlockDuration Menit ($requiredCost Poin)'
+                              : 'Butuh $requiredCost Poin (${appState.points}/$requiredCost)',
                             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center,
                           ),
                         ),
                       ),
+
+                      const SizedBox(height: 6),
+                      Text(
+                        'Sesi ke-${appState.dailyUnlockSessionCount + 1} hari ini • Durasi $unlockDuration Menit (Juz ${appState.currentJuzNumber})',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.6),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      if (!canUnlock) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                "Poin belum cukup untuk membuka sesi. Mari sejenak tilawah Al-Qur'an untuk menenangkan jiwa dan menambah poin kebaikan.",
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  fontSize: 12,
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              TextButton.icon(
+                                onPressed: () {
+                                  _safeDismiss(appState);
+                                  appState.navigatorKey.currentState?.push(
+                                    AppPageRoute(child: const SurahListScreen()),
+                                  );
+                                },
+                                icon: const Icon(Icons.menu_book_rounded, size: 16, color: Color(0xFF10B981)),
+                                label: const Text(
+                                  "Lanjut Tilawah Al-Qur'an 📖",
+                                  style: TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
 
                       // Emergency 5-Minute Grace Pass (Section 9.6)
                       const SizedBox(height: 8),
@@ -272,17 +337,21 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                       Row(
                         children: [
                           Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.15))),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: Text(
-                              lang == 'id'
-                                  ? 'PILIHAN BACAAN & IBADAH (+POIN)'
-                                  : Translations.get(lang, 'earn_points').toUpperCase(),
-                              style: TextStyle(
-                                color: Colors.teal.shade200,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
+                          Flexible(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              child: Text(
+                                lang == 'id'
+                                    ? 'PILIHAN BACAAN & IBADAH'
+                                    : Translations.get(lang, 'earn_points').toUpperCase(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.teal.shade200,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.8,
+                                ),
                               ),
                             ),
                           ),

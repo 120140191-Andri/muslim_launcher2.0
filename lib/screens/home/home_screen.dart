@@ -11,6 +11,7 @@ import '../quran/surah_detail_screen.dart';
 import '../quran/reading_history_screen.dart';
 import '../hadith/hadith_list_screen.dart';
 import '../dzikir/dzikir_screen.dart';
+import '../milestone/milestone_gallery_screen.dart';
 import 'app_list_screen.dart';
 import 'accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
@@ -394,6 +395,57 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                               ?.push(
                                             AppPageRoute(
                                               child:
+                                                  const MilestoneGalleryScreen(),
+                                            ),
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFD700)
+                                                  .withValues(alpha: 0.22),
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: const Color(0xFFFFD700)
+                                                    .withValues(alpha: 0.4),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.emoji_events_rounded,
+                                                  color: Color(0xFFFFD700),
+                                                  size: 16,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  '${appState.khatmCount}x',
+                                                  style: const TextStyle(
+                                                    color: Color(0xFFFFD700),
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () => appState
+                                              .navigatorKey.currentState
+                                              ?.push(
+                                            AppPageRoute(
+                                              child:
                                                   const ReadingHistoryScreen(),
                                             ),
                                           ),
@@ -556,54 +608,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                           ),
                                         ),
                                       ),
-
-                                    // Last Read Card
-                                    Text(
-                                      Translations.get(
-                                        lang,
-                                        'continue_journey',
-                                      ).toUpperCase(),
-                                      style: TextStyle(
-                                        color: Colors.teal.shade900.withValues(
-                                          alpha: 0.5,
-                                        ),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.2,
+                                    // 1. Hero Khatam 30 Juz Dashboard
+                                    RepaintBoundary(
+                                      child: _HeroKhatamCard(
+                                        appState: appState,
+                                        lang: lang,
+                                        onTap: () => _resumeReading(appState),
                                       ),
                                     ),
-                                    const SizedBox(height: 12),
-                                    Builder(
-                                      builder: (context) {
-                                        int totalAyahs = 0;
-                                        if (appState.quranData.isNotEmpty &&
-                                            appState.currentSurahIndex >= 0 &&
-                                            appState.currentSurahIndex <
-                                                appState.quranData.length) {
-                                          totalAyahs =
-                                              (appState.quranData[appState
-                                                          .currentSurahIndex]['ayahs']
-                                                      as List)
-                                                  .length;
-                                        }
 
-                                        return RepaintBoundary(
-                                          child: _LastAyatCard(
-                                            surah: appState.lastReadSurah,
-                                            ayahNumber:
-                                                appState.lastReadAyahNumber,
-                                            totalAyahs: totalAyahs,
-                                            currentSurahIdx:
-                                                appState.currentSurahIndex,
-                                            lang: lang,
-                                            khatmCount: appState.khatmCount,
-                                            onTap: () => _resumeReading(appState),
-                                          ),
-                                        );
-                                      },
+                                    const SizedBox(height: 18),
+
+                                    // 2. Mindful Balance Monitor
+                                    RepaintBoundary(
+                                      child: _MindfulBalanceCard(
+                                        appState: appState,
+                                        lang: lang,
+                                      ),
                                     ),
 
                                     const SizedBox(height: 24),
+
+                                    // 3. Zen Islamic Dock (4 Pillars)
+                                    RepaintBoundary(
+                                      child: _ZenIslamicDock(
+                                        appState: appState,
+                                        lang: lang,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 24),
+
+                                    // 4. Quick Actions / Communication Apps Dock
                                     Text(
                                       Translations.get(
                                         lang,
@@ -618,12 +654,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                         letterSpacing: 1.2,
                                       ),
                                     ),
-
                                     const SizedBox(height: 12),
                                     const RepaintBoundary(child: _QuickDock()),
+
                                     const SizedBox(height: 24),
 
-                                    // Daily Hadith / Inspiration
+                                    // 5. Daily Hadith / Inspiration
                                     RepaintBoundary(
                                       child: _DailyInspiration(
                                         lang: lang,
@@ -644,58 +680,110 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       ),
                                     ),
 
-                                    const SizedBox(height: 24),
+                                    const SizedBox(height: 20),
 
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _GridAction(
-                                            icon: Icons.menu_book_rounded,
-                                            title: Translations.get(
-                                              lang,
-                                              'read_quran',
+                                    // 6. App Drawer / All Apps Button
+                                    Material(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(22),
+                                      child: InkWell(
+                                        onTap: () => appState
+                                            .navigatorKey
+                                            .currentState
+                                            ?.push(
+                                              AppPageRoute(
+                                                child: const AppListScreen(),
+                                              ),
                                             ),
-                                            subtitle: Translations.get(
-                                              lang,
-                                              'total_surahs',
+                                        borderRadius: BorderRadius.circular(22),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 18,
+                                            vertical: 14,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(22),
+                                            border: Border.all(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .outlineVariant
+                                                  .withValues(alpha: 0.4),
+                                              width: 1,
                                             ),
-                                            color: Colors.teal.shade700,
-                                            onTap: () => appState
-                                                .navigatorKey
-                                                .currentState
-                                                ?.push(
-                                                  AppPageRoute(
-                                                    child:
-                                                        const SurahListScreen(),
-                                                  ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.teal.shade900
+                                                    .withValues(alpha: 0.03),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(10),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.amber.shade100
+                                                      .withValues(alpha: 0.6),
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
                                                 ),
+                                                child: Icon(
+                                                  Icons.apps_rounded,
+                                                  color: Colors.amber.shade800,
+                                                  size: 22,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 14),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      Translations.get(
+                                                        lang,
+                                                        'your_apps',
+                                                      ),
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color:
+                                                            Theme.of(context)
+                                                                .colorScheme
+                                                                .onSurface,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      Translations.get(
+                                                        lang,
+                                                        'open_apps',
+                                                      ),
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color:
+                                                            Theme.of(context)
+                                                                .colorScheme
+                                                                .onSurfaceVariant,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Icon(
+                                                Icons.arrow_forward_ios_rounded,
+                                                size: 14,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: _GridAction(
-                                            icon: Icons.apps_rounded,
-                                            title: Translations.get(
-                                              lang,
-                                              'your_apps',
-                                            ),
-                                            subtitle: Translations.get(
-                                              lang,
-                                              'open_apps',
-                                            ),
-                                            color: Colors.amber.shade800,
-                                            onTap: () => appState
-                                                .navigatorKey
-                                                .currentState
-                                                ?.push(
-                                                  AppPageRoute(
-                                                    child:
-                                                        const AppListScreen(),
-                                                  ),
-                                                ),
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
 
                                     const SizedBox(height: 24),
@@ -1039,6 +1127,7 @@ class _GreetingWidget extends StatelessWidget {
     final displayName = appState.userName.isNotEmpty
         ? appState.userName
         : Translations.get(lang, 'user_title');
+    final maqam = appState.currentMaqamRank;
 
     return InkWell(
       onTap: () => _showEditNameDialog(context, appState),
@@ -1054,11 +1143,11 @@ class _GreetingWidget extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1069,47 +1158,45 @@ class _GreetingWidget extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 17,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                if (appState.khatmCount > 0) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFFF59E0B),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('👑', style: TextStyle(fontSize: 11)),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${appState.khatmCount}x',
-                          style: const TextStyle(
-                            color: Color(0xFFFFD700),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
+                      width: 1,
                     ),
                   ),
-                ],
-                const SizedBox(width: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(maqam.crownEmoji, style: const TextStyle(fontSize: 11)),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${maqam.title} (${appState.khatmCount}x)',
+                        style: const TextStyle(
+                          color: Color(0xFFFFD700),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
                 Icon(
                   Icons.edit_outlined,
-                  size: 14,
+                  size: 13,
                   color: Colors.white.withValues(alpha: 0.5),
                 ),
               ],
@@ -1460,216 +1547,282 @@ class _DockIconState extends State<_DockIcon> {
   }
 }
 
-class _LastAyatCard extends StatelessWidget {
-  final String surah;
-  final int ayahNumber;
-  final int totalAyahs;
-  final int currentSurahIdx;
+// ── _HeroKhatamCard ───────────────────────────────────────────────────────────
+class _HeroKhatamCard extends StatelessWidget {
+  final AppState appState;
   final String lang;
-  final int khatmCount;
   final VoidCallback onTap;
 
-  const _LastAyatCard({
-    required this.surah,
-    required this.ayahNumber,
-    required this.totalAyahs,
-    required this.currentSurahIdx,
+  const _HeroKhatamCard({
+    required this.appState,
     required this.lang,
-    required this.khatmCount,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final juz = appState.currentJuzNumber;
+    final percent = appState.khatamProgressPercent;
+    final phase = appState.currentKhatamPhase;
+    final surah = appState.lastReadSurah;
+    final ayah = appState.lastReadAyahNumber;
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.teal.shade50.withValues(alpha: 0.5),
+          ],
+        ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-          width: 1,
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.teal.shade900.withValues(alpha: 0.05),
             blurRadius: 18,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            child: Stack(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(28),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: colorScheme.primary.withValues(alpha: 0.12),
-                            width: 0.8,
+                // Top Row: Title & Khatam Cycle Badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.shade700.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.teal.shade700,
+                            size: 18,
                           ),
                         ),
-                        child: Icon(
-                          Icons.auto_stories_rounded,
-                          color: colorScheme.primary,
-                          size: 26,
-                        ),
-                      ),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Column(
+                        const SizedBox(width: 10),
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 4),
                             Text(
-                              surah.isEmpty
-                                  ? Translations.get(lang, 'start_reading')
-                                  : surah,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              Translations.get(lang, 'journey_khatam_30_juz').toUpperCase(),
                               style: TextStyle(
-                                color: colorScheme.onSurface,
-                                fontSize: 17,
+                                color: Colors.teal.shade900.withValues(alpha: 0.65),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                            Text(
+                              '${Translations.get(lang, 'khatam_cycle_progress')} ke-${appState.khatmCount + 1}',
+                              style: TextStyle(
+                                color: Colors.teal.shade900,
+                                fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 3),
-                            Text(
-                              surah.isEmpty
-                                  ? Translations.get(lang, 'find_guidance_today')
-                                  : "${Translations.get(lang, 'ayah')} $ayahNumber",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
-                                fontSize: 13,
-                              ),
-                            ),
-                            if (surah.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      'Surah ${currentSurahIdx + 1}/114',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        color: colorScheme.primary,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    width: 3,
-                                    height: 3,
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.outlineVariant,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      '${Translations.get(lang, 'ayah')} $ayahNumber/$totalAyahs',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        color: colorScheme.primary,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
                           ],
                         ),
-                      ),
-                      if (surah.isNotEmpty)
-                        Icon(
-                          Icons.play_circle_fill_rounded,
-                          color: colorScheme.primary,
-                          size: 38,
-                        ),
-                    ],
-                  ),
-                ),
-
-                // Khatm Badge Overlay
-                if (khatmCount > 0)
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: colorScheme.tertiaryContainer.withValues(alpha: 0.6),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(16),
-                        ),
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: colorScheme.tertiary.withValues(alpha: 0.2),
-                          width: 0.8,
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Colors.amber,
-                            size: 11,
-                          ),
+                          const Text('👑', style: TextStyle(fontSize: 12)),
                           const SizedBox(width: 4),
                           Text(
-                            "Khatm: ${khatmCount}x",
-                            style: TextStyle(
-                              color: colorScheme.onTertiaryContainer,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.bold,
+                            '${(percent * 100).toInt()}%',
+                            style: const TextStyle(
+                              color: Color(0xFFB45309),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-                // Progress Indicator at Bottom
-                if (surah.isNotEmpty && totalAyahs > 0)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: LinearProgressIndicator(
-                      value: ayahNumber / totalAyahs,
-                      backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        colorScheme.primary,
+                // Big Progress Info
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Juz $juz',
+                            style: TextStyle(
+                              color: Colors.teal.shade900,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' / 30',
+                            style: TextStyle(
+                              color: Colors.teal.shade800.withValues(alpha: 0.5),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                      minHeight: 3,
                     ),
+                    Text(
+                      '${appState.completedSurahsThisCycle.length}/114 Surah Selesai',
+                      style: TextStyle(
+                        color: Colors.teal.shade800,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Progress Bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: percent.clamp(0.01, 1.0).toDouble(),
+                    minHeight: 8,
+                    backgroundColor: Colors.teal.shade100.withValues(alpha: 0.4),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.teal.shade600),
                   ),
+                ),
+                const SizedBox(height: 12),
+
+                // Phase Chip & Description
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.teal.shade100.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.flag_rounded, size: 14, color: Colors.teal.shade700),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          phase.nameId,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.teal.shade800,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Resume Anchor Card
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.teal.shade100,
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.teal.shade900.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade600,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              Translations.get(lang, 'continue_tilawah'),
+                              style: TextStyle(
+                                color: Colors.teal.shade900.withValues(alpha: 0.6),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              surah.isEmpty
+                                  ? Translations.get(lang, 'start_reading')
+                                  : 'Surah $surah • ${Translations.get(lang, 'ayah')} $ayah',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.teal.shade900,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.teal.shade700,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -1679,88 +1832,389 @@ class _LastAyatCard extends StatelessWidget {
   }
 }
 
-class _GridAction extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final VoidCallback onTap;
+// ── _MindfulBalanceCard ───────────────────────────────────────────────────────
+class _MindfulBalanceCard extends StatelessWidget {
+  final AppState appState;
+  final String lang;
 
-  const _GridAction({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.onTap,
+  const _MindfulBalanceCard({
+    required this.appState,
+    required this.lang,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final quranMinutes = appState.todayQuranDurationMinutes;
+    final screenMinutes = appState.todayScreenTimeMinutes;
+    final sessionDuration = appState.dynamicUnlockDurationMinutes;
+    final pointCost = appState.currentUnlockPointCost;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.balance_rounded,
+                    color: Colors.teal.shade700,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    Translations.get(lang, 'mindful_balance_title'),
+                    style: TextStyle(
+                      color: Colors.teal.shade900,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.teal.shade200,
+                    width: 0.8,
+                  ),
+                ),
+                child: Text(
+                  'Juz ${appState.currentJuzNumber}',
+                  style: TextStyle(
+                    color: Colors.teal.shade800,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Two Stat Pillboxes
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.teal.shade50.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.teal.shade100,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('📖', style: TextStyle(fontSize: 13)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              Translations.get(lang, 'quran_time_today'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.teal.shade900.withValues(alpha: 0.7),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '$quranMinutes mnt',
+                        style: TextStyle(
+                          color: Colors.teal.shade900,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.amber.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('📱', style: TextStyle(fontSize: 13)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              Translations.get(lang, 'screentime_today'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.amber.shade900.withValues(alpha: 0.7),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '$screenMinutes mnt',
+                        style: TextStyle(
+                          color: Colors.amber.shade900,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Titration Session Info Footer
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.timer_outlined, size: 15, color: Colors.teal.shade700),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tiket Sesi Gawai: $sessionDuration mnt ($pointCost poin)',
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── _ZenIslamicDock ───────────────────────────────────────────────────────────
+class _ZenIslamicDock extends StatelessWidget {
+  final AppState appState;
+  final String lang;
+
+  const _ZenIslamicDock({
+    required this.appState,
+    required this.lang,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      constraints: const BoxConstraints(minHeight: 148),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-          width: 1,
+    final items = [
+      _ZenItemData(
+        icon: Icons.menu_book_rounded,
+        title: Translations.get(lang, 'read_quran'),
+        subtitle: '114 Surah',
+        color: Colors.teal.shade700,
+        bgColor: Colors.teal.shade50,
+        onTap: () => appState.navigatorKey.currentState?.push(
+          AppPageRoute(child: const SurahListScreen()),
         ),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(28),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Icon(icon, color: color, size: 26),
-                ),
-                const SizedBox(height: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+      _ZenItemData(
+        icon: Icons.grain_rounded,
+        title: lang == 'ar'
+            ? 'ذكر'
+            : (lang == 'ms'
+                ? 'Zikir'
+                : (lang == 'id'
+                    ? 'Dzikir'
+                    : 'Dhikr')),
+        subtitle: 'Tasbih Sunnah',
+        color: const Color(0xFF059669),
+        bgColor: const Color(0xFFECFDF5),
+        onTap: () => appState.navigatorKey.currentState?.push(
+          AppPageRoute(child: const DzikirScreen()),
+        ),
+      ),
+      _ZenItemData(
+        icon: Icons.spa_rounded,
+        title: (lang == 'en' || lang == 'sw' || lang == 'af')
+            ? 'Hadith'
+            : (lang == 'ar'
+                ? 'الحديث'
+                : 'Hadits'),
+        subtitle: 'Hadits Pilihan',
+        color: Colors.blueGrey.shade700,
+        bgColor: Colors.blueGrey.shade50,
+        onTap: () => appState.navigatorKey.currentState?.push(
+          AppPageRoute(child: const HadithListScreen()),
+        ),
+      ),
+      _ZenItemData(
+        icon: Icons.emoji_events_rounded,
+        title: Translations.get(lang, 'milestone_gallery_title'),
+        subtitle: 'Lemari Trofi',
+        color: const Color(0xFFD97706),
+        bgColor: const Color(0xFFFEF3C7),
+        onTap: () => appState.navigatorKey.currentState?.push(
+          AppPageRoute(child: const MilestoneGalleryScreen()),
+        ),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          Translations.get(lang, 'zen_quick_dock_title').toUpperCase(),
+          style: TextStyle(
+            color: Colors.teal.shade900.withValues(alpha: 0.5),
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        Row(
+          children: items.map((item) {
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    onTap: item.onTap,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color:
+                              colorScheme.outlineVariant.withValues(alpha: 0.35),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: item.bgColor,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Icon(
+                              item.icon,
+                              color: item.color,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
+}
+
+class _ZenItemData {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final Color bgColor;
+  final VoidCallback onTap;
+
+  const _ZenItemData({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.bgColor,
+    required this.onTap,
+  });
 }
 
 // ── _DailyInspiration ────────────────────────────────────────────────────────

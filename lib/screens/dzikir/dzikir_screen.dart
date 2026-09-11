@@ -10,6 +10,8 @@ import '../../utils/translations.dart';
 import '../../services/analytics_service.dart';
 import '../../widgets/milestone_share_card.dart';
 import '../../widgets/milestone_celebration_dialog.dart';
+import '../milestone/milestone_gallery_screen.dart';
+import '../../utils/page_transitions.dart';
 
 class DzikirPreset {
   final int id;
@@ -818,6 +820,16 @@ class _DzikirScreenState extends State<DzikirScreen>
         ),
         actions: [
           IconButton(
+            tooltip: Translations.get(lang, 'milestone_gallery_title'),
+            icon: const Icon(Icons.emoji_events_rounded, color: Color(0xFFFFD700)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                AppPageRoute(child: const MilestoneGalleryScreen()),
+              );
+            },
+          ),
+          IconButton(
             tooltip: Translations.get(lang, 'reset_counter'),
             icon: Icon(Icons.refresh_rounded, color: colorScheme.onSurfaceVariant),
             onPressed: () {
@@ -903,6 +915,54 @@ class _DzikirScreenState extends State<DzikirScreen>
                             ],
                           ),
                         ),
+
+                        const SizedBox(height: 8),
+
+                        // Sunnah Rounds & 19 Pts Daily Cap Tracker
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F766E).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFF0F766E).withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 14,
+                                color: Color(0xFF0F766E),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Putaran ${appState.dailyDzikirRounds.clamp(0, 3)}/3 Sunnah • ${appState.dailyDzikirPoints}/19 Pts Hari Ini',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF0F766E),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        if (appState.dailyDzikirRounds >= 3) ...[
+                          const SizedBox(height: 4),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'Batas 19 poin harian tercapai. Tasbih tetap dapat dilanjutkan tanpa batas untuk tabungan akhirat.',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
 
                         // Rate Limit Warning Badge
                         AnimatedOpacity(

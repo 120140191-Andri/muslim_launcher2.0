@@ -11,6 +11,54 @@ import '../services/analytics_service.dart';
 import '../screens/home/app_list_screen.dart';
 import '../utils/translations.dart';
 
+class MaqamInfo {
+  final int tier;
+  final String title;
+  final String crownEmoji;
+  final Color primaryColor;
+  final IconData icon;
+  final String description;
+
+  const MaqamInfo({
+    required this.tier,
+    required this.title,
+    required this.crownEmoji,
+    required this.primaryColor,
+    required this.icon,
+    required this.description,
+  });
+}
+
+enum KhatamPhase {
+  grandClimb,     // Juz 1-6
+  rhythmicCadence,// Juz 7-27
+  sprintSummit,   // Juz 28-30
+}
+
+extension KhatamPhaseExt on KhatamPhase {
+  String get nameId {
+    switch (this) {
+      case KhatamPhase.grandClimb:
+        return 'Fase 1: The Grand Climb (Pendakian Akbar)';
+      case KhatamPhase.rhythmicCadence:
+        return 'Fase 2: The Rhythmic Cadence (Ritme Istiqomah)';
+      case KhatamPhase.sprintSummit:
+        return 'Fase 3: The Sprint to the Summit (Puncak Juz \'Amma)';
+    }
+  }
+
+  String get shortName {
+    switch (this) {
+      case KhatamPhase.grandClimb:
+        return 'The Grand Climb';
+      case KhatamPhase.rhythmicCadence:
+        return 'The Rhythmic Cadence';
+      case KhatamPhase.sprintSummit:
+        return 'The Sprint to the Summit';
+    }
+  }
+}
+
 class AppState extends ChangeNotifier {
   final SharedPreferences prefs;
 
@@ -64,11 +112,21 @@ class AppState extends ChangeNotifier {
   String _dailyDzikirDate = '';
   String _lastEmergencyGraceDate = '';
 
+  // Screentime titration & Marginal Cost fields (Section 10)
+  int _dailyUnlockSessionCount = 0;
+  String _dailyUnlockDate = '';
+  int _todayQuranDurationSeconds = 0;
+  int _todayScreenTimeMinutes = 0;
+  String _todayStatsDate = '';
+
   String get userName => _userName;
   bool get hasPromptedUserName => _hasPromptedUserName;
   Set<int> get completedSurahsThisCycle => _completedSurahsThisCycle;
   int get dailyDzikirRounds => _dailyDzikirRounds;
   int get dailyDzikirPoints => _dailyDzikirPoints;
+  int get dailyUnlockSessionCount => _dailyUnlockSessionCount;
+  int get todayQuranDurationMinutes => _todayQuranDurationSeconds ~/ 60;
+  int get todayScreenTimeMinutes => _todayScreenTimeMinutes;
   bool get canUseEmergencyGracePass {
     final today = DateTime.now().toIso8601String().split('T')[0];
     return _lastEmergencyGraceDate != today;
@@ -229,6 +287,30 @@ class AppState extends ChangeNotifier {
       _dailyDzikirRounds = prefs.getInt('dailyDzikirRounds') ?? 0;
       _dailyDzikirPoints = prefs.getInt('dailyDzikirPoints') ?? 0;
     }
+
+    _dailyUnlockDate = prefs.getString('dailyUnlockDate') ?? '';
+    if (_dailyUnlockDate != today) {
+      _dailyUnlockSessionCount = 0;
+      _dailyUnlockDate = today;
+      prefs.setInt('dailyUnlockSessionCount', 0);
+      prefs.setString('dailyUnlockDate', today);
+    } else {
+      _dailyUnlockSessionCount = prefs.getInt('dailyUnlockSessionCount') ?? 0;
+    }
+
+    _todayStatsDate = prefs.getString('todayStatsDate') ?? '';
+    if (_todayStatsDate != today) {
+      _todayQuranDurationSeconds = 0;
+      _todayScreenTimeMinutes = 0;
+      _todayStatsDate = today;
+      prefs.setInt('todayQuranDurationSeconds', 0);
+      prefs.setInt('todayScreenTimeMinutes', 0);
+      prefs.setString('todayStatsDate', today);
+    } else {
+      _todayQuranDurationSeconds = prefs.getInt('todayQuranDurationSeconds') ?? 0;
+      _todayScreenTimeMinutes = prefs.getInt('todayScreenTimeMinutes') ?? 0;
+    }
+
     final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
     if (lastHadithDate != today) {
       _readHadithIds = {};
@@ -3083,35 +3165,42 @@ class AppState extends ChangeNotifier {
   }
 
   /// Unlocks a blocked non-productive app using user points in a strictly atomic transaction.
-  /// Prevents any bypass or free unlock if points < cost.
+  /// Uses progressive marginal cost and decaying session length based on Khatam progress.
   Future<bool> unlockAppWithPoints(
     String packageName, {
-    int cost = 50,
-    int durationMinutes = 60,
+    int? cost,
+    int? durationMinutes,
   }) async {
     final pkg = packageName.toLowerCase().trim();
     if (pkg.isEmpty) return false;
 
+    final effectiveCost = cost ?? currentUnlockPointCost;
+    final effectiveDuration = durationMinutes ?? dynamicUnlockDurationMinutes;
+
     // 1. Strict validation: Points MUST be at least the cost
-    if (_points < cost || cost <= 0) {
-      debugPrint("Security guard rejected unlock: User has $_points points, required $cost points for $pkg");
+    if (_points < effectiveCost || effectiveCost <= 0) {
+      debugPrint("Security guard rejected unlock: User has $_points points, required $effectiveCost points for $pkg");
       return false;
     }
 
     // 2. Deduct points first
-    _points -= cost;
+    _points -= effectiveCost;
     if (_points < 0) _points = 0;
     await prefs.setInt('points', _points);
 
     // 3. Register native and local unlock
-    final success = await allowAppTemporarily(pkg, durationMinutes: durationMinutes);
+    final success = await allowAppTemporarily(pkg, durationMinutes: effectiveDuration);
     if (!success) {
       // Rollback points if native registration failed
-      _points += cost;
+      _points += effectiveCost;
       await prefs.setInt('points', _points);
       notifyListeners();
       return false;
     }
+
+    _dailyUnlockSessionCount++;
+    await prefs.setInt('dailyUnlockSessionCount', _dailyUnlockSessionCount);
+    _addToHistory("Buka Aplikasi: $pkg (${effectiveDuration}m)", effectiveDuration, -effectiveCost);
 
     notifyListeners();
     return true;
@@ -3358,6 +3447,30 @@ class AppState extends ChangeNotifier {
     return _completedSurahsThisCycle.contains(surahNumber);
   }
 
+  static int getSurahTier(int totalAyahs) {
+    if (totalAyahs <= 25) return 1;
+    if (totalAyahs <= 75) return 2;
+    if (totalAyahs <= 150) return 3;
+    return 4;
+  }
+
+  static int getSurahBonusPoints(int totalAyahs, {int? surahNumber}) {
+    int points = 10;
+    if (totalAyahs <= 25) {
+      points = 10;
+    } else if (totalAyahs <= 75) {
+      points = 25;
+    } else if (totalAyahs <= 150) {
+      points = 50;
+    } else {
+      points = 100;
+    }
+    if (surahNumber == 18 && DateTime.now().weekday == DateTime.friday) {
+      points += 50;
+    }
+    return points;
+  }
+
   /// Completes a Surah milestone according to tiered effort reward economy.
   /// Tier 1: 1-25 ayat (+10 pts)
   /// Tier 2: 26-75 ayat (+25 pts)
@@ -3381,27 +3494,8 @@ class AppState extends ChangeNotifier {
       };
     }
 
-    int tier = 1;
-    int bonusPoints = 10;
-    if (totalAyahs <= 25) {
-      tier = 1;
-      bonusPoints = 10;
-    } else if (totalAyahs <= 75) {
-      tier = 2;
-      bonusPoints = 25;
-    } else if (totalAyahs <= 150) {
-      tier = 3;
-      bonusPoints = 50;
-    } else {
-      tier = 4;
-      bonusPoints = 100;
-    }
-
-    // Special Friday Al-Kahf check (Surah 18)
-    final now = DateTime.now();
-    if (surahNumber == 18 && now.weekday == DateTime.friday) {
-      bonusPoints += 50;
-    }
+    final int tier = getSurahTier(totalAyahs);
+    final int bonusPoints = getSurahBonusPoints(totalAyahs, surahNumber: surahNumber);
 
     _completedSurahsThisCycle.add(surahNumber);
     await prefs.setStringList(
@@ -3525,5 +3619,186 @@ class AppState extends ChangeNotifier {
     }
     
     return true;
+  }
+
+  // ── Maqam & Khatam 30 Juz Roadmap Helpers (Section 10) ───────────────────
+
+  static int getJuzForSurahAndAyah(int surah, int ayah) {
+    if (surah < 1) return 1;
+    if (surah > 114) return 30;
+
+    const juzStarts = [
+      [1, 1],   // Juz 1
+      [2, 142], // Juz 2
+      [2, 253], // Juz 3
+      [3, 93],  // Juz 4
+      [4, 24],  // Juz 5
+      [4, 148], // Juz 6
+      [5, 82],  // Juz 7
+      [6, 111], // Juz 8
+      [7, 88],  // Juz 9
+      [8, 41],  // Juz 10
+      [9, 93],  // Juz 11
+      [11, 6],  // Juz 12
+      [12, 53], // Juz 13
+      [15, 1],  // Juz 14
+      [17, 1],  // Juz 15
+      [18, 75], // Juz 16
+      [21, 1],  // Juz 17
+      [23, 1],  // Juz 18
+      [25, 21], // Juz 19
+      [27, 56], // Juz 20
+      [29, 46], // Juz 21
+      [33, 31], // Juz 22
+      [36, 28], // Juz 23
+      [39, 32], // Juz 24
+      [41, 47], // Juz 25
+      [46, 1],  // Juz 26
+      [51, 31], // Juz 27
+      [58, 1],  // Juz 28
+      [67, 1],  // Juz 29
+      [78, 1],  // Juz 30
+    ];
+
+    for (int i = juzStarts.length - 1; i >= 0; i--) {
+      final s = juzStarts[i][0];
+      final a = juzStarts[i][1];
+      if (surah > s || (surah == s && ayah >= a)) {
+        return i + 1;
+      }
+    }
+    return 1;
+  }
+
+  int get currentJuzNumber {
+    final s = currentSurahIndex + 1;
+    final a = (currentAyahIndex < 0 ? 0 : currentAyahIndex) + 1;
+    return getJuzForSurahAndAyah(s, a);
+  }
+
+  int get khatamProgressPercent =>
+      ((currentJuzNumber / 30) * 100).round().clamp(1, 100);
+
+  KhatamPhase get currentKhatamPhase {
+    final j = currentJuzNumber;
+    if (j <= 6) return KhatamPhase.grandClimb;
+    if (j <= 27) return KhatamPhase.rhythmicCadence;
+    return KhatamPhase.sprintSummit;
+  }
+
+  MaqamInfo get currentMaqamRank {
+    final count = _khatmCount;
+    if (count >= 5) {
+      return const MaqamInfo(
+        tier: 5,
+        title: "Ahlul Qur'an Al-Mubarok",
+        crownEmoji: "👑💎",
+        primaryColor: Color(0xFF6366F1),
+        icon: Icons.auto_awesome_rounded,
+        description: "Penjaga Kemuliaan Kalam Ilahi Seumur Hidup",
+      );
+    } else if (count >= 3) {
+      return const MaqamInfo(
+        tier: 4,
+        title: "Penjaga Cahaya",
+        crownEmoji: "🥇",
+        primaryColor: Color(0xFFFFD700),
+        icon: Icons.workspace_premium_rounded,
+        description: "Menghidupkan Lentera Al-Qur'an dalam Keseharian",
+      );
+    } else if (count >= 2) {
+      return const MaqamInfo(
+        tier: 3,
+        title: "Sahabat Al-Qur'an",
+        crownEmoji: "🥈",
+        primaryColor: Color(0xFF94A3B8),
+        icon: Icons.shield_rounded,
+        description: "Ibadah Tilawah Telah Menyatu Menjadi Karakter",
+      );
+    } else if (count >= 1) {
+      return const MaqamInfo(
+        tier: 2,
+        title: "Al-Mubtadi' Al-Karim",
+        crownEmoji: "🥉",
+        primaryColor: Color(0xFFCD7F32),
+        icon: Icons.military_tech_rounded,
+        description: "Pemenang Siklus Khatam 30 Juz Pertama",
+      );
+    } else {
+      return const MaqamInfo(
+        tier: 1,
+        title: "Pejuang Istiqomah",
+        crownEmoji: "🌿",
+        primaryColor: Color(0xFF10B981),
+        icon: Icons.spa_rounded,
+        description: "Memulai Langkah Menuju Puncak Khatam 30 Juz",
+      );
+    }
+  }
+
+  // ── Decaying Session Length & Marginal Cost (Section 10.2) ───────────────
+
+  int get dynamicUnlockDurationMinutes {
+    final j = currentJuzNumber;
+    if (j <= 5) return 45;
+    if (j <= 15) return 30;
+    if (j <= 25) return 20;
+    return 15;
+  }
+
+  int get dynamicCooldownMinutes {
+    final j = currentJuzNumber;
+    if (j <= 5) return 0;
+    if (j <= 15) return 2;
+    if (j <= 25) return 3;
+    return 5;
+  }
+
+  int get currentUnlockPointCost {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyUnlockDate != today) {
+      _dailyUnlockSessionCount = 0;
+      _dailyUnlockDate = today;
+    }
+    if (_dailyUnlockSessionCount == 0) return 20; // Jam ke-1: terjangkau
+    if (_dailyUnlockSessionCount == 1) return 35; // Jam ke-2: sedang
+    if (_dailyUnlockSessionCount == 2) return 50; // Jam ke-3: standar
+    return 75; // Jam ke-4+: biaya kognitif menanjak
+  }
+
+  void addTodayQuranDurationSeconds(int seconds) {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_todayStatsDate != today) {
+      _todayQuranDurationSeconds = 0;
+      _todayScreenTimeMinutes = 0;
+      _todayStatsDate = today;
+    }
+    _todayQuranDurationSeconds += seconds;
+    prefs.setInt('todayQuranDurationSeconds', _todayQuranDurationSeconds);
+    prefs.setString('todayStatsDate', _todayStatsDate);
+    notifyListeners();
+  }
+
+  void addTodayScreenTimeMinutes(int minutes) {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_todayStatsDate != today) {
+      _todayQuranDurationSeconds = 0;
+      _todayScreenTimeMinutes = 0;
+      _todayStatsDate = today;
+    }
+    _todayScreenTimeMinutes += minutes;
+    prefs.setInt('todayScreenTimeMinutes', _todayScreenTimeMinutes);
+    prefs.setString('todayStatsDate', _todayStatsDate);
+    notifyListeners();
+  }
+
+  bool isSurahCompletedInCycle(int surahNumber) {
+    return _completedSurahsThisCycle.contains(surahNumber);
+  }
+
+  @visibleForTesting
+  void setQuranDataForTesting(List<dynamic> data) {
+    _quranData = data;
+    notifyListeners();
   }
 }

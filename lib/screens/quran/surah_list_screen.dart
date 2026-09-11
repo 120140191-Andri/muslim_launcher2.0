@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import 'surah_detail_screen.dart';
+import '../milestone/milestone_gallery_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 
@@ -50,11 +51,21 @@ class _SurahListScreenState extends State<SurahListScreen> {
         scrolledUnderElevation: 2,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.emoji_events_rounded, color: Color(0xFFFFD700)),
+            tooltip: Translations.get(lang, 'milestone_gallery_title'),
+            onPressed: () {
+              Navigator.push(
+                context,
+                AppPageRoute(child: const MilestoneGalleryScreen()),
+              );
+            },
+          ),
           _PointsBadge(
             points: appState.points,
             khatmCount: appState.khatmCount,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -85,44 +96,59 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.menu_book_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.menu_book_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Siklus Khatam ke-${appState.khatmCount + 1}',
+                            style: const TextStyle(
+                              color: Color(0xFFFBFDFC),
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${appState.completedSurahsThisCycle.length} / 114 Surah Selesai • ${appState.currentMaqamRank.crownEmoji} ${appState.currentMaqamRank.title}',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontSize: 11.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        Translations.get(lang, 'total_surahs'),
-                        style: const TextStyle(
-                          color: Color(0xFFFBFDFC),
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        lang == 'id'
-                            ? '114 Surah • Terjemahan'
-                            : '114 Surahs • Translation',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 11.5,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: (appState.completedSurahsThisCycle.length / 114.0).clamp(0.0, 1.0),
+                    minHeight: 5,
+                    backgroundColor: Colors.white.withValues(alpha: 0.15),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
                   ),
                 ),
               ],
@@ -143,6 +169,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
                       final isFuture = index > unlockedUntilIndex;
                       final isFinished = index < highestSurah ||
                           (index == highestSurah && prevFinished);
+                      final num = surah['surah_number'] as int? ?? (index + 1);
+                      final isCompletedInCycle = appState.isSurahCompletedInCycle(num);
 
                       return RepaintBoundary(
                         child: Opacity(
@@ -152,6 +180,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                             lang: lang,
                             isLastRead: isLastRead,
                             isFinished: isFinished,
+                            isCompletedInCycle: isCompletedInCycle,
                             isFuture: isFuture,
                             onTap: () {
                               appState.navigatorKey.currentState?.push(
@@ -177,6 +206,7 @@ class _SurahTile extends StatelessWidget {
   final String lang;
   final bool isLastRead;
   final bool isFinished;
+  final bool isCompletedInCycle;
   final bool isFuture;
   final VoidCallback onTap;
 
@@ -185,6 +215,7 @@ class _SurahTile extends StatelessWidget {
     required this.lang,
     required this.isLastRead,
     required this.isFinished,
+    required this.isCompletedInCycle,
     required this.isFuture,
     required this.onTap,
   });
@@ -192,6 +223,10 @@ class _SurahTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final totalAyahs = surah['total_ayah'] as int? ?? 1;
+    final num = surah['surah_number'] as int? ?? 1;
+    final tier = AppState.getSurahTier(totalAyahs);
+    final bonus = AppState.getSurahBonusPoints(totalAyahs, surahNumber: num);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
@@ -203,7 +238,9 @@ class _SurahTile extends StatelessWidget {
         border: Border.all(
           color: isLastRead
               ? colorScheme.primary
-              : colorScheme.outlineVariant.withValues(alpha: 0.4),
+              : isCompletedInCycle
+                  ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                  : colorScheme.outlineVariant.withValues(alpha: 0.4),
           width: isLastRead ? 1.5 : 1.0,
         ),
       ),
@@ -238,21 +275,55 @@ class _SurahTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 3),
-                      Text(
-                        "${surah['total_ayah']} ${Translations.get(lang, 'ayah')}",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            "$totalAyahs ${Translations.get(lang, 'ayah')}",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isCompletedInCycle
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.18)
+                                  : colorScheme.outlineVariant.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'T$tier • +$bonus Pts',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: isCompletedInCycle
+                                    ? const Color(0xFF10B981)
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                if (isFinished)
-                  Icon(
-                    Icons.check_circle_rounded,
-                    color: colorScheme.primary,
-                    size: 20,
+                if (isCompletedInCycle || isFinished)
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.verified_rounded,
+                      color: Color(0xFF10B981),
+                      size: 20,
+                    ),
                   )
                 else if (isLastRead)
                   Icon(

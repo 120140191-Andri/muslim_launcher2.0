@@ -276,6 +276,355 @@ class AppListScreen extends StatefulWidget {
 
   static List<AppInfo>? get cachedApps => _cache;
 
+  static Future<void> uninstallApp(String packageName) async {
+    try {
+      await _channel.invokeMethod('uninstallApp', {'packageName': packageName});
+      AppListScreen.invalidateFull();
+    } catch (_) {}
+  }
+
+  static void showAppOptionsModal(BuildContext context, AppInfo app) {
+    final appState = context.read<AppState>();
+    final lang = appState.languageCode;
+    final cleanPkg = app.packageName.toLowerCase().trim();
+    final isBlocked = appState.blockedApps.contains(cleanPkg) ||
+        appState.blockedApps.contains(app.packageName) ||
+        appState.isAppBlocked(app.packageName) ||
+        (AppState.isNonProductiveApp(app.packageName, app.appName, app.category) &&
+            !AppState.isProductiveApp(app.packageName, app.appName, app.category));
+    final isProhibited = appState.isAppProhibited(app.packageName, app.appName);
+    final isSystemEssential = AppState.isSystemEssentialApp(app.packageName);
+    final canMarkProductive = isBlocked &&
+        !AppState.isStrictlyNonProductive(app.packageName, app.appName, app.category);
+    final canMarkNonProductive =
+        !isBlocked && !isProhibited && !isSystemEssential;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // App Header Identity
+              Row(
+                children: [
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: _AppIcon(
+                      packageName: app.packageName,
+                      grayscale: isBlocked || isProhibited,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          app.appName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isProhibited
+                              ? (lang == 'id'
+                                  ? 'Aplikasi Terlarang'
+                                  : 'Prohibited App')
+                              : isBlocked
+                                  ? (lang == 'id'
+                                      ? 'Aplikasi Dibatasi'
+                                      : Translations.get(lang, 'app_blocked'))
+                                  : (lang == 'id'
+                                      ? 'Aplikasi Terpasang'
+                                      : 'Installed App'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isProhibited
+                                ? Colors.red.shade700
+                                : isBlocked
+                                    ? Colors.amber.shade800
+                                    : Colors.grey.shade600,
+                            fontWeight: (isBlocked || isProhibited)
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Divider(height: 1, color: Colors.grey.withValues(alpha: 0.2)),
+              const SizedBox(height: 10),
+
+              // Action 1: Mark as Productive (if blocked)
+              if (canMarkProductive)
+                _buildActionTile(
+                  ctx: ctx,
+                  icon: Icons.verified_rounded,
+                  iconColor: Colors.teal.shade700,
+                  bgColor: Colors.teal.shade50,
+                  title: Translations.get(lang, 'mark_as_productive'),
+                  subtitle: Translations.get(lang, 'mark_as_productive_subtitle'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.read<AppState>().markAppAsProductive(
+                          app.packageName,
+                          appName: app.appName,
+                          category: app.category,
+                        );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          lang == 'id'
+                              ? "${app.appName} berhasil ditandai sebagai aplikasi produktif"
+                              : "${app.appName} marked as productive app",
+                        ),
+                        backgroundColor: Colors.teal.shade700,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                ),
+
+              // Action 2: Mark as Non-Productive (if not blocked)
+              if (canMarkNonProductive)
+                _buildActionTile(
+                  ctx: ctx,
+                  icon: Icons.do_not_disturb_on_outlined,
+                  iconColor: Colors.amber.shade900,
+                  bgColor: Colors.amber.shade50,
+                  title: Translations.get(lang, 'mark_as_non_productive'),
+                  subtitle: lang == 'id'
+                      ? 'Kunci permanen agar tidak mengganggu'
+                      : 'Lock permanently to prevent distraction',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _confirmMarkAsNonProductive(context, app, lang);
+                  },
+                ),
+
+              // Action 3: Uninstall App
+              _buildActionTile(
+                ctx: ctx,
+                icon: Icons.delete_outline_rounded,
+                iconColor: Colors.red.shade700,
+                bgColor: Colors.red.shade50,
+                title: Translations.get(lang, 'uninstall_app'),
+                subtitle: lang == 'id'
+                    ? 'Hapus aplikasi dari perangkat ini'
+                    : 'Uninstall this app from device',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmUninstall(context, app, lang);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildActionTile({
+    required BuildContext ctx,
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static void _confirmUninstall(BuildContext context, AppInfo app, String lang) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(Translations.get(lang, 'uninstall_app')),
+        content: Text(
+          Translations.get(lang, 'uninstall_confirm'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(Translations.get(lang, 'cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              uninstallApp(app.packageName);
+            },
+            child: Text(Translations.get(lang, 'uninstall')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void _confirmMarkAsNonProductive(BuildContext context, AppInfo app, String lang) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 28),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                Translations.get(lang, 'confirm_mark_non_productive_title'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          Translations.get(lang, 'confirm_mark_non_productive_desc'),
+          style: const TextStyle(fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(
+              Translations.get(lang, 'cancel'),
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              context.read<AppState>().markAppAsPermanentlyNonProductive(
+                app.packageName,
+                appName: app.appName,
+                category: app.category,
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    lang == 'id'
+                        ? '${app.appName} ditandai sebagai aplikasi non-produktif permanen'
+                        : '${app.appName} permanently marked as non-productive app',
+                  ),
+                  backgroundColor: Colors.red.shade700,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: Text(Translations.get(lang, 'mark_permanent')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   State<AppListScreen> createState() => _AppListScreenState();
 }
@@ -381,342 +730,7 @@ class _AppListScreenState extends State<AppListScreen>
   }
 
   void _onAppLongPress(AppInfo app) {
-    _showAppOptions(app);
-  }
-
-  Future<void> _uninstallApp(String packageName) async {
-    try {
-      await _channel.invokeMethod('uninstallApp', {'packageName': packageName});
-      AppListScreen.invalidateFull();
-    } catch (_) {}
-  }
-
-  void _showAppOptions(AppInfo app) {
-    final appState = context.read<AppState>();
-    final lang = appState.languageCode;
-    final cleanPkg = app.packageName.toLowerCase().trim();
-    final isBlocked = appState.blockedApps.contains(cleanPkg);
-    final isProhibited = appState.isAppProhibited(app.packageName, app.appName);
-    final isSystemEssential = AppState.isSystemEssentialApp(app.packageName);
-    final canMarkProductive = isBlocked &&
-        !AppState.isStrictlyNonProductive(app.packageName, app.appName, app.category);
-    final canMarkNonProductive =
-        !isBlocked && !isProhibited && !isSystemEssential;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag handle
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // App Header Identity
-              Row(
-                children: [
-                  SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: _AppIcon(
-                      packageName: app.packageName,
-                      grayscale: isBlocked || isProhibited,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          app.appName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          isBlocked
-                              ? (lang == 'id'
-                                  ? 'Aplikasi Dibatasi'
-                                  : Translations.get(lang, 'app_blocked'))
-                              : (lang == 'id'
-                                  ? 'Aplikasi Terpasang'
-                                  : 'Installed App'),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isBlocked
-                                ? Colors.amber.shade800
-                                : Colors.grey.shade600,
-                            fontWeight:
-                                isBlocked ? FontWeight.w600 : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Divider(height: 1, color: Colors.grey.withValues(alpha: 0.2)),
-              const SizedBox(height: 10),
-
-              // Action 1: Mark as Productive (if blocked)
-              if (canMarkProductive)
-                _buildActionTile(
-                  ctx: ctx,
-                  icon: Icons.verified_rounded,
-                  iconColor: Colors.teal.shade700,
-                  bgColor: Colors.teal.shade50,
-                  title: Translations.get(lang, 'mark_as_productive'),
-                  subtitle: Translations.get(lang, 'mark_as_productive_subtitle'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    context.read<AppState>().markAppAsProductive(
-                          app.packageName,
-                          appName: app.appName,
-                        );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          "${app.appName}: ${Translations.get(lang, 'confirm_mark_productive_title')}",
-                        ),
-                        backgroundColor: Colors.teal.shade700,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                ),
-
-              // Action 2: Mark as Non-Productive (if not blocked)
-              if (canMarkNonProductive)
-                _buildActionTile(
-                  ctx: ctx,
-                  icon: Icons.do_not_disturb_on_outlined,
-                  iconColor: Colors.amber.shade900,
-                  bgColor: Colors.amber.shade50,
-                  title: Translations.get(lang, 'mark_as_non_productive'),
-                  subtitle: lang == 'id'
-                      ? 'Kunci permanen agar tidak mengganggu'
-                      : 'Lock permanently to prevent distraction',
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _confirmMarkAsNonProductive(app, lang);
-                  },
-                ),
-
-              // Action 3: Uninstall App
-              _buildActionTile(
-                ctx: ctx,
-                icon: Icons.delete_outline_rounded,
-                iconColor: Colors.red.shade700,
-                bgColor: Colors.red.shade50,
-                title: Translations.get(lang, 'uninstall_app'),
-                subtitle: lang == 'id'
-                    ? 'Hapus aplikasi dari perangkat ini'
-                    : 'Uninstall this app from device',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _confirmUninstall(app, lang);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionTile({
-    required BuildContext ctx,
-    required IconData icon,
-    required Color iconColor,
-    required Color bgColor,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: iconColor, size: 22),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14.5,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.grey.shade400,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _confirmUninstall(AppInfo app, String lang) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(Translations.get(lang, 'uninstall_app')),
-        content: Text(
-          Translations.get(lang, 'uninstall_confirm'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(Translations.get(lang, 'cancel')),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _uninstallApp(app.packageName);
-            },
-            child: Text(Translations.get(lang, 'uninstall')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmMarkAsNonProductive(AppInfo app, String lang) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 28),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                Translations.get(lang, 'confirm_mark_non_productive_title'),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          Translations.get(lang, 'confirm_mark_non_productive_desc'),
-          style: const TextStyle(fontSize: 14, height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: Text(
-              Translations.get(lang, 'cancel'),
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade700,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () {
-              Navigator.pop(dialogCtx);
-              context.read<AppState>().markAppAsPermanentlyNonProductive(
-                app.packageName,
-                appName: app.appName,
-                category: app.category,
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    lang == 'id'
-                        ? '${app.appName} ditandai sebagai aplikasi non-produktif permanen'
-                        : '${app.appName} permanently marked as non-productive app',
-                  ),
-                  backgroundColor: Colors.red.shade700,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            child: Text(Translations.get(lang, 'mark_permanent')),
-          ),
-        ],
-      ),
-    );
+    AppListScreen.showAppOptionsModal(context, app);
   }
 
   Future<void> _openSupportDeveloperUrl() async {

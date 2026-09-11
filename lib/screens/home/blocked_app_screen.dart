@@ -35,7 +35,8 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
     final lang = appState.languageCode;
     final canUnlock = appState.points >= 50;
     final appName = appState.getAppNameSync(widget.packageName);
-    final isStrictlyNonProductive = AppState.isStrictlyNonProductive(widget.packageName, appName);
+    final category = appState.getAppCategorySync(widget.packageName);
+    final isStrictlyNonProductive = AppState.isStrictlyNonProductive(widget.packageName, appName, category);
 
     return PopScope(
       canPop: false, // Prevent back button from bypassing block
@@ -660,7 +661,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                     _isUnlocking = true;
                                   });
                                   try {
-                                    await appState.markAppAsProductive(widget.packageName, appName: appName);
+                                    await appState.markAppAsProductive(widget.packageName, appName: appName, category: category);
                                     appState.clearBlockedApp();
                                     await appState.openApp(widget.packageName, bypassGuards: true);
                                   } finally {

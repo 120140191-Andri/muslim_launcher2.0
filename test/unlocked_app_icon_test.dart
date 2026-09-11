@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:muslim_launcher_2/providers/app_state.dart';
+import 'package:muslim_launcher_2/screens/home/app_list_screen.dart';
+import 'package:muslim_launcher_2/utils/translations.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -170,6 +174,216 @@ void main() {
       expect(appState.customProductiveApps.contains('com.neptune.domino'), isFalse);
       expect(AppState.isProductiveApp('com.neptune.domino', 'Higgs Domino'), isFalse);
     });
+
+    test('Games (category 0, GTA, Bully, Learn 2 Fly) are strictly non-productive without exception and can never be marked as productive', () async {
+      final appState = AppState(prefs);
+      await pumpEventQueue();
+
+      // Test category 0 game
+      expect(AppState.isStrictlyNonProductive('com.tafusoft.pepelo', 'Pepelo', 0), isTrue);
+      expect(AppState.isStrictlyNonProductive('com.heroicinteractive.learn2fly', 'Learn 2 Fly'), isTrue);
+      expect(AppState.isStrictlyNonProductive('com.rockstargames.gtasa', 'GTA: San Andreas'), isTrue);
+      expect(AppState.isStrictlyNonProductive('com.rockstargames.bully', 'Bully: Anniversary Edition'), isTrue);
+
+      // Attempting to mark any of these as productive must be rejected
+      await appState.markAppAsProductive('com.rockstargames.gtasa', appName: 'GTA: San Andreas', category: 0);
+      expect(appState.customProductiveApps.contains('com.rockstargames.gtasa'), isFalse);
+      expect(AppState.isProductiveApp('com.rockstargames.gtasa', 'GTA: San Andreas', 0), isFalse);
+
+      await appState.markAppAsProductive('com.heroicinteractive.learn2fly', appName: 'Learn 2 Fly', category: 0);
+      expect(appState.customProductiveApps.contains('com.heroicinteractive.learn2fly'), isFalse);
+      expect(AppState.isProductiveApp('com.heroicinteractive.learn2fly', 'Learn 2 Fly', 0), isFalse);
+    });
+
+    testWidgets('AppListScreen.showAppOptionsModal hides Tandai sebagai Aplikasi Produktif for games but shows for non-game blocked apps', (tester) async {
+      final appState = AppState(prefs);
+      await appState.setLanguage('id');
+      await appState.toggleAppBlockedStatus('com.rockstargames.gtasa');
+      await appState.toggleAppBlockedStatus('com.example.notes');
+
+      final markProductiveText = Translations.get('id', 'mark_as_productive');
+
+      // 1. Open modal for game -> must NOT show "Tandai sebagai Aplikasi Produktif"
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    AppListScreen.showAppOptionsModal(
+                      context,
+                      AppInfo(
+                        appName: 'GTA SA',
+                        packageName: 'com.rockstargames.gtasa',
+                        category: 0,
+                      ),
+                    );
+                  },
+                  child: const Text('Open Game Modal'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Game Modal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(markProductiveText), findsNothing);
+
+      // Dismiss modal
+      Navigator.of(tester.element(find.text('GTA SA'))).pop();
+      await tester.pumpAndSettle();
+
+      // 2. Open modal for non-game blocked app -> MUST show "Tandai sebagai Aplikasi Produktif"
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    AppListScreen.showAppOptionsModal(
+                      context,
+                      AppInfo(
+                        appName: 'Work Notes',
+                        packageName: 'com.example.notes',
+                        category: -1,
+                      ),
+                    );
+                  },
+                  child: const Text('Open Notes Modal'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Notes Modal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(markProductiveText), findsOneWidget);
+
+      // Tap mark productive
+      await tester.tap(find.text(markProductiveText));
+      await tester.pumpAndSettle();
+
+      expect(appState.customProductiveApps.contains('com.example.notes'), isTrue);
+      expect(appState.blockedApps.contains('com.example.notes'), isFalse);
+    });
+
+    test('Scanner and Pemindai apps are always productive, never blocked, and never strictly non-productive', () async {
+      final appState = AppState(prefs);
+      await pumpEventQueue();
+
+      final scannerApps = [
+        {'pkg': 'com.xiaomi.scanner', 'name': 'Pemindai'},
+        {'pkg': 'com.intsig.camscanner', 'name': 'CamScanner'},
+        {'pkg': 'com.adobe.scan.android', 'name': 'Adobe Scan'},
+        {'pkg': 'com.gamma.scan', 'name': 'QR & Barcode Scanner'},
+        {'pkg': 'com.google.ar.lens', 'name': 'Google Lens'},
+        {'pkg': 'com.example.docscanner', 'name': 'Pemindai Dokumen'},
+        {'pkg': 'com.example.qrscan', 'name': 'Pemindai QR & Barcode'},
+        {'pkg': 'pdf.tap.scanner', 'name': 'TapScanner'},
+        {'pkg': 'com.coolmobilesolution.fastscannerfree', 'name': 'Fast Scanner'},
+      ];
+
+      for (final app in scannerApps) {
+        final pkg = app['pkg']!;
+        final name = app['name']!;
+
+        expect(AppState.isScannerApp(pkg, name), isTrue, reason: '$name ($pkg) should be recognized as scanner app');
+        expect(AppState.isProductiveApp(pkg, name), isTrue, reason: '$name ($pkg) must be a productive app');
+        expect(AppState.isStrictlyNonProductive(pkg, name), isFalse, reason: '$name ($pkg) must NEVER be strictly non-productive');
+        expect(AppState.isNonProductiveApp(pkg, name), isFalse, reason: '$name ($pkg) must NEVER be classified as non-productive');
+      }
+
+      // Ensure Xiaomi apps do not collide with Omi dating app
+      expect(AppState.isStrictlyNonProductive('com.xiaomi.scanner', 'Pemindai'), isFalse);
+      expect(AppState.isStrictlyNonProductive('com.xiaomi.calendar', 'Kalender'), isFalse);
+      expect(AppState.isStrictlyNonProductive('com.haoda.wuta.omichat', 'Omi'), isTrue);
+
+      // Ensure English apps do not collide with NGL anonymous chat
+      expect(AppState.isStrictlyNonProductive('com.example.english', 'English Dictionary'), isFalse);
+      expect(AppState.isStrictlyNonProductive('com.nglreactnative', 'NGL'), isTrue);
+
+      // Ensure Emoji apps do not collide with Moj short video platform
+      expect(AppState.isStrictlyNonProductive('com.example.emoji', 'Emoji Keyboard'), isFalse);
+      expect(AppState.isStrictlyNonProductive('in.mohalla.video.moj', 'Moj'), isTrue);
+
+      // Test automatic unblocking in syncAppsWithCategories
+      appState.blockedApps.add('com.xiaomi.scanner');
+      expect(appState.blockedApps.contains('com.xiaomi.scanner'), isTrue);
+
+      await appState.syncAppsWithCategories([
+        {
+          'packageName': 'com.xiaomi.scanner',
+          'appName': 'Pemindai',
+          'category': -1,
+        }
+      ]);
+
+      expect(appState.blockedApps.contains('com.xiaomi.scanner'), isFalse);
+    });
+
+    test('Twitter / X (com.twitter.android) is strictly non-productive and blocked even if category is News (5)', () async {
+      final appState = AppState(prefs);
+      await pumpEventQueue();
+
+      // Official X app (rebranded from Twitter by Elon Musk)
+      const xPackage = 'com.twitter.android';
+      const xLitePackage = 'com.twitter.android.lite';
+      const xName = 'X';
+      const xLiteName = 'X Lite';
+      const newsCategory = 5; // CATEGORY_NEWS reported by Android OS for Twitter/X
+
+      // Test X
+      expect(AppState.isStrictlyNonProductive(xPackage, xName, newsCategory), isTrue);
+      expect(AppState.isProductiveApp(xPackage, xName, newsCategory), isFalse);
+      expect(AppState.isNonProductiveApp(xPackage, xName, newsCategory), isTrue);
+      expect(AppState.isHighRiskSocialMediaApp(xPackage, xName), isTrue);
+
+      // Test X Lite
+      expect(AppState.isStrictlyNonProductive(xLitePackage, xLiteName, newsCategory), isTrue);
+      expect(AppState.isProductiveApp(xLitePackage, xLiteName, newsCategory), isFalse);
+      expect(AppState.isNonProductiveApp(xLitePackage, xLiteName, newsCategory), isTrue);
+
+      // Test Instagram with Image category (3)
+      expect(AppState.isStrictlyNonProductive('com.instagram.android', 'Instagram', 3), isTrue);
+      expect(AppState.isProductiveApp('com.instagram.android', 'Instagram', 3), isFalse);
+      expect(AppState.isNonProductiveApp('com.instagram.android', 'Instagram', 3), isTrue);
+
+      // Test Reddit with News category (5)
+      expect(AppState.isStrictlyNonProductive('com.reddit.frontpage', 'Reddit', 5), isTrue);
+      expect(AppState.isProductiveApp('com.reddit.frontpage', 'Reddit', 5), isFalse);
+      expect(AppState.isNonProductiveApp('com.reddit.frontpage', 'Reddit', 5), isTrue);
+
+      // Ensure legitimate news apps are STILL productive with category 5
+      expect(AppState.isStrictlyNonProductive('com.detik.portal', 'Detikcom', 5), isFalse);
+      expect(AppState.isProductiveApp('com.detik.portal', 'Detikcom', 5), isTrue);
+      expect(AppState.isNonProductiveApp('com.detik.portal', 'Detikcom', 5), isFalse);
+
+      // Test automatic blocking of X in syncAppsWithCategories
+      await appState.syncAppsWithCategories([
+        {
+          'packageName': xPackage,
+          'appName': xName,
+          'category': newsCategory,
+        }
+      ]);
+
+      expect(appState.blockedApps.contains(xPackage), isTrue);
+      expect(appState.isAppBlocked(xPackage), isTrue);
+    });
   });
 }
+
+
 

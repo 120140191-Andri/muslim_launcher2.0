@@ -746,10 +746,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> markAppAsProductive(String packageName, {String? appName}) async {
+  Future<void> markAppAsProductive(String packageName, {String? appName, int? category}) async {
     final pkg = packageName.toLowerCase().trim();
-    if (isStrictlyNonProductive(pkg, appName ?? '')) {
-      return; // Strictly non-productive apps can never be marked as productive
+    final cat = category ?? getAppCategorySync(pkg);
+    if (isStrictlyNonProductive(pkg, appName ?? '', cat)) {
+      return; // Strictly non-productive apps and games can never be marked as productive
     }
     _customProductiveApps.add(pkg);
     _blockedApps.remove(pkg);
@@ -818,6 +819,23 @@ class AppState extends ChangeNotifier {
       }
     }
     return cleanPackageName(packageName);
+  }
+
+  int getAppCategorySync(String packageName) {
+    return getAppCategoryStatic(packageName);
+  }
+
+  static int getAppCategoryStatic(String packageName) {
+    final pkg = packageName.trim().toLowerCase();
+    final cached = AppListScreen.cachedApps;
+    if (cached != null) {
+      for (final app in cached) {
+        if (app.packageName.toLowerCase() == pkg) {
+          return app.category;
+        }
+      }
+    }
+    return -1;
   }
 
   static const Set<String> _whitelist = {
@@ -1715,7 +1733,12 @@ class AppState extends ChangeNotifier {
         name.contains('twitter') ||
         pkg == 'com.twitter.android' ||
         pkg == 'com.twitter.android.lite' ||
-        (name == 'x' && pkg.contains('twitter'))) {
+        pkg.startsWith('com.twitter.') ||
+        pkg.startsWith('com.x.') ||
+        name == 'x' ||
+        name == 'x lite' ||
+        name.contains('x (twitter)') ||
+        (name == 'x' && (pkg.contains('twitter') || pkg.contains('x')))) {
       return true;
     }
 
@@ -1763,6 +1786,107 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
+  /// Checks if an app is a document scanner, QR/barcode reader, or OCR utility tool.
+  /// Scanner apps are essential productive utilities and must NEVER be blocked.
+  static bool isScannerApp(String packageName, String appName) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.isEmpty && name.isEmpty) return false;
+
+    // 1. Known Scanner, OCR & QR/Barcode Packages
+    const scannerPackages = [
+      'com.xiaomi.scanner', // Xiaomi / MIUI / HyperOS built-in Pemindai
+      'com.intsig.camscanner', // CamScanner
+      'com.intsig.camscannerhd',
+      'com.intsig.lic.camscanner',
+      'com.adobe.scan.android', // Adobe Scan
+      'com.microsoft.office.officelens', // Microsoft Lens
+      'com.gamma.scan', // QR & Barcode Scanner (Gamma Play)
+      'com.google.ar.lens', // Google Lens
+      'com.google.android.apps.camscanner',
+      'com.google.android.apps.scanner',
+      'pdf.tap.scanner', // TapScanner
+      'com.cv.docscanner', // Document Scanner
+      'com.coolmobilesolution.fastscannerfree', // Fast Scanner
+      'com.appxy.tinyscan', // Tiny Scanner
+      'com.indymobileapp.document.scanner', // Clear Scan
+      'com.thegrizzlylabs.geniusscan.free', // Genius Scan
+      'com.thegrizzlylabs.geniusscan',
+      'com.oken.camscanner', // OKEN Scanner
+      'com.google.zxing.client.android', // Barcode Scanner (ZXing)
+      'com.teacapps.barcodescanner', // QR & Barcode Reader
+      'com.simplemobiletools.scanner', // Simple Scanner
+      'com.samsung.android.scan3d', // Samsung 3D Scanner
+      'com.samsung.android.app.smartscan', // Samsung Smart Scan
+      'com.huawei.scanner', // Huawei Scanner
+      'com.coloros.ocrscanner', // Oppo / Realme Scanner
+      'com.oppo.scanner',
+      'com.vivo.scanner', // Vivo Scanner
+      'com.transsion.scanner', // Transsion / Infinix / Tecno
+    ];
+
+    for (final sp in scannerPackages) {
+      if (pkg == sp || pkg.contains(sp)) return true;
+    }
+
+    // 2. Package identifiers
+    if (pkg.contains('.scanner') ||
+        pkg.contains('scanner.') ||
+        pkg.endsWith('.scanner') ||
+        pkg.contains('pemindai') ||
+        pkg.contains('camscanner') ||
+        pkg.contains('docscan') ||
+        pkg.contains('smartscan') ||
+        pkg.contains('barcodescan') ||
+        pkg.contains('barcode.scanner') ||
+        pkg.contains('qrscan') ||
+        pkg.contains('qr.reader') ||
+        pkg.contains('qrreader') ||
+        pkg.contains('qrcodereader') ||
+        pkg.contains('officelens')) {
+      return true;
+    }
+
+    // 3. App Name Keywords (Indonesian & English)
+    const scannerNameKeywords = [
+      'scanner',
+      'pemindai',
+      'camscanner',
+      'pindai',
+      'doc scan',
+      'document scan',
+      'tap scanner',
+      'tiny scan',
+      'fast scan',
+      'clear scan',
+      'genius scan',
+      'qr scanner',
+      'qr & barcode',
+      'qr and barcode',
+      'qr code',
+      'kode qr',
+      'barcode scanner',
+      'barcode reader',
+      'google lens',
+      'ocr scanner',
+      'text scanner',
+      'pemindai teks',
+      'pemindai dokumen',
+      'pemindai qr',
+      'pemindai barcode',
+      'pemindai cepat',
+      'smart scan',
+      'adobe scan',
+    ];
+
+    for (final sk in scannerNameKeywords) {
+      if (name.contains(sk)) return true;
+    }
+
+    return false;
+  }
+
   /// Checks if an app is a productive, essential, utility, communication, educational, or religious app.
   /// Productive apps must NEVER be blocked by the launcher.
   static bool isProductiveApp(String packageName, String appName, [int category = -1]) {
@@ -1781,8 +1905,19 @@ class AppState extends ChangeNotifier {
       return false;
     }
 
-    // User-whitelisted productive apps (strictly non-productive apps like TikTok/IG/FB can never be whitelisted)
-    if (_customProductiveApps.contains(pkg) && !isStrictlyNonProductive(pkg, name, category)) {
+    // Scanner, Pemindai, OCR, QR & Barcode utilities (essential productive tools)
+    if (isScannerApp(pkg, name)) {
+      return true;
+    }
+
+    // Strictly non-productive apps (social media like Twitter/X, Instagram, TikTok, Reddit, Pinterest, games, dating, streaming)
+    // can NEVER be considered productive, even if Android OS assigns them category News (5), Image (3), or Productivity (7).
+    if (isStrictlyNonProductive(pkg, name, category)) {
+      return false;
+    }
+
+    // User-whitelisted productive apps (strictly non-productive apps and games can never be whitelisted)
+    if (_customProductiveApps.contains(pkg)) {
       return true;
     }
 
@@ -1879,6 +2014,8 @@ class AppState extends ChangeNotifier {
       'com.sec.android.app.voicenote',
       'com.android.settings',
       'com.android.vending',
+      'com.xiaomi.scanner',
+      'com.google.ar.lens',
     ];
     for (final p in oemSystemPackages) {
       if (pkg == p || pkg.contains(p)) return true;
@@ -1966,6 +2103,9 @@ class AppState extends ChangeNotifier {
       'com.samsung.android.app.notes',
       'md.obsidian',
       'com.intsig.camscanner',
+      'com.adobe.scan.android',
+      'com.microsoft.office.officelens',
+      'com.gamma.scan',
       'com.adobe.reader',
       'com.dropbox.android',
       'com.google.android.apps.classroom',
@@ -2108,8 +2248,14 @@ class AppState extends ChangeNotifier {
       return true;
     }
 
-    // 1. Android OS Category Game (CATEGORY_GAME = 0)
-    if (category == 0) return true;
+    // Scanner, Pemindai, QR, and Document Scanning tools are productive utilities and strictly immune from non-productive classification
+    if (isScannerApp(pkg, name)) {
+      return false;
+    }
+
+    // 1. Android OS Category Game (CATEGORY_GAME = 0) - strictly non-productive without exception
+    final int resolvedCat = category != -1 ? category : getAppCategoryStatic(pkg);
+    if (resolvedCat == 0) return true;
 
     // 2. Social Media & Short Video Platforms (Mindless Scrolling)
     // TikTok & Musical.ly
@@ -2124,8 +2270,20 @@ class AppState extends ChangeNotifier {
     if (pkg.contains('com.facebook.katana') || pkg.contains('com.facebook.lite') || name == 'facebook') {
       return true;
     }
-    // Twitter / X
-    if (pkg.contains('twitter') || name == 'twitter' || (name == 'x' && pkg.contains('com.twitter'))) {
+    // Twitter / X (Elon Musk's X platform)
+    if (pkg.contains('twitter') ||
+        pkg == 'com.twitter.android' ||
+        pkg == 'com.twitter.android.lite' ||
+        pkg.startsWith('com.twitter.') ||
+        pkg.startsWith('com.x.') ||
+        pkg.contains('x.corp') ||
+        name == 'x' ||
+        name == 'twitter' ||
+        name == 'x lite' ||
+        name.contains('twitter') ||
+        name.contains('x (twitter)') ||
+        name.contains('twitter / x') ||
+        (name == 'x' && (pkg.contains('twitter') || pkg.contains('x')))) {
       return true;
     }
     // Snapchat
@@ -2175,7 +2333,6 @@ class AppState extends ChangeNotifier {
       'helo.android',
       'chingari',
       'sharechat.moj',
-      'moj',
       'sgiggle.production', // Tango
       'tango',
       'asiainno.uplive', // Uplive
@@ -2206,6 +2363,15 @@ class AppState extends ChangeNotifier {
     for (final sk in shortVideoAndLiveKeywords) {
       if (pkg.contains(sk) || name.contains(sk)) return true;
     }
+    // Moj (Short video platform) - specific to avoid colliding with 'emoji'
+    if (pkg.contains('in.mohalla.video.moj') ||
+        pkg.contains('sharechat.moj') ||
+        name == 'moj' ||
+        name.startsWith('moj ') ||
+        name.endsWith(' moj')) {
+      return true;
+    }
+
     // Voice Party, Virtual Rooms & Social Metaverse (Yalla, YoYo, WePlay, Lita, Zepeto, etc.)
     const voicePartyKeywords = [
       'yallagroup',
@@ -2225,6 +2391,7 @@ class AppState extends ChangeNotifier {
     for (final vk in voicePartyKeywords) {
       if (pkg.contains(vk) || name.contains(vk)) return true;
     }
+
     // Random & Anonymous Video/Text Chat (Azar, OmeTV, Litmatch, Chamet, Camfrog, NGL, etc.)
     const anonymousChatKeywords = [
       'hyperconnect.azar',
@@ -2245,7 +2412,6 @@ class AppState extends ChangeNotifier {
       'bermuda.video',
       'corp.holla',
       'nglreactnative',
-      'ngl',
       'tellonym',
       'askfm',
       'tellm.android', // Jodel
@@ -2256,14 +2422,20 @@ class AppState extends ChangeNotifier {
     for (final ak in anonymousChatKeywords) {
       if (pkg.contains(ak) || name.contains(ak)) return true;
     }
+    // NGL (Anonymous Instagram Q&A) - specific to avoid colliding with 'english'
+    if (pkg.contains('nglreactnative') ||
+        name == 'ngl' ||
+        name.startsWith('ngl ') ||
+        name.endsWith(' ngl')) {
+      return true;
+    }
+
     // Dating & Hookup Apps (Tinder, Bumble, Tantan, Badoo, Omi, Happn, Boo, etc.)
     const datingAppKeywords = [
       'tinder',
       'bumble',
       'tantan',
       'badoo',
-      'haoda.wuta', // Omi
-      'omi',
       'okcupid',
       'co.hinge',
       'hinge',
@@ -2294,6 +2466,14 @@ class AppState extends ChangeNotifier {
     ];
     for (final dk in datingAppKeywords) {
       if (pkg.contains(dk) || name.contains(dk)) return true;
+    }
+    // Omi (Dating app) - specific to avoid colliding with Xiaomi packages (com.xiaomi.*) or 'ekonomi'
+    if (pkg.contains('omichat') ||
+        (pkg.contains('haoda.wuta') && !pkg.contains('xiaomi')) ||
+        name == 'omi' ||
+        name.startsWith('omi ') ||
+        name.endsWith(' omi')) {
+      return true;
     }
 
     // 3. Video Streaming & Entertainment Binge-Watching Platforms
@@ -2373,6 +2553,17 @@ class AppState extends ChangeNotifier {
       'ea.gp',
       'konami',
       'riotgames',
+      'rockstargames',
+      'rockstar',
+      'gtasa',
+      'gta',
+      'grand theft auto',
+      'grandtheftauto',
+      'vice city',
+      'vicecity',
+      'bully',
+      'learn2fly',
+      'learn 2 fly',
     ];
     for (final gk in popularGameKeywords) {
       if (pkg.contains(gk) || name.contains(gk)) return true;
@@ -2386,6 +2577,7 @@ class AppState extends ChangeNotifier {
     // General game identifiers in package or name
     if (pkg.contains('.game.') ||
         pkg.contains('.games.') ||
+        pkg.contains('rockstargames') ||
         pkg.startsWith('com.game') ||
         pkg.endsWith('.game') ||
         name.contains('game') ||
@@ -2393,7 +2585,10 @@ class AppState extends ChangeNotifier {
         name.contains('puzzle') ||
         name.contains('racing') ||
         name.contains('simulation') ||
-        name.contains('rpg')) {
+        name.contains('rpg') ||
+        name.contains('bully') ||
+        name.contains('gta') ||
+        name.contains('learn 2 fly')) {
       return true;
     }
 

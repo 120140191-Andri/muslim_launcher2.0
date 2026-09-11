@@ -1707,7 +1707,7 @@ class _HeroKhatamCard extends StatelessWidget {
                           const Text('👑', style: TextStyle(fontSize: 12)),
                           const SizedBox(width: 4),
                           Text(
-                            '${(percent * 100).toInt()}%',
+                            '$percent%',
                             style: const TextStyle(
                               color: Color(0xFFB45309),
                               fontSize: 12,
@@ -1768,7 +1768,7 @@ class _HeroKhatamCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
-                    value: percent.clamp(0.01, 1.0).toDouble(),
+                    value: (juz / 30.0).clamp(0.0, 1.0),
                     minHeight: 8,
                     backgroundColor: Colors.teal.shade100.withValues(
                       alpha: 0.4,

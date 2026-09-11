@@ -9,6 +9,9 @@ import android.view.accessibility.AccessibilityEvent
 import android.util.Log
 import android.os.Build
 import android.content.IntentFilter
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.os.VibrationEffect
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
 
@@ -18,6 +21,11 @@ class AppBlockService : AccessibilityService() {
         private val handler = android.os.Handler(android.os.Looper.getMainLooper())
         private var blockedPackages = Collections.synchronizedSet(mutableSetOf<String>())
         private var temporaryAllowedPackages = ConcurrentHashMap<String, Long>()
+        
+        // Countdown vibration alert tracking (3m -> 3x, 2m -> 2x, 1m -> 1x)
+        private val notified3Min = Collections.synchronizedSet(mutableSetOf<String>())
+        private val notified2Min = Collections.synchronizedSet(mutableSetOf<String>())
+        private val notified1Min = Collections.synchronizedSet(mutableSetOf<String>())
         
         // Ghadhul Bashar state tracking
         private var ghadhulBasharPackages = Collections.synchronizedSet(mutableSetOf<String>())
@@ -39,6 +47,7 @@ class AppBlockService : AccessibilityService() {
         private val watchdogRunnable = object : Runnable {
             override fun run() {
                 if (temporaryAllowedPackages.isNotEmpty()) {
+                    checkCountdownVibrations()
                     checkAllExpiredUnlocks()
                     if (temporaryAllowedPackages.isNotEmpty()) {
                         handler.postDelayed(this, 1000L)
@@ -61,6 +70,9 @@ class AppBlockService : AccessibilityService() {
             val expiry = temporaryAllowedPackages[cleanPkg]
             if (expiry != null && now >= (expiry - 300L)) {
                 temporaryAllowedPackages.remove(cleanPkg)
+                notified3Min.remove(cleanPkg)
+                notified2Min.remove(cleanPkg)
+                notified1Min.remove(cleanPkg)
                 
                 // Remove from SharedPreferences
                 try {
@@ -105,6 +117,101 @@ class AppBlockService : AccessibilityService() {
             }
         }
 
+        /**
+         * Checks remaining time for temporarily allowed apps and triggers countdown vibrations:
+         * 3 minutes remaining -> 3 vibrations
+         * 2 minutes remaining -> 2 vibrations
+         * 1 minute remaining  -> 1 vibration
+         * Only triggers if the app is currently in the foreground.
+         */
+        fun checkCountdownVibrations() {
+            val s = instance ?: return
+            val now = System.currentTimeMillis()
+            for ((pkg, expiry) in temporaryAllowedPackages) {
+                // Only alert if the user is currently using this unlocked app
+                val isForeground = currentForegroundPackage?.equals(pkg, ignoreCase = true) == true
+                if (!isForeground) continue
+
+                val remaining = expiry - now
+                if (remaining in 120_001..180_000) {
+                    if (!notified3Min.contains(pkg)) {
+                        notified3Min.add(pkg)
+                        vibrateAlert(s, 3)
+                        Log.d("AppBlockService", "COUNTDOWN VIBRATION: 3m remaining for $pkg (3x)")
+                    }
+                } else if (remaining in 60_001..120_000) {
+                    if (!notified2Min.contains(pkg)) {
+                        notified2Min.add(pkg)
+                        vibrateAlert(s, 2)
+                        Log.d("AppBlockService", "COUNTDOWN VIBRATION: 2m remaining for $pkg (2x)")
+                    }
+                } else if (remaining in 1..60_000) {
+                    if (!notified1Min.contains(pkg)) {
+                        notified1Min.add(pkg)
+                        vibrateAlert(s, 1)
+                        Log.d("AppBlockService", "COUNTDOWN VIBRATION: 1m remaining for $pkg (1x)")
+                    }
+                }
+            }
+        }
+
+        fun vibrateAlert(context: Context, count: Int) {
+            try {
+                val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                    vibratorManager?.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                } ?: return
+
+                if (!vibrator.hasVibrator()) return
+
+                // Semakin sedikit jumlahnya, semakin panjang durasi getarnya:
+                // 3x getar (sisa 3m) -> 300ms getar, 150ms jeda (3 ketukan tegas)
+                // 2x getar (sisa 2m) -> 600ms getar, 200ms jeda (2 getaran mantap & lebih panjang)
+                // 1x getar (sisa 1m) -> 1200ms getar (1 getaran panjang peringatan terakhir)
+                val pulseMs = when (count) {
+                    3 -> 300L
+                    2 -> 600L
+                    1 -> 1200L
+                    else -> 400L
+                }
+                val sleepMs = when (count) {
+                    3 -> 150L
+                    2 -> 200L
+                    else -> 200L
+                }
+
+                val timings = LongArray(count * 2)
+                timings[0] = 0L
+                for (i in 0 until count) {
+                    timings[i * 2 + 1] = pulseMs
+                    if (i < count - 1) {
+                        timings[(i + 1) * 2] = sleepMs
+                    }
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val effect = if (vibrator.hasAmplitudeControl()) {
+                        // Kekuatan getar maksimal (255)
+                        val amplitudes = IntArray(timings.size) { index ->
+                            if (index % 2 == 1) 255 else 0
+                        }
+                        VibrationEffect.createWaveform(timings, amplitudes, -1)
+                    } else {
+                        VibrationEffect.createWaveform(timings, -1)
+                    }
+                    vibrator.vibrate(effect)
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(timings, -1)
+                }
+            } catch (e: Exception) {
+                Log.e("AppBlockService", "vibrateAlert failed: ${e.message}")
+            }
+        }
+
         fun updateBlockedPackages(context: Context, packages: List<String>) {
             Log.d("AppBlockService", "Flutter updateBlockedPackages: ${packages.size} apps")
             blockedPackages.clear()
@@ -132,6 +239,14 @@ class AppBlockService : AccessibilityService() {
             lastBypassTime = now
             lastTriggeredPackage = pkg
             lastTriggeredTime = now
+            
+            // Reset countdown notification state
+            notified3Min.remove(pkg)
+            notified2Min.remove(pkg)
+            notified1Min.remove(pkg)
+            if (durationMillis <= 180_000L) notified3Min.add(pkg)
+            if (durationMillis <= 120_000L) notified2Min.add(pkg)
+            if (durationMillis <= 60_000L) notified1Min.add(pkg)
             
             // Persist to SharedPreferences to prevent loss on service restart
             val prefs = context.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
@@ -256,6 +371,10 @@ class AppBlockService : AccessibilityService() {
                         stillvalid.add("$pkg|$expiry")
                         
                         val remaining = expiry - now
+                        if (remaining <= 180_000L) notified3Min.add(pkg)
+                        if (remaining <= 120_000L) notified2Min.add(pkg)
+                        if (remaining <= 60_000L) notified1Min.add(pkg)
+
                         handler.postDelayed({
                             checkAndKickExpiredApp(pkg)
                         }, remaining)
@@ -312,6 +431,12 @@ class AppBlockService : AccessibilityService() {
                         temporaryAllowedPackages[pkg] = expiry
                         lastBypassPackage = pkg
                         lastBypassTime = now
+                        notified3Min.remove(pkg)
+                        notified2Min.remove(pkg)
+                        notified1Min.remove(pkg)
+                        if (duration <= 180_000L) notified3Min.add(pkg)
+                        if (duration <= 120_000L) notified2Min.add(pkg)
+                        if (duration <= 60_000L) notified1Min.add(pkg)
                         startWatchdog()
                         Log.d("AppBlockService", "BROADCAST RECEIVED: Allowed $pkg (Shield ON)")
                     }
@@ -358,9 +483,10 @@ class AppBlockService : AccessibilityService() {
                 return
             }
 
-            // Scan for any expired temporary unlocks on every accessibility event
+            // Scan for any expired temporary unlocks and countdown alerts on every accessibility event
             // This is a backup for postDelayed timers that may be deferred by Doze mode
             if (temporaryAllowedPackages.isNotEmpty()) {
+                checkCountdownVibrations()
                 checkAllExpiredUnlocks()
             }
 

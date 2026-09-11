@@ -7,6 +7,7 @@ import '../../providers/app_state.dart';
 import '../../services/eye_tracker_service.dart';
 import '../../utils/translations.dart';
 import '../../services/analytics_service.dart';
+import '../../utils/quran_progress_helper.dart';
 
 class DzikirPreset {
   final int id;
@@ -249,6 +250,25 @@ class _DzikirScreenState extends State<DzikirScreen>
   late AnimationController _cooldownController;
   late Animation<double> _cooldownAnimation;
 
+  // Spiritual Energy Session Tracking
+  double? _sessionStartProgress;
+  int _sessionDzikirTotal = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_sessionStartProgress == null) {
+      final appState = Provider.of<AppState>(context, listen: false);
+      _sessionStartProgress = QuranProgressHelper.getCombinedSpiritualProgress(
+        khatmCount: appState.khatmCount,
+        currentSurahIndex: appState.currentSurahIndex,
+        currentAyahNumber: appState.lastReadAyahNumber,
+        quranData: appState.quranData,
+        totalDzikirCount: appState.totalDzikirCount,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -358,6 +378,31 @@ class _DzikirScreenState extends State<DzikirScreen>
     _pulseController.dispose();
     _cooldownController.dispose();
     EyeTrackerService().dispose();
+
+    if (_sessionDzikirTotal > 0) {
+      try {
+        final appState = Provider.of<AppState>(context, listen: false);
+        // Persist any partial round taps that were not saved in onCompletedRound
+        final uncompletedTaps = _count % _target;
+        if (uncompletedTaps > 0) {
+          appState.addDzikirCount(uncompletedTaps);
+        }
+        final currentProgress = QuranProgressHelper.getCombinedSpiritualProgress(
+          khatmCount: appState.khatmCount,
+          currentSurahIndex: appState.currentSurahIndex,
+          currentAyahNumber: appState.lastReadAyahNumber,
+          quranData: appState.quranData,
+          totalDzikirCount: appState.totalDzikirCount,
+        );
+        appState.triggerSpiritualEnergy(
+          previousProgress: _sessionStartProgress ?? currentProgress,
+          targetProgress: currentProgress,
+          source: 'dzikir',
+          itemsCount: _sessionDzikirTotal,
+        );
+      } catch (_) {}
+    }
+
     super.dispose();
   }
 
@@ -393,6 +438,8 @@ class _DzikirScreenState extends State<DzikirScreen>
 
     _roundStartTime ??= DateTime.now();
 
+    _sessionDzikirTotal++;
+
     setState(() {
       _isInCooldown = true;
       _count++;
@@ -422,13 +469,14 @@ class _DzikirScreenState extends State<DzikirScreen>
     final appState = Provider.of<AppState>(context, listen: false);
     final lang = appState.languageCode;
     final currentPreset = kDzikirPresets[_selectedPresetIndex];
-    const pointsEarned = 10; // Exactly in the middle between Quran and Hadith
 
-    await appState.saveDzikirProgress(
+    final result = await appState.saveDzikirProgress(
       currentPreset.title,
       _target,
-      pointsEarned,
+      10,
     );
+    final pointsEarned = result['pointsEarned'] as int? ?? 0;
+    final roundNumber = result['round'] as int? ?? 1;
 
     final durationSeconds = _roundStartTime != null
         ? DateTime.now().difference(_roundStartTime!).inSeconds
@@ -506,10 +554,13 @@ class _DzikirScreenState extends State<DzikirScreen>
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      '+$pointsEarned ${Translations.get(lang, 'points')}',
+                      pointsEarned > 0
+                          ? '+$pointsEarned ${Translations.get(lang, 'points')} (Putaran $roundNumber/3)'
+                          : 'Putaran ke-$roundNumber (Batas 3 putaran poin tercapai, tasbih tetap tercatat)',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         color: colorScheme.onTertiaryContainer,
-                        fontSize: 15,
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

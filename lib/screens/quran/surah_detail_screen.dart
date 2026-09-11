@@ -11,6 +11,7 @@ import '../../services/eye_tracker_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../utils/translations.dart';
 import '../../services/analytics_service.dart';
+import '../../utils/quran_progress_helper.dart';
 
 class SurahDetailScreen extends StatefulWidget {
   final Map<String, dynamic> surah;
@@ -50,6 +51,25 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   bool _isInitializing = false;
   bool _isDisposed = false;
   DateTime? _readingStartTime;
+
+  // Spiritual Energy Session Tracking
+  double? _sessionStartProgress;
+  int _sessionAyahsCount = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_sessionStartProgress == null) {
+      final appState = Provider.of<AppState>(context, listen: false);
+      _sessionStartProgress = QuranProgressHelper.getCombinedSpiritualProgress(
+        khatmCount: appState.khatmCount,
+        currentSurahIndex: appState.currentSurahIndex,
+        currentAyahNumber: appState.lastReadAyahNumber,
+        quranData: appState.quranData,
+        totalDzikirCount: appState.totalDzikirCount,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -353,7 +373,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     }
   }
 
-  void _onSuccess(int index, String arabic, {String method = 'voice'}) {
+  Future<void> _onSuccess(int index, String arabic, {String method = 'voice'}) async {
     if (!mounted || _isDisposed) return;
     final appState = Provider.of<AppState>(context, listen: false);
 
@@ -363,12 +383,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     int pointsEarned = 0;
     if (getsPoints) {
-      // Dynamic point calculation: 10 base points + bonus based on length
-      // Every 25 characters of Arabic (roughly a line) adds 1 point.
-      pointsEarned = 10 + (arabic.length ~/ 25);
+      // Rebalanced Base Ayah Economy (Effort-Based Tiering):
+      // 2 points standard, +1 point if long ayah (> 75 Arabic chars)
+      pointsEarned = 2 + (arabic.length > 75 ? 1 : 0);
       appState.addPoints(pointsEarned);
       appState.setLastReadAyat(arabic);
     }
+
+    _sessionAyahsCount++;
 
     // saveProgress handles history internally and only updates "Last Read" if it's new progress
     appState.saveProgress(
@@ -383,6 +405,18 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         ? DateTime.now().difference(_readingStartTime!).inSeconds
         : 0;
     _readingStartTime = null;
+
+    // Check if user completed the entire Surah!
+    final totalAyahsInSurah = (widget.surah['ayahs'] as List).length;
+    Map<String, dynamic>? milestoneResult;
+    if (index == totalAyahsInSurah - 1 && getsPoints) {
+      milestoneResult = await appState.completeSurahMilestone(
+        surahNumber: surahNumber,
+        surahName: widget.surah['surah_name'] as String? ?? 'Surah $surahNumber',
+        totalAyahs: totalAyahsInSurah,
+        readingDurationSeconds: durationSeconds,
+      );
+    }
 
     // Log to Google Analytics
     AnalyticsService.logQuranSuccess(
@@ -399,35 +433,60 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              getsPoints ? Icons.check_circle : Icons.history_rounded,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              getsPoints
-                  ? "Masha Allah! +$pointsEarned Poin"
-                  : "Riwayat Bacaan Tersimpan",
-            ),
-          ],
-        ),
-        backgroundColor: getsPoints
-            ? Colors.teal.shade700
-            : Colors.blueGrey.shade700,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    if (milestoneResult != null && milestoneResult['isNewMilestone'] == true) {
+      final int bonus = milestoneResult['bonusPoints'] as int? ?? 10;
+      final int tier = milestoneResult['tier'] as int? ?? 1;
+      final bool isKhatam = milestoneResult['isKhatam'] == true;
 
-    // Celebration for Khatm
-    final totalAyahsInSurah = (widget.surah['ayahs'] as List).length;
-    if (surahNumber == 114 && index == totalAyahsInSurah - 1 && getsPoints) {
-      _showKhatmCelebration(context, appState.khatmCount);
+      if (isKhatam) {
+        _showKhatmCelebration(context, appState.khatmCount);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.emoji_events_rounded, color: Colors.amber),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Masha Allah! Selesai Surah (Tier $tier: +$bonus Poin Bonus)",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.teal.shade900,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                getsPoints ? Icons.check_circle : Icons.history_rounded,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                getsPoints
+                    ? "Masha Allah! +$pointsEarned Poin"
+                    : "Riwayat Bacaan Tersimpan",
+              ),
+            ],
+          ),
+          backgroundColor: getsPoints
+              ? Colors.teal.shade700
+              : Colors.blueGrey.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -936,6 +995,25 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     // Stop services without setState
     _stopListening(isDisposing: true);
     _stopEyeReading(isDisposing: true);
+
+    if (_sessionAyahsCount > 0) {
+      try {
+        final appState = Provider.of<AppState>(context, listen: false);
+        final currentProgress = QuranProgressHelper.getCombinedSpiritualProgress(
+          khatmCount: appState.khatmCount,
+          currentSurahIndex: appState.currentSurahIndex,
+          currentAyahNumber: appState.lastReadAyahNumber,
+          quranData: appState.quranData,
+          totalDzikirCount: appState.totalDzikirCount,
+        );
+        appState.triggerSpiritualEnergy(
+          previousProgress: _sessionStartProgress ?? currentProgress,
+          targetProgress: currentProgress,
+          source: 'quran',
+          itemsCount: _sessionAyahsCount,
+        );
+      } catch (_) {}
+    }
 
     super.dispose();
   }

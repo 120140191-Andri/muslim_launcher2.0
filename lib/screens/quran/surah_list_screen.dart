@@ -4,6 +4,7 @@ import '../../providers/app_state.dart';
 import 'surah_detail_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
+import '../../utils/quran_progress_helper.dart';
 
 class SurahListScreen extends StatefulWidget {
   const SurahListScreen({super.key});
@@ -13,11 +14,6 @@ class SurahListScreen extends StatefulWidget {
 }
 
 class _SurahListScreenState extends State<SurahListScreen> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -34,6 +30,15 @@ class _SurahListScreenState extends State<SurahListScreen> {
         prevFinished ? highestSurah + 1 : highestSurah;
 
     final colorScheme = Theme.of(context).colorScheme;
+
+    final int currentSurahNum = appState.currentSurahIndex + 1;
+    final int currentAyahNum =
+        appState.lastReadAyahNumber > 0 ? appState.lastReadAyahNumber : 1;
+    final int currentJuz = QuranProgressHelper.getJuzNumber(
+      currentSurahNum,
+      currentAyahNum,
+    );
+    final KhatamPhase currentPhase = QuranProgressHelper.getPhase(currentJuz);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -128,13 +133,14 @@ class _SurahListScreenState extends State<SurahListScreen> {
               ],
             ),
           ),
+
           Expanded(
             child: appState.quranData.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     physics: const BouncingScrollPhysics(),
                     cacheExtent: 80,
-                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 60),
+                    padding: const EdgeInsets.fromLTRB(0, 2, 0, 60),
                     itemCount: appState.quranData.length,
                     itemBuilder: (context, index) {
                       final surah = appState.quranData[index];
@@ -144,7 +150,16 @@ class _SurahListScreenState extends State<SurahListScreen> {
                       final isFinished = index < highestSurah ||
                           (index == highestSurah && prevFinished);
 
-                      return RepaintBoundary(
+                      KhatamPhase? sectionPhase;
+                      if (index == 0) {
+                        sectionPhase = KhatamPhase.grandClimb;
+                      } else if (index == 6) {
+                        sectionPhase = KhatamPhase.rhythmicCadence;
+                      } else if (index == 57) {
+                        sectionPhase = KhatamPhase.sprintSummit;
+                      }
+
+                      final tile = RepaintBoundary(
                         child: Opacity(
                           opacity: isFuture ? 0.5 : 1.0,
                           child: _SurahTile(
@@ -163,10 +178,174 @@ class _SurahListScreenState extends State<SurahListScreen> {
                           ),
                         ),
                       );
+
+                      if (sectionPhase != null) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _PhaseSectionHeader(
+                              phase: sectionPhase,
+                              lang: lang,
+                              isCurrentPhase: currentPhase == sectionPhase,
+                              onInfoTap: () {
+                                QuranProgressHelper.showJourneyInfoModal(
+                                  context,
+                                  lang,
+                                  currentJuz,
+                                );
+                              },
+                            ),
+                            tile,
+                          ],
+                        );
+                      }
+
+                      return tile;
                     },
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PhaseSectionHeader extends StatelessWidget {
+  final KhatamPhase phase;
+  final String lang;
+  final bool isCurrentPhase;
+  final VoidCallback onInfoTap;
+
+  const _PhaseSectionHeader({
+    required this.phase,
+    required this.lang,
+    required this.isCurrentPhase,
+    required this.onInfoTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final title = QuranProgressHelper.getPhaseTitle(phase, lang);
+
+    Color accentColor;
+    IconData phaseIcon;
+    switch (phase) {
+      case KhatamPhase.grandClimb:
+        accentColor = const Color(0xFF10B981);
+        phaseIcon = Icons.eco_rounded;
+        break;
+      case KhatamPhase.rhythmicCadence:
+        accentColor = const Color(0xFF0284C7);
+        phaseIcon = Icons.spa_rounded;
+        break;
+      case KhatamPhase.sprintSummit:
+        accentColor = const Color(0xFFF59E0B);
+        phaseIcon = Icons.bolt_rounded;
+        break;
+    }
+
+    return Container(
+      margin: EdgeInsets.fromLTRB(
+        16,
+        phase == KhatamPhase.grandClimb ? 4 : 22,
+        16,
+        8,
+      ),
+      decoration: BoxDecoration(
+        color: isCurrentPhase
+            ? accentColor.withValues(alpha: 0.12)
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isCurrentPhase
+              ? accentColor.withValues(alpha: 0.45)
+              : colorScheme.outlineVariant.withValues(alpha: 0.35),
+          width: isCurrentPhase ? 1.2 : 0.8,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onInfoTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    phaseIcon,
+                    size: 16,
+                    color: accentColor,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                            color: isCurrentPhase
+                                ? accentColor
+                                : colorScheme.onSurface,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isCurrentPhase) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            lang == 'id' ? 'Aktif' : 'Active',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: accentColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onInfoTap,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.info_outline_rounded,
+                        size: 20,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

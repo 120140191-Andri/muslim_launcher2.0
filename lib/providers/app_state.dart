@@ -11,8 +11,56 @@ import '../services/analytics_service.dart';
 import '../screens/home/app_list_screen.dart';
 import '../utils/translations.dart';
 
+class SpiritualEnergySession {
+  final double previousProgress;
+  final double targetProgress;
+  final int durationSeconds;
+  final String source; // 'quran' or 'dzikir'
+  final int itemsCount;
+
+  const SpiritualEnergySession({
+    required this.previousProgress,
+    required this.targetProgress,
+    required this.durationSeconds,
+    required this.source,
+    required this.itemsCount,
+  });
+}
+
 class AppState extends ChangeNotifier {
   final SharedPreferences prefs;
+
+  SpiritualEnergySession? _pendingEnergySession;
+  SpiritualEnergySession? get pendingEnergySession => _pendingEnergySession;
+
+  SpiritualEnergySession? consumePendingEnergySession() {
+    final session = _pendingEnergySession;
+    _pendingEnergySession = null;
+    return session;
+  }
+
+  void triggerSpiritualEnergy({
+    required double previousProgress,
+    required double targetProgress,
+    required String source,
+    required int itemsCount,
+  }) {
+    if (itemsCount <= 0) return;
+    // Minimum 15 seconds, up to 60 seconds (1 minute)
+    final int extraSeconds = source == 'quran'
+        ? (itemsCount * 4)
+        : (itemsCount ~/ 3);
+    final int durationSeconds = (15 + extraSeconds).clamp(15, 60);
+
+    _pendingEnergySession = SpiritualEnergySession(
+      previousProgress: previousProgress.clamp(0.0, 1.0),
+      targetProgress: targetProgress.clamp(0.0, 1.0),
+      durationSeconds: durationSeconds,
+      source: source,
+      itemsCount: itemsCount,
+    );
+    notifyListeners();
+  }
 
   AppState(this.prefs) {
     _init();
@@ -56,6 +104,22 @@ class AppState extends ChangeNotifier {
   Timer? _statusTimer;
   
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  // Gamification & Progression Fields
+  String _userName = '';
+  Set<int> _completedSurahsThisCycle = {};
+  int _dailyDzikirRounds = 0;
+  int _dailyDzikirPoints = 0;
+  String _dailyDzikirDate = '';
+  int _totalDzikirCount = 0;
+
+  String get userName => _userName;
+  Set<int> get completedSurahsThisCycle => _completedSurahsThisCycle;
+  int get dailyDzikirRounds => _dailyDzikirRounds;
+  int get dailyDzikirPoints => _dailyDzikirPoints;
+  int get totalDzikirCount => _totalDzikirCount;
+  bool isSurahCompletedInThisCycle(int surahNumber) =>
+      _completedSurahsThisCycle.contains(surahNumber);
 
   String _lastReadAyat = '';
   String _lastReadSurah = '';
@@ -190,8 +254,25 @@ class AppState extends ChangeNotifier {
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
     _khatmCount = prefs.getInt('khatmCount') ?? 0;
-    
+
+    _userName = prefs.getString('userName') ?? '';
+    final savedCompletedSurahs = prefs.getStringList('completedSurahsThisCycle') ?? [];
+    _completedSurahsThisCycle = savedCompletedSurahs.map((e) => int.tryParse(e) ?? 0).where((e) => e > 0).toSet();
+
     final today = DateTime.now().toIso8601String().split('T')[0];
+    _dailyDzikirDate = prefs.getString('dailyDzikirDate') ?? '';
+    if (_dailyDzikirDate != today) {
+      _dailyDzikirRounds = 0;
+      _dailyDzikirPoints = 0;
+      _dailyDzikirDate = today;
+      prefs.setInt('dailyDzikirRounds', 0);
+      prefs.setInt('dailyDzikirPoints', 0);
+      prefs.setString('dailyDzikirDate', today);
+    } else {
+      _dailyDzikirRounds = prefs.getInt('dailyDzikirRounds') ?? 0;
+      _dailyDzikirPoints = prefs.getInt('dailyDzikirPoints') ?? 0;
+    }
+
     final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
     if (lastHadithDate != today) {
       _readHadithIds = {};
@@ -208,6 +289,20 @@ class AppState extends ChangeNotifier {
       _readingHistory = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
     } catch (e) {
       _readingHistory = [];
+    }
+
+    _totalDzikirCount = prefs.getInt('totalDzikirCount') ?? 0;
+    if (_totalDzikirCount == 0 && _readingHistory.isNotEmpty) {
+      for (final item in _readingHistory) {
+        final title = item['title']?.toString() ?? '';
+        if (title.contains('Dzikir:')) {
+          final count = item['versesCount'] as int? ?? item['count'] as int? ?? 0;
+          _totalDzikirCount += count;
+        }
+      }
+      if (_totalDzikirCount > 0) {
+        prefs.setInt('totalDzikirCount', _totalDzikirCount);
+      }
     }
     
     final unlockedJson = prefs.getString('unlockedExpirations') ?? '{}';
@@ -3177,23 +3272,8 @@ class AppState extends ChangeNotifier {
       await prefs.setInt('currentAyahIndex', ayahIndex);
 
       // CHECK FOR KHATM (FULL COMPLETION)
-      // Surah 114 (index 113) is An-Nas
-      if (surahIndex == 113) {
-        final lastSurah = _quranData[113];
-        final totalAyahs = lastSurah['total_ayah'] as int;
-        if (ayahIndex == totalAyahs - 1) {
-          // KHATM ACHIEVED!
-          _khatmCount++;
-          await prefs.setInt('khatmCount', _khatmCount);
-          AnalyticsService.logQuranKhatm(khatmCount: _khatmCount);
-          
-          // Reset progress for new cycle
-          _highestSurahIndex = 0;
-          _highestAyahIndex = -1;
-          await prefs.setInt('highestSurahIndex', 0);
-          await prefs.setInt('highestAyahIndex', -1);
-        }
-      }
+      // Delegated to completeSurahMilestone when Surah 114 is completed
+      // to ensure unified +500 grand bonus, khatmCount increment, and cycle reset.
     }
 
     // Always add to history regardless of sequential progress
@@ -3305,13 +3385,158 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveDzikirProgress(String dzikirTitle, int count, int pointsEarned) async {
-    if (pointsEarned > 0) {
-      _points += pointsEarned;
-      await prefs.setInt('points', _points);
+  Future<void> setUserName(String name) async {
+    _userName = name.trim();
+    await prefs.setString('userName', _userName);
+    notifyListeners();
+  }
+
+  /// Completes a Surah milestone according to tiered effort reward economy (docs/milestone_share_card_plan.md Section 3.3).
+  /// Tier 1: 1-25 ayat (+10 pts)
+  /// Tier 2: 26-75 ayat (+25 pts)
+  /// Tier 3: 76-150 ayat (+50 pts)
+  /// Tier 4: >150 ayat (+100 pts)
+  /// Special Friday Al-Kahfi (Surah 18): (+50 pts)
+  /// Grand Milestone Khatam 30 Juz: (+500 pts and resets cycle)
+  Future<Map<String, dynamic>> completeSurahMilestone({
+    required int surahNumber,
+    required String surahName,
+    required int totalAyahs,
+    int readingDurationSeconds = 0,
+  }) async {
+    final bool isAlreadyCompleted = _completedSurahsThisCycle.contains(surahNumber);
+    if (isAlreadyCompleted) {
+      return {
+        'isNewMilestone': false,
+        'isKhatam': false,
+        'bonusPoints': 0,
+        'tier': 0,
+      };
     }
 
-    _addToHistory("Dzikir: $dzikirTitle (${count}x)", count, pointsEarned);
+    int tier = 1;
+    int bonusPoints = 10;
+    if (totalAyahs <= 25) {
+      tier = 1;
+      bonusPoints = 10;
+    } else if (totalAyahs <= 75) {
+      tier = 2;
+      bonusPoints = 25;
+    } else if (totalAyahs <= 150) {
+      tier = 3;
+      bonusPoints = 50;
+    } else {
+      tier = 4;
+      bonusPoints = 100;
+    }
+
+    // Special Friday Al-Kahf check (Surah 18)
+    final now = DateTime.now();
+    if (surahNumber == 18 && now.weekday == DateTime.friday) {
+      bonusPoints += 50;
+    }
+
+    _completedSurahsThisCycle.add(surahNumber);
+    await prefs.setStringList(
+      'completedSurahsThisCycle',
+      _completedSurahsThisCycle.map((e) => e.toString()).toList(),
+    );
+
+    _points += bonusPoints;
+    await prefs.setInt('points', _points);
+
+    bool isKhatam = false;
+    if (_completedSurahsThisCycle.length >= 114 || surahNumber == 114) {
+      isKhatam = true;
+      _khatmCount++;
+      await prefs.setInt('khatmCount', _khatmCount);
+      AnalyticsService.logQuranKhatm(khatmCount: _khatmCount);
+
+      // Grand bonus +500 points for Khatam 30 Juz
+      _points += 500;
+      await prefs.setInt('points', _points);
+
+      // Reset completed surahs for the new khatam cycle
+      _completedSurahsThisCycle.clear();
+      await prefs.setStringList('completedSurahsThisCycle', []);
+      _highestSurahIndex = 0;
+      _highestAyahIndex = -1;
+      await prefs.setInt('highestSurahIndex', 0);
+      await prefs.setInt('highestAyahIndex', -1);
+
+      _addToHistory("👑 KHATAM 30 JUZ AL-QUR'AN", 30, 500);
+    }
+
+    _addToHistory("🏆 Selesai Surah $surahName", totalAyahs, bonusPoints);
+    notifyListeners();
+
+    return {
+      'isNewMilestone': true,
+      'isKhatam': isKhatam,
+      'bonusPoints': bonusPoints,
+      'tier': tier,
+      'surahNumber': surahNumber,
+      'surahName': surahName,
+      'totalAyahs': totalAyahs,
+    };
+  }
+
+  /// Saves Dzikir progress with scientific 3-round daily cap (99 butir = 19 points max).
+  /// Round 1 (33x): +3 pts
+  /// Round 2 (66x): +3 pts
+  /// Round 3 (99x): +13 pts (3 + 10 bonus)
+  /// Round > 3: 0 pts (still records count & history, no app unlock spamming)
+  Future<Map<String, dynamic>> saveDzikirProgress(
+    String dzikirTitle,
+    int count,
+    int rawPoints,
+  ) async {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyDzikirDate != today) {
+      _dailyDzikirRounds = 0;
+      _dailyDzikirPoints = 0;
+      _dailyDzikirDate = today;
+    }
+
+    _dailyDzikirRounds++;
+
+    int allocatedPoints = 0;
+    if (_dailyDzikirRounds == 1) {
+      allocatedPoints = 3;
+    } else if (_dailyDzikirRounds == 2) {
+      allocatedPoints = 3;
+    } else if (_dailyDzikirRounds == 3) {
+      allocatedPoints = 13;
+    } else {
+      allocatedPoints = 0;
+    }
+
+    if (allocatedPoints > 0) {
+      _points += allocatedPoints;
+      _dailyDzikirPoints += allocatedPoints;
+      await prefs.setInt('points', _points);
+      await prefs.setInt('dailyDzikirPoints', _dailyDzikirPoints);
+    }
+    await prefs.setInt('dailyDzikirRounds', _dailyDzikirRounds);
+    await prefs.setString('dailyDzikirDate', _dailyDzikirDate);
+
+    _totalDzikirCount += count;
+    await prefs.setInt('totalDzikirCount', _totalDzikirCount);
+
+    _addToHistory("Dzikir: $dzikirTitle (${count}x)", count, allocatedPoints);
+    notifyListeners();
+
+    return {
+      'round': _dailyDzikirRounds,
+      'pointsEarned': allocatedPoints,
+      'isDailyCapReached': _dailyDzikirRounds >= 3,
+    };
+  }
+
+  Future<void> addDzikirCount(int count) async {
+    if (count <= 0) return;
+    _totalDzikirCount += count;
+    await prefs.setInt('totalDzikirCount', _totalDzikirCount);
     notifyListeners();
   }
 

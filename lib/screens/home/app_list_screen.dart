@@ -392,136 +392,229 @@ class _AppListScreenState extends State<AppListScreen>
   }
 
   void _showAppOptions(AppInfo app) {
-    final lang = context.read<AppState>().languageCode;
+    final appState = context.read<AppState>();
+    final lang = appState.languageCode;
+    final cleanPkg = app.packageName.toLowerCase().trim();
+    final isBlocked = appState.blockedApps.contains(cleanPkg);
+    final isProhibited = appState.isAppProhibited(app.packageName, app.appName);
+    final isSystemEssential = AppState.isSystemEssentialApp(app.packageName);
+    final canMarkProductive = isBlocked &&
+        !AppState.isStrictlyNonProductive(app.packageName, app.appName, app.category);
+    final canMarkNonProductive =
+        !isBlocked && !isProhibited && !isSystemEssential;
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
         ),
       ),
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      Icons.delete_sweep_rounded,
-                      color: Colors.red.shade700,
-                      size: 28,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // App Header Identity
+              Row(
+                children: [
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: _AppIcon(
+                      packageName: app.packageName,
+                      grayscale: isBlocked || isProhibited,
                     ),
                   ),
-                  title: Text(
-                    Translations.get(lang, 'uninstall_app'),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Colors.red.shade900,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          app.appName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isBlocked
+                              ? (lang == 'id'
+                                  ? 'Aplikasi Dibatasi'
+                                  : Translations.get(lang, 'app_blocked'))
+                              : (lang == 'id'
+                                  ? 'Aplikasi Terpasang'
+                                  : 'Installed App'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isBlocked
+                                ? Colors.amber.shade800
+                                : Colors.grey.shade600,
+                            fontWeight:
+                                isBlocked ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  subtitle: Text(
-                    app.appName,
-                    style: TextStyle(color: Colors.red.shade700),
-                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Divider(height: 1, color: Colors.grey.withValues(alpha: 0.2)),
+              const SizedBox(height: 10),
+
+              // Action 1: Mark as Productive (if blocked)
+              if (canMarkProductive)
+                _buildActionTile(
+                  ctx: ctx,
+                  icon: Icons.verified_rounded,
+                  iconColor: Colors.teal.shade700,
+                  bgColor: Colors.teal.shade50,
+                  title: Translations.get(lang, 'mark_as_productive'),
+                  subtitle: Translations.get(lang, 'mark_as_productive_subtitle'),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _confirmUninstall(app, lang);
+                    context.read<AppState>().markAppAsProductive(
+                          app.packageName,
+                          appName: app.appName,
+                        );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "${app.appName}: ${Translations.get(lang, 'confirm_mark_productive_title')}",
+                        ),
+                        backgroundColor: Colors.teal.shade700,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
                   },
                 ),
-                if (!context.read<AppState>().blockedApps.contains(app.packageName.toLowerCase().trim()) &&
-                    !context.read<AppState>().isAppProhibited(app.packageName, app.appName) &&
-                    !AppState.isSystemEssentialApp(app.packageName))
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Icons.do_not_disturb_on_outlined,
-                        color: Colors.amber.shade900,
-                        size: 28,
-                      ),
-                    ),
-                    title: Text(
-                      Translations.get(lang, 'mark_as_non_productive'),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Colors.amber.shade900,
-                      ),
-                    ),
-                    subtitle: Text(
-                      lang == 'id'
-                          ? 'Kunci permanen agar tidak mengganggu'
-                          : 'Lock permanently to prevent distraction',
-                      style: TextStyle(color: Colors.amber.shade800, fontSize: 12),
-                    ),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _confirmMarkAsNonProductive(app, lang);
-                    },
+
+              // Action 2: Mark as Non-Productive (if not blocked)
+              if (canMarkNonProductive)
+                _buildActionTile(
+                  ctx: ctx,
+                  icon: Icons.do_not_disturb_on_outlined,
+                  iconColor: Colors.amber.shade900,
+                  bgColor: Colors.amber.shade50,
+                  title: Translations.get(lang, 'mark_as_non_productive'),
+                  subtitle: lang == 'id'
+                      ? 'Kunci permanen agar tidak mengganggu'
+                      : 'Lock permanently to prevent distraction',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _confirmMarkAsNonProductive(app, lang);
+                  },
+                ),
+
+              // Action 3: Uninstall App
+              _buildActionTile(
+                ctx: ctx,
+                icon: Icons.delete_outline_rounded,
+                iconColor: Colors.red.shade700,
+                bgColor: Colors.red.shade50,
+                title: Translations.get(lang, 'uninstall_app'),
+                subtitle: lang == 'id'
+                    ? 'Hapus aplikasi dari perangkat ini'
+                    : 'Uninstall this app from device',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmUninstall(app, lang);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionTile({
+    required BuildContext ctx,
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                if (context.read<AppState>().blockedApps.contains(app.packageName.toLowerCase().trim()) &&
-                    !AppState.isStrictlyNonProductive(app.packageName, app.appName, app.category))
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.teal.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Icons.verified_rounded,
-                        color: Colors.teal.shade700,
-                        size: 28,
-                      ),
-                    ),
-                    title: Text(
-                      Translations.get(lang, 'mark_as_productive'),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Colors.teal.shade900,
-                      ),
-                    ),
-                    subtitle: Text(
-                      Translations.get(lang, 'mark_as_productive_subtitle'),
-                      style: TextStyle(color: Colors.teal.shade700, fontSize: 12),
-                    ),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      context.read<AppState>().markAppAsProductive(
-                        app.packageName,
-                        appName: app.appName,
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            "${app.appName}: ${Translations.get(lang, 'confirm_mark_productive_title')}",
-                          ),
-                          backgroundColor: Colors.teal.shade700,
-                          behavior: SnackBarBehavior.floating,
+                  child: Icon(icon, color: iconColor, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.5,
                         ),
-                      );
-                    },
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400,
+                  size: 20,
+                ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -611,8 +704,8 @@ class _AppListScreenState extends State<AppListScreen>
                 SnackBar(
                   content: Text(
                     lang == 'id'
-                        ? '${app.appName} ditandai sebagai non-produktif permanen'
-                        : '${app.appName} permanently marked as non-productive',
+                        ? '${app.appName} ditandai sebagai aplikasi non-produktif permanen'
+                        : '${app.appName} permanently marked as non-productive app',
                   ),
                   backgroundColor: Colors.red.shade700,
                   behavior: SnackBarBehavior.floating,

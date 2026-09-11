@@ -194,6 +194,54 @@ void main() {
       await tester.pumpAndSettle();
       expect(appState.lastAttemptedBlockedPackage, isNull);
     });
+
+    testWidgets('Tandai sebagai aplikasi produktif button shows confirmation dialog and marks app as productive', (tester) async {
+      final appState = AppState(prefs);
+      appState.setBlockedPackage('com.example.notes');
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: BlockedAppScreen(packageName: 'com.example.notes'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final markButtonText = Translations.get('id', 'mark_as_productive');
+      expect(find.text(markButtonText), findsOneWidget);
+
+      // Tap "Tandai sebagai Produktif"
+      await tester.ensureVisible(find.text(markButtonText));
+      await tester.tap(find.text(markButtonText));
+      await tester.pumpAndSettle();
+
+      // Confirmation dialog should be visible on screen
+      final confirmTitle = Translations.get('id', 'confirm_mark_productive_title');
+      expect(find.text(confirmTitle), findsOneWidget);
+
+      // Cancel first
+      await tester.tap(find.text(Translations.get('id', 'cancel')));
+      await tester.pumpAndSettle();
+      expect(find.text(confirmTitle), findsNothing);
+      expect(appState.lastAttemptedBlockedPackage, equals('com.example.notes'));
+
+      // Tap again and confirm
+      await tester.tap(find.text(markButtonText));
+      await tester.pumpAndSettle();
+      expect(find.text(confirmTitle), findsOneWidget);
+
+      await tester.tap(find.text(Translations.get('id', 'ok')));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      // Should have marked as productive and cleared blocked app
+      expect(appState.lastAttemptedBlockedPackage, isNull);
+      expect(appState.customProductiveApps.contains('com.example.notes'), isTrue);
+    });
   });
 
   group('GhadhulBasharOverlay Navigation', () {

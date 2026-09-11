@@ -18,9 +18,14 @@ class BlockedAppScreen extends StatefulWidget {
 
 class _BlockedAppScreenState extends State<BlockedAppScreen> {
   bool _isUnlocking = false;
+  bool _showConfirmProductive = false;
 
   void _safeDismiss(AppState appState) {
     if (_isUnlocking) return;
+    if (_showConfirmProductive) {
+      setState(() => _showConfirmProductive = false);
+      return;
+    }
     appState.clearBlockedApp();
   }
 
@@ -43,9 +48,11 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
         type: MaterialType.transparency,
         child: Scaffold(
           backgroundColor: const Color(0xFF031E1B),
-          body: Container(
-            width: double.infinity,
-            height: double.infinity,
+          body: Stack(
+            children: [
+              Container(
+                width: double.infinity,
+                height: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -229,65 +236,10 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: _isUnlocking
+                            onPressed: (_isUnlocking || _showConfirmProductive)
                                 ? null
-                                : () async {
-                                    final confirm = await showDialog<bool>(
-                                      context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        title: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.verified_rounded,
-                                              color: Colors.teal.shade700,
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Text(
-                                                Translations.get(lang, 'confirm_mark_productive_title'),
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        content: Text(
-                                          '$appName: ${Translations.get(lang, 'confirm_mark_productive_desc')}',
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(ctx, false),
-                                            child: Text(
-                                              Translations.get(lang, 'cancel'),
-                                            ),
-                                          ),
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.teal.shade700,
-                                              foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                            onPressed: () => Navigator.pop(ctx, true),
-                                            child: Text(
-                                              Translations.get(lang, 'ok'),
-                                              style: const TextStyle(fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                    if (confirm == true && mounted) {
-                                      await appState.markAppAsProductive(widget.packageName, appName: appName);
-                                      appState.clearBlockedApp();
-                                      await appState.openApp(widget.packageName, bypassGuards: true);
-                                    }
+                                : () {
+                                    setState(() => _showConfirmProductive = true);
                                   },
                             icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
                             style: OutlinedButton.styleFrom(
@@ -635,8 +587,109 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
               ),
             ),
           ),
-        ),
+          if (_showConfirmProductive)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  if (!_isUnlocking) {
+                    setState(() => _showConfirmProductive = false);
+                  }
+                },
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.65),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: GestureDetector(
+                    onTap: () {}, // Prevent taps inside dialog from closing it
+                    child: AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      title: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.teal.shade50,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.verified_rounded,
+                              color: Colors.teal.shade700,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              Translations.get(lang, 'confirm_mark_productive_title'),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      content: Text(
+                        '$appName: ${Translations.get(lang, 'confirm_mark_productive_desc')}',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            setState(() => _showConfirmProductive = false);
+                          },
+                          child: Text(
+                            Translations.get(lang, 'cancel'),
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal.shade700,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: _isUnlocking
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    _showConfirmProductive = false;
+                                    _isUnlocking = true;
+                                  });
+                                  try {
+                                    await appState.markAppAsProductive(widget.packageName, appName: appName);
+                                    appState.clearBlockedApp();
+                                    await appState.openApp(widget.packageName, bypassGuards: true);
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => _isUnlocking = false);
+                                    }
+                                  }
+                                },
+                          child: _isUnlocking
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : Text(
+                                  Translations.get(lang, 'ok'),
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
-    );
+    ),
+  ),
+);
   }
 }

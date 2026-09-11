@@ -224,9 +224,9 @@ class _MilestoneCelebrationDialogState
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
                               child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 290,
-                                  maxHeight: 515,
+                                constraints: BoxConstraints(
+                                  maxWidth: (MediaQuery.sizeOf(context).width - 64).clamp(220.0, 280.0),
+                                  maxHeight: (MediaQuery.sizeOf(context).height * 0.50).clamp(340.0, 480.0),
                                 ),
                                 child: MilestoneShareCard(
                                   data: _effectiveData,
@@ -295,11 +295,15 @@ class _MilestoneCelebrationDialogState
                                     color: Colors.teal,
                                   ),
                                   const SizedBox(width: 6),
-                                  Text(
-                                    'Sematkan nama saya di kartu',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark ? Colors.white70 : Colors.black54,
+                                  Flexible(
+                                    child: Text(
+                                      'Sematkan nama saya di kartu',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDark ? Colors.white70 : Colors.black54,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -341,7 +345,10 @@ class _MilestoneCelebrationDialogState
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : const Icon(Icons.download_rounded, size: 18),
-                          label: Text(_isSaving ? 'Menyimpan...' : 'Simpan Foto'),
+                          label: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(_isSaving ? 'Menyimpan...' : 'Simpan Foto'),
+                          ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
@@ -366,7 +373,10 @@ class _MilestoneCelebrationDialogState
                                   ),
                                 )
                               : const Icon(Icons.share_rounded, size: 18),
-                          label: Text(_isSharing ? 'Membagikan...' : 'Bagikan ke Status'),
+                          label: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(_isSharing ? 'Membagikan...' : 'Bagikan ke Status'),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF10B981),
                             foregroundColor: Colors.white,

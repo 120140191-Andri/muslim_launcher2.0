@@ -70,59 +70,65 @@ class MilestoneShareCard extends StatelessWidget {
     // 9:16 aspect ratio container designed for 1080x1920 Story capture
     return AspectRatio(
       aspectRatio: 9 / 16,
-      child: Container(
-        decoration: _buildBackgroundDecoration(),
-        child: Stack(
-          children: [
-            // Background Ornaments / Glow
-            ..._buildBackgroundAccents(),
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: 360,
+          height: 640,
+          child: Container(
+            decoration: _buildBackgroundDecoration(),
+            child: Stack(
+              children: [
+                // Background Ornaments / Glow
+                ..._buildBackgroundAccents(),
 
-            // Card Inner Content
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Safe Zone Top Margin + Header Branding
-                  _buildHeader(),
+                // Card Inner Content
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Safe Zone Top Margin + Header Branding
+                      _buildHeader(),
 
-                  const Spacer(flex: 2),
+                      const Spacer(),
 
-                  // Hero Badge & Maqam Indicator
-                  _buildHeroBadge(),
+                      // Hero Badge & Maqam Indicator
+                      _buildHeroBadge(),
 
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 10),
 
-                  // Main Achievement Title & Arabic
-                  _buildTitleSection(),
+                      // Main Achievement Title & Arabic
+                      _buildTitleSection(),
 
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 10),
 
-                  // Stats Grid 2x2
-                  _buildStatsGrid(),
+                      // Stats Grid 2x2
+                      _buildStatsGrid(),
 
-                  const SizedBox(height: 14),
+                      // Khatam Progress Bar
+                      if (data.type != MilestoneCardType.khatam &&
+                          data.khatamProgressJuz != null) ...[
+                        const SizedBox(height: 8),
+                        _buildKhatamProgress(),
+                      ],
 
-                  // Khatam Progress Bar
-                  if (data.type != MilestoneCardType.khatam &&
-                      data.khatamProgressJuz != null)
-                    _buildKhatamProgress(),
+                      // Quote / Hadith
+                      if (data.quote != null && data.quote!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _buildQuoteSection(),
+                      ],
 
-                  // Quote / Hadith
-                  if (data.quote != null && data.quote!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: _buildQuoteSection(),
-                    ),
+                      const Spacer(),
 
-                  const Spacer(flex: 3),
-
-                  // Footer & Play Store Link
-                  _buildFooter(),
-                ],
-              ),
+                      // Footer & Play Store Link
+                      _buildFooter(),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -331,12 +337,16 @@ class MilestoneShareCard extends StatelessWidget {
             children: [
               Icon(Icons.person_outline_rounded, size: 11, color: _secondaryTextColor),
               const SizedBox(width: 4),
-              Text(
-                effectiveName,
-                style: TextStyle(
-                  color: _primaryTextColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  effectiveName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _primaryTextColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               if (data.khatamCount != null && data.khatamCount! > 0) ...[
@@ -352,8 +362,8 @@ class MilestoneShareCard extends StatelessWidget {
 
   Widget _buildHeroBadge() {
     return Container(
-      width: 76,
-      height: 76,
+      width: 64,
+      height: 64,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
@@ -368,7 +378,7 @@ class MilestoneShareCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: _accentColor.withValues(alpha: 0.35),
-            blurRadius: 18,
+            blurRadius: 16,
             spreadRadius: 2,
           ),
         ],
@@ -378,7 +388,7 @@ class MilestoneShareCard extends StatelessWidget {
           data.type == MilestoneCardType.khatam
               ? Icons.workspace_premium_rounded
               : data.badgeIcon,
-          size: 40,
+          size: 34,
           color: _accentColor,
         ),
       ),
@@ -405,12 +415,12 @@ class MilestoneShareCard extends StatelessWidget {
           categoryLabel,
           style: TextStyle(
             color: _accentColor,
-            fontSize: 11,
-            letterSpacing: 2.0,
+            fontSize: 10,
+            letterSpacing: 1.8,
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         if (data.arabicTitle != null && data.arabicTitle!.isNotEmpty) ...[
           Text(
             data.arabicTitle!,
@@ -418,7 +428,7 @@ class MilestoneShareCard extends StatelessWidget {
             textDirection: TextDirection.rtl,
             style: TextStyle(
               color: _primaryTextColor,
-              fontSize: 26,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               height: 1.2,
             ),
@@ -430,18 +440,20 @@ class MilestoneShareCard extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: _primaryTextColor,
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           '"${data.subtitle}"',
           textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: _secondaryTextColor,
-            fontSize: 12,
+            fontSize: 11,
             fontStyle: FontStyle.italic,
           ),
         ),
@@ -451,7 +463,7 @@ class MilestoneShareCard extends StatelessWidget {
 
   Widget _buildStatsGrid() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: _boxBackgroundColor,
         borderRadius: BorderRadius.circular(16),
@@ -471,7 +483,7 @@ class MilestoneShareCard extends StatelessWidget {
               label: data.type == MilestoneCardType.surah ? 'Panjang Surah' : 'Hitungan',
             ),
           ),
-          Container(width: 1, height: 32, color: _boxBorderColor),
+          Container(width: 1, height: 28, color: _boxBorderColor),
           // Stat 2: Waktu / Bonus Poin
           Expanded(
             child: _buildStatItem(
@@ -480,7 +492,7 @@ class MilestoneShareCard extends StatelessWidget {
               label: 'Waktu Tilawah',
             ),
           ),
-          Container(width: 1, height: 32, color: _boxBorderColor),
+          Container(width: 1, height: 28, color: _boxBorderColor),
           // Stat 3: Bonus Kebaikan
           Expanded(
             child: _buildStatItem(
@@ -504,12 +516,12 @@ class MilestoneShareCard extends StatelessWidget {
     return Column(
       children: [
         Icon(icon, size: 16, color: _accentColor),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
           value,
           style: TextStyle(
             color: valueColor ?? _primaryTextColor,
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -529,7 +541,7 @@ class MilestoneShareCard extends StatelessWidget {
     final percent = data.khatamProgressPercent ?? ((juz / 30) * 100).round();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: _boxBackgroundColor,
         borderRadius: BorderRadius.circular(12),
@@ -548,7 +560,7 @@ class MilestoneShareCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: _primaryTextColor,
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -558,18 +570,18 @@ class MilestoneShareCard extends StatelessWidget {
                 '$percent%',
                 style: TextStyle(
                   color: _accentColor,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: (percent / 100).clamp(0.0, 1.0),
-              minHeight: 6,
+              minHeight: 5,
               backgroundColor: _secondaryTextColor.withValues(alpha: 0.15),
               valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
             ),
@@ -581,31 +593,34 @@ class MilestoneShareCard extends StatelessWidget {
 
   Widget _buildQuoteSection() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: _boxBackgroundColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _boxBorderColor),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             '"${data.quote!}"',
             textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: _secondaryTextColor,
-              fontSize: 11,
+              fontSize: 10,
               fontStyle: FontStyle.italic,
-              height: 1.35,
+              height: 1.3,
             ),
           ),
           if (data.quoteSource != null && data.quoteSource!.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               data.quoteSource!,
               style: TextStyle(
                 color: _accentColor,
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -648,26 +663,29 @@ class MilestoneShareCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: _accentColor,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.lock_clock_rounded, size: 12, color: Colors.black),
-              SizedBox(width: 4),
-              Text(
-                'Istiqomah & Disiplin',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _accentColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_clock_rounded, size: 12, color: Colors.black),
+                SizedBox(width: 4),
+                Text(
+                  'Istiqomah & Disiplin',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:muslim_launcher_2/providers/app_state.dart';
+import 'package:muslim_launcher_2/widgets/milestone_celebration_dialog.dart';
 import 'package:muslim_launcher_2/widgets/milestone_share_card.dart';
 
 void main() {
@@ -189,6 +190,90 @@ void main() {
         expect(find.text('Farhan'), findsOneWidget);
         expect(find.text('110 Ayat'), findsOneWidget);
       }
+    });
+
+    testWidgets('MilestoneCelebrationDialog renders without overflow', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.75;
+      addTearDown(tester.view.reset);
+
+      const surahData = MilestoneCardData(
+        type: MilestoneCardType.surah,
+        title: 'Al-Kahfi',
+        arabicTitle: 'الكهف',
+        subtitle: 'Menuntaskan 110 Ayat Al-Qur\'an',
+        surahNumber: 18,
+        ayahCount: 110,
+        durationMinutes: 28,
+        userName: 'Farhan',
+        khatamProgressJuz: 15,
+        khatamCount: 1,
+        dateStr: '11 September 2026',
+        bonusPoints: 50,
+        quote: 'Barangsiapa membaca Surah Al-Kahfi di hari Jumat, maka akan dipancarkan cahaya baginya...',
+        quoteSource: '(HR. Hakim & Baihaqi)',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => MilestoneCelebrationDialog.show(context, data: surahData),
+                child: const Text('Open Dialog'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pencapaian Berkah'), findsOneWidget);
+      expect(find.text('Al-Kahfi'), findsOneWidget);
+    });
+
+    testWidgets('MilestoneCelebrationDialog renders on small screen without overflow', (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      const khatamData = MilestoneCardData(
+        type: MilestoneCardType.khatam,
+        title: "Khatam 30 Juz Al-Qur'an",
+        arabicTitle: 'ختم القرآن الكريم',
+        subtitle: 'Maha Benar Allah dengan Segala Firman-Nya',
+        surahNumber: 114,
+        ayahCount: 6236,
+        durationMinutes: 120,
+        userName: 'Muhammad Farhan Al-Ghifari',
+        khatamProgressJuz: 30,
+        khatamCount: 2,
+        dateStr: '11 September 2026',
+        bonusPoints: 500,
+        quote: 'Sebaik-baik kalian adalah yang mempelajari Al-Qur\'an dan mengajarkannya.',
+        quoteSource: '(HR. Bukhari)',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => MilestoneCelebrationDialog.show(context, data: khatamData),
+                child: const Text('Open Khatam Dialog'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Khatam Dialog'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mubarak! Khatam 30 Juz'), findsOneWidget);
+      expect(find.text("Khatam 30 Juz Al-Qur'an"), findsOneWidget);
     });
   });
 }

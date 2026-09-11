@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -11,6 +12,8 @@ import '../../services/eye_tracker_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../utils/translations.dart';
 import '../../services/analytics_service.dart';
+import '../../widgets/milestone_share_card.dart';
+import '../../widgets/milestone_celebration_dialog.dart';
 
 class SurahDetailScreen extends StatefulWidget {
   final Map<String, dynamic> surah;
@@ -353,7 +356,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     }
   }
 
-  void _onSuccess(int index, String arabic, {String method = 'voice'}) {
+  void _onSuccess(int index, String arabic, {String method = 'voice'}) async {
     if (!mounted || _isDisposed) return;
     final appState = Provider.of<AppState>(context, listen: false);
 
@@ -363,9 +366,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     int pointsEarned = 0;
     if (getsPoints) {
-      // Dynamic point calculation: 10 base points + bonus based on length
-      // Every 25 characters of Arabic (roughly a line) adds 1 point.
-      pointsEarned = 10 + (arabic.length ~/ 25);
+      // Rebalanced Base Ayah Economy (Effort-Based Tiering):
+      // 2 points standard, +1 point if long ayah (> 75 Arabic chars)
+      pointsEarned = 2 + (arabic.length > 75 ? 1 : 0);
       appState.addPoints(pointsEarned);
       appState.setLastReadAyat(arabic);
     }
@@ -384,6 +387,18 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         : 0;
     _readingStartTime = null;
 
+    // Check if user completed the entire Surah!
+    final totalAyahsInSurah = (widget.surah['ayahs'] as List).length;
+    Map<String, dynamic>? milestoneResult;
+    if (index == totalAyahsInSurah - 1) {
+      milestoneResult = await appState.completeSurahMilestone(
+        surahNumber: surahNumber,
+        surahName: widget.surah['surah_name'] as String? ?? 'Surah $surahNumber',
+        totalAyahs: totalAyahsInSurah,
+        readingDurationSeconds: durationSeconds,
+      );
+    }
+
     // Log to Google Analytics
     AnalyticsService.logQuranSuccess(
       surahNumber: surahNumber,
@@ -399,122 +414,64 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              getsPoints ? Icons.check_circle : Icons.history_rounded,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              getsPoints
-                  ? "Masha Allah! +$pointsEarned Poin"
-                  : "Riwayat Bacaan Tersimpan",
-            ),
-          ],
+    if (milestoneResult != null && milestoneResult['isNewMilestone'] == true) {
+      // Trigger ultra-postable celebratory milestone share dialog!
+      final bool isKhatam = milestoneResult['isKhatam'] == true;
+      final int khatamProgressJuz = (surahNumber * 30 ~/ 114).clamp(1, 30);
+      final int bonus = milestoneResult['bonusPoints'] as int? ?? 25;
+
+      MilestoneCelebrationDialog.show(
+        context,
+        data: MilestoneCardData(
+          type: isKhatam ? MilestoneCardType.khatam : MilestoneCardType.surah,
+          title: isKhatam ? "Khatam 30 Juz Al-Qur'an" : widget.surah['surah_name'],
+          subtitle: isKhatam
+              ? "Maha Benar Allah dengan Segala Firman-Nya"
+              : "Menuntaskan $totalAyahsInSurah Ayat Al-Qur'an",
+          surahNumber: surahNumber,
+          ayahCount: totalAyahsInSurah,
+          durationMinutes: (durationSeconds / 60).ceil().clamp(1, 180),
+          userName: appState.userName,
+          khatamProgressJuz: khatamProgressJuz,
+          khatamCount: appState.khatmCount,
+          dateStr: DateFormat('d MMMM yyyy').format(DateTime.now()),
+          bonusPoints: bonus,
+          quote: isKhatam
+              ? "Sebaik-baik kalian adalah yang mempelajari Al-Qur'an dan mengajarkannya."
+              : (surahNumber == 18
+                  ? "Barangsiapa membaca Surah Al-Kahfi di hari Jumat, maka akan dipancarkan cahaya baginya..."
+                  : "Bacalah Al-Qur'an, sesungguhnya ia akan datang di hari kiamat sebagai pemberi syafaat."),
+          quoteSource: isKhatam
+              ? "(HR. Bukhari)"
+              : (surahNumber == 18 ? "(HR. Hakim & Baihaqi)" : "(HR. Muslim)"),
         ),
-        backgroundColor: getsPoints
-            ? Colors.teal.shade700
-            : Colors.blueGrey.shade700,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    // Celebration for Khatm
-    final totalAyahsInSurah = (widget.surah['ayahs'] as List).length;
-    if (surahNumber == 114 && index == totalAyahsInSurah - 1 && getsPoints) {
-      _showKhatmCelebration(context, appState.khatmCount);
-    }
-  }
-
-  void _showKhatmCelebration(BuildContext context, int khatmCount) {
-    if (!context.mounted) return;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.teal.shade900,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.auto_awesome_rounded,
-              color: Colors.amber,
-              size: 64,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "MASHA ALLAH!",
-              style: TextStyle(
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                getsPoints ? Icons.check_circle : Icons.history_rounded,
                 color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Anda telah menyelesaikan seluruh Al-Quran!",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.teal.shade100, fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+              const SizedBox(width: 12),
+              Text(
+                getsPoints
+                    ? "Masha Allah! +$pointsEarned Poin"
+                    : "Riwayat Bacaan Tersimpan",
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.emoji_events_rounded,
-                    color: Colors.amber,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    "Khatm ke-$khatmCount",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                if (context.mounted) Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.teal.shade900,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 12,
-                ),
-              ),
-              child: const Text(
-                "ALHAMDULILLAH",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+            ],
+          ),
+          backgroundColor: getsPoints
+              ? Colors.teal.shade700
+              : Colors.blueGrey.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 2),
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override

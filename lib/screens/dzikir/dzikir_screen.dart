@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../services/eye_tracker_service.dart';
 import '../../utils/translations.dart';
 import '../../services/analytics_service.dart';
+import '../../widgets/milestone_share_card.dart';
+import '../../widgets/milestone_celebration_dialog.dart';
 
 class DzikirPreset {
   final int id;
@@ -422,13 +425,14 @@ class _DzikirScreenState extends State<DzikirScreen>
     final appState = Provider.of<AppState>(context, listen: false);
     final lang = appState.languageCode;
     final currentPreset = kDzikirPresets[_selectedPresetIndex];
-    const pointsEarned = 10; // Exactly in the middle between Quran and Hadith
 
-    await appState.saveDzikirProgress(
+    final result = await appState.saveDzikirProgress(
       currentPreset.title,
       _target,
-      pointsEarned,
+      10,
     );
+    final pointsEarned = result['pointsEarned'] as int? ?? 0;
+    final roundNumber = result['round'] as int? ?? 1;
 
     final durationSeconds = _roundStartTime != null
         ? DateTime.now().difference(_roundStartTime!).inSeconds
@@ -506,18 +510,71 @@ class _DzikirScreenState extends State<DzikirScreen>
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      '+$pointsEarned ${Translations.get(lang, 'points')}',
+                      pointsEarned > 0
+                          ? '+$pointsEarned ${Translations.get(lang, 'points')} (Putaran $roundNumber/3)'
+                          : 'Putaran ke-$roundNumber (Batas 3 putaran poin tercapai, tasbih tetap tercatat)',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         color: colorScheme.onTertiaryContainer,
-                        fontSize: 15,
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
+                  // Button to Share Dzikir Card
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _cooldownController.reset();
+                        setState(() {
+                          _count = 0;
+                          _roundStartTime = null;
+                          _isInCooldown = false;
+                          _rateLimitMessage = '';
+                        });
+                        MilestoneCelebrationDialog.show(
+                          context,
+                          data: MilestoneCardData(
+                            type: MilestoneCardType.dzikir,
+                            title: currentPreset.title,
+                            arabicTitle: currentPreset.arabic,
+                            subtitle: '$roundNumber Putaran Tasbih • ${_target}x Butir',
+                            ayahCount: _target,
+                            durationMinutes: (durationSeconds / 60).ceil().clamp(1, 60),
+                            userName: appState.userName,
+                            dateStr: DateFormat('d MMMM yyyy').format(DateTime.now()),
+                            bonusPoints: pointsEarned,
+                            quote: currentPreset.getVirtue(lang),
+                            quoteSource: '(Keutamaan Dzikir)',
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.share_rounded, size: 18),
+                      label: const Text(
+                        'Bagikan Kartu Syiar Dzikir',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: const Color(0xFF10B981),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
                       onPressed: () {
                         Navigator.pop(ctx);
                         _cooldownController.reset();
@@ -537,14 +594,12 @@ class _DzikirScreenState extends State<DzikirScreen>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
+                      style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
+                        side: BorderSide(color: colorScheme.outlineVariant),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        elevation: 0,
                       ),
                     ),
                   ),

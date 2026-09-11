@@ -59,8 +59,89 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         if (!mounted) return;
         setState(() {});
         _checkAccessibilityStatus();
+        _checkWelcomeUserNamePrompt();
       }).catchError((_) {});
     });
+  }
+
+  void _checkWelcomeUserNamePrompt() {
+    final appState = Provider.of<AppState>(context, listen: false);
+    if (appState.hasCompletedOnboarding &&
+        !appState.hasPromptedUserName &&
+        appState.userName.isEmpty &&
+        mounted) {
+      _showWelcomeNameDialog(appState);
+    }
+  }
+
+  void _showWelcomeNameDialog(AppState appState) {
+    appState.setHasPromptedUserName(true);
+    final textController = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: Color(0xFF10B981)),
+            SizedBox(width: 10),
+            Expanded(child: Text('Ahlan wa Sahlan! ✨', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Siapa nama panggilanmu agar kami bisa menyapamu dengan hangat di Beranda dan menyematkannya di kartu pencapaian ibadah?',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: textController,
+              maxLength: 25,
+              decoration: InputDecoration(
+                hintText: 'Nama panggilanmu (misal: Farhan)',
+                filled: true,
+                fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Lewati'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              if (textController.text.trim().isNotEmpty) {
+                appState.setUserName(textController.text.trim());
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Simpan & Mulai'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _checkAccessibilityStatus() async {
@@ -876,33 +957,166 @@ class _GreetingWidget extends StatelessWidget {
     return Translations.get(lang, 'good_night');
   }
 
+  void _showEditNameDialog(BuildContext context, AppState appState) {
+    final textController = TextEditingController(text: appState.userName);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            const Icon(Icons.badge_rounded, color: Colors.teal),
+            const SizedBox(width: 10),
+            Text(
+              Translations.get(lang, 'edit_name'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              Translations.get(lang, 'enter_your_name'),
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: textController,
+              autofocus: true,
+              maxLength: 25,
+              decoration: InputDecoration(
+                hintText: 'Misal: Farhan',
+                filled: true,
+                fillColor: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.04),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(Translations.get(lang, 'cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              appState.setUserName(textController.text);
+              Navigator.pop(ctx);
+            },
+            child: Text(Translations.get(lang, 'save')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _getTimeGreeting(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+    final appState = Provider.of<AppState>(context);
+    final displayName = appState.userName.isNotEmpty
+        ? appState.userName
+        : Translations.get(lang, 'user_title');
+
+    return InkWell(
+      onTap: () => _showEditNameDialog(context, appState),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _getTimeGreeting(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (appState.khatmCount > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFFF59E0B),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('👑', style: TextStyle(fontSize: 11)),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${appState.khatmCount}x',
+                          style: const TextStyle(
+                            color: Color(0xFFFFD700),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.edit_outlined,
+                  size: 14,
+                  color: Colors.white.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          Translations.get(lang, 'user_title'),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

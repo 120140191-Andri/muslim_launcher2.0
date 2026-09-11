@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
@@ -230,6 +231,13 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                             textAlign: TextAlign.center,
                           ),
                         ),
+                      ),
+
+                      // Emergency 5-Minute Grace Pass (Section 9.6)
+                      const SizedBox(height: 8),
+                      _EmergencyGracePassButton(
+                        packageName: widget.packageName,
+                        lang: lang,
                       ),
                       
                       if (!isStrictlyNonProductive) ...[
@@ -692,5 +700,171 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
     ),
   ),
 );
+  }
+}
+
+class _EmergencyGracePassButton extends StatefulWidget {
+  final String packageName;
+  final String lang;
+
+  const _EmergencyGracePassButton({
+    required this.packageName,
+    required this.lang,
+  });
+
+  @override
+  State<_EmergencyGracePassButton> createState() =>
+      _EmergencyGracePassButtonState();
+}
+
+class _EmergencyGracePassButtonState extends State<_EmergencyGracePassButton> {
+  void _startEmergencyCountdown(BuildContext context, AppState appState) {
+    int remainingSeconds = 15;
+    Timer? countdownTimer;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            countdownTimer ??=
+                Timer.periodic(const Duration(seconds: 1), (timer) {
+              if (remainingSeconds > 1) {
+                setDialogState(() => remainingSeconds--);
+              } else {
+                timer.cancel();
+                Navigator.pop(dialogCtx);
+                _performEmergencyUnlock(appState);
+              }
+            });
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              backgroundColor: const Color(0xFF131A2A),
+              title: Row(
+                children: [
+                  const Icon(Icons.shield_outlined, color: Color(0xFFF59E0B)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      Translations.get(widget.lang, 'emergency_grace_pass'),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ\nأَسْتَغْفِرُ اللَّهَ الْعَظِيمَ',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Amiri',
+                      fontSize: 16,
+                      color: Color(0xFFFFDF7A),
+                      height: 1.8,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    Translations.get(widget.lang, 'emergency_countdown_msg'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.white70,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: CircularProgressIndicator(
+                          value: (15 - remainingSeconds) / 15,
+                          strokeWidth: 4,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF10B981),
+                          ),
+                          backgroundColor: Colors.white12,
+                        ),
+                      ),
+                      Text(
+                        '$remainingSeconds',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    countdownTimer?.cancel();
+                    Navigator.pop(dialogCtx);
+                  },
+                  child: Text(
+                    Translations.get(widget.lang, 'cancel'),
+                    style: const TextStyle(color: Colors.white54),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _performEmergencyUnlock(AppState appState) async {
+    final success = await appState.useEmergencyGracePass(widget.packageName);
+    if (!mounted || !success) return;
+
+    appState.clearBlockedApp();
+    await appState.openApp(widget.packageName, bypassGuards: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final canUse = appState.canUseEmergencyGracePass;
+
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton.icon(
+        onPressed: canUse
+            ? () => _startEmergencyCountdown(context, appState)
+            : null,
+        icon: Icon(
+          canUse ? Icons.hourglass_top_rounded : Icons.lock_clock_rounded,
+          size: 16,
+          color: canUse ? const Color(0xFFF59E0B) : Colors.white24,
+        ),
+        label: Text(
+          canUse
+              ? Translations.get(widget.lang, 'emergency_grace_pass')
+              : Translations.get(widget.lang, 'emergency_pass_used_today'),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: canUse ? const Color(0xFFF59E0B) : Colors.white30,
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -54,6 +54,25 @@ class AppState extends ChangeNotifier {
   bool _ignorePermissionGuard = false;
   final AppBlockService _appBlockService = AppBlockService();
   Timer? _statusTimer;
+
+  // Gamification & User Identity fields
+  String _userName = '';
+  bool _hasPromptedUserName = false;
+  Set<int> _completedSurahsThisCycle = {};
+  int _dailyDzikirRounds = 0;
+  int _dailyDzikirPoints = 0;
+  String _dailyDzikirDate = '';
+  String _lastEmergencyGraceDate = '';
+
+  String get userName => _userName;
+  bool get hasPromptedUserName => _hasPromptedUserName;
+  Set<int> get completedSurahsThisCycle => _completedSurahsThisCycle;
+  int get dailyDzikirRounds => _dailyDzikirRounds;
+  int get dailyDzikirPoints => _dailyDzikirPoints;
+  bool get canUseEmergencyGracePass {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    return _lastEmergencyGraceDate != today;
+  }
   
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -190,8 +209,26 @@ class AppState extends ChangeNotifier {
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
     _khatmCount = prefs.getInt('khatmCount') ?? 0;
+
+    _userName = prefs.getString('userName') ?? '';
+    _hasPromptedUserName = prefs.getBool('hasPromptedUserName') ?? false;
+    final savedCompletedSurahs = prefs.getStringList('completedSurahsThisCycle') ?? [];
+    _completedSurahsThisCycle = savedCompletedSurahs.map((e) => int.tryParse(e) ?? 0).where((e) => e > 0).toSet();
+    _lastEmergencyGraceDate = prefs.getString('lastEmergencyGraceDate') ?? '';
     
     final today = DateTime.now().toIso8601String().split('T')[0];
+    _dailyDzikirDate = prefs.getString('dailyDzikirDate') ?? '';
+    if (_dailyDzikirDate != today) {
+      _dailyDzikirRounds = 0;
+      _dailyDzikirPoints = 0;
+      _dailyDzikirDate = today;
+      prefs.setInt('dailyDzikirRounds', 0);
+      prefs.setInt('dailyDzikirPoints', 0);
+      prefs.setString('dailyDzikirDate', today);
+    } else {
+      _dailyDzikirRounds = prefs.getInt('dailyDzikirRounds') ?? 0;
+      _dailyDzikirPoints = prefs.getInt('dailyDzikirPoints') ?? 0;
+    }
     final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
     if (lastHadithDate != today) {
       _readHadithIds = {};
@@ -3305,14 +3342,175 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveDzikirProgress(String dzikirTitle, int count, int pointsEarned) async {
-    if (pointsEarned > 0) {
-      _points += pointsEarned;
-      await prefs.setInt('points', _points);
+  Future<void> setUserName(String name) async {
+    _userName = name.trim();
+    await prefs.setString('userName', _userName);
+    notifyListeners();
+  }
+
+  Future<void> setHasPromptedUserName(bool val) async {
+    _hasPromptedUserName = val;
+    await prefs.setBool('hasPromptedUserName', val);
+    notifyListeners();
+  }
+
+  bool isSurahCompletedInThisCycle(int surahNumber) {
+    return _completedSurahsThisCycle.contains(surahNumber);
+  }
+
+  /// Completes a Surah milestone according to tiered effort reward economy.
+  /// Tier 1: 1-25 ayat (+10 pts)
+  /// Tier 2: 26-75 ayat (+25 pts)
+  /// Tier 3: 76-150 ayat (+50 pts)
+  /// Tier 4: >150 ayat (+100 pts)
+  /// Special Friday Al-Kahfi: (+50 pts)
+  /// Grand Milestone Khatam 30 Juz: (+500 pts and resets cycle)
+  Future<Map<String, dynamic>> completeSurahMilestone({
+    required int surahNumber,
+    required String surahName,
+    required int totalAyahs,
+    int readingDurationSeconds = 0,
+  }) async {
+    final bool isAlreadyCompleted = _completedSurahsThisCycle.contains(surahNumber);
+    if (isAlreadyCompleted) {
+      return {
+        'isNewMilestone': false,
+        'isKhatam': false,
+        'bonusPoints': 0,
+        'tier': 0,
+      };
     }
 
-    _addToHistory("Dzikir: $dzikirTitle (${count}x)", count, pointsEarned);
+    int tier = 1;
+    int bonusPoints = 10;
+    if (totalAyahs <= 25) {
+      tier = 1;
+      bonusPoints = 10;
+    } else if (totalAyahs <= 75) {
+      tier = 2;
+      bonusPoints = 25;
+    } else if (totalAyahs <= 150) {
+      tier = 3;
+      bonusPoints = 50;
+    } else {
+      tier = 4;
+      bonusPoints = 100;
+    }
+
+    // Special Friday Al-Kahf check (Surah 18)
+    final now = DateTime.now();
+    if (surahNumber == 18 && now.weekday == DateTime.friday) {
+      bonusPoints += 50;
+    }
+
+    _completedSurahsThisCycle.add(surahNumber);
+    await prefs.setStringList(
+      'completedSurahsThisCycle',
+      _completedSurahsThisCycle.map((e) => e.toString()).toList(),
+    );
+
+    _points += bonusPoints;
+    await prefs.setInt('points', _points);
+
+    bool isKhatam = false;
+    if (_completedSurahsThisCycle.length >= 114 || surahNumber == 114) {
+      isKhatam = true;
+      _khatmCount++;
+      await prefs.setInt('khatmCount', _khatmCount);
+      AnalyticsService.logQuranKhatm(khatmCount: _khatmCount);
+
+      // Grand bonus +500 points for Khatam 30 Juz
+      _points += 500;
+      await prefs.setInt('points', _points);
+
+      // Reset completed surahs for the new khatam cycle
+      _completedSurahsThisCycle.clear();
+      await prefs.setStringList('completedSurahsThisCycle', []);
+      _highestSurahIndex = 0;
+      _highestAyahIndex = -1;
+      await prefs.setInt('highestSurahIndex', 0);
+      await prefs.setInt('highestAyahIndex', -1);
+
+      _addToHistory("👑 KHATAM 30 JUZ AL-QUR'AN", 30, 500);
+    }
+
+    _addToHistory("🏆 Selesai Surah $surahName", totalAyahs, bonusPoints);
     notifyListeners();
+
+    return {
+      'isNewMilestone': true,
+      'isKhatam': isKhatam,
+      'bonusPoints': bonusPoints,
+      'tier': tier,
+      'surahNumber': surahNumber,
+      'surahName': surahName,
+      'totalAyahs': totalAyahs,
+    };
+  }
+
+  /// Saves Dzikir progress with scientific 3-round daily cap (99 butir = 19 points max).
+  /// Round 1 (33x): +3 pts
+  /// Round 2 (66x): +3 pts
+  /// Round 3 (99x): +13 pts (3 + 10 bonus)
+  /// Round > 3: 0 pts (still records count & history, no app unlock spamming)
+  Future<Map<String, dynamic>> saveDzikirProgress(
+    String dzikirTitle,
+    int count,
+    int rawPoints,
+  ) async {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyDzikirDate != today) {
+      _dailyDzikirRounds = 0;
+      _dailyDzikirPoints = 0;
+      _dailyDzikirDate = today;
+    }
+
+    _dailyDzikirRounds++;
+
+    int allocatedPoints = 0;
+    if (_dailyDzikirRounds == 1) {
+      allocatedPoints = 3;
+    } else if (_dailyDzikirRounds == 2) {
+      allocatedPoints = 3;
+    } else if (_dailyDzikirRounds == 3) {
+      allocatedPoints = 13;
+    } else {
+      allocatedPoints = 0;
+    }
+
+    if (allocatedPoints > 0) {
+      _points += allocatedPoints;
+      _dailyDzikirPoints += allocatedPoints;
+      await prefs.setInt('points', _points);
+      await prefs.setInt('dailyDzikirPoints', _dailyDzikirPoints);
+    }
+    await prefs.setInt('dailyDzikirRounds', _dailyDzikirRounds);
+    await prefs.setString('dailyDzikirDate', _dailyDzikirDate);
+
+    _addToHistory("Dzikir: $dzikirTitle (${count}x)", count, allocatedPoints);
+    notifyListeners();
+
+    return {
+      'round': _dailyDzikirRounds,
+      'pointsEarned': allocatedPoints,
+      'isDailyCapReached': _dailyDzikirRounds >= 3,
+    };
+  }
+
+  /// Emergency 5-Minute Grace Pass (Section 9.6 of plan).
+  /// Allowed once per 24 hours to prevent rage-uninstall during genuine emergencies.
+  Future<bool> useEmergencyGracePass(String packageName) async {
+    if (!canUseEmergencyGracePass) return false;
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    _lastEmergencyGraceDate = today;
+    await prefs.setString('lastEmergencyGraceDate', today);
+
+    final success = await allowAppTemporarily(packageName, durationMinutes: 5);
+    if (success) {
+      _addToHistory("Buka Darurat 5 Menit: $packageName", 5, 0);
+    }
+    notifyListeners();
+    return success;
   }
 
   bool isAppBlocked(String packageName) {

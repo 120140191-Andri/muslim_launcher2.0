@@ -617,29 +617,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       ),
                                     ),
 
-                                    const SizedBox(height: 18),
+                                    const SizedBox(height: 20),
 
-                                    // 2. Mindful Balance Monitor
-                                    RepaintBoundary(
-                                      child: _MindfulBalanceCard(
-                                        appState: appState,
-                                        lang: lang,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 24),
-
-                                    // 3. Zen Islamic Dock (4 Pillars)
-                                    RepaintBoundary(
-                                      child: _ZenIslamicDock(
-                                        appState: appState,
-                                        lang: lang,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 24),
-
-                                    // 4. Quick Actions / Communication Apps Dock
+                                    // 2. Akses Cepat / Quick Actions Dock
                                     Text(
                                       Translations.get(
                                         lang,
@@ -659,7 +639,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
                                     const SizedBox(height: 24),
 
-                                    // 5. Daily Hadith / Inspiration
+                                    // 3. Mindful Balance Monitor (Rasio Hidup Berkah)
+                                    RepaintBoundary(
+                                      child: _MindfulBalanceCard(
+                                        appState: appState,
+                                        lang: lang,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 24),
+
+                                    // 4. Daily Hadith / Inspiration
                                     RepaintBoundary(
                                       child: _DailyInspiration(
                                         lang: lang,
@@ -677,113 +667,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                 child: const HadithListScreen(),
                                               ),
                                             ),
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 20),
-
-                                    // 6. App Drawer / All Apps Button
-                                    Material(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(22),
-                                      child: InkWell(
-                                        onTap: () => appState
-                                            .navigatorKey
-                                            .currentState
-                                            ?.push(
-                                              AppPageRoute(
-                                                child: const AppListScreen(),
-                                              ),
-                                            ),
-                                        borderRadius: BorderRadius.circular(22),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 18,
-                                            vertical: 14,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              22,
-                                            ),
-                                            border: Border.all(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .outlineVariant
-                                                  .withValues(alpha: 0.4),
-                                              width: 1,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.teal.shade900
-                                                    .withValues(alpha: 0.03),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                padding: const EdgeInsets.all(
-                                                  10,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.amber.shade100
-                                                      .withValues(alpha: 0.6),
-                                                  borderRadius:
-                                                      BorderRadius.circular(14),
-                                                ),
-                                                child: Icon(
-                                                  Icons.apps_rounded,
-                                                  color: Colors.amber.shade800,
-                                                  size: 22,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 14),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      Translations.get(
-                                                        lang,
-                                                        'your_apps',
-                                                      ),
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Theme.of(
-                                                          context,
-                                                        ).colorScheme.onSurface,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      Translations.get(
-                                                        lang,
-                                                        'open_apps',
-                                                      ),
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .onSurfaceVariant,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              Icon(
-                                                Icons.arrow_forward_ios_rounded,
-                                                size: 14,
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
                                       ),
                                     ),
 
@@ -2176,167 +2059,7 @@ class _MindfulBalanceCard extends StatelessWidget {
   }
 }
 
-// ── _ZenIslamicDock ───────────────────────────────────────────────────────────
-class _ZenIslamicDock extends StatelessWidget {
-  final AppState appState;
-  final String lang;
 
-  const _ZenIslamicDock({required this.appState, required this.lang});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final items = [
-      _ZenItemData(
-        icon: Icons.menu_book_rounded,
-        title: Translations.get(lang, 'read_quran'),
-        subtitle: '114 Surah',
-        color: Colors.teal.shade700,
-        bgColor: Colors.teal.shade50,
-        onTap: () => appState.navigatorKey.currentState?.push(
-          AppPageRoute(child: const SurahListScreen()),
-        ),
-      ),
-      _ZenItemData(
-        icon: Icons.grain_rounded,
-        title: lang == 'ar'
-            ? 'ذكر'
-            : (lang == 'ms' ? 'Zikir' : (lang == 'id' ? 'Dzikir' : 'Dhikr')),
-        subtitle: 'Tasbih Sunnah',
-        color: const Color(0xFF059669),
-        bgColor: const Color(0xFFECFDF5),
-        onTap: () => appState.navigatorKey.currentState?.push(
-          AppPageRoute(child: const DzikirScreen()),
-        ),
-      ),
-      _ZenItemData(
-        icon: Icons.spa_rounded,
-        title: (lang == 'en' || lang == 'sw' || lang == 'af')
-            ? 'Hadith'
-            : (lang == 'ar' ? 'الحديث' : 'Hadits'),
-        subtitle: 'Hadits Pilihan',
-        color: Colors.blueGrey.shade700,
-        bgColor: Colors.blueGrey.shade50,
-        onTap: () => appState.navigatorKey.currentState?.push(
-          AppPageRoute(child: const HadithListScreen()),
-        ),
-      ),
-      _ZenItemData(
-        icon: Icons.emoji_events_rounded,
-        title: Translations.get(lang, 'milestone_gallery_title'),
-        subtitle: 'Lemari Trofi',
-        color: const Color(0xFFD97706),
-        bgColor: const Color(0xFFFEF3C7),
-        onTap: () => appState.navigatorKey.currentState?.push(
-          AppPageRoute(child: const MilestoneGalleryScreen()),
-        ),
-      ),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          Translations.get(lang, 'zen_quick_dock_title').toUpperCase(),
-          style: TextStyle(
-            color: Colors.teal.shade900.withValues(alpha: 0.5),
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: items.map((item) {
-            return Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Material(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  child: InkWell(
-                    onTap: item.onTap,
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.35,
-                          ),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: item.bgColor,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Icon(item.icon, color: item.color, size: 22),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-}
-
-class _ZenItemData {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final Color bgColor;
-  final VoidCallback onTap;
-
-  const _ZenItemData({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.bgColor,
-    required this.onTap,
-  });
-}
 
 // ── _DailyInspiration ────────────────────────────────────────────────────────
 class _DailyInspiration extends StatelessWidget {

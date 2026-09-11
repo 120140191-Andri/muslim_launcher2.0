@@ -56,7 +56,7 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
             ndk {
-                debugSymbolLevel = "none"
+                debugSymbolLevel = "SYMBOL_TABLE"
             }
         }
     }
@@ -64,7 +64,6 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
-            keepDebugSymbols.add("**/*.so")
         }
     }
 }

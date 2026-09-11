@@ -41,15 +41,11 @@ void main() {
   });
 
   group('AppState Overlay Navigation Methods', () {
-    test('clearAllOverlays resets all 3 overlay states', () {
+    test('clearAllOverlays resets active overlay state', () {
       final appState = AppState(prefs);
       appState.setProhibitedPackage('com.opera.browser');
-      appState.setBlockedPackage('com.instagram.android');
-      appState.setGhadhulBasharPackage('com.android.chrome');
-
       expect(appState.lastAttemptedProhibitedPackage, equals('com.opera.browser'));
-      expect(appState.lastAttemptedBlockedPackage, equals('com.instagram.android'));
-      expect(appState.lastAttemptedGhadhulBasharPackage, equals('com.android.chrome'));
+      expect(appState.hasActiveOverlay, isTrue);
 
       appState.clearAllOverlays();
 
@@ -218,11 +214,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(Translations.get('id', 'cancel')), findsOneWidget);
-      expect(find.text(Translations.get('id', 'go_back')), findsOneWidget);
+      expect(find.text(Translations.get('id', 'ok')), findsOneWidget);
 
-      // Tap Kembali
-      await tester.ensureVisible(find.text(Translations.get('id', 'go_back')));
-      await tester.tap(find.text(Translations.get('id', 'go_back')));
+      // Tap Batal
+      await tester.ensureVisible(find.text(Translations.get('id', 'cancel')));
+      await tester.tap(find.text(Translations.get('id', 'cancel')));
       await tester.pumpAndSettle();
       expect(appState.lastAttemptedGhadhulBasharPackage, isNull);
     });

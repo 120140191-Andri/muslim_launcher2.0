@@ -15,11 +15,29 @@ class ProhibitedAppOverlay extends StatefulWidget {
 
 class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
 
+  String _extractTranslation(String raw) {
+    final parts = raw.split('\n');
+    if (parts.length > 1) {
+      return parts.sublist(1).join('\n').trim();
+    }
+    return raw;
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context, listen: false);
     final lang = appState.languageCode;
-    final isAdultApp = AppState.isExplicitAdultApp(widget.packageName);
+    final appName = appState.getAppNameSync(widget.packageName);
+    final isAdultApp = AppState.isExplicitAdultApp(widget.packageName, appName);
+    final isGamblingApp = AppState.isGamblingApp(widget.packageName, appName);
+
+    final String arabicAyah = isGamblingApp
+        ? 'يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوْٓا اِنَّمَا الْخَمْرُ وَالْمَيْسِرُ وَالْاَنْصَابُ وَالْاَزْلَامُ رِجْسٌ مِّنْ عَمَلِ الشَّيْطٰنِ فَاجْتَنِبُوْهُ لَعَلَّكُمْ تُفْلِحُوْنَ'
+        : 'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ';
+
+    final String verseTranslation = isGamblingApp
+        ? _extractTranslation(Translations.get(lang, 'prohibited_gambling_verse'))
+        : _extractTranslation(Translations.get(lang, 'prohibited_app_verse'));
 
     return PopScope(
       canPop: false,
@@ -87,17 +105,19 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.gpp_bad_rounded,
+                        child: Icon(
+                          isGamblingApp ? Icons.casino_rounded : Icons.gpp_bad_rounded,
                           size: 52,
-                          color: Color(0xFFFB7185),
+                          color: const Color(0xFFFB7185),
                         ),
                       ),
                       const SizedBox(height: 22),
 
                       // Title
                       Text(
-                        Translations.get(lang, 'prohibited_app_title'),
+                        isGamblingApp
+                            ? Translations.get(lang, 'prohibited_gambling_title')
+                            : Translations.get(lang, 'prohibited_app_title'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -131,7 +151,7 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              appState.getAppNameSync(widget.packageName),
+                              appName.isNotEmpty ? appName : widget.packageName,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 13,
@@ -145,9 +165,11 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
 
                       // Description
                       Text(
-                        isAdultApp
-                            ? Translations.get(lang, 'prohibited_adult_desc')
-                            : Translations.get(lang, 'prohibited_app_desc'),
+                        isGamblingApp
+                            ? Translations.get(lang, 'prohibited_gambling_desc')
+                            : (isAdultApp
+                                ? Translations.get(lang, 'prohibited_adult_desc')
+                                : Translations.get(lang, 'prohibited_app_desc')),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 14,
@@ -157,7 +179,7 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Islamic Quran Reminder Card (Surah Al-An'am: 151)
+                      // Islamic Quran Reminder Card (Surah Al-Ma'idah: 90 / Surah Al-An'am: 151)
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
@@ -179,11 +201,11 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                         child: Column(
                           children: [
                             // Arabic Ayah
-                            const Text(
-                              'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ',
+                            Text(
+                              arabicAyah,
                               style: TextStyle(
-                                color: Color(0xFFFDE047),
-                                fontSize: 20,
+                                color: const Color(0xFFFDE047),
+                                fontSize: isGamblingApp ? 18 : 20,
                                 fontWeight: FontWeight.bold,
                                 height: 1.8,
                               ),
@@ -199,7 +221,7 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
 
                             // Translation Text
                             Text(
-                              Translations.get(lang, 'prohibited_app_verse'),
+                              verseTranslation,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.9),
                                 fontSize: 13.5,
@@ -213,17 +235,17 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                       ),
                       const SizedBox(height: 18),
 
-                      // Recommendation Box: Nasihat Syariat for Adult Apps OR Safe Browsers for Bypass Browsers
+                      // Recommendation Box: Nasihat Syariat for Adult/Gambling Apps OR Safe Browsers for Bypass Browsers
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: isAdultApp
+                          color: (isAdultApp || isGamblingApp)
                               ? const Color(0xFFE11D48).withValues(alpha: 0.12)
                               : const Color(0xFF10B981).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isAdultApp
+                            color: (isAdultApp || isGamblingApp)
                                 ? const Color(0xFFE11D48).withValues(alpha: 0.35)
                                 : const Color(0xFF10B981).withValues(alpha: 0.35),
                             width: 1.2,
@@ -235,17 +257,19 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: isAdultApp
+                                color: (isAdultApp || isGamblingApp)
                                     ? const Color(0xFFE11D48).withValues(alpha: 0.2)
                                     : const Color(0xFF10B981).withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                isAdultApp
-                                    ? Icons.health_and_safety_rounded
-                                    : Icons.tips_and_updates_rounded,
+                                isGamblingApp
+                                    ? Icons.casino_rounded
+                                    : (isAdultApp
+                                        ? Icons.health_and_safety_rounded
+                                        : Icons.tips_and_updates_rounded),
                                 size: 20,
-                                color: isAdultApp
+                                color: (isAdultApp || isGamblingApp)
                                     ? const Color(0xFFFB7185)
                                     : const Color(0xFF34D399),
                               ),
@@ -256,11 +280,13 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    isAdultApp
-                                        ? Translations.get(lang, 'prohibited_adult_suggestion_title')
-                                        : Translations.get(lang, 'prohibited_suggestion_title'),
+                                    isGamblingApp
+                                        ? Translations.get(lang, 'prohibited_gambling_suggestion_title')
+                                        : (isAdultApp
+                                            ? Translations.get(lang, 'prohibited_adult_suggestion_title')
+                                            : Translations.get(lang, 'prohibited_suggestion_title')),
                                     style: TextStyle(
-                                      color: isAdultApp
+                                      color: (isAdultApp || isGamblingApp)
                                           ? const Color(0xFFFB7185)
                                           : const Color(0xFF34D399),
                                       fontSize: 13.5,
@@ -269,9 +295,11 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    isAdultApp
-                                        ? Translations.get(lang, 'prohibited_adult_suggestion_desc')
-                                        : Translations.get(lang, 'prohibited_suggestion_desc'),
+                                    isGamblingApp
+                                        ? Translations.get(lang, 'prohibited_gambling_suggestion_desc')
+                                        : (isAdultApp
+                                            ? Translations.get(lang, 'prohibited_adult_suggestion_desc')
+                                            : Translations.get(lang, 'prohibited_suggestion_desc')),
                                     style: TextStyle(
                                       color: Colors.white.withValues(alpha: 0.85),
                                       fontSize: 12.5,
@@ -287,8 +315,8 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                       const SizedBox(height: 24),
 
                       // Action Buttons
-                      if (isAdultApp) ...[
-                        // Uninstall App Button for Adult Content Apps
+                      if (isAdultApp || isGamblingApp) ...[
+                        // Uninstall App Button for Adult Content & Gambling Apps
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(

@@ -75,8 +75,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
           if (mounted) {
             if (_recordingAyahIdx != null && !_isDisposed) {
               Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted && _recordingAyahIdx != null)
+                if (mounted && _recordingAyahIdx != null) {
                   _startListeningSession();
+                }
               });
             } else {
               setState(() => _recordingAyahIdx = null);
@@ -90,8 +91,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                   "$_cumulativeRecognizedText $_currentSessionText".trim();
               _currentSessionText = "";
               Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted && _recordingAyahIdx != null)
+                if (mounted && _recordingAyahIdx != null) {
                   _startListeningSession();
+                }
               });
             }
           }

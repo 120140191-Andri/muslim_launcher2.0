@@ -382,7 +382,6 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
         narrators['id'] as String? ??
         '';
 
-    final isRead = appState.isHadithRead(hadithId);
     final currentPoints = _pointsEarned;
 
     return Scaffold(

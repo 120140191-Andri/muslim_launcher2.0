@@ -17,18 +17,26 @@ class Translations {
       'ghadhul_bashar_subtitle':
           'Ingatlah Allah dan tundukkan pandangan sebelum melanjutkan.',
       'prohibited_app_title': 'Aplikasi Dilarang Dibuka',
+      'prohibited_gambling_title': 'Aplikasi Perjudian Dilarang',
       'prohibited_app_desc':
           'Peramban anti-blokir / bypass ini diblokir secara total demi menjaga kesucian diri dan melindungi pandangan dari kemungkaran.',
       'prohibited_adult_desc':
           'Aplikasi konten dewasa ini dilarang dan diblokir secara total demi menjaga kesucian diri dan menjauhi perbuatan keji yang diharamkan Allah SWT.',
+      'prohibited_gambling_desc':
+          'Aplikasi judi, slot, dan taruhan ini dilarang dan diblokir secara total demi menjaga kesucian jiwa, harta, dan ketaatan kepada syariat Allah SWT.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"Dan janganlah kamu mendekati perbuatan-perbuatan yang keji, baik yang nampak di antaranya maupun yang tersembunyi." (QS. Al-An\'am: 151)',
+      'prohibited_gambling_verse':
+          'يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوْٓا اِنَّمَا الْخَمْرُ وَالْمَيْسِرُ وَالْاَنْصَابُ وَالْاَزْلَامُ رِجْسٌ مِّنْ عَمَلِ الشَّيْطٰنِ فَاجْتَنِبُوْهُ لَعَلَّكُمْ تُفْلِحُوْنَ\n"Wahai orang-orang yang beriman, sesungguhnya minuman keras, berjudi, (berkurban untuk) berhala, dan mengundi nasib dengan anak panah adalah perbuatan keji (dan) termasuk perbuatan setan. Maka, jauhilah (perbuatan-perbuatan itu) agar kamu beruntung." (QS. Al-Ma\'idah: 90)',
       'prohibited_suggestion_title': 'Saran Peramban Aman',
       'prohibited_suggestion_desc':
           'Gunakan peramban resmi seperti Google Chrome, Mozilla Firefox, Samsung Internet, atau Microsoft Edge untuk kebutuhan browsing positif Anda.',
       'prohibited_adult_suggestion_title': 'Nasihat Syariat',
       'prohibited_adult_suggestion_desc':
           'Tinggalkanlah kemaksiatan semata-mata karena Allah SWT. Sangat disarankan untuk segera menghapus aplikasi ini dari perangkat Anda demi menjaga kesucian diri.',
+      'prohibited_gambling_suggestion_title': 'Nasihat Syariat: Bahaya Judi',
+      'prohibited_gambling_suggestion_desc':
+          'Judi adalah tipuan setan yang membinasakan harta, waktu, dan keharmonisan keluarga. Sangat disarankan untuk segera menghapus aplikasi ini dan bertaubat kepada Allah SWT.',
       'uninstall_prohibited_app': 'Hapus Aplikasi Ini',
       'back_to_home': 'Kembali ke Beranda',
       'save': 'Simpan',
@@ -36,6 +44,16 @@ class Translations {
       'points_available': 'Poin Tersedia',
       'productive': 'Produktif',
       'non_productive': 'Non-Produktif',
+      'mark_as_non_productive': 'Tandai sebagai Non-Produktif',
+      'confirm_mark_non_productive_title': 'Tandai sebagai Non-Produktif?',
+      'confirm_mark_non_productive_desc':
+          'Aplikasi ini akan dikunci sebagai non-produktif secara permanen dan Anda tidak dapat mengembalikannya lagi. Lanjutkan?',
+      'mark_permanent': 'Tandai Permanen',
+      'mark_as_productive': 'Tandai sebagai Produktif',
+      'mark_as_productive_subtitle': 'Buka kunci permanen untuk aplikasi ini',
+      'confirm_mark_productive_title': 'Tandai sebagai Produktif?',
+      'confirm_mark_productive_desc':
+          'Aplikasi ini akan dibuka kuncinya secara permanen dan tidak akan dicegat lagi.',
       'read_quran': 'Baca Al-Qur\'an',
       'reading_history': 'Riwayat Bacaan',
       'search_apps': 'Cari Aplikasi...',
@@ -177,18 +195,26 @@ class Translations {
       'ghadhul_bashar_subtitle':
           'Remember Allah and lower your gaze before proceeding.',
       'prohibited_app_title': 'Application Prohibited',
+      'prohibited_gambling_title': 'Gambling Application Prohibited',
       'prohibited_app_desc':
           'This bypass / anti-censorship browser is permanently blocked to safeguard purity and protect your gaze from unlawful content.',
       'prohibited_adult_desc':
           'This adult content application is strictly prohibited and blocked completely to preserve moral purity and avoid forbidden acts.',
+      'prohibited_gambling_desc':
+          'This gambling, slot, and betting application is strictly prohibited to protect your wealth, family, and obedience to Allah SWT.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"And do not approach immoralities - what is apparent of them and what is concealed." (Surah Al-An\'am: 151)',
+      'prohibited_gambling_verse':
+          'يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوْٓا اِنَّمَا الْخَمْرُ وَالْمَيْسِرُ وَالْاَنْصَابُ وَالْاَزْلَامُ رِجْسٌ مِّنْ عَمَلِ الشَّيْطٰنِ فَاجْتَنِبُوْهُ لَعَلَّكُمْ تُفْلِحُوْنَ\n"O you who have believed, indeed, intoxicants, gambling, [sacrificing on] stone altars [to other than Allah], and divining arrows are but defilement from the work of Satan, so avoid it that you may be successful." (Surah Al-Ma\'idah: 90)',
       'prohibited_suggestion_title': 'Safe Browser Recommendation',
       'prohibited_suggestion_desc':
           'Please use official browsers such as Google Chrome, Mozilla Firefox, Samsung Internet, or Microsoft Edge for your positive browsing needs.',
       'prohibited_adult_suggestion_title': 'Islamic Guidance',
       'prohibited_adult_suggestion_desc':
           'Abandon sin solely for the sake of Allah SWT. It is strongly recommended to uninstall this application from your device immediately.',
+      'prohibited_gambling_suggestion_title': 'Islamic Guidance: Dangers of Gambling',
+      'prohibited_gambling_suggestion_desc':
+          'Gambling is a deception of Satan that destroys wealth, time, and family harmony. It is strongly recommended to uninstall this application immediately and turn to Allah SWT in repentance.',
       'uninstall_prohibited_app': 'Uninstall This App',
       'back_to_home': 'Back to Home',
       'save': 'Save',
@@ -196,6 +222,16 @@ class Translations {
       'points_available': 'Points Available',
       'productive': 'Productive',
       'non_productive': 'Non-Productive',
+      'mark_as_non_productive': 'Mark as Non-Productive',
+      'confirm_mark_non_productive_title': 'Mark as Non-Productive?',
+      'confirm_mark_non_productive_desc':
+          'This app will be permanently locked as non-productive and cannot be undone. Continue?',
+      'mark_permanent': 'Lock Permanently',
+      'mark_as_productive': 'Mark as Productive',
+      'mark_as_productive_subtitle': 'Permanently allow this app',
+      'confirm_mark_productive_title': 'Mark as Productive?',
+      'confirm_mark_productive_desc':
+          'This app will be permanently unblocked and never intercepted again.',
       'read_quran': 'Read Qur\'an',
       'reading_history': 'Reading History',
       'search_apps': 'Search Apps...',
@@ -331,18 +367,26 @@ class Translations {
       'ghadhul_bashar_subtitle':
           'Ingatlah Allah dan tundukkan pandangan sebelum meneruskan.',
       'prohibited_app_title': 'Aplikasi Dilarang Dibuka',
+      'prohibited_gambling_title': 'Aplikasi Perjudian Dilarang',
       'prohibited_app_desc':
           'Pelayar anti-sekat / pintasan ini disekat sepenuhnya demi memelihara kesucian diri dan melindungi pandangan daripada kemungkaran.',
       'prohibited_adult_desc':
           'Aplikasi kandungan dewasa ini dilarang dan disekat sepenuhnya demi memelihara kesucian diri dan menjauhi perbuatan keji yang diharamkan Allah SWT.',
+      'prohibited_gambling_desc':
+          'Aplikasi judi, slot, dan pertaruhan ini dilarang dan disekat secara total demi menjaga kesucian jiwa, harta, dan ketaatan kepada syariat Allah SWT.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"Dan janganlah kamu mendekati perbuatan-perbuatan yang keji, sama ada yang nyata daripadanya mahupun yang tersembunyi." (Surah Al-An\'am: 151)',
+      'prohibited_gambling_verse':
+          'يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوْٓا اِنَّمَا الْخَمْرُ وَالْمَيْسِرُ وَالْاَنْصَابُ وَالْاَزْلَامُ رِجْسٌ مِّنْ عَمَلِ الشَّيْطٰنِ فَاجْتَنِبُوْهُ لَعَلَّكُمْ تُفْلِحُوْنَ\n"Wahai orang-orang yang beriman! Bahawa sesungguhnya arak, dan judi, dan pemujaan berhala, dan mengundi nasib dengan batang-batang anak panah, adalah (semuanya) kotor (keji) dari perbuatan Syaitan. Oleh itu hendaklah kamu menjauhinya supaya kamu berjaya." (Surah Al-Ma\'idah: 90)',
       'prohibited_suggestion_title': 'Cadangan Pelayar Selamat',
       'prohibited_suggestion_desc':
           'Sila gunakan pelayar rasmi seperti Google Chrome, Mozilla Firefox, Samsung Internet, atau Microsoft Edge untuk keperluan pelayaran yang bermanfaat.',
       'prohibited_adult_suggestion_title': 'Nasihat Syariat',
       'prohibited_adult_suggestion_desc':
           'Tinggalkanlah kemungkaran semata-mata kerana Allah SWT. Amat disarankan untuk segera menyahpasang aplikasi ini dari peranti anda demi menjaga kesucian diri.',
+      'prohibited_gambling_suggestion_title': 'Nasihat Syariat: Bahaya Judi',
+      'prohibited_gambling_suggestion_desc':
+          'Judi adalah tipu daya Syaitan yang membinasakan harta, masa, dan keharmonian keluarga. Amat disarankan untuk segera menyahpasang aplikasi ini dan bertaubat kepada Allah SWT.',
       'uninstall_prohibited_app': 'Nyahpasang Aplikasi Ini',
       'back_to_home': 'Kembali ke Laman Utama',
       'save': 'Simpan',
@@ -350,6 +394,16 @@ class Translations {
       'points_available': 'Mata Tersedia',
       'productive': 'Produktif',
       'non_productive': 'Bukan Produktif',
+      'mark_as_non_productive': 'Tandai sebagai Bukan Produktif',
+      'confirm_mark_non_productive_title': 'Tandai sebagai Bukan Produktif?',
+      'confirm_mark_non_productive_desc':
+          'Aplikasi ini akan dikunci sebagai bukan produktif secara kekal dan anda tidak boleh mengembalikannya lagi. Teruskan?',
+      'mark_permanent': 'Tandai Kekal',
+      'mark_as_productive': 'Tandai sebagai Produktif',
+      'mark_as_productive_subtitle': 'Buka kunci secara kekal untuk aplikasi ini',
+      'confirm_mark_productive_title': 'Tandai sebagai Produktif?',
+      'confirm_mark_productive_desc':
+          'Aplikasi ini akan dinyahsekat secara kekal dan tidak akan disekat lagi.',
       'read_quran': 'Baca Al-Quran',
       'reading_history': 'Sejarah Bacaan',
       'search_apps': 'Cari Aplikasi...',
@@ -488,18 +542,26 @@ class Translations {
       'ghadhul_bashar_title': 'تذكير غض البصر',
       'ghadhul_bashar_subtitle': 'اذكر الله واغضض بصرك قبل المتابعة.',
       'prohibited_app_title': 'التطبيق محظور تماماً',
+      'prohibited_gambling_title': 'تطبيق القمار محظور تماماً',
       'prohibited_app_desc':
           'تم حظر متصفح تخطي الحجب هذا تماماً حفاظاً على الطهارة وغض البصر عن المعاصي.',
       'prohibited_adult_desc':
           'هذا التطبيق للمحتوى الإباحي محظور تماماً لحفظ طهارة النفس والابتعاد عن الفواحش التي حرمها الله تعالى.',
+      'prohibited_gambling_desc':
+          'هذا التطبيق للميسر والمقامرة والرهانات محظور تماماً لحفظ المال والنفس وطاعة لأمر الله تعالى.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n(سورة الأنعام: 151)',
+      'prohibited_gambling_verse':
+          'يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوْٓا اِنَّمَا الْخَمْرُ وَالْمَيْسِرُ وَالْاَنْصَابُ وَالْاَزْلَامُ رِجْسٌ مِّنْ عَمَلِ الشَّيْطٰنِ فَاجْتَنِبُوْهُ لَعَلَّكُمْ تُفْلِحُوْنَ\n"يَا أَيُّهَا الَّذِينَ آمَنُوا إِنَّمَا الْخَمْرُ وَالْمَيْسِرُ وَالأَنصَابُ وَالأَزْلامُ رِجْسٌ مِّنْ عَمَلِ الشَّيْطَانِ فَاجْتَنِبُوهُ لَعَلَّكُمْ تُفْلِحُونَ" (سورة المائدة: 90)',
       'prohibited_suggestion_title': 'نصيحة: استخدام متصفح آمن',
       'prohibited_suggestion_desc':
           'يُرجى استخدام المتصفحات الرسمية مثل Google Chrome أو Mozilla Firefox أو Samsung Internet أو Microsoft Edge لتصفح آمن ومفيد.',
       'prohibited_adult_suggestion_title': 'نصيحة شرعية',
       'prohibited_adult_suggestion_desc':
           'اتق الله ودع المعاصي لوجه الله تعالى. يُنصح بشدة بإلغاء تثبيت هذا التطبيق من جهازك فوراً لحفظ طهارة قلبك ونفسك.',
+      'prohibited_gambling_suggestion_title': 'نصيحة شرعية: خطر القمار والميسر',
+      'prohibited_gambling_suggestion_desc':
+          'القمار خدعة شيطانية تهلك الأموال والأوقات وتدمر الأسر. يُنصح بشدة بإلغاء تثبيت هذا التطبيق فوراً والتوبة إلى الله تعالى.',
       'uninstall_prohibited_app': 'إلغاء تثبيت هذا التطبيق',
       'back_to_home': 'العودة إلى الشاشة الرئيسية',
       'save': 'حفظ',
@@ -507,6 +569,16 @@ class Translations {
       'points_available': 'النقاط المتاحة',
       'productive': 'إنتاجي',
       'non_productive': 'غير إنتاجي',
+      'mark_as_non_productive': 'تحديد كغير منتج',
+      'confirm_mark_non_productive_title': 'تحديد كغير منتج؟',
+      'confirm_mark_non_productive_desc':
+          'سيتم قفل هذا التطبيق كغير منتج بشكل دائم ولا يمكن التراجع عن ذلك. هل تريد المتابعة؟',
+      'mark_permanent': 'قفل دائم',
+      'mark_as_productive': 'تحديد كتطبيق إنتاجي',
+      'mark_as_productive_subtitle': 'فتح القفل بشكل دائم لهذا التطبيق',
+      'confirm_mark_productive_title': 'تحديد كتطبيق إنتاجي؟',
+      'confirm_mark_productive_desc':
+          'سيتم إلغاء حظر هذا التطبيق بشكل دائم ولن يتم اعتراضه مجدداً.',
       'read_quran': 'اقرأ القرآن',
       'reading_history': 'سجل القراءة',
       'search_apps': 'البحث عن التطبيقات...',
@@ -640,18 +712,26 @@ class Translations {
       'ghadhul_bashar_subtitle':
           'Onthou Allah en slaan jou oë neer voor jy voortgaan.',
       'prohibited_app_title': 'Toepassing Verbode',
+      'prohibited_gambling_title': 'Dobbel-toepassing Verbode',
       'prohibited_app_desc':
           'Hierdie blaaier is heeltemal geblokkeer om kuisheid te bewaar en jou oë teen onwettige inhoud te beskerm.',
       'prohibited_adult_desc':
           'Hierdie volwasse inhoud toepassing is streng verbode en geblokkeer om sedelike reinheid te bewaar.',
+      'prohibited_gambling_desc':
+          'Hierdie dobbel-, gleuf- en weddenskaptoepassing is streng verbode om jou rykdom, familie en gehoorsaamheid aan Allah SWT te beskerm.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"En moenie onsedelikhede nader nie - hetsy openlik of verborge." (Soera Al-An\'am: 151)',
+      'prohibited_gambling_verse':
+          'يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوْٓا اِنَّمَا الْخَمْرُ وَالْمَيْسِرُ وَالْاَنْصَابُ وَالْاَزْلَامُ رِجْسٌ مِّنْ عَمَلِ الشَّيْطٰنِ فَاجْتَنِبُوْهُ لَعَلَّكُمْ تُفْلِحُوْنَ\n"O julle wat glo! Bedwelmende drank, dobbelary, afgodery en waarsêery is slegs \'n gruwel uit die werk van Satan. Vermy dit dus sodat julle suksesvol mag wees." (Koran Al-Ma\'idah: 90)',
       'prohibited_suggestion_title': 'Veilige Blaaier Aanbeveling',
       'prohibited_suggestion_desc':
           'Gebruik asseblief amptelike blaaiers soos Google Chrome, Mozilla Firefox, Samsung Internet, of Microsoft Edge vir nuttige blaai-aktiwiteite.',
       'prohibited_adult_suggestion_title': 'Godsdienstige Raad',
       'prohibited_adult_suggestion_desc':
           'Laat vaar sonde ter wille van Allah SWT. Dit word sterk aanbeveel om hierdie toepassing dadelik van jou toestel te deïnstalleer.',
+      'prohibited_gambling_suggestion_title': 'Godsdienstige Raad: Gevare van Dobbelary',
+      'prohibited_gambling_suggestion_desc':
+          'Dobbelary is \'n misleiding van Satan wat rykdom, tyd en gesinsharmonie vernietig. Dit word sterk aanbeveel om hierdie toepassing dadelik te deïnstalleer en na Allah SWT terug te keer.',
       'uninstall_prohibited_app': 'Deïnstalleer Toepassing',
       'back_to_home': 'Terug na Tuisblad',
       'save': 'Stoor',
@@ -659,6 +739,16 @@ class Translations {
       'points_available': 'Punte Beskikbaar',
       'productive': 'Produktief',
       'non_productive': 'Nie-produktief',
+      'mark_as_non_productive': 'Merk as Nie-produktief',
+      'confirm_mark_non_productive_title': 'Merk as Nie-produktief?',
+      'confirm_mark_non_productive_desc':
+          'Hierdie toepassing sal permanent as nie-produktief gesluit word en kan nie ongedaan gemaak word nie. Gaan voort?',
+      'mark_permanent': 'Sluit Permanent',
+      'mark_as_productive': 'Merk as Produktief',
+      'mark_as_productive_subtitle': 'Laat hierdie toepassing permanent toe',
+      'confirm_mark_productive_title': 'Merk as Produktief?',
+      'confirm_mark_productive_desc':
+          'Hierdie toepassing sal permanent ontblokkeer word en nooit weer gekeer word nie.',
       'read_quran': 'Lees Koran',
       'reading_history': 'Leesgeskiedenis',
       'search_apps': 'Soek Toepassings...',
@@ -796,18 +886,26 @@ class Translations {
       'ghadhul_bashar_subtitle':
           'Mkumbuke Mwenyezi Mungu na uinamishe macho yako kabla ya kuendelea.',
       'prohibited_app_title': 'Programu Imepigwa Marufuku',
+      'prohibited_gambling_title': 'Programu ya Kamari Imepigwa Marufuku',
       'prohibited_app_desc':
           'Kivinjari hiki kimezuiwa kabisa ili kulinda usafi wa moyo na kuzuia macho kutokana na yaliyoharamishwa.',
       'prohibited_adult_desc':
           'Programu hii ya maudhui ya watu wazima imepigwa marufuku kabisa ili kulinda usafi wa moyo na kuepuka maovu yaliyoharamishwa na Mwenyezi Mungu.',
+      'prohibited_gambling_desc':
+          'Programu hii ya kamari, kamari ya mashine na kucheza kamari imepigwa marufuku kabisa ili kulinda mali, familia na utiifu kwa Mwenyezi Mungu.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"Wala msikaribie mambo maovu - yaliyo dhahiri na yaliyofichika." (Surah Al-An\'am: 151)',
+      'prohibited_gambling_verse':
+          'يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوْٓا اِنَّمَا الْخَمْرُ وَالْمَيْسِرُ وَالْاَنْصَابُ وَالْاَزْلَامُ رِجْسٌ مِّنْ عَمَلِ الشَّيْطٰنِ فَاجْتَنِبُوْهُ لَعَلَّكُمْ تُفْلِحُوْنَ\n"Enyi mlio amini! Bila shaka ulevi, na kamari, na kuabudu masanamu, na kupiga ramli, ni uchafu katika kazi ya Shetani. Basi jiepusheni navyo ili mpate kufanikiwa." (Surah Al-Ma\'idah: 90)',
       'prohibited_suggestion_title': 'Pendekezo la Kivinjari Salama',
       'prohibited_suggestion_desc':
           'Tafadhali tumia vivinjari rasmi kama Google Chrome, Mozilla Firefox, Samsung Internet, au Microsoft Edge kwa matumizi yenye manufaa.',
       'prohibited_adult_suggestion_title': 'Nasiha ya Kisharia',
       'prohibited_adult_suggestion_desc':
           'Acha maasi kwa ajili ya Mwenyezi Mungu. Inapendekezwa sana kuondoa programu hii kwenye kifaa chako mara moja ili kulinda usafi wa nafsi yako.',
+      'prohibited_gambling_suggestion_title': 'Nasiha ya Kisharia: Hatari ya Kamari',
+      'prohibited_gambling_suggestion_desc':
+          'Kamari ni udanganyifu wa Shetani unaoangamiza mali, wakati na amani ya familia. Inapendekezwa sana kuondoa programu hii mara moja na kutubu kwa Mwenyezi Mungu.',
       'uninstall_prohibited_app': 'Ondoa Programu Hii',
       'back_to_home': 'Rudi Nyumbani',
       'save': 'Hifadhi',
@@ -815,6 +913,16 @@ class Translations {
       'points_available': 'Pointi Zinazopatikana',
       'productive': 'Tija',
       'non_productive': 'Isiyo ya tija',
+      'mark_as_non_productive': 'Weka alama kama Sio ya Uzalishaji',
+      'confirm_mark_non_productive_title': 'Weka alama kama Sio ya Uzalishaji?',
+      'confirm_mark_non_productive_desc':
+          'Programu hii itafungwa kabisa kama isiyo na tija na huwezi kuirejesha tena. Endelea?',
+      'mark_permanent': 'Funga Kabisa',
+      'mark_as_productive': 'Weka alama kama ya Tija',
+      'mark_as_productive_subtitle': 'Ruhusu programu hii kabisa',
+      'confirm_mark_productive_title': 'Weka alama kama ya Tija?',
+      'confirm_mark_productive_desc':
+          'Programu hii itafunguliwa kabisa na haitazuiwa tena.',
       'read_quran': 'Soma Quran',
       'reading_history': 'Historia ya Kusoma',
       'search_apps': 'Tafuta Programu...',

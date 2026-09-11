@@ -1567,8 +1567,6 @@ class _DailyInspiration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     final double fontSize = hadithText.length < 60
         ? 18
         : hadithText.length < 120

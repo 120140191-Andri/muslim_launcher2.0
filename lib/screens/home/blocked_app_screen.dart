@@ -29,6 +29,8 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
     final appState = Provider.of<AppState>(context);
     final lang = appState.languageCode;
     final canUnlock = appState.points >= 50;
+    final appName = appState.getAppNameSync(widget.packageName);
+    final isStrictlyNonProductive = AppState.isStrictlyNonProductive(widget.packageName, appName);
 
     return PopScope(
       canPop: false, // Prevent back button from bypassing block
@@ -221,6 +223,87 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                           ),
                         ),
                       ),
+                      
+                      if (!isStrictlyNonProductive) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _isUnlocking
+                                ? null
+                                : () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        title: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.verified_rounded,
+                                              color: Colors.teal.shade700,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                Translations.get(lang, 'confirm_mark_productive_title'),
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        content: Text(
+                                          '$appName: ${Translations.get(lang, 'confirm_mark_productive_desc')}',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, false),
+                                            child: Text(
+                                              Translations.get(lang, 'cancel'),
+                                            ),
+                                          ),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.teal.shade700,
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: () => Navigator.pop(ctx, true),
+                                            child: Text(
+                                              Translations.get(lang, 'ok'),
+                                              style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true && mounted) {
+                                      await appState.markAppAsProductive(widget.packageName, appName: appName);
+                                      appState.clearBlockedApp();
+                                      await appState.openApp(widget.packageName, bypassGuards: true);
+                                    }
+                                  },
+                            icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.teal.shade200,
+                              side: BorderSide(color: Colors.teal.shade300.withValues(alpha: 0.5)),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            label: Text(
+                              Translations.get(lang, 'mark_as_productive'),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
                       
                       const SizedBox(height: 18),
                       

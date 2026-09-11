@@ -138,6 +138,11 @@ class AppListScreen extends StatefulWidget {
     }
   }
 
+  @visibleForTesting
+  static void setPreloadedAppsForTest(List<AppInfo> apps) {
+    _cache = apps;
+  }
+
   // ── Preload ───────────────────────────────────────────────────────────────
   static Future<void> preload({
     VoidCallback? onProgress,
@@ -433,8 +438,43 @@ class _AppListScreenState extends State<AppListScreen>
                     _confirmUninstall(app, lang);
                   },
                 ),
-                if (!context.read<AppState>().isAppBlocked(app.packageName) &&
-                    !AppState.isProductiveApp(app.packageName, app.appName, app.category))
+                if (!context.read<AppState>().blockedApps.contains(app.packageName.toLowerCase().trim()) &&
+                    !context.read<AppState>().isAppProhibited(app.packageName, app.appName) &&
+                    !AppState.isSystemEssentialApp(app.packageName))
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        Icons.do_not_disturb_on_outlined,
+                        color: Colors.amber.shade900,
+                        size: 28,
+                      ),
+                    ),
+                    title: Text(
+                      Translations.get(lang, 'mark_as_non_productive'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.amber.shade900,
+                      ),
+                    ),
+                    subtitle: Text(
+                      lang == 'id'
+                          ? 'Kunci permanen agar tidak mengganggu'
+                          : 'Lock permanently to prevent distraction',
+                      style: TextStyle(color: Colors.amber.shade800, fontSize: 12),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _confirmMarkAsNonProductive(app, lang);
+                    },
+                  ),
+                if (context.read<AppState>().blockedApps.contains(app.packageName.toLowerCase().trim()) &&
+                    !AppState.isStrictlyNonProductive(app.packageName, app.appName, app.category))
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(12),
@@ -443,25 +483,37 @@ class _AppListScreenState extends State<AppListScreen>
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Icon(
-                        Icons.lock_outline_rounded,
+                        Icons.verified_rounded,
                         color: Colors.teal.shade700,
                         size: 28,
                       ),
                     ),
                     title: Text(
-                      Translations.get(lang, 'non_productive'),
+                      Translations.get(lang, 'mark_as_productive'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                         color: Colors.teal.shade900,
                       ),
                     ),
+                    subtitle: Text(
+                      Translations.get(lang, 'mark_as_productive_subtitle'),
+                      style: TextStyle(color: Colors.teal.shade700, fontSize: 12),
+                    ),
                     onTap: () {
                       Navigator.pop(ctx);
-                      context.read<AppState>().toggleAppBlockedStatus(
+                      context.read<AppState>().markAppAsProductive(
                         app.packageName,
-                        category: app.category,
                         appName: app.appName,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "${app.appName}: ${Translations.get(lang, 'confirm_mark_productive_title')}",
+                          ),
+                          backgroundColor: Colors.teal.shade700,
+                          behavior: SnackBarBehavior.floating,
+                        ),
                       );
                     },
                   ),
@@ -501,6 +553,73 @@ class _AppListScreenState extends State<AppListScreen>
               _uninstallApp(app.packageName);
             },
             child: Text(Translations.get(lang, 'uninstall')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmMarkAsNonProductive(AppInfo app, String lang) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 28),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                Translations.get(lang, 'confirm_mark_non_productive_title'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          Translations.get(lang, 'confirm_mark_non_productive_desc'),
+          style: const TextStyle(fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(
+              Translations.get(lang, 'cancel'),
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              context.read<AppState>().markAppAsPermanentlyNonProductive(
+                app.packageName,
+                appName: app.appName,
+                category: app.category,
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    lang == 'id'
+                        ? '${app.appName} ditandai sebagai non-produktif permanen'
+                        : '${app.appName} permanently marked as non-productive',
+                  ),
+                  backgroundColor: Colors.red.shade700,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: Text(Translations.get(lang, 'mark_permanent')),
           ),
         ],
       ),
@@ -789,17 +908,23 @@ class _AppListScreenState extends State<AppListScreen>
       itemCount: _filtered.length,
       itemBuilder: (context, index) {
         final app = _filtered[index];
-        final isBlocked = blocked.contains(app.packageName);
+        final cleanPkg = app.packageName.toLowerCase().trim();
+        final isBlockedConfig =
+            blocked.contains(cleanPkg) || blocked.contains(app.packageName);
         final isProhibited =
             appState.isAppProhibited(app.packageName, app.appName);
         final remainingMins =
             appState.getUnlockRemainingMinutes(app.packageName);
+        final isUnlocked =
+            isBlockedConfig && (remainingMins > 0 || appState.isAppUnlocked(app.packageName));
+        final isBlocked = isBlockedConfig && !isUnlocked;
 
         return RepaintBoundary(
           child: _AppTile(
             key: ValueKey(app.packageName),
             app: app,
             isBlocked: isBlocked,
+            isUnlocked: isUnlocked,
             isProhibited: isProhibited,
             remainingMinutes: remainingMins,
             onTap: () => _onAppTap(app, appState),
@@ -815,6 +940,7 @@ class _AppListScreenState extends State<AppListScreen>
 class _AppTile extends StatelessWidget {
   final AppInfo app;
   final bool isBlocked;
+  final bool isUnlocked;
   final bool isProhibited;
   final int remainingMinutes;
   final VoidCallback onTap;
@@ -824,6 +950,7 @@ class _AppTile extends StatelessWidget {
     super.key,
     required this.app,
     required this.isBlocked,
+    this.isUnlocked = false,
     this.isProhibited = false,
     this.remainingMinutes = 0,
     required this.onTap,
@@ -886,6 +1013,30 @@ class _AppTile extends StatelessWidget {
                       ),
                       child: const Icon(
                         Icons.lock_rounded,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                    ),
+                  )
+                else if (isUnlocked)
+                  Positioned(
+                    right: -6,
+                    top: -6,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade600,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.shade600.withValues(alpha: 0.35),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.lock_open_rounded,
                         color: Colors.white,
                         size: 14,
                       ),

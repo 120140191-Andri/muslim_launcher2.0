@@ -34,6 +34,10 @@ class AppState extends ChangeNotifier {
   bool _hasCompletedOnboarding = false;
   int _points = 0;
   Set<String> _blockedApps = {};
+  static Set<String> _customProductiveApps = {};
+  Set<String> get customProductiveApps => _customProductiveApps;
+  static Set<String> _userNonProductiveApps = {};
+  Set<String> get userNonProductiveApps => _userNonProductiveApps;
   int _highestSurahIndex = 0;
   int _highestAyahIndex = -1; // -1 means no progress yet
   int _khatmCount = 0;
@@ -166,6 +170,10 @@ class AppState extends ChangeNotifier {
       _points = 0;
       await prefs.setInt('points', 0);
     }
+    final savedUserNonProductive = prefs.getStringList('userNonProductiveApps') ?? [];
+    _userNonProductiveApps = savedUserNonProductive.map((e) => e.trim().toLowerCase()).toSet();
+    final savedCustom = prefs.getStringList('customProductiveApps') ?? [];
+    _customProductiveApps = savedCustom.map((e) => e.trim().toLowerCase()).toSet();
     final savedBlocked = prefs.getStringList('blockedApps') ?? [];
     _blockedApps = savedBlocked
         .where((pkg) => !isProductiveApp(pkg, ''))
@@ -689,6 +697,8 @@ class AppState extends ChangeNotifier {
       return; // Do not allow blocking productive apps
     }
     // Strict Mode: Only allow blocking, not unblocking manually
+    _customProductiveApps.remove(pkg);
+    await prefs.setStringList('customProductiveApps', _customProductiveApps.toList());
     if (!_blockedApps.contains(pkg)) {
       _blockedApps.add(pkg);
       await prefs.setStringList('blockedApps', _blockedApps.toList());
@@ -696,6 +706,57 @@ class AppState extends ChangeNotifier {
       await _appBlockService.setBlockedApps(_blockedApps.toList());
       notifyListeners();
     }
+  }
+
+  static bool isSystemEssentialApp(String packageName) {
+    final pkg = packageName.toLowerCase().trim();
+    if (pkg.isEmpty) return true;
+    const essentialPackages = [
+      'com.android.settings',
+      'com.android.vending',
+      'com.google.android.dialer',
+      'com.android.dialer',
+      'com.samsung.android.dialer',
+      'com.google.android.packageinstaller',
+      'com.android.packageinstaller',
+      'com.google.android.permissioncontroller',
+    ];
+    if (essentialPackages.contains(pkg)) return true;
+    if (pkg.contains('com.muslimlauncher') || pkg.contains('muslim_launcher')) return true;
+    return false;
+  }
+
+  Future<void> markAppAsPermanentlyNonProductive(
+    String packageName, {
+    String? appName,
+    int? category,
+  }) async {
+    final pkg = packageName.toLowerCase().trim();
+    if (pkg.isEmpty || isSystemEssentialApp(pkg)) return;
+
+    _userNonProductiveApps.add(pkg);
+    _customProductiveApps.remove(pkg);
+    _blockedApps.add(pkg);
+
+    await prefs.setStringList('userNonProductiveApps', _userNonProductiveApps.toList());
+    await prefs.setStringList('customProductiveApps', _customProductiveApps.toList());
+    await prefs.setStringList('blockedApps', _blockedApps.toList());
+    await _appBlockService.setBlockedApps(_blockedApps.toList());
+
+    notifyListeners();
+  }
+
+  Future<void> markAppAsProductive(String packageName, {String? appName}) async {
+    final pkg = packageName.toLowerCase().trim();
+    if (isStrictlyNonProductive(pkg, appName ?? '')) {
+      return; // Strictly non-productive apps can never be marked as productive
+    }
+    _customProductiveApps.add(pkg);
+    _blockedApps.remove(pkg);
+    await prefs.setStringList('customProductiveApps', _customProductiveApps.toList());
+    await prefs.setStringList('blockedApps', _blockedApps.toList());
+    await _appBlockService.setBlockedApps(_blockedApps.toList());
+    notifyListeners();
   }
 
   bool _isOpeningApp = false;
@@ -706,7 +767,7 @@ class AppState extends ChangeNotifier {
     try {
       final pkg = packageName.toLowerCase().trim();
       if (!bypassGuards) {
-        if (isAppProhibited(pkg)) {
+        if (isAppProhibited(pkg, getAppNameSync(pkg))) {
           setProhibitedPackage(pkg);
           return;
         }
@@ -1439,11 +1500,180 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
+  /// Checks if an app is a gambling, casino, slot, betting, or lottery app.
+  /// In Islamic teachings, all forms of gambling (maysir) and betting are strictly haram (QS. Al-Ma'idah: 90).
+  /// These apps are permanently prohibited and cannot be unlocked with points.
+  static bool isGamblingApp(String packageName, [String appName = '']) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.isEmpty) return false;
+
+    // Guard: System essential apps are not gambling
+    if (isSystemEssentialApp(pkg)) return false;
+
+    // Exclusions for legitimate non-gambling apps (e.g., Domino's Pizza, sloth animal apps)
+    if (pkg.contains('dominos') ||
+        name.contains("domino's") ||
+        name.contains('dominos pizza') ||
+        name.contains('pizza')) {
+      return false;
+    }
+    if (pkg.contains('sloth') || name.contains('sloth')) {
+      return false;
+    }
+
+    // 1. Well-known Indonesian & Global Gambling Packages
+    const knownGamblingPackages = [
+      // Higgs & Domino Island gambling ecosystems
+      'com.neptune.domino',
+      'com.higgs.dominoisland',
+      'com.higgs.domino',
+      'com.topfun.domino',
+      'com.topfun.domino.id',
+      'com.royal.domino',
+      'com.boyaa.domino',
+      'com.boyaa.dominoindonesia',
+      'com.h5.domino',
+      'com.onegame.domino',
+      'com.cynking.domino',
+      // Slot & Casino Giants
+      'com.playtika.slotomania',
+      'com.playtika.caesarscasino',
+      'com.playtika.wsop',
+      'com.zynga.livepoker',
+      'com.zynga.poker',
+      'com.zynga.hititrich',
+      'com.productmadness.cashmancasino',
+      'com.productmadness.lightninglink',
+      'com.scotty.jackpotparty',
+      'com.huuuge.casino.slots',
+      'com.murka.infinityslots',
+      'com.murka.scatter_slots',
+      'com.bally.quickhit',
+      'com.gsn.grandcasino',
+      'com.bagelcode.vegas.magic.slots',
+      // Bookmakers & Online Sports Betting
+      'com.bet365',
+      'com.bet365.affiliates',
+      'com.one_x_bet',
+      'org.xbet',
+      'com.parimatch',
+      'com.betway.sports',
+      'com.dafabet',
+      'com.sbobet',
+      'com.w88',
+      'com.fun88',
+      'com.m88',
+      'com.stake',
+      'com.betfair',
+      'com.bwin',
+      'com.draftkings.sportsbook',
+      'com.fanduel.sportsbook',
+    ];
+
+    for (final known in knownGamblingPackages) {
+      if (pkg == known || pkg.startsWith('$known.') || pkg.contains(known)) {
+        return true;
+      }
+    }
+
+    // 2. High-Confidence Gambling & Casino Keywords in Package Name or App Title
+    const gamblingKeywords = [
+      // Slot, Casino & Jackpot
+      'slot',
+      'slots',
+      'casino',
+      'jackpot',
+      'pragmatic',
+      'roulette',
+      'baccarat',
+      'blackjack',
+      'fafafa',
+      'maxwin',
+      'scatter',
+      'zeus slot',
+      'olympus slot',
+      'mahjong ways',
+      'sweet bonanza',
+      'gates of olympus',
+      'spadegaming',
+      'habanero',
+      'joker123',
+      // Poker & Betting
+      'poker',
+      'texas holdem',
+      'idnpoker',
+      'ceme keliling',
+      'capsa susun',
+      'judi',
+      'judol',
+      'taruhan',
+      'taruhan bola',
+      'sbobet',
+      'bet365',
+      '1xbet',
+      'parimatch',
+      'sportsbook',
+      'bookmaker',
+      'betting',
+      // Indonesian Domino gambling variants
+      'higgs domino',
+      'domino island',
+      'domino qiuqiu',
+      'domino 99',
+      'domino gaple',
+      'qiuqiu',
+      'kiukiu',
+      'gaple online',
+      'domino bet',
+      // Togel & Lottery
+      'togel',
+      'totogel',
+      'toto macau',
+      'togel online',
+      'lottery',
+      'lotto',
+      // Cockfight / Sabung ayam
+      'sabung ayam',
+      'sv388',
+      's128',
+    ];
+
+    for (final kw in gamblingKeywords) {
+      if (kw.contains(' ')) {
+        if (name.contains(kw) || pkg.contains(kw.replaceAll(' ', ''))) return true;
+      } else {
+        if (name.contains(kw) || pkg.contains(kw)) return true;
+      }
+    }
+
+    // 3. Package name segment checks (e.g. .slot., .casino., .poker., .betting.)
+    if (pkg.contains('.slot') ||
+        pkg.contains('.slots') ||
+        pkg.contains('.casino') ||
+        pkg.contains('.poker') ||
+        pkg.contains('.bet.') ||
+        pkg.contains('.betting') ||
+        pkg.contains('.gamble') ||
+        pkg.contains('.gambling') ||
+        pkg.contains('.judol') ||
+        pkg.contains('.togel')) {
+      return true;
+    }
+
+    return false;
+  }
+
   /// Checks if an app is permanently prohibited from being opened.
   /// 1. Dedicated explicit adult content apps (Pornhub, Nekopoi, Simontox, XVideos, etc.) are strictly prohibited across ALL countries.
-  /// 2. Bypass/anti-censorship browsers are prohibited in restricted adult content / VPN regions (Indonesia, Malaysia, Arab countries, etc.).
+  /// 2. Gambling, slot, and betting apps are strictly prohibited across ALL countries (QS. Al-Ma'idah: 90).
+  /// 3. Bypass/anti-censorship browsers are prohibited in restricted adult content / VPN regions (Indonesia, Malaysia, Arab countries, etc.).
   bool isAppProhibited(String packageName, [String appName = '']) {
     if (isExplicitAdultApp(packageName, appName)) {
+      return true;
+    }
+    if (isGamblingApp(packageName, appName)) {
       return true;
     }
     return isProhibitedBypassBrowser(packageName, appName) &&
@@ -1456,6 +1686,9 @@ class AppState extends ChangeNotifier {
     String languageCode = 'id',
   ]) {
     if (isExplicitAdultApp(packageName, appName)) {
+      return true;
+    }
+    if (isGamblingApp(packageName, appName)) {
       return true;
     }
     return isProhibitedBypassBrowser(packageName, appName) &&
@@ -1538,9 +1771,19 @@ class AppState extends ChangeNotifier {
 
     if (pkg.isEmpty) return false;
 
-    // Explicit adult apps are strictly excluded from being productive
-    if (isExplicitAdultApp(pkg, name)) {
+    // Explicit adult apps and gambling apps are strictly excluded from being productive
+    if (isExplicitAdultApp(pkg, name) || isGamblingApp(pkg, name)) {
       return false;
+    }
+
+    // Apps permanently marked as non-productive by the user can NEVER be productive
+    if (_userNonProductiveApps.contains(pkg)) {
+      return false;
+    }
+
+    // User-whitelisted productive apps (strictly non-productive apps like TikTok/IG/FB can never be whitelisted)
+    if (_customProductiveApps.contains(pkg) && !isStrictlyNonProductive(pkg, name, category)) {
+      return true;
     }
 
     // 1. Android OS Productive Categories:
@@ -1732,6 +1975,20 @@ class AppState extends ChangeNotifier {
       if (pkg == o || pkg.contains(o)) return true;
     }
 
+    // 8. Developer, Coding & App Testing Tools
+    const developerPackages = [
+      'com.testerscommunity',
+      'com.google.android.apps.playconsole',
+      'com.github.android',
+      'com.termux',
+    ];
+    for (final dp in developerPackages) {
+      if (pkg == dp || pkg.contains(dp)) return true;
+    }
+    if (pkg.contains('testerscommunity') || name.contains('testers community')) {
+      return true;
+    }
+
     // 8. Navigation & Maps
     const navigationPackages = [
       'com.google.android.apps.maps',
@@ -1831,23 +2088,30 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
-  /// Checks if an app is non-productive (games, social media, short-video scrolling, video streaming entertainment, gambling, web novels).
-  /// Non-productive apps must be locked by the launcher.
-  static bool isNonProductiveApp(String packageName, String appName, [int category = -1]) {
+  /// Strictly non-productive apps that can NEVER be marked as productive
+  /// (mindless social media scrolling, addictive short videos, dating, games, gambling, adult content, binge streaming).
+  static bool isStrictlyNonProductive(String packageName, String appName, [int category = -1]) {
     final pkg = packageName.toLowerCase().trim();
     final name = appName.toLowerCase().trim();
 
     if (pkg.isEmpty) return false;
 
-    // 1. PRODUCTIVE APPS ARE STRICTLY IMMUNE
-    if (isProductiveApp(pkg, name, category)) {
-      return false;
+    // Explicit adult apps and gambling apps are strictly prohibited
+    if (isExplicitAdultApp(pkg, name) ||
+        isGamblingApp(pkg, name) ||
+        isProhibitedBypassBrowser(pkg, name)) {
+      return true;
     }
 
-    // 2. Android OS Category Game (CATEGORY_GAME = 0)
+    // Apps permanently marked as non-productive by the user are strictly non-productive
+    if (_userNonProductiveApps.contains(pkg)) {
+      return true;
+    }
+
+    // 1. Android OS Category Game (CATEGORY_GAME = 0)
     if (category == 0) return true;
 
-    // 3. Social Media & Short Video Platforms (Mindless Scrolling)
+    // 2. Social Media & Short Video Platforms (Mindless Scrolling)
     // TikTok & Musical.ly
     if (pkg.contains('musically') || pkg.contains('tiktok') || name.contains('tiktok')) {
       return true;
@@ -1876,35 +2140,163 @@ class AppState extends ChangeNotifier {
     if (pkg.contains('reddit') || name.contains('reddit')) {
       return true;
     }
-    // Short Video & Live Platforms (SnackVideo, Likee, Bigo, Kwai)
-    if (pkg.contains('snackvideo') ||
-        name.contains('snackvideo') ||
-        pkg.contains('kwaiviral') ||
-        pkg.contains('kwai.video') ||
-        pkg.contains('video.like') ||
-        name == 'likee' ||
-        pkg.contains('bigo.live') ||
-        name.contains('bigo live') ||
-        pkg.contains('video.chat.ometv') ||
-        name.contains('ometv')) {
-      return true;
+    // Lifestyle, Microblogging & Meme Scrolling
+    const lifestyleKeywords = [
+      'lemon8',
+      'xiaohongshu',
+      'xingin.xhs',
+      'tumblr',
+      'sina.weibo',
+      'weibo',
+      'bluesky',
+      '9gag',
+      'ifunny',
+      'bereal',
+      'imgur',
+      'deviantart',
+      'vsco',
+      'mastodon',
+      'kaskus',
+    ];
+    for (final lk in lifestyleKeywords) {
+      if (pkg.contains(lk) || name.contains(lk)) return true;
     }
-    // Dating Apps
-    if (pkg.contains('tinder') ||
-        name.contains('tinder') ||
-        pkg.contains('bumble') ||
-        name.contains('bumble') ||
-        pkg.contains('tantan') ||
-        name.contains('tantan') ||
-        pkg.contains('michat') ||
-        name.contains('michat')) {
-      return true;
+    // Short Video & Live Streaming Platforms (SnackVideo, Likee, Bigo, Kwai, Tango, etc.)
+    const shortVideoAndLiveKeywords = [
+      'snackvideo',
+      'kwaiviral',
+      'kwai.video',
+      'kwai',
+      'video.like',
+      'likee',
+      'bigo.live',
+      'bigo live',
+      'triller',
+      'helo.android',
+      'chingari',
+      'sharechat.moj',
+      'moj',
+      'sgiggle.production', // Tango
+      'tango',
+      'asiainno.uplive', // Uplive
+      'uplive',
+      'vshow.enjoy', // Poppo Live
+      'poppo live',
+      'poppo',
+      'ushowmedia.nonolive', // Nonolive
+      'mico',
+      'yy.hiyo', // Hago
+      'hago',
+      'twelve.yellow', // Yubo
+      'yubo',
+      'sugar.live', // SugarLive
+      'sugarlive',
+      'mango.live', // Mango Live
+      'mangolive',
+      'dreamlive',
+      'gogolive',
+      'cmcm.live', // LiveMe
+      'media17', // 17LIVE
+      '17live',
+      'movefastcompany.hakuna', // Hakuna
+      'hakuna',
+      'spoonme', // Spoon
+      'kumumedia', // Kumu
+    ];
+    for (final sk in shortVideoAndLiveKeywords) {
+      if (pkg.contains(sk) || name.contains(sk)) return true;
+    }
+    // Voice Party, Virtual Rooms & Social Metaverse (Yalla, YoYo, WePlay, Lita, Zepeto, etc.)
+    const voicePartyKeywords = [
+      'yallagroup',
+      'yalla',
+      'yoyo.voice',
+      'weplay',
+      'litagaming.lita',
+      'lita',
+      'social.toptop',
+      'toptop',
+      'ola.party',
+      'soulapp',
+      'zepeto',
+      'imvu',
+      'clubhouse',
+    ];
+    for (final vk in voicePartyKeywords) {
+      if (pkg.contains(vk) || name.contains(vk)) return true;
+    }
+    // Random & Anonymous Video/Text Chat (Azar, OmeTV, Litmatch, Chamet, Camfrog, NGL, etc.)
+    const anonymousChatKeywords = [
+      'hyperconnect.azar',
+      'azar',
+      'video.chat.ometv',
+      'ometv',
+      'litatom.litmatch',
+      'litmatch',
+      'hkfuliao.chamet',
+      'chamet',
+      'videochat.livu',
+      'livu',
+      'livechat.tumile',
+      'tumile',
+      'chatous',
+      'camfrog',
+      'cool.monkey',
+      'bermuda.video',
+      'corp.holla',
+      'nglreactnative',
+      'ngl',
+      'tellonym',
+      'askfm',
+      'tellm.android', // Jodel
+      'jodel',
+      'sh.whisper',
+      'whisper',
+    ];
+    for (final ak in anonymousChatKeywords) {
+      if (pkg.contains(ak) || name.contains(ak)) return true;
+    }
+    // Dating & Hookup Apps (Tinder, Bumble, Tantan, Badoo, Omi, Happn, Boo, etc.)
+    const datingAppKeywords = [
+      'tinder',
+      'bumble',
+      'tantan',
+      'badoo',
+      'haoda.wuta', // Omi
+      'omi',
+      'okcupid',
+      'co.hinge',
+      'hinge',
+      'match.android',
+      'coffeemeetsbagel',
+      'happn',
+      'dating.boo',
+      'boo.enterprises',
+      'pureapp',
+      'feeld',
+      'lovoo',
+      'skout',
+      'mamba',
+      'waplog',
+      'taimi',
+      'paktor',
+      'grindrapp',
+      'grindr',
+      'blued',
+      'hornet',
+      'scruffapp',
+      'scruff',
+      'unearby.sayhi',
+      'sayhi',
+      'taggedapp',
+      'tagged',
+      'jaumo',
+    ];
+    for (final dk in datingAppKeywords) {
+      if (pkg.contains(dk) || name.contains(dk)) return true;
     }
 
-    // Android Category Social (CATEGORY_SOCIAL = 4)
-    if (category == 4) return true;
-
-    // 4. Video Streaming & Entertainment Binge-Watching Platforms
+    // 3. Video Streaming & Entertainment Binge-Watching Platforms
     if (pkg == 'com.google.android.youtube' || pkg == 'com.google.android.youtube.tv' || name == 'youtube') {
       return true;
     }
@@ -1952,7 +2344,7 @@ class AppState extends ChangeNotifier {
     // Android Category Video (CATEGORY_VIDEO = 2)
     if (category == 2) return true;
 
-    // 5. Popular Games (even if category is not reported as 0)
+    // 4. Popular Games (even if category is not reported as 0)
     const popularGameKeywords = [
       'mobile.legend',
       'freefire',
@@ -1986,19 +2378,9 @@ class AppState extends ChangeNotifier {
       if (pkg.contains(gk) || name.contains(gk)) return true;
     }
 
-    // Gambling, Casino & Slot keywords
-    const gamblingKeywords = [
-      'domino',
-      'slot',
-      'casino',
-      'poker',
-      'jackpot',
-      'pragmatic',
-      'roulette',
-      'judi',
-    ];
-    for (final gam in gamblingKeywords) {
-      if (name.contains(gam) || pkg.contains(gam)) return true;
+    // Gambling, Casino & Slot apps (strictly prohibited via isGamblingApp)
+    if (isGamblingApp(pkg, name)) {
+      return true;
     }
 
     // General game identifiers in package or name
@@ -2015,7 +2397,7 @@ class AppState extends ChangeNotifier {
       return true;
     }
 
-    // 6. Time-Wasting Web Novels & Comics
+    // 5. Time-Wasting Web Novels & Comics
     const novelKeywords = [
       'wattpad',
       'linewebtoon',
@@ -2031,7 +2413,7 @@ class AppState extends ChangeNotifier {
       if (name.contains(nk) || pkg.contains(nk.replaceAll(' ', ''))) return true;
     }
 
-    // 7. Video Editors for Social Content
+    // 6. Video Editors for Social Content
     const videoEditorPackages = [
       'com.lemon.lvoverseas', // CapCut
       'com.camerasideas.instashot', // InShot
@@ -2041,6 +2423,30 @@ class AppState extends ChangeNotifier {
     for (final ve in videoEditorPackages) {
       if (pkg.contains(ve) || name.contains(ve)) return true;
     }
+
+    return false;
+  }
+
+  /// Checks if an app is non-productive (games, social media, short-video scrolling, video streaming entertainment, gambling, web novels).
+  /// Non-productive apps must be locked by the launcher.
+  static bool isNonProductiveApp(String packageName, String appName, [int category = -1]) {
+    final pkg = packageName.toLowerCase().trim();
+    final name = appName.toLowerCase().trim();
+
+    if (pkg.isEmpty) return false;
+
+    // 1. PRODUCTIVE APPS ARE STRICTLY IMMUNE
+    if (isProductiveApp(pkg, name, category)) {
+      return false;
+    }
+
+    // 2. Apps strictly classified as non-productive (cannot be overridden)
+    if (isStrictlyNonProductive(pkg, name, category)) {
+      return true;
+    }
+
+    // 3. Android Category Social (CATEGORY_SOCIAL = 4)
+    if (category == 4) return true;
 
     return false;
   }
@@ -2312,8 +2718,10 @@ class AppState extends ChangeNotifier {
         final pkg = (app['packageName'] as String? ?? '').toLowerCase().trim();
         final name = (app['appName'] as String? ?? '').toLowerCase().trim();
         if (pkg.isNotEmpty) {
-          // Explicit adult apps are ALWAYS prohibited across all regions
+          // Explicit adult apps and gambling apps are ALWAYS prohibited across all regions
           if (isExplicitAdultApp(pkg, name)) {
+            targets.add(pkg);
+          } else if (isGamblingApp(pkg, name)) {
             targets.add(pkg);
           } else if (isRestricted && isProhibitedBypassBrowser(pkg, name)) {
             targets.add(pkg);
@@ -2358,6 +2766,28 @@ class AppState extends ChangeNotifier {
         'com.michat.lite',
       ];
       targets.addAll(commonAdultApps);
+
+      // Common gambling and betting packages
+      const commonGamblingApps = [
+        'com.neptune.domino',
+        'com.higgs.dominoisland',
+        'com.higgs.domino',
+        'com.topfun.domino',
+        'com.topfun.domino.id',
+        'com.royal.domino',
+        'com.boyaa.domino',
+        'com.h5.domino',
+        'com.onegame.domino',
+        'com.playtika.slotomania',
+        'com.zynga.livepoker',
+        'com.zynga.poker',
+        'com.bet365',
+        'com.parimatch',
+        'org.xbet',
+        'com.dafabet',
+        'com.sbobet',
+      ];
+      targets.addAll(commonGamblingApps);
 
       if (isRestricted) {
         const commonProhibited = [
@@ -2475,8 +2905,14 @@ class AppState extends ChangeNotifier {
     return success;
   }
 
+  bool isAppUnlocked(String packageName) {
+    final pkg = packageName.toLowerCase().trim();
+    final expiry = _unlockedExpirations[pkg];
+    return expiry != null && DateTime.now().millisecondsSinceEpoch < expiry;
+  }
+
   int getUnlockRemainingMinutes(String packageName) {
-    final pkg = packageName.toLowerCase();
+    final pkg = packageName.toLowerCase().trim();
     final expiry = _unlockedExpirations[pkg];
     if (expiry == null) return 0;
     

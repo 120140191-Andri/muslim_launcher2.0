@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/app_state.dart';
 import 'services/analytics_service.dart';
+import 'services/streak_notification_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/language_screen.dart';
 import 'screens/onboarding/setup_hub_screen.dart';
@@ -76,6 +77,11 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = Provider.of<AppState>(context, listen: false);
+      StreakNotificationService.initialize(navigatorKey: state.navigatorKey);
+      StreakNotificationService.checkAndSyncReminder(state);
+    });
   }
 
   @override
@@ -103,6 +109,7 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
       final state = Provider.of<AppState>(context, listen: false);
       state.checkPendingNativeBlocks();
       state.refreshStatus();
+      StreakNotificationService.checkAndSyncReminder(state);
     }
   }
 

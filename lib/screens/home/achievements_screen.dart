@@ -8,6 +8,7 @@ import '../../utils/page_transitions.dart';
 import '../quran/surah_list_screen.dart';
 import '../quran/surah_detail_screen.dart';
 import '../dzikir/dzikir_screen.dart';
+import '../../services/streak_notification_service.dart';
 
 enum BadgeRarity { common, rare, epic, legendary }
 
@@ -1788,6 +1789,72 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   ],
                 ),
               ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Streak Daily Reminder Toggle Row
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      appState.isStreakReminderEnabled
+                          ? Icons.notifications_active_rounded
+                          : Icons.notifications_off_rounded,
+                      size: 16,
+                      color: appState.isStreakReminderEnabled
+                          ? darkAccent
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lang == 'en'
+                              ? 'Daily Reminder (20:00)'
+                              : 'Pengingat Harian (20:00)',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          lang == 'en'
+                              ? 'Alert if streak is unfinished'
+                              : 'Ingatkan jika belum istiqomah',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(
+                    value: appState.isStreakReminderEnabled,
+                    activeThumbColor: darkAccent,
+                    onChanged: (val) async {
+                      if (val) {
+                        await StreakNotificationService.requestPermission();
+                      }
+                      await appState.setStreakReminderEnabled(val);
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ],

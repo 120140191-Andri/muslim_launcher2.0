@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_block_service.dart';
 import '../services/analytics_service.dart';
+import '../services/streak_notification_service.dart';
 import '../screens/home/app_list_screen.dart';
 import '../utils/translations.dart';
 import '../utils/quran_progress_helper.dart';
@@ -150,6 +151,11 @@ class AppState extends ChangeNotifier {
   int _maxDzikirDailyStreak = 0;
   String _lastDzikirDate = '';
 
+  // Persistent Streak Notification Settings
+  bool _isStreakReminderEnabled = true;
+  int _streakReminderHour = 20;
+  int _streakReminderMinute = 0;
+
   // Persistent Claimed Achievement Badges
   Set<String> _claimedBadgeIds = {};
 
@@ -218,6 +224,39 @@ class AppState extends ChangeNotifier {
   int get rawDzikirDailyStreak => _dzikirDailyStreak;
   int get maxDzikirDailyStreak => _maxDzikirDailyStreak;
   String get lastDzikirDate => _lastDzikirDate;
+
+  bool get hasReadQuranToday {
+    if (_lastQuranReadDate.isEmpty) return false;
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    return _lastQuranReadDate == today;
+  }
+
+  bool get hasDzikirToday {
+    if (_lastDzikirDate.isEmpty) return false;
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    return _lastDzikirDate == today;
+  }
+
+  bool get isStreakReminderEnabled => _isStreakReminderEnabled;
+  int get streakReminderHour => _streakReminderHour;
+  int get streakReminderMinute => _streakReminderMinute;
+
+  Future<void> setStreakReminderEnabled(bool enabled) async {
+    _isStreakReminderEnabled = enabled;
+    await prefs.setBool('isStreakReminderEnabled', enabled);
+    notifyListeners();
+    unawaited(StreakNotificationService.checkAndSyncReminder(this));
+  }
+
+  Future<void> setStreakReminderTime(int hour, int minute) async {
+    _streakReminderHour = hour;
+    _streakReminderMinute = minute;
+    await prefs.setInt('streakReminderHour', hour);
+    await prefs.setInt('streakReminderMinute', minute);
+    notifyListeners();
+    unawaited(StreakNotificationService.checkAndSyncReminder(this));
+  }
+
   Set<String> get claimedBadgeIds => _claimedBadgeIds;
   bool isBadgeClaimed(String badgeId) => _claimedBadgeIds.contains(badgeId);
   List<dynamic> get quranData => _quranData;
@@ -324,6 +363,10 @@ class AppState extends ChangeNotifier {
     _dzikirDailyStreak = prefs.getInt('dzikirDailyStreak') ?? 0;
     _maxDzikirDailyStreak = prefs.getInt('maxDzikirDailyStreak') ?? _dzikirDailyStreak;
     _lastDzikirDate = prefs.getString('lastDzikirDate') ?? '';
+
+    _isStreakReminderEnabled = prefs.getBool('isStreakReminderEnabled') ?? true;
+    _streakReminderHour = prefs.getInt('streakReminderHour') ?? 20;
+    _streakReminderMinute = prefs.getInt('streakReminderMinute') ?? 0;
 
     final savedClaimedBadges = prefs.getStringList('claimedBadgeIds') ?? [];
     _claimedBadgeIds = savedClaimedBadges.toSet();
@@ -3383,6 +3426,7 @@ class AppState extends ChangeNotifier {
 
     await prefs.setInt('quranDailyStreak', _quranDailyStreak);
     await prefs.setString('lastQuranReadDate', today);
+    unawaited(StreakNotificationService.checkAndSyncReminder(this));
   }
 
   @visibleForTesting
@@ -3420,6 +3464,7 @@ class AppState extends ChangeNotifier {
 
     await prefs.setInt('dzikirDailyStreak', _dzikirDailyStreak);
     await prefs.setString('lastDzikirDate', today);
+    unawaited(StreakNotificationService.checkAndSyncReminder(this));
   }
 
   @visibleForTesting

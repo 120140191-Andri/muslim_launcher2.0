@@ -406,8 +406,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         category: 'dzikir',
         title: lang == 'en' ? 'Day 1 Dhikr Habit' : 'Istiqomah Zikir 1 Hari',
         description: lang == 'en'
-            ? 'Recite digital dhikr today to establish your daily remembrance streak.'
-            : 'Membasahi lisan dengan zikir tasbih hari ini untuk menyalakan istiqomah zikir.',
+            ? 'Complete at least 1 round of digital dhikr (33x) today to establish your daily remembrance streak.'
+            : 'Tuntaskan minimal 1 putaran zikir tasbih (33x) hari ini untuk menyalakan istiqomah zikir.',
         fadhilah: lang == 'en'
             ? '"Keep your tongue constantly moist with the remembrance of Allah." (Tirmidhi)'
             : '"Senantiasalah lisanmu basah karena mengingat Allah." (HR. Tirmidzi)',
@@ -425,8 +425,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         category: 'dzikir',
         title: lang == 'en' ? '3-Day Dhikr Streak' : 'Istiqomah Zikir 3 Hari',
         description: lang == 'en'
-            ? 'Recite dhikr daily for 3 consecutive days.'
-            : 'Rutin berzikir mengingat Allah setiap hari selama 3 hari berturut-turut.',
+            ? 'Complete at least 1 round of dhikr (33x) daily for 3 consecutive days.'
+            : 'Rutin bertasbih minimal 1 putaran (33x) setiap hari selama 3 hari berturut-turut.',
         fadhilah: lang == 'en'
             ? '"The similitude of the one who remembers his Lord and the one who does not is like that of the living and the dead." (Bukhari)'
             : '"Perumpamaan orang yang berzikir kepada Tuhannya dan yang tidak, seperti orang hidup dan orang mati." (HR. Bukhari)',
@@ -444,8 +444,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         category: 'dzikir',
         title: lang == 'en' ? '7-Day Dhikr Steadfast (1 Week)' : 'Istiqomah Zikir 7 Hari (1 Pekan)',
         description: lang == 'en'
-            ? 'Consistently recite dhikr every day for 7 consecutive days.'
-            : 'Konsisten bertasbih setiap hari selama 7 hari berturut-turut tanpa terputus.',
+            ? 'Consistently recite at least 1 round of dhikr (33x) every day for 7 consecutive days.'
+            : 'Konsisten bertasbih minimal 1 putaran (33x) setiap hari selama 7 hari berturut-turut tanpa terputus.',
         fadhilah: lang == 'en'
             ? '"Two phrases are light on the tongue, heavy on the scales, and beloved to Ar-Rahman: Subhanallah wa bihamdihi, Subhanallahil \'Azhim." (Bukhari)'
             : '"Dua kalimat yang ringan di lisan, berat di timbangan, dan dicintai Ar-Rahman: Subhanallah wa bihamdihi, Subhanallahil \'Azhim." (HR. Bukhari)',
@@ -463,8 +463,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         category: 'dzikir',
         title: lang == 'en' ? '14-Day Dhikr Devotion (2 Weeks)' : 'Istiqomah Zikir 14 Hari (2 Pekan)',
         description: lang == 'en'
-            ? 'Keep your heart anchored in remembrance for 14 consecutive days.'
-            : 'Menjaga lisan senantiasa basah mengingat Allah selama 14 hari penuh berturut-turut.',
+            ? 'Keep your heart anchored in daily dhikr (min. 33x) for 14 consecutive days.'
+            : 'Menjaga lisan berzikir minimal 1 putaran (33x) selama 14 hari penuh berturut-turut.',
         fadhilah: lang == 'en'
             ? '"Unquestionably, by the remembrance of Allah hearts are assured." (Ar-Ra\'d: 28)'
             : '"Ingatlah, hanya dengan mengingat Allah hati menjadi tenteram." (QS. Ar-Ra\'d: 28)',
@@ -482,8 +482,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         category: 'dzikir',
         title: lang == 'en' ? '30-Day Dhikr Habit (1 Month)' : 'Istiqomah Zikir Sebulan (30 Hari)',
         description: lang == 'en'
-            ? 'A full month of non-stop daily dhikr and tasbih devotion.'
-            : 'Sebulan penuh menghiasi hari-hari dengan tasbih dan zikir tanpa jeda.',
+            ? 'A full month of daily dhikr devotion (min. 33x/day) without missing a single day.'
+            : 'Sebulan penuh menghiasi hari-hari dengan tasbih (min. 33x/hari) tanpa jeda.',
         fadhilah: lang == 'en'
             ? '"Shall I tell you of the best of your deeds and the purest in the sight of your Lord? Remembrance of Allah." (Tirmidhi)'
             : '"Maukah kuberitahu amalan terbaik dan tersuci di sisi Tuhanmu? Yaitu senantiasa berzikir mengingat Allah." (HR. Tirmidzi)',
@@ -501,8 +501,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         category: 'dzikir',
         title: lang == 'en' ? '1-Year Legendary Dhikr (365 Days)' : 'Istiqomah Zikir 1 Tahun (365 Hari)',
         description: lang == 'en'
-            ? 'Legendary milestone: Never a single day missed remembering Allah for 365 consecutive days.'
-            : 'Pencapaian agung ahli zikir yang lidah dan hatinya tak pernah luput mengingat Allah setiap hari selama 365 hari penuh.',
+            ? 'Legendary milestone: Recite at least 1 round of dhikr (33x) every single day for 365 consecutive days.'
+            : 'Pencapaian agung ahli zikir: Membaca tasbih minimal 1 putaran (33x) setiap hari selama 365 hari penuh tanpa terlewat.',
         fadhilah: lang == 'en'
             ? '"The men who remember Allah often and the women who do so - for them Allah has prepared forgiveness and a great reward." (Al-Ahzab: 35)'
             : '"Laki-laki dan perempuan yang banyak berzikir mengingat Allah, Allah sediakan ampunan dan pahala yang besar." (QS. Al-Ahzab: 35)',
@@ -1638,8 +1638,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                               ? '$currentStreak Day${currentStreak > 1 ? "s" : ""} in a row ${isQuran ? "🔥" : "✨"}'
                               : '$currentStreak Hari Berturut-turut ${isQuran ? "🔥" : "✨"}')
                           : (lang == 'en'
-                              ? (isQuran ? 'Start streak today (min. 1 ayah)' : 'Start dhikr streak today')
-                              : (isQuran ? 'Mulai hari ini: Minimal 1 ayat' : 'Mulai zikir tasbih hari ini')),
+                              ? (isQuran ? 'Start streak today (min. 1 ayah)' : 'Start streak today (min. 33x)')
+                              : (isQuran ? 'Mulai hari ini: Minimal 1 ayat' : 'Mulai hari ini: Minimal 1 putaran (33x)')),
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,

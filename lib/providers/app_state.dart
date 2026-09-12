@@ -116,6 +116,7 @@ class AppState extends ChangeNotifier {
   Set<int> _completedSurahsThisCycle = {};
   int _dailyDzikirRounds = 0;
   int _dailyDzikirPoints = 0;
+  int _dailyDzikirCount = 0;
   String _dailyDzikirDate = '';
   int _totalDzikirCount = 0;
 
@@ -123,6 +124,11 @@ class AppState extends ChangeNotifier {
   Set<int> get completedSurahsThisCycle => _completedSurahsThisCycle;
   int get dailyDzikirRounds => _dailyDzikirRounds;
   int get dailyDzikirPoints => _dailyDzikirPoints;
+  int get dailyDzikirCount {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyDzikirDate != today) return 0;
+    return _dailyDzikirCount;
+  }
   int get totalDzikirCount => _totalDzikirCount;
   bool isSurahCompletedInThisCycle(int surahNumber) =>
       _completedSurahsThisCycle.contains(surahNumber);
@@ -331,13 +337,16 @@ class AppState extends ChangeNotifier {
     if (_dailyDzikirDate != today) {
       _dailyDzikirRounds = 0;
       _dailyDzikirPoints = 0;
+      _dailyDzikirCount = 0;
       _dailyDzikirDate = today;
       prefs.setInt('dailyDzikirRounds', 0);
       prefs.setInt('dailyDzikirPoints', 0);
+      prefs.setInt('dailyDzikirCount', 0);
       prefs.setString('dailyDzikirDate', today);
     } else {
       _dailyDzikirRounds = prefs.getInt('dailyDzikirRounds') ?? 0;
       _dailyDzikirPoints = prefs.getInt('dailyDzikirPoints') ?? 0;
+      _dailyDzikirCount = prefs.getInt('dailyDzikirCount') ?? 0;
     }
 
     final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
@@ -3414,10 +3423,19 @@ class AppState extends ChangeNotifier {
   }
 
   @visibleForTesting
-  Future<void> setDzikirStreakForTesting(int streak, {int? maxStreak, String? lastDate}) async {
+  Future<void> setDzikirStreakForTesting(int streak, {int? maxStreak, String? lastDate, int? dailyCount}) async {
     _dzikirDailyStreak = streak;
     _maxDzikirDailyStreak = maxStreak ?? streak;
     _lastDzikirDate = lastDate ?? DateTime.now().toIso8601String().split('T')[0];
+    if (dailyCount != null) {
+      _dailyDzikirCount = dailyCount;
+      await prefs.setInt('dailyDzikirCount', _dailyDzikirCount);
+    } else if (lastDate != null && lastDate != DateTime.now().toIso8601String().split('T')[0]) {
+      _dailyDzikirCount = 0;
+      _dailyDzikirRounds = 0;
+      await prefs.setInt('dailyDzikirCount', 0);
+      await prefs.setInt('dailyDzikirRounds', 0);
+    }
     await prefs.setInt('dzikirDailyStreak', _dzikirDailyStreak);
     await prefs.setInt('maxDzikirDailyStreak', _maxDzikirDailyStreak);
     await prefs.setString('lastDzikirDate', _lastDzikirDate);
@@ -3686,10 +3704,13 @@ class AppState extends ChangeNotifier {
     if (_dailyDzikirDate != today) {
       _dailyDzikirRounds = 0;
       _dailyDzikirPoints = 0;
+      _dailyDzikirCount = 0;
       _dailyDzikirDate = today;
     }
 
     _dailyDzikirRounds++;
+    _dailyDzikirCount += count;
+    await prefs.setInt('dailyDzikirCount', _dailyDzikirCount);
 
     int baseAllocatedPoints = 0;
     if (_dailyDzikirRounds == 1) {
@@ -3718,7 +3739,11 @@ class AppState extends ChangeNotifier {
     await prefs.setInt('totalDzikirCount', _totalDzikirCount);
 
     _addToHistory("Dzikir: $dzikirTitle (${count}x)", count, allocatedPoints);
-    await _recordDzikirDailyRead();
+
+    // Minimum 1 round (33x) to record/maintain daily dzikir streak
+    if (_dailyDzikirCount >= 33) {
+      await _recordDzikirDailyRead();
+    }
     notifyListeners();
 
     return {
@@ -3732,7 +3757,24 @@ class AppState extends ChangeNotifier {
     if (count <= 0) return;
     _totalDzikirCount += count;
     await prefs.setInt('totalDzikirCount', _totalDzikirCount);
-    await _recordDzikirDailyRead();
+
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyDzikirDate != today) {
+      _dailyDzikirRounds = 0;
+      _dailyDzikirPoints = 0;
+      _dailyDzikirCount = 0;
+      _dailyDzikirDate = today;
+    }
+    _dailyDzikirCount += count;
+    await prefs.setInt('dailyDzikirCount', _dailyDzikirCount);
+    await prefs.setInt('dailyDzikirRounds', _dailyDzikirRounds);
+    await prefs.setInt('dailyDzikirPoints', _dailyDzikirPoints);
+    await prefs.setString('dailyDzikirDate', _dailyDzikirDate);
+
+    // Minimum 1 round (33x) to record/maintain daily dzikir streak
+    if (_dailyDzikirCount >= 33) {
+      await _recordDzikirDailyRead();
+    }
     notifyListeners();
   }
 

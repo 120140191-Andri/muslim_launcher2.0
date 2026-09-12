@@ -319,14 +319,22 @@ void main() {
       await appState.setDzikirStreakForTesting(5, maxStreak: 5, lastDate: yesterday);
       expect(appState.dzikirDailyStreak, 5);
 
-      // Performing dzikir today via addDzikirCount increments streak to 6
-      await appState.addDzikirCount(33);
+      // Partial dzikir (< 33) does NOT activate streak yet
+      await appState.addDzikirCount(15);
+      expect(appState.dailyDzikirCount, 15);
+      expect(appState.lastDzikirDate, yesterday); // Still yesterday
+      expect(appState.dzikirDailyStreak, 5); // Still 5, not yet completed today
+
+      // Completing the remainder (18 taps, total 33) reaches minimum 1 round (33x) and increments streak to 6
+      await appState.addDzikirCount(18);
+      expect(appState.dailyDzikirCount, 33);
       expect(appState.dzikirDailyStreak, 6);
       expect(appState.maxDzikirDailyStreak, 6);
       expect(appState.lastDzikirDate, today);
 
       // Additional dzikir on same day via saveDzikirProgress does not double increment
       await appState.saveDzikirProgress('Subhanallah', 33, 10);
+      expect(appState.dailyDzikirCount, 66);
       expect(appState.dzikirDailyStreak, 6);
       expect(appState.maxDzikirDailyStreak, 6);
 
@@ -335,8 +343,12 @@ void main() {
       expect(appState.dzikirDailyStreak, 0);
       expect(appState.maxDzikirDailyStreak, 6);
 
-      // Doing dzikir today resets streak to 1, but best record remains 6!
-      await appState.addDzikirCount(33);
+      // Doing partial dzikir (10x) does not reset streak to 1 yet
+      await appState.addDzikirCount(10);
+      expect(appState.dzikirDailyStreak, 0);
+
+      // Finishing 33x round resets streak to 1, while best record remains 6!
+      await appState.addDzikirCount(23);
       expect(appState.dzikirDailyStreak, 1);
       expect(appState.maxDzikirDailyStreak, 6);
     });

@@ -251,20 +251,21 @@ class _DzikirScreenState extends State<DzikirScreen>
   late Animation<double> _cooldownAnimation;
 
   // Spiritual Energy Session Tracking
+  late AppState _appState;
   double? _sessionStartProgress;
   int _sessionDzikirTotal = 0;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _appState = Provider.of<AppState>(context, listen: false);
     if (_sessionStartProgress == null) {
-      final appState = Provider.of<AppState>(context, listen: false);
       _sessionStartProgress = QuranProgressHelper.getCombinedSpiritualProgress(
-        khatmCount: appState.khatmCount,
-        currentSurahIndex: appState.currentSurahIndex,
-        currentAyahNumber: appState.lastReadAyahNumber,
-        quranData: appState.quranData,
-        totalDzikirCount: appState.totalDzikirCount,
+        khatmCount: _appState.khatmCount,
+        currentSurahIndex: _appState.currentSurahIndex,
+        currentAyahNumber: _appState.lastReadAyahNumber,
+        quranData: _appState.quranData,
+        totalDzikirCount: _appState.totalDzikirCount,
       );
     }
   }
@@ -370,6 +371,38 @@ class _DzikirScreenState extends State<DzikirScreen>
     }
   }
 
+  bool _hasFinalizedSession = false;
+
+  void _finalizeSpiritualEnergySession() {
+    if (_hasFinalizedSession) return;
+    _hasFinalizedSession = true;
+
+    if (_sessionDzikirTotal > 0) {
+      try {
+        // Persist any partial round taps that were not saved in onCompletedRound
+        final uncompletedTaps = _count % _target;
+        if (uncompletedTaps > 0) {
+          _appState.addDzikirCount(uncompletedTaps);
+        }
+        final currentProgress = QuranProgressHelper.getCombinedSpiritualProgress(
+          khatmCount: _appState.khatmCount,
+          currentSurahIndex: _appState.currentSurahIndex,
+          currentAyahNumber: _appState.lastReadAyahNumber,
+          quranData: _appState.quranData,
+          totalDzikirCount: _appState.totalDzikirCount,
+        );
+        _appState.triggerSpiritualEnergy(
+          previousProgress: _sessionStartProgress ?? currentProgress,
+          targetProgress: currentProgress,
+          source: 'dzikir',
+          itemsCount: _sessionDzikirTotal,
+        );
+      } catch (e) {
+        debugPrint('[DzikirScreen] Error triggering spiritual energy: $e');
+      }
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -379,29 +412,7 @@ class _DzikirScreenState extends State<DzikirScreen>
     _cooldownController.dispose();
     EyeTrackerService().dispose();
 
-    if (_sessionDzikirTotal > 0) {
-      try {
-        final appState = Provider.of<AppState>(context, listen: false);
-        // Persist any partial round taps that were not saved in onCompletedRound
-        final uncompletedTaps = _count % _target;
-        if (uncompletedTaps > 0) {
-          appState.addDzikirCount(uncompletedTaps);
-        }
-        final currentProgress = QuranProgressHelper.getCombinedSpiritualProgress(
-          khatmCount: appState.khatmCount,
-          currentSurahIndex: appState.currentSurahIndex,
-          currentAyahNumber: appState.lastReadAyahNumber,
-          quranData: appState.quranData,
-          totalDzikirCount: appState.totalDzikirCount,
-        );
-        appState.triggerSpiritualEnergy(
-          previousProgress: _sessionStartProgress ?? currentProgress,
-          targetProgress: currentProgress,
-          source: 'dzikir',
-          itemsCount: _sessionDzikirTotal,
-        );
-      } catch (_) {}
-    }
+    _finalizeSpiritualEnergySession();
 
     super.dispose();
   }
@@ -789,9 +800,16 @@ class _DzikirScreenState extends State<DzikirScreen>
     final screenHeight = MediaQuery.of(context).size.height;
     final beadSize = (screenHeight * 0.20).clamp(140.0, 185.0);
 
-    return Scaffold(
-      backgroundColor: colorScheme.surfaceContainerLowest,
-      appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          _finalizeSpiritualEnergySession();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: colorScheme.surfaceContainerLowest,
+        appBar: AppBar(
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
         scrolledUnderElevation: 2,
@@ -1256,6 +1274,7 @@ width: beadSize - 10,
           },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

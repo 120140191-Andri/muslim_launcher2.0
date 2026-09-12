@@ -28,6 +28,9 @@ class SpiritualEnergySession {
 }
 
 class AppState extends ChangeNotifier {
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
+
   final SharedPreferences prefs;
 
   SpiritualEnergySession? _pendingEnergySession;
@@ -59,7 +62,9 @@ class AppState extends ChangeNotifier {
       source: source,
       itemsCount: itemsCount,
     );
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   AppState(this.prefs) {

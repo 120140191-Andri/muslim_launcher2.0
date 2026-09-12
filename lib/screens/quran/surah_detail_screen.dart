@@ -53,20 +53,21 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   DateTime? _readingStartTime;
 
   // Spiritual Energy Session Tracking
+  late AppState _appState;
   double? _sessionStartProgress;
   int _sessionAyahsCount = 0;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _appState = Provider.of<AppState>(context, listen: false);
     if (_sessionStartProgress == null) {
-      final appState = Provider.of<AppState>(context, listen: false);
       _sessionStartProgress = QuranProgressHelper.getCombinedSpiritualProgress(
-        khatmCount: appState.khatmCount,
-        currentSurahIndex: appState.currentSurahIndex,
-        currentAyahNumber: appState.lastReadAyahNumber,
-        quranData: appState.quranData,
-        totalDzikirCount: appState.totalDzikirCount,
+        khatmCount: _appState.khatmCount,
+        currentSurahIndex: _appState.currentSurahIndex,
+        currentAyahNumber: _appState.lastReadAyahNumber,
+        quranData: _appState.quranData,
+        totalDzikirCount: _appState.totalDzikirCount,
       );
     }
   }
@@ -593,9 +594,16 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      backgroundColor: colorScheme.surfaceContainerLowest,
-      appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          _finalizeSpiritualEnergySession();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: colorScheme.surfaceContainerLowest,
+        appBar: AppBar(
         title: Text(widget.surah['surah_name']),
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
@@ -928,8 +936,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
             ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildNextSurahButton(
     BuildContext context,
@@ -972,6 +981,33 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     );
   }
 
+  bool _hasFinalizedSession = false;
+
+  void _finalizeSpiritualEnergySession() {
+    if (_hasFinalizedSession) return;
+    _hasFinalizedSession = true;
+
+    if (_sessionAyahsCount > 0) {
+      try {
+        final currentProgress = QuranProgressHelper.getCombinedSpiritualProgress(
+          khatmCount: _appState.khatmCount,
+          currentSurahIndex: _appState.currentSurahIndex,
+          currentAyahNumber: _appState.lastReadAyahNumber,
+          quranData: _appState.quranData,
+          totalDzikirCount: _appState.totalDzikirCount,
+        );
+        _appState.triggerSpiritualEnergy(
+          previousProgress: _sessionStartProgress ?? currentProgress,
+          targetProgress: currentProgress,
+          source: 'quran',
+          itemsCount: _sessionAyahsCount,
+        );
+      } catch (e) {
+        debugPrint('[SurahDetailScreen] Error triggering spiritual energy: $e');
+      }
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
@@ -996,24 +1032,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     _stopListening(isDisposing: true);
     _stopEyeReading(isDisposing: true);
 
-    if (_sessionAyahsCount > 0) {
-      try {
-        final appState = Provider.of<AppState>(context, listen: false);
-        final currentProgress = QuranProgressHelper.getCombinedSpiritualProgress(
-          khatmCount: appState.khatmCount,
-          currentSurahIndex: appState.currentSurahIndex,
-          currentAyahNumber: appState.lastReadAyahNumber,
-          quranData: appState.quranData,
-          totalDzikirCount: appState.totalDzikirCount,
-        );
-        appState.triggerSpiritualEnergy(
-          previousProgress: _sessionStartProgress ?? currentProgress,
-          targetProgress: currentProgress,
-          source: 'quran',
-          itemsCount: _sessionAyahsCount,
-        );
-      } catch (_) {}
-    }
+    _finalizeSpiritualEnergySession();
 
     super.dispose();
   }

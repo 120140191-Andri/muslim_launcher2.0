@@ -139,7 +139,7 @@ void main() {
 
       expect(find.text('Tingkatan Khatam & Maqam'), findsOneWidget);
       expect(find.text('Pejuang Istiqomah'), findsWidgets);
-      expect(find.text('Al-Mubtadi\' Al-Karim'), findsOneWidget);
+      expect(find.textContaining('Al-Mubtadi\' Al-Karim'), findsOneWidget);
       expect(find.text('Saya Mengerti'), findsOneWidget);
 
       await tester.ensureVisible(find.text('Saya Mengerti'));

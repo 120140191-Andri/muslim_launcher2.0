@@ -30,15 +30,38 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with WidgetsBindingObserver, TickerProviderStateMixin {
+    with WidgetsBindingObserver, TickerProviderStateMixin, RouteAware {
   // Spiritual Energy Transmission Animation
   AnimationController? _spiritualEnergyController;
   SpiritualEnergySession? _activeEnergySession;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      AppState.routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   void _checkAndTriggerEnergySession(AppState appState) {
     if (appState.pendingEnergySession != null) {
+      final route = ModalRoute.of(context);
+      if (route != null && !route.isCurrent) {
+        return; // Wait until HomeScreen is the top active visible route!
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+        final currentRoute = ModalRoute.of(context);
+        if (currentRoute != null && !currentRoute.isCurrent) return;
+
         final session = appState.consumePendingEnergySession();
         if (session != null) {
           _startSpiritualEnergySession(session);
@@ -196,6 +219,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
+    AppState.routeObserver.unsubscribe(this);
     _spiritualEnergyController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -205,21 +229,29 @@ class _HomeScreenState extends State<HomeScreen>
     if (appState.lastReadSurah.isNotEmpty && appState.quranData.isNotEmpty) {
       final surahIdx = appState.currentSurahIndex;
       if (surahIdx >= 0 && surahIdx < appState.quranData.length) {
-        appState.navigatorKey.currentState?.push(
-          AppPageRoute(
-            child: SurahDetailScreen(
-              surah: appState.quranData[surahIdx],
-              initialAyahIndex: appState.currentAyahIndex,
-            ),
-          ),
-        );
+        appState.navigatorKey.currentState
+            ?.push(
+              AppPageRoute(
+                child: SurahDetailScreen(
+                  surah: appState.quranData[surahIdx],
+                  initialAyahIndex: appState.currentAyahIndex,
+                ),
+              ),
+            )
+            .then((_) {
+              if (mounted) setState(() {});
+            });
         return;
       }
     }
-    
-    appState.navigatorKey.currentState?.push(
-      AppPageRoute(child: const SurahListScreen()),
-    );
+
+    appState.navigatorKey.currentState
+        ?.push(
+          AppPageRoute(child: const SurahListScreen()),
+        )
+        .then((_) {
+          if (mounted) setState(() {});
+        });
   }
 
   Widget _buildHeaderBadge({

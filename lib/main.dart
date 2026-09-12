@@ -143,7 +143,7 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
           ),
         ),
       ),
-      navigatorObservers: [AnalyticsService.observer],
+      navigatorObservers: [AnalyticsService.observer, AppState.routeObserver],
       home: const _HomeScreenSwitcher(),
       builder: (context, child) {
         final rootWidget = child ?? const _HomeScreenSwitcher();

@@ -55,6 +55,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     final completedSurahs = appState.completedSurahsThisCycle.length;
     final totalDzikir = appState.totalDzikirCount;
     final points = appState.points;
+    final currentStreak = appState.quranDailyStreak;
+    final maxStreak = appState.maxQuranDailyStreak;
     final hasReadAyah = appState.highestSurahIndex > 0 ||
         appState.highestAyahIndex >= 0 ||
         khatm > 0;
@@ -82,6 +84,82 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: hasReadAyah ? '1 / 1' : '0 / 1',
         pointsReward: 10,
         rarity: BadgeRarity.common,
+      ),
+      SpiritualBadge(
+        id: 'quran_streak_3',
+        category: 'quran',
+        title: lang == 'en' ? '3-Day Habit' : 'Istiqomah 3 Hari',
+        description: lang == 'en'
+            ? 'Recite at least 1 ayah of the Holy Qur\'an daily for 3 consecutive days.'
+            : 'Membaca Al-Qur\'an minimal 1 ayat setiap hari selama 3 hari berturut-turut.',
+        fadhilah: lang == 'en'
+            ? '"The most beloved deed to Allah is the most regular and constant even if it were little." (Bukhari & Muslim)'
+            : '"Amalan yang paling dicintai Allah adalah yang berkelanjutan (istiqomah) walaupun sedikit." (HR. Bukhari & Muslim)',
+        icon: Icons.local_fire_department_rounded,
+        isUnlocked: maxStreak >= 3,
+        progress: (maxStreak >= 3) ? 1.0 : (currentStreak / 3).clamp(0.0, 1.0),
+        progressLabel: (maxStreak >= 3)
+            ? '3 / 3 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentStreak / 3 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 30,
+        rarity: BadgeRarity.common,
+      ),
+      SpiritualBadge(
+        id: 'quran_streak_7',
+        category: 'quran',
+        title: lang == 'en' ? '7-Day Steadfast (1 Week)' : 'Istiqomah 7 Hari (1 Pekan)',
+        description: lang == 'en'
+            ? 'Recite at least 1 ayah daily for 7 consecutive days without missing a single day.'
+            : 'Rutin membaca Al-Qur\'an minimal 1 ayat per hari selama 7 hari berturut-turut tanpa jeda.',
+        fadhilah: lang == 'en'
+            ? '"Whoever recites a letter from Allah\'s Book will receive ten good rewards multiplied." (Tirmidhi)'
+            : '"Siapa yang membaca satu huruf dari Kitabullah, baginya sepuluh kebaikan berlipat ganda." (HR. Tirmidzi)',
+        icon: Icons.bolt_rounded,
+        isUnlocked: maxStreak >= 7,
+        progress: (maxStreak >= 7) ? 1.0 : (currentStreak / 7).clamp(0.0, 1.0),
+        progressLabel: (maxStreak >= 7)
+            ? '7 / 7 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentStreak / 7 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 75,
+        rarity: BadgeRarity.rare,
+      ),
+      SpiritualBadge(
+        id: 'quran_streak_14',
+        category: 'quran',
+        title: lang == 'en' ? '14-Day Devotion (2 Weeks)' : 'Istiqomah 14 Hari (2 Pekan)',
+        description: lang == 'en'
+            ? 'Keep the light of tilawah glowing daily for 14 consecutive days.'
+            : 'Menjaga lentera tilawah senantiasa menyala setiap hari selama 14 hari penuh berturut-turut.',
+        fadhilah: lang == 'en'
+            ? '"Tranquility descends and mercy envelops the servant whose heart is attached to the Qur\'an." (Muslim)'
+            : '"Ketenangan (sakinah) turun dan rahmat Ilahi senantiasa menaungi hamba yang teguh membaca firman Allah." (HR. Muslim)',
+        icon: Icons.auto_awesome_rounded,
+        isUnlocked: maxStreak >= 14,
+        progress: (maxStreak >= 14) ? 1.0 : (currentStreak / 14).clamp(0.0, 1.0),
+        progressLabel: (maxStreak >= 14)
+            ? '14 / 14 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentStreak / 14 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 150,
+        rarity: BadgeRarity.epic,
+      ),
+      SpiritualBadge(
+        id: 'quran_streak_30',
+        category: 'quran',
+        title: lang == 'en' ? '30-Day Golden Habit (1 Month)' : 'Istiqomah Sebulan Penuh (30 Hari)',
+        description: lang == 'en'
+            ? 'True dedication: Recite the Holy Qur\'an without missing a day for 30 consecutive days.'
+            : 'Membuktikan komitmen sejati: Membaca Al-Qur\'an tanpa terputus selama 30 hari (1 bulan) berturut-turut.',
+        fadhilah: lang == 'en'
+            ? '"The best of you are those who learn the Qur\'an and teach it, holding steadfast to it." (Bukhari)'
+            : '"Sebaik-baik kalian adalah orang yang belajar Al-Qur\'an, mengajarkannya, dan senantiasa melaziminya." (HR. Bukhari)',
+        icon: Icons.military_tech_rounded,
+        isUnlocked: maxStreak >= 30,
+        progress: (maxStreak >= 30) ? 1.0 : (currentStreak / 30).clamp(0.0, 1.0),
+        progressLabel: (maxStreak >= 30)
+            ? '30 / 30 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentStreak / 30 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 350,
+        rarity: BadgeRarity.legendary,
       ),
       SpiritualBadge(
         id: 'quran_surah_explorer',
@@ -908,6 +986,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+
+            // ── DAILY TILAWAH STREAK BANNER ──
+            _buildStreakCard(context, appState, lang),
+
             const SizedBox(height: 24),
 
             // ── CATEGORY FILTER PILLS ──
@@ -965,6 +1048,162 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStreakCard(
+    BuildContext context,
+    AppState appState,
+    String lang,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final currentStreak = appState.quranDailyStreak;
+    final maxStreak = appState.maxQuranDailyStreak;
+
+    // Determine next streak milestone target: 3, 7, 14, 30
+    final int nextTarget = currentStreak < 3
+        ? 3
+        : (currentStreak < 7
+            ? 7
+            : (currentStreak < 14
+                ? 14
+                : (currentStreak < 30 ? 30 : currentStreak + 10)));
+    final double targetProgress = (currentStreak / nextTarget).clamp(0.0, 1.0);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFF97316).withValues(alpha: 0.25),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEA580C).withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEA580C).withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          lang == 'en' ? 'DAILY TILAWAH STREAK' : 'ISTIQOMAH TILAWAH HARIAN',
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                            color: Color(0xFFC2410C),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            lang == 'en' ? 'Best: $maxStreak Days' : 'Rekor: $maxStreak Hari',
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFEA580C),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      currentStreak > 0
+                          ? (lang == 'en'
+                              ? '$currentStreak Day${currentStreak > 1 ? "s" : ""} in a row 🔥'
+                              : '$currentStreak Hari Berturut-turut 🔥')
+                          : (lang == 'en'
+                              ? 'Start streak today (min. 1 ayah)'
+                              : 'Mulai hari ini: Minimal 1 ayat'),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                lang == 'en'
+                    ? 'Target: $nextTarget consecutive days'
+                    : 'Target: $nextTarget hari berturut-turut',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                '$currentStreak / $nextTarget ${lang == 'en' ? 'Days' : 'Hari'}',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFC2410C),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: targetProgress,
+              minHeight: 6,
+              backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFEA580C)),
+            ),
+          ),
+        ],
       ),
     );
   }

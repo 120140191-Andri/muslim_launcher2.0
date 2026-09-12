@@ -133,6 +133,11 @@ class AppState extends ChangeNotifier {
   bool _isDataLoaded = false;
   bool _isInitialized = false;
 
+  // Persistent Quran Daily Reading Streak
+  int _quranDailyStreak = 0;
+  int _maxQuranDailyStreak = 0;
+  String _lastQuranReadDate = '';
+
   // Persistent Daily Verse & Hadith
   String _dailySurahName = '';
   int _dailyAyahNumber = 0;
@@ -173,6 +178,18 @@ class AppState extends ChangeNotifier {
   String get lastReadAyat => _lastReadAyat;
   String get lastReadSurah => _lastReadSurah;
   int get lastReadAyahNumber => _lastReadAyahNumber;
+  int get quranDailyStreak {
+    if (_lastQuranReadDate.isEmpty) return 0;
+    final now = DateTime.now();
+    final today = now.toIso8601String().split('T')[0];
+    if (_lastQuranReadDate == today) return _quranDailyStreak;
+    final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+    if (_lastQuranReadDate == yesterday) return _quranDailyStreak;
+    return 0;
+  }
+  int get rawQuranDailyStreak => _quranDailyStreak;
+  int get maxQuranDailyStreak => _maxQuranDailyStreak;
+  String get lastQuranReadDate => _lastQuranReadDate;
   List<dynamic> get quranData => _quranData;
   bool get isDataLoaded => _isDataLoaded;
   List<dynamic> get hadithData {
@@ -266,6 +283,10 @@ class AppState extends ChangeNotifier {
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
     _khatmCount = prefs.getInt('khatmCount') ?? 0;
+
+    _quranDailyStreak = prefs.getInt('quranDailyStreak') ?? 0;
+    _maxQuranDailyStreak = prefs.getInt('maxQuranDailyStreak') ?? _quranDailyStreak;
+    _lastQuranReadDate = prefs.getString('lastQuranReadDate') ?? '';
 
     _userName = prefs.getString('userName') ?? '';
     final savedCompletedSurahs = prefs.getStringList('completedSurahsThisCycle') ?? [];
@@ -3290,7 +3311,45 @@ class AppState extends ChangeNotifier {
 
     // Always add to history regardless of sequential progress
     _addToHistory(surahName, ayahNumber, pointsEarned);
+    await _recordQuranDailyRead();
     
+    notifyListeners();
+  }
+
+  Future<void> _recordQuranDailyRead() async {
+    final now = DateTime.now();
+    final today = now.toIso8601String().split('T')[0];
+    
+    if (_lastQuranReadDate == today) {
+      return; // Already recorded today
+    }
+
+    final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+
+    if (_lastQuranReadDate == yesterday) {
+      _quranDailyStreak += 1;
+    } else {
+      _quranDailyStreak = 1;
+    }
+
+    _lastQuranReadDate = today;
+    if (_quranDailyStreak > _maxQuranDailyStreak) {
+      _maxQuranDailyStreak = _quranDailyStreak;
+      await prefs.setInt('maxQuranDailyStreak', _maxQuranDailyStreak);
+    }
+
+    await prefs.setInt('quranDailyStreak', _quranDailyStreak);
+    await prefs.setString('lastQuranReadDate', today);
+  }
+
+  @visibleForTesting
+  Future<void> setQuranStreakForTesting(int streak, {int? maxStreak, String? lastDate}) async {
+    _quranDailyStreak = streak;
+    _maxQuranDailyStreak = maxStreak ?? streak;
+    _lastQuranReadDate = lastDate ?? DateTime.now().toIso8601String().split('T')[0];
+    await prefs.setInt('quranDailyStreak', _quranDailyStreak);
+    await prefs.setInt('maxQuranDailyStreak', _maxQuranDailyStreak);
+    await prefs.setString('lastQuranReadDate', _lastQuranReadDate);
     notifyListeners();
   }
 

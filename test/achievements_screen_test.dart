@@ -75,6 +75,10 @@ void main() {
       // Verify Dzikir badge is shown
       expect(find.text('Basahi Lisan'), findsOneWidget);
 
+      // Ensure Basahi Lisan is visible within scrollview before tapping
+      await tester.ensureVisible(find.text('Basahi Lisan'));
+      await tester.pumpAndSettle();
+
       // Tap on a badge to open detail modal dialog
       await tester.tap(find.text('Basahi Lisan'));
       await tester.pumpAndSettle();
@@ -155,5 +159,68 @@ void main() {
       // Verify Tingkat 5 has progress 1 / 5 Khatam
       expect(find.text('1 / 5 Khatam'), findsOneWidget);
     });
+
+    testWidgets('AchievementsScreen renders Daily Tilawah Streak card and streak badges (3, 7, 14, 30 days)', (tester) async {
+      final appState = AppState(prefs);
+      await appState.setQuranStreakForTesting(7, maxStreak: 7);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: AchievementsScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify Daily Streak Banner
+      expect(find.text('ISTIQOMAH TILAWAH HARIAN'), findsOneWidget);
+      expect(find.text('7 Hari Berturut-turut 🔥'), findsOneWidget);
+      expect(find.text('Rekor: 7 Hari'), findsOneWidget);
+
+      // Switch to Al-Qur'an filter tab
+      await tester.tap(find.text("Al-Qur'an"));
+      await tester.pumpAndSettle();
+
+      // Verify streak badges exist
+      expect(find.text('Istiqomah 3 Hari'), findsOneWidget);
+      expect(find.text('Istiqomah 7 Hari (1 Pekan)'), findsOneWidget);
+      expect(find.text('Istiqomah 14 Hari (2 Pekan)'), findsOneWidget);
+      expect(find.text('Istiqomah Sebulan Penuh (30 Hari)'), findsOneWidget);
+
+      // With streak of 7, both streak banner target and 14-day badge show '7 / 14 Hari'
+      expect(find.text('7 / 14 Hari'), findsWidgets);
+      // 30-day badge should show '7 / 30 Hari'
+      expect(find.text('7 / 30 Hari'), findsOneWidget);
+    });
+
+    test('AppState tracks consecutive day reading streak and max streak correctly', () async {
+      final appState = AppState(prefs);
+
+      // Initially zero
+      await appState.setQuranStreakForTesting(0, maxStreak: 0, lastDate: '');
+      expect(appState.quranDailyStreak, 0);
+
+      // Simulate reading yesterday and today
+      final now = DateTime.now();
+      final today = now.toIso8601String().split('T')[0];
+      final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+
+      await appState.setQuranStreakForTesting(3, maxStreak: 3, lastDate: yesterday);
+      expect(appState.quranDailyStreak, 3);
+
+      // Simulate saving progress today
+      await appState.saveProgress(0, 0, 'Al-Fatihah', 1, 10);
+      expect(appState.quranDailyStreak, 4);
+      expect(appState.maxQuranDailyStreak, 4);
+      expect(appState.lastQuranReadDate, today);
+
+      // Second read on same day should not increment streak further
+      await appState.saveProgress(0, 1, 'Al-Fatihah', 2, 10);
+      expect(appState.quranDailyStreak, 4);
+      expect(appState.maxQuranDailyStreak, 4);
+    });
   });
 }
+

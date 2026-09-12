@@ -313,8 +313,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             ? 'Level 2 • Al-Mubtadi\' Al-Karim'
             : 'Tingkat 2 • Al-Mubtadi\' Al-Karim',
         description: lang == 'en'
-            ? '1x Khatam (6,236 Verses): Successfully reciting all 30 Juz from Al-Fatihah to An-Nas.'
-            : '1x Khatam (6.236 Ayat): Berhasil menuntaskan seluruh 30 Juz Al-Qur\'an dari Al-Fatihah hingga An-Nas.',
+            ? '1x Khatam (6,236 Verses): Successfully reciting all 30 Juz. Unlocks permanent +25% points boost!'
+            : '1x Khatam (6.236 Ayat): Berhasil menuntaskan seluruh 30 Juz Al-Qur\'an. Membuka Boost Poin permanen +25%!',
         fadhilah: lang == 'en'
             ? '"The angels invoke blessings upon the servant who completes the Qur\'an." (Ad-Darimi)'
             : '"Doa orang yang mengkhatamkan Al-Qur\'an diaminkan oleh ribuan malaikat yang mendoakan rahmat baginya." (Ad-Darimi)',
@@ -332,8 +332,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             ? 'Level 3 • Companion of the Quran'
             : 'Tingkat 3 • Shahibul Qur\'an',
         description: lang == 'en'
-            ? '2x Khatam: The Holy Qur\'an becomes a cherished companion in your daily life.'
-            : '2x Khatam: Al-Qur\'an telah menjadi sahabat karib penyejuk hati di setiap waktu luang dan keseharian.',
+            ? '2x Khatam: The Holy Qur\'an becomes a cherished companion. Increases points boost to +50%!'
+            : '2x Khatam: Al-Qur\'an telah menjadi sahabat karib penyejuk hati. Meningkatkan Boost Poin menjadi +50%!',
         fadhilah: lang == 'en'
             ? '"Read the Qur\'an, for it will come on the Day of Resurrection as an intercessor for its companions." (Muslim)'
             : '"Bacalah Al-Qur\'an, sesungguhnya ia akan datang pada hari kiamat sebagai pemberi syafa\'at bagi para sahabatnya (shahibul Qur\'an)." (HR. Muslim)',
@@ -351,8 +351,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             ? 'Level 4 • Guardian of Light'
             : 'Tingkat 4 • Haafizhun Nuur',
         description: lang == 'en'
-            ? '3–4x Khatam: Steady rhythm protecting your time and heart from digital distractions.'
-            : '3–4x Khatam: Ritme tilawah semakin kokoh dan menjadi perisai jiwa dari distraksi digital yang melalaikan.',
+            ? '3–4x Khatam: Steady rhythm protecting your time and heart. Increases points boost to +75%!'
+            : '3–4x Khatam: Ritme tilawah semakin kokoh dan menjadi perisai jiwa. Meningkatkan Boost Poin menjadi +75%!',
         fadhilah: lang == 'en'
             ? '"The one who is proficient in the recitation of the Qur\'an will be with the noble, obedient angels." (Bukhari & Muslim)'
             : '"Orang yang mahir dan istiqomah membaca Al-Qur\'an kelak bersama para malaikat yang mulia lagi taat." (HR. Bukhari & Muslim)',
@@ -370,8 +370,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             ? 'Level 5 • Ahlul Qur\'an Al-Mubarok'
             : 'Tingkat 5 • Ahlul Qur\'an Al-Mubarok',
         description: lang == 'en'
-            ? '5x+ Khatam: The summit of lifelong devotion living with divine guidance every day.'
-            : '5x+ Khatam: Puncak kemuliaan insan yang senantiasa hidup, membaca, dan mengamalkan kalam Ilahi setiap harinya.',
+            ? '5x+ Khatam: The summit of lifelong devotion. Enjoy permanent Double Points 2.0x (+100%)!'
+            : '5x+ Khatam: Puncak kemuliaan Ahlul Qur\'an. Menikmati Double Points 2.0x (+100% Poin) selamanya!',
         fadhilah: lang == 'en'
             ? '"Indeed, Allah has His own people among mankind: the People of the Qur\'an, they are the people of Allah and His special ones." (Ibn Majah)'
             : '"Sesungguhnya Allah memiliki keluarga dari kalangan manusia: yaitu Ahlul Qur\'an, mereka adalah keluarga Allah dan orang-orang khusus-Nya." (HR. Ibnu Majah)',
@@ -1205,7 +1205,77 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       color: Colors.white.withValues(alpha: 0.85),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 12),
+
+                  // Active Maqam Point Boost Banner
+                  InkWell(
+                    onTap: () => QuranProgressHelper.showKhatamLevelInfoModal(context, lang, khatm),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: (khatm > 0 ? Colors.amber : Colors.white).withValues(alpha: 0.35),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.bolt_rounded,
+                            size: 18,
+                            color: khatm > 0 ? Colors.amber : Colors.white,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  khatm <= 0
+                                      ? (lang == 'en'
+                                          ? 'Point Boost: 1.0x (Standard)'
+                                          : 'Boost Poin: 1.0x (Dasar)')
+                                      : (lang == 'en'
+                                          ? 'Active Point Boost: +${appState.maqamBoostPercent}% (Level $currentLevel)'
+                                          : 'Boost Poin Aktif: +${appState.maqamBoostPercent}% (Tingkat $currentLevel)'),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: khatm > 0 ? Colors.amber : Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  khatm <= 0
+                                      ? (lang == 'en'
+                                          ? 'Complete 1st Khatam to unlock +25% points boost!'
+                                          : 'Khatamkan 1x untuk membuka boost +25% poin!')
+                                      : (lang == 'en'
+                                          ? 'Enjoy boosted points for every Quran ayah & dhikr'
+                                          : 'Poin berlipat ganda untuk setiap ayat & zikir harian'),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
                   // Combined Sanctuary Bloom Progress
                   Row(

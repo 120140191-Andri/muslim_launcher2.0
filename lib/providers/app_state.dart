@@ -10,6 +10,7 @@ import '../services/app_block_service.dart';
 import '../services/analytics_service.dart';
 import '../screens/home/app_list_screen.dart';
 import '../utils/translations.dart';
+import '../utils/quran_progress_helper.dart';
 
 class SpiritualEnergySession {
   final double previousProgress;
@@ -229,6 +230,9 @@ class AppState extends ChangeNotifier {
     return _cachedShuffledHadithData;
   }
   int get khatmCount => _khatmCount;
+  double get maqamBoostMultiplier => QuranProgressHelper.getMaqamBoostMultiplier(_khatmCount);
+  int get maqamBoostPercent => QuranProgressHelper.getMaqamBoostPercent(_khatmCount);
+  int get maqamLevel => QuranProgressHelper.getMaqamLevel(_khatmCount);
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
   String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
   String? get lastAttemptedGhadhulBasharPackage => _lastAttemptedGhadhulBasharPackage;
@@ -3593,26 +3597,30 @@ class AppState extends ChangeNotifier {
     }
 
     int tier = 1;
-    int bonusPoints = 10;
+    int baseBonusPoints = 10;
     if (totalAyahs <= 25) {
       tier = 1;
-      bonusPoints = 10;
+      baseBonusPoints = 10;
     } else if (totalAyahs <= 75) {
       tier = 2;
-      bonusPoints = 25;
+      baseBonusPoints = 25;
     } else if (totalAyahs <= 150) {
       tier = 3;
-      bonusPoints = 50;
+      baseBonusPoints = 50;
     } else {
       tier = 4;
-      bonusPoints = 100;
+      baseBonusPoints = 100;
     }
 
     // Special Friday Al-Kahf check (Surah 18)
     final now = DateTime.now();
     if (surahNumber == 18 && now.weekday == DateTime.friday) {
-      bonusPoints += 50;
+      baseBonusPoints += 50;
     }
+
+    // Apply Maqam Point Boost Multiplier (strictly whole integer, rounded)
+    final double multiplier = maqamBoostMultiplier;
+    final int bonusPoints = (baseBonusPoints * multiplier).round();
 
     _completedSurahsThisCycle.add(surahNumber);
     await prefs.setStringList(
@@ -3630,8 +3638,10 @@ class AppState extends ChangeNotifier {
       await prefs.setInt('khatmCount', _khatmCount);
       AnalyticsService.logQuranKhatm(khatmCount: _khatmCount);
 
-      // Grand bonus +500 points for Khatam 30 Juz
-      _points += 500;
+      // Grand bonus +500 base points for Khatam 30 Juz scaled by Maqam Boost
+      // (Strictly whole integer: T1: 500, T2: 625, T3: 750, T4: 875, T5: 1000)
+      final int grandKhatamPoints = (500 * multiplier).round();
+      _points += grandKhatamPoints;
       await prefs.setInt('points', _points);
 
       // Reset completed surahs for the new khatam cycle
@@ -3642,7 +3652,7 @@ class AppState extends ChangeNotifier {
       await prefs.setInt('highestSurahIndex', 0);
       await prefs.setInt('highestAyahIndex', -1);
 
-      _addToHistory("👑 KHATAM 30 JUZ AL-QUR'AN", 30, 500);
+      _addToHistory("👑 KHATAM 30 JUZ AL-QUR'AN", 30, grandKhatamPoints);
     }
 
     _addToHistory("🏆 Selesai Surah $surahName", totalAyahs, bonusPoints);
@@ -3652,6 +3662,9 @@ class AppState extends ChangeNotifier {
       'isNewMilestone': true,
       'isKhatam': isKhatam,
       'bonusPoints': bonusPoints,
+      'baseBonusPoints': baseBonusPoints,
+      'boostMultiplier': multiplier,
+      'boostPercent': maqamBoostPercent,
       'tier': tier,
       'surahNumber': surahNumber,
       'surahName': surahName,
@@ -3678,16 +3691,19 @@ class AppState extends ChangeNotifier {
 
     _dailyDzikirRounds++;
 
-    int allocatedPoints = 0;
+    int baseAllocatedPoints = 0;
     if (_dailyDzikirRounds == 1) {
-      allocatedPoints = 3;
+      baseAllocatedPoints = 3;
     } else if (_dailyDzikirRounds == 2) {
-      allocatedPoints = 3;
+      baseAllocatedPoints = 3;
     } else if (_dailyDzikirRounds == 3) {
-      allocatedPoints = 13;
+      baseAllocatedPoints = 13;
     } else {
-      allocatedPoints = 0;
+      baseAllocatedPoints = 0;
     }
+
+    // Apply Maqam Point Boost Multiplier (strictly whole integer, rounded)
+    final int allocatedPoints = (baseAllocatedPoints * maqamBoostMultiplier).round();
 
     if (allocatedPoints > 0) {
       _points += allocatedPoints;

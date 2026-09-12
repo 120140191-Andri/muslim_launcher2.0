@@ -298,6 +298,138 @@ class QuranProgressHelper {
     return 5;
   }
 
+  /// Returns the point boost multiplier based on Khatam level (1 to 5).
+  /// Level 1 (0 Khatam): 1.0x (+0% Boost)
+  /// Level 2 (1 Khatam): 1.25x (+25% Boost)
+  /// Level 3 (2 Khatam): 1.50x (+50% Boost)
+  /// Level 4 (3–4 Khatam): 1.75x (+75% Boost)
+  /// Level 5 (5+ Khatam): 2.00x (+100% Boost / 2x Double Points)
+  static double getMaqamBoostMultiplier(int khatmCount) {
+    final int level = getMaqamLevel(khatmCount);
+    switch (level) {
+      case 1:
+        return 1.0;
+      case 2:
+        return 1.25;
+      case 3:
+        return 1.50;
+      case 4:
+        return 1.75;
+      case 5:
+      default:
+        return 2.0;
+    }
+  }
+
+  /// Returns the percentage bonus integer (+0%, +25%, +50%, +75%, +100%).
+  static int getMaqamBoostPercent(int khatmCount) {
+    final int level = getMaqamLevel(khatmCount);
+    switch (level) {
+      case 1:
+        return 0;
+      case 2:
+        return 25;
+      case 3:
+        return 50;
+      case 4:
+        return 75;
+      case 5:
+      default:
+        return 100;
+    }
+  }
+
+  /// Calculates the whole integer points awarded for reciting a Quran ayah.
+  /// Strictly whole integers (rounded, no decimal / koma anywhere).
+  /// Level 1: 2 pts (long: 3 pts)
+  /// Level 2: 3 pts (long: 4 pts)
+  /// Level 3: 4 pts (long: 5 pts)
+  /// Level 4: 4 pts (long: 6 pts)
+  /// Level 5: 5 pts (long: 7 pts)
+  static int calculateAyahPoints({
+    required int arabicLength,
+    required int khatmCount,
+  }) {
+    final bool isLong = arabicLength > 75;
+    final int level = getMaqamLevel(khatmCount);
+    switch (level) {
+      case 1:
+        return isLong ? 3 : 2;
+      case 2:
+        return isLong ? 4 : 3;
+      case 3:
+        return isLong ? 5 : 4;
+      case 4:
+        return isLong ? 6 : 4;
+      case 5:
+      default:
+        return isLong ? 7 : 5;
+    }
+  }
+
+  /// Localized boost label describing the bonus for each level (1 to 5).
+  static String getMaqamBoostLabel(int level, String lang) {
+    switch (level) {
+      case 1:
+        switch (lang) {
+          case 'id':
+            return 'Boost 1.0x (Dasar / +0%)';
+          case 'ms':
+            return 'Boost 1.0x (Asas / +0%)';
+          case 'ar':
+            return 'مضاعف ١.٠x (أساسي)';
+          case 'en':
+          default:
+            return 'Boost 1.0x (Base / +0%)';
+        }
+      case 2:
+        switch (lang) {
+          case 'id':
+          case 'ms':
+            return '⚡ Boost 1.25x (+25% Poin)';
+          case 'ar':
+            return '⚡ مضاعف ١.٢٥x (+٢٥٪ نقاط)';
+          case 'en':
+          default:
+            return '⚡ Boost 1.25x (+25% Points)';
+        }
+      case 3:
+        switch (lang) {
+          case 'id':
+          case 'ms':
+            return '⚡ Boost 1.50x (+50% Poin)';
+          case 'ar':
+            return '⚡ مضاعف ١.٥٠x (+٥٠٪ نقاط)';
+          case 'en':
+          default:
+            return '⚡ Boost 1.50x (+50% Points)';
+        }
+      case 4:
+        switch (lang) {
+          case 'id':
+          case 'ms':
+            return '⚡ Boost 1.75x (+75% Poin)';
+          case 'ar':
+            return '⚡ مضاعف ١.٧٥x (+٧٥٪ نقاط)';
+          case 'en':
+          default:
+            return '⚡ Boost 1.75x (+75% Points)';
+        }
+      case 5:
+      default:
+        switch (lang) {
+          case 'id':
+          case 'ms':
+            return '⚡ Double Poin 2.00x (+100% Poin!)';
+          case 'ar':
+            return '⚡ مضاعف مضاعف ٢.٠٠x (+١٠٠٪ نقاط)';
+          case 'en':
+          default:
+            return '⚡ Double Points 2.00x (+100% Points!)';
+        }
+    }
+  }
+
   /// Calculates cumulative Quran reading progress ratio (0.0 to 1.0)
   /// based on 0-based [currentSurahIndex] and 1-based [currentAyahNumber].
   static double getOverallProgress(
@@ -1381,6 +1513,7 @@ class QuranProgressHelper {
                         accentColor: const Color(0xFF10B981),
                         isCurrent: activeTierIndex == 0,
                         currentBadge: currentBadge,
+                        boostBadge: getMaqamBoostLabel(1, lang),
                       ),
                       const SizedBox(height: 10),
                       _buildKhatamTierCard(
@@ -1393,6 +1526,7 @@ class QuranProgressHelper {
                         accentColor: const Color(0xFF0284C7),
                         isCurrent: activeTierIndex == 1,
                         currentBadge: currentBadge,
+                        boostBadge: getMaqamBoostLabel(2, lang),
                       ),
                       const SizedBox(height: 10),
                       _buildKhatamTierCard(
@@ -1405,6 +1539,7 @@ class QuranProgressHelper {
                         accentColor: const Color(0xFF6366F1),
                         isCurrent: activeTierIndex == 2,
                         currentBadge: currentBadge,
+                        boostBadge: getMaqamBoostLabel(3, lang),
                       ),
                       const SizedBox(height: 10),
                       _buildKhatamTierCard(
@@ -1417,6 +1552,7 @@ class QuranProgressHelper {
                         accentColor: const Color(0xFF8B5CF6),
                         isCurrent: activeTierIndex == 3,
                         currentBadge: currentBadge,
+                        boostBadge: getMaqamBoostLabel(4, lang),
                       ),
                       const SizedBox(height: 10),
                       _buildKhatamTierCard(
@@ -1429,6 +1565,7 @@ class QuranProgressHelper {
                         accentColor: const Color(0xFFD97706),
                         isCurrent: activeTierIndex == 4,
                         currentBadge: currentBadge,
+                        boostBadge: getMaqamBoostLabel(5, lang),
                       ),
                       const SizedBox(height: 14),
 
@@ -1529,6 +1666,7 @@ class QuranProgressHelper {
     required Color accentColor,
     required bool isCurrent,
     required String currentBadge,
+    String? boostBadge,
   }) {
     return Container(
       padding: const EdgeInsets.all(13),
@@ -1620,6 +1758,24 @@ class QuranProgressHelper {
                     ],
                   ],
                 ),
+                if (boostBadge != null) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      boostBadge,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: accentColor,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 3),
                 Text(
                   description,

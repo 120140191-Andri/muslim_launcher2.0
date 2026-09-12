@@ -1880,6 +1880,27 @@ class _LastAyatCard extends StatelessWidget {
                                       ),
                                     ),
                                   ),
+                                  if (hasKhatam) ...[
+                                    const SizedBox(width: 5),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 1,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFD97706),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        "+${QuranProgressHelper.getMaqamBoostPercent(khatmCount)}%",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                   const SizedBox(width: 4),
                                   Icon(
                                     Icons.info_outline_rounded,

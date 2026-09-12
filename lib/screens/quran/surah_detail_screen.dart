@@ -382,9 +382,17 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     int pointsEarned = 0;
     if (getsPoints) {
-      // Rebalanced Base Ayah Economy (Effort-Based Tiering):
-      // 2 points standard, +1 point if long ayah (> 75 Arabic chars)
-      pointsEarned = 2 + (arabic.length > 75 ? 1 : 0);
+      // Rebalanced Base Ayah Economy with Maqam Point Boost:
+      // Strictly whole integer (no decimals/commas):
+      // Level 1: 2 pts (long: 3 pts)
+      // Level 2: 3 pts (long: 4 pts)
+      // Level 3: 4 pts (long: 5 pts)
+      // Level 4: 4 pts (long: 6 pts)
+      // Level 5: 5 pts (long: 7 pts)
+      pointsEarned = QuranProgressHelper.calculateAyahPoints(
+        arabicLength: arabic.length,
+        khatmCount: appState.khatmCount,
+      );
       appState.addPoints(pointsEarned);
       appState.setLastReadAyat(arabic);
     }
@@ -435,11 +443,15 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     if (milestoneResult != null && milestoneResult['isNewMilestone'] == true) {
       final int bonus = milestoneResult['bonusPoints'] as int? ?? 10;
       final int tier = milestoneResult['tier'] as int? ?? 1;
+      final int boostPercent = milestoneResult['boostPercent'] as int? ?? 0;
       final bool isKhatam = milestoneResult['isKhatam'] == true;
 
       if (isKhatam) {
         _showKhatmCelebration(context, appState.khatmCount);
       } else {
+        final boostSuffix = boostPercent > 0
+            ? ' ⚡ (+$boostPercent% Boost)'
+            : '';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -448,7 +460,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    "Masha Allah! Selesai Surah (Tier $tier: +$bonus Poin Bonus)",
+                    "Masha Allah! Selesai Surah (Tier $tier: +$bonus Poin Bonus$boostSuffix)",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -462,6 +474,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         );
       }
     } else {
+      final int boostPercent = appState.maqamBoostPercent;
+      final String boostLabel = (getsPoints && boostPercent > 0)
+          ? " ⚡ (+$boostPercent%)"
+          : "";
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -473,7 +489,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
               const SizedBox(width: 12),
               Text(
                 getsPoints
-                    ? "Masha Allah! +$pointsEarned Poin"
+                    ? "Masha Allah! +$pointsEarned Poin$boostLabel"
                     : "Riwayat Bacaan Tersimpan",
               ),
             ],

@@ -142,8 +142,8 @@ void main() {
       // Verify all 5 Khatam tier badges exist
       expect(find.text('Tingkat 1 • Pejuang Istiqomah'), findsOneWidget);
       expect(find.text('Tingkat 2 • Al-Mubtadi\' Al-Karim'), findsOneWidget);
-      expect(find.text('Tingkat 3 • Sahabat Al-Qur\'an'), findsOneWidget);
-      expect(find.text('Tingkat 4 • Penjaga Cahaya'), findsOneWidget);
+      expect(find.text('Tingkat 3 • Shahibul Qur\'an'), findsOneWidget);
+      expect(find.text('Tingkat 4 • Haafizhun Nuur'), findsOneWidget);
       expect(find.text('Tingkat 5 • Ahlul Qur\'an Al-Mubarok'), findsOneWidget);
 
       // Verify Tingkat 1 and Tingkat 2 are unlocked (display 'Tercapai' because khatmCount was 1 in setUp)

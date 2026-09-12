@@ -258,7 +258,7 @@ class QuranProgressHelper {
       switch (lang) {
         case 'id':
         case 'ms':
-          return 'Sahabat Al-Qur\'an';
+          return 'Shahibul Qur\'an';
         case 'ar':
           return 'صاحب القرآن';
         case 'af':
@@ -273,7 +273,7 @@ class QuranProgressHelper {
       switch (lang) {
         case 'id':
         case 'ms':
-          return 'Penjaga Cahaya';
+          return 'Haafizhun Nuur';
         case 'ar':
           return 'حافظ النور';
         case 'af':
@@ -966,12 +966,12 @@ class QuranProgressHelper {
             t1Desc =
                 'Pencapaian agung pertama: Berhasil menuntaskan seluruh 30 Juz Al-Qur\'an dari Al-Fatihah hingga An-Nas.';
 
-            t2Title = 'Tingkat 3 • Sahabat Al-Qur\'an';
+            t2Title = 'Tingkat 3 • Shahibul Qur\'an';
             t2Req = '2x Khatam';
             t2Desc =
                 'Al-Qur\'an telah menjadi sahabat karib penyejuk hati di setiap waktu luang dan keseharian.';
 
-            t3Title = 'Tingkat 4 • Penjaga Cahaya';
+            t3Title = 'Tingkat 4 • Haafizhun Nuur';
             t3Req = '3–4x Khatam';
             t3Desc =
                 'Ritme tilawah semakin kokoh dan menjadi perisai jiwa dari distraksi digital yang melalaikan.';
@@ -1005,12 +1005,12 @@ class QuranProgressHelper {
             t1Desc =
                 'Pencapaian agung pertama: Berjaya menamatkan seluruh 30 Juzuk Al-Qur\'an dari Al-Fatihah hingga An-Nas.';
 
-            t2Title = 'Sahabat Al-Qur\'an';
+            t2Title = 'Shahibul Qur\'an';
             t2Req = '2x Khatam';
             t2Desc =
                 'Al-Qur\'an menjadi peneman setia di setiap waktu lapang dan penyejuk jiwa dalam kehidupan.';
 
-            t3Title = 'Penjaga Cahaya';
+            t3Title = 'Haafizhun Nuur';
             t3Req = '3–4x Khatam';
             t3Desc =
                 'Amalan tilawah semakin mantap membentengi diri daripada gangguan digital.';

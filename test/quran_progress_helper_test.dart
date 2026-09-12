@@ -87,9 +87,9 @@ void main() {
         QuranProgressHelper.getMaqamTitle(1, 'id'),
         'Al-Mubtadi\' Al-Karim',
       );
-      expect(QuranProgressHelper.getMaqamTitle(2, 'id'), 'Sahabat Al-Qur\'an');
-      expect(QuranProgressHelper.getMaqamTitle(3, 'id'), 'Penjaga Cahaya');
-      expect(QuranProgressHelper.getMaqamTitle(4, 'id'), 'Penjaga Cahaya');
+      expect(QuranProgressHelper.getMaqamTitle(2, 'id'), 'Shahibul Qur\'an');
+      expect(QuranProgressHelper.getMaqamTitle(3, 'id'), 'Haafizhun Nuur');
+      expect(QuranProgressHelper.getMaqamTitle(4, 'id'), 'Haafizhun Nuur');
       expect(
         QuranProgressHelper.getMaqamTitle(5, 'id'),
         'Ahlul Qur\'an Al-Mubarok',

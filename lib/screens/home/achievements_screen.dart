@@ -208,13 +208,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         category: 'quran',
         title: lang == 'en'
             ? 'Level 3 • Companion of the Quran'
-            : 'Tingkat 3 • Sahabat Al-Qur\'an',
+            : 'Tingkat 3 • Shahibul Qur\'an',
         description: lang == 'en'
             ? '2x Khatam: The Holy Qur\'an becomes a cherished companion in your daily life.'
             : '2x Khatam: Al-Qur\'an telah menjadi sahabat karib penyejuk hati di setiap waktu luang dan keseharian.',
         fadhilah: lang == 'en'
             ? '"Read the Qur\'an, for it will come on the Day of Resurrection as an intercessor for its companions." (Muslim)'
-            : '"Bacalah Al-Qur\'an, sesungguhnya ia akan datang pada hari kiamat sebagai pemberi syafa\'at bagi para sahabatnya." (HR. Muslim)',
+            : '"Bacalah Al-Qur\'an, sesungguhnya ia akan datang pada hari kiamat sebagai pemberi syafa\'at bagi para sahabatnya (shahibul Qur\'an)." (HR. Muslim)',
         icon: Icons.menu_book_rounded,
         isUnlocked: khatm >= 2,
         progress: (khatm / 2).clamp(0.0, 1.0),
@@ -227,7 +227,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         category: 'quran',
         title: lang == 'en'
             ? 'Level 4 • Guardian of Light'
-            : 'Tingkat 4 • Penjaga Cahaya',
+            : 'Tingkat 4 • Haafizhun Nuur',
         description: lang == 'en'
             ? '3–4x Khatam: Steady rhythm protecting your time and heart from digital distractions.'
             : '3–4x Khatam: Ritme tilawah semakin kokoh dan menjadi perisai jiwa dari distraksi digital yang melalaikan.',

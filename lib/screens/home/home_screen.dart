@@ -1193,8 +1193,76 @@ class _GreetingWidget extends StatelessWidget {
     return Translations.get(lang, 'good_night');
   }
 
+  void _showEditNameModal(BuildContext context, AppState appState) {
+    final controller = TextEditingController(text: appState.userName);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.person_rounded, color: Color(0xFF047857), size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  Translations.get(lang, 'change_name_title'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              hintText: Translations.get(lang, 'input_name_hint'),
+              filled: true,
+              fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF047857), width: 1.5),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: Text(Translations.get(lang, 'cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await appState.setUserName(controller.text);
+                if (dialogCtx.mounted) {
+                  Navigator.of(dialogCtx).pop();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF047857),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: Text(Translations.get(lang, 'save')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final displayName = appState.displayName;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1209,14 +1277,34 @@ class _GreetingWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          Translations.get(lang, 'user_title'),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _showEditNameModal(context, appState),
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Icon(
+                  Icons.edit_rounded,
+                  size: 13,
+                  color: Colors.white.withValues(alpha: 0.6),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -1520,18 +1608,12 @@ class _QuickDock extends StatelessWidget {
   }
 
   Widget _buildTrophyButton(BuildContext context) {
-    final lang = Provider.of<AppState>(context, listen: false).languageCode;
-    return Tooltip(
-      message: Translations.get(lang, 'achievements'),
-      child: InkWell(
-        onTap: () {
-          final appState = Provider.of<AppState>(context, listen: false);
-          appState.navigatorKey.currentState?.push(
-            AppPageRoute(child: const AchievementsScreen()),
-          );
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
+    return Consumer<AppState>(
+      builder: (context, appState, _) {
+        final lang = appState.languageCode;
+        final unclaimedCount = AchievementsScreen.getUnclaimedBadgesCount(appState);
+
+        Widget trophyContent = Container(
           width: 44,
           height: 44,
           padding: const EdgeInsets.all(4),
@@ -1564,8 +1646,68 @@ class _QuickDock extends StatelessWidget {
               size: 24,
             ),
           ),
-        ),
-      ),
+        );
+
+        if (unclaimedCount > 0) {
+          trophyContent = Stack(
+            clipBehavior: Clip.none,
+            children: [
+              trophyContent,
+              Positioned(
+                top: -3,
+                right: -3,
+                child: Container(
+                  key: const ValueKey('quick_dock_trophy_badge'),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.5),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      unclaimedCount > 9 ? '9+' : '$unclaimedCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Tooltip(
+          message: Translations.get(lang, 'achievements'),
+          child: InkWell(
+            onTap: () {
+              appState.navigatorKey.currentState?.push(
+                AppPageRoute(child: const AchievementsScreen()),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: trophyContent,
+          ),
+        );
+      },
     );
   }
 }
@@ -1717,7 +1859,6 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
       vars?.forEach((k, v) => s = s.replaceAll('{$k}', v));
       return s;
     }
-    final isAr = lang == 'ar';
 
     final String titleText = t('streak_section_title');
 
@@ -1836,31 +1977,67 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                               ],
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.emoji_events_rounded,
-                                  size: 15,
-                                  color: colorScheme.primary,
-                                ),
-                                const SizedBox(width: 2),
-                                Transform.translate(
-                                  offset: Offset(hasAnyPending ? (isAr ? -2.0 * pulseVal : 2.0 * pulseVal) : 0.0, 0),
-                                  child: Icon(
-                                    isAr ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
-                                    size: 14,
-                                    color: colorScheme.primary,
+                          Consumer<AppState>(
+                            builder: (context, appState, _) {
+                              final String todayStr = DateTime.now().toIso8601String().split('T')[0];
+                              final bool hasQuran = appState.lastQuranReadDate == todayStr;
+                              final bool hasDzikir = appState.lastDzikirDate == todayStr;
+                              final int completedCount = (hasQuran ? 1 : 0) + (hasDzikir ? 1 : 0);
+                              final int percent = completedCount == 2 ? 100 : (completedCount == 1 ? 50 : 0);
+
+                              final Color percentBgColor = percent == 100
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                  : (percent == 50
+                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.12)
+                                      : colorScheme.outlineVariant.withValues(alpha: 0.25));
+
+                              final Color percentTextColor = percent == 100
+                                  ? const Color(0xFF059669)
+                                  : (percent == 50
+                                      ? const Color(0xFFD97706)
+                                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.7));
+
+                              final Color percentBorderColor = percent == 100
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.25)
+                                  : (percent == 50
+                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.3)
+                                      : Colors.transparent);
+
+                              return Container(
+                                key: const ValueKey('home_streak_percentage_badge'),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: percentBgColor,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: percentBorderColor,
+                                    width: 1.0,
                                   ),
                                 ),
-                              ],
-                            ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (percent == 100) ...[
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 13,
+                                        color: percentTextColor,
+                                      ),
+                                      const SizedBox(width: 3),
+                                    ],
+                                    Text(
+                                      '$percent%',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: percentTextColor,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),

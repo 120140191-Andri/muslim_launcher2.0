@@ -10,6 +10,7 @@ import '../quran/surah_list_screen.dart';
 import '../quran/surah_detail_screen.dart';
 import '../dzikir/dzikir_screen.dart';
 import '../../services/streak_notification_service.dart';
+import '../../widgets/achievement_certificate_dialog.dart';
 
 enum BadgeRarity { common, rare, epic, legendary }
 
@@ -45,6 +46,22 @@ class SpiritualBadge {
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
+
+  /// Mengambil daftar semua lencana pencapaian berdasarkan state saat ini
+  static List<SpiritualBadge> getBadges(AppState appState, [String lang = 'id']) {
+    return _AchievementsScreenState.generateBadgesList(appState, lang);
+  }
+
+  /// Menghitung total lencana yang sudah terbuka namun belum diklaim poinnya
+  static int getUnclaimedBadgesCount(AppState appState) {
+    final badges = getBadges(appState, 'id');
+    return badges.where((b) => b.isUnlocked && !b.isClaimed).length;
+  }
+
+  /// Memeriksa apakah ada lencana yang belum diklaim
+  static bool hasUnclaimedBadges(AppState appState) {
+    return getUnclaimedBadgesCount(appState) > 0;
+  }
 
   @override
   State<AchievementsScreen> createState() => _AchievementsScreenState();
@@ -100,7 +117,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     });
   }
 
-  List<SpiritualBadge> _generateBadges(AppState appState, String lang) {
+  static List<SpiritualBadge> generateBadgesList(AppState appState, String lang) {
     final khatm = appState.khatmCount;
     final completedSurahs = appState.completedSurahsThisCycle.length;
     final totalDzikir = appState.totalDzikirCount;
@@ -804,9 +821,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               Container(
                 width: 44,
                 height: 4.5,
@@ -1052,42 +1070,73 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               const SizedBox(height: 20),
 
               // Action Buttons
-              if (badge.isUnlocked && !badge.isClaimed) ...[
+              if (badge.isUnlocked) ...[
+                if (!badge.isClaimed) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.stars_rounded, size: 20),
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        final appState = Provider.of<AppState>(context, listen: false);
+                        await appState.claimBadgeReward(badge.id, badge.pointsReward, badge.title);
+                        HapticFeedback.heavyImpact();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _t(lang, 'claim_badge_success', {'pts': '${badge.pointsReward}', 'title': badge.title}),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: const Color(0xFF047857),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF059669),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 2,
+                      ),
+                      label: Text(
+                        _t(lang, 'claim_reward_btn', {'pts': '${badge.pointsReward}'}),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                // Bagikan Sertifikat Button
                 SizedBox(
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.stars_rounded, size: 20),
-                    onPressed: () async {
+                    icon: const Icon(Icons.workspace_premium_rounded, size: 20),
+                    onPressed: () {
                       Navigator.pop(ctx);
-                      final appState = Provider.of<AppState>(context, listen: false);
-                      await appState.claimBadgeReward(badge.id, badge.pointsReward, badge.title);
-                      HapticFeedback.heavyImpact();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                const Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _t(lang, 'claim_badge_success', {'pts': '${badge.pointsReward}', 'title': badge.title}),
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            backgroundColor: const Color(0xFF047857),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
+                      AchievementCertificateDialog.show(
+                        context,
+                        badge: badge,
+                        lang: lang,
+                      );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF059669),
+                      backgroundColor: const Color(0xFFD97706),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -1095,8 +1144,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       elevation: 2,
                     ),
                     label: Text(
-                      _t(lang, 'claim_reward_btn', {'pts': '${badge.pointsReward}'}),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                      Translations.get(lang, 'share_certificate'),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ),
                 ),
@@ -1139,8 +1188,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               ],
             ],
           ),
-        );
-      },
+        ),
+      );
+    },
     );
   }
 
@@ -1179,7 +1229,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       totalDzikirCount: totalDzikir,
     );
 
-    final allBadges = _generateBadges(appState, lang);
+    final allBadges = generateBadgesList(appState, lang);
     final filteredBadges = _selectedCategory == 'all'
         ? allBadges
         : allBadges.where((b) => b.category == _selectedCategory).toList();

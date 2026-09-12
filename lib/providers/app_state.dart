@@ -123,6 +123,9 @@ class AppState extends ChangeNotifier {
   int _totalDzikirCount = 0;
 
   String get userName => _userName;
+  String get displayName => _userName.trim().isNotEmpty
+      ? _userName.trim()
+      : Translations.get(_languageCode, 'user_title');
   Set<int> get completedSurahsThisCycle => _completedSurahsThisCycle;
   int get dailyDzikirRounds => _dailyDzikirRounds;
   int get dailyDzikirPoints => _dailyDzikirPoints;

@@ -2,6 +2,7 @@ package com.kraftech.muslim_launcher_2
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -10,8 +11,11 @@ import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
@@ -19,6 +23,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.concurrent.Executors
 
 
@@ -194,6 +199,32 @@ class MainActivity : FlutterActivity() {
                 }
                 "getAppStoragePath" -> {
                     result.success(context.filesDir.absolutePath)
+                }
+                "saveImageToGallery" -> {
+                    val bytes = call.argument<ByteArray>("bytes")
+                    val fileName = call.argument<String>("fileName") ?: "sertifikat_${System.currentTimeMillis()}.png"
+                    if (bytes != null && bytes.isNotEmpty()) {
+                        threadPool.execute {
+                            val ok = saveImageToGallery(bytes, fileName)
+                            runOnUiThread { result.success(ok) }
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "Bytes empty", null)
+                    }
+                }
+                "shareImage" -> {
+                    val bytes = call.argument<ByteArray>("bytes")
+                    val fileName = call.argument<String>("fileName") ?: "sertifikat_${System.currentTimeMillis()}.png"
+                    val title = call.argument<String>("title") ?: "Bagikan"
+                    val text = call.argument<String>("text") ?: ""
+                    if (bytes != null && bytes.isNotEmpty()) {
+                        threadPool.execute {
+                            val ok = shareImage(bytes, fileName, title, text)
+                            runOnUiThread { result.success(ok) }
+                        }
+                    } else {
+                        result.error("INVALID_ARGS", "Bytes empty", null)
+                    }
                 }
                 else -> {
                     result.notImplemented()
@@ -634,6 +665,80 @@ class MainActivity : FlutterActivity() {
             } catch (_: Exception) {
                 null
             }
+        }
+    }
+
+    private fun saveImageToGallery(bytes: ByteArray, fileName: String): Boolean {
+        return try {
+            val resolver = contentResolver
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Muslim Launcher")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+            }
+
+            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                ?: return false
+
+            resolver.openOutputStream(uri)?.use { stream ->
+                stream.write(bytes)
+                stream.flush()
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                contentValues.clear()
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(uri, contentValues, null, null)
+            } else {
+                MediaScannerConnection.scanFile(
+                    applicationContext,
+                    arrayOf(uri.toString()),
+                    arrayOf("image/png"),
+                    null
+                )
+            }
+            true
+        } catch (e: Exception) {
+            Log.e("MainActivity", "saveImageToGallery error: ${e.message}", e)
+            false
+        }
+    }
+
+    private fun shareImage(bytes: ByteArray, fileName: String, title: String, text: String): Boolean {
+        return try {
+            val cachePath = File(cacheDir, "share_images")
+            if (!cachePath.exists()) {
+                cachePath.mkdirs()
+            }
+            val file = File(cachePath, fileName)
+            file.writeBytes(bytes)
+
+            val authority = "${packageName}.flutter.share_provider"
+            val contentUri: Uri = androidx.core.content.FileProvider.getUriForFile(
+                this,
+                authority,
+                file
+            )
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, contentUri)
+                if (text.isNotEmpty()) {
+                    putExtra(Intent.EXTRA_TEXT, text)
+                }
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val chooser = Intent.createChooser(shareIntent, title).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(chooser)
+            true
+        } catch (e: Exception) {
+            Log.e("MainActivity", "shareImage error: ${e.message}", e)
+            false
         }
     }
 

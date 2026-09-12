@@ -42,6 +42,10 @@ void main() {
 
   group('Achievements Screen & Trophy Dock Tests', () {
     testWidgets('AchievementsScreen renders hero card, stats, tabs, and badges', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       final appState = AppState(prefs);
 
       await tester.pumpWidget(
@@ -127,6 +131,10 @@ void main() {
     });
 
     testWidgets('AchievementsScreen displays all 5 Khatam tier badges (1x to 5x)', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       final appState = AppState(prefs);
 
       await tester.pumpWidget(
@@ -160,9 +168,14 @@ void main() {
       expect(find.text('1 / 5 Khatam'), findsOneWidget);
     });
 
-    testWidgets('AchievementsScreen renders Daily Tilawah Streak card and streak badges (3, 7, 14, 30 days)', (tester) async {
+    testWidgets('AchievementsScreen renders Daily Tilawah & Dzikir Streak card and streak badges', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       final appState = AppState(prefs);
       await appState.setQuranStreakForTesting(7, maxStreak: 7);
+      await appState.setDzikirStreakForTesting(3, maxStreak: 5);
 
       await tester.pumpWidget(
         ChangeNotifierProvider<AppState>.value(
@@ -174,7 +187,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify Daily Streak Banner
+      // Verify Daily Tilawah Streak Banner by default
       expect(find.text('ISTIQOMAH TILAWAH HARIAN'), findsOneWidget);
       expect(find.text('7 Hari Berturut-turut 🔥'), findsOneWidget);
       expect(find.text('Rekor: 7 Hari'), findsOneWidget);
@@ -183,19 +196,37 @@ void main() {
       await tester.tap(find.text("Al-Qur'an"));
       await tester.pumpAndSettle();
 
-      // Verify streak badges exist
+      // Verify Qur'an streak badges exist (1, 3, 7, 14, 30, 365)
+      expect(find.text('Istiqomah 1 Hari'), findsOneWidget);
       expect(find.text('Istiqomah 3 Hari'), findsOneWidget);
       expect(find.text('Istiqomah 7 Hari (1 Pekan)'), findsOneWidget);
       expect(find.text('Istiqomah 14 Hari (2 Pekan)'), findsOneWidget);
       expect(find.text('Istiqomah Sebulan Penuh (30 Hari)'), findsOneWidget);
+      expect(find.text('Istiqomah 1 Tahun Penuh (365 Hari)'), findsOneWidget);
 
-      // With streak of 7, both streak banner target and 14-day badge show '7 / 14 Hari'
-      expect(find.text('7 / 14 Hari'), findsWidgets);
-      // 30-day badge should show '7 / 30 Hari'
-      expect(find.text('7 / 30 Hari'), findsOneWidget);
+      // Now toggle streak card to Dzikir
+      await tester.tap(find.textContaining('Zikir (3h)'));
+      await tester.pumpAndSettle();
+
+      // Verify Dzikir Streak Banner is shown
+      expect(find.text('ISTIQOMAH ZIKIR HARIAN'), findsOneWidget);
+      expect(find.text('3 Hari Berturut-turut ✨'), findsOneWidget);
+      expect(find.text('Rekor: 5 Hari'), findsOneWidget);
+
+      // Switch filter category to Dzikir tab
+      await tester.tap(find.text('Dzikir').last);
+      await tester.pumpAndSettle();
+
+      // Verify all 6 Dzikir streak badges exist
+      expect(find.text('Istiqomah Zikir 1 Hari'), findsOneWidget);
+      expect(find.text('Istiqomah Zikir 3 Hari'), findsOneWidget);
+      expect(find.text('Istiqomah Zikir 7 Hari (1 Pekan)'), findsOneWidget);
+      expect(find.text('Istiqomah Zikir 14 Hari (2 Pekan)'), findsOneWidget);
+      expect(find.text('Istiqomah Zikir Sebulan (30 Hari)'), findsOneWidget);
+      expect(find.text('Istiqomah Zikir 1 Tahun (365 Hari)'), findsOneWidget);
     });
 
-    test('AppState tracks consecutive day reading streak and max streak correctly', () async {
+    test('AppState tracks consecutive day reading streak and resets correctly when day missed', () async {
       final appState = AppState(prefs);
 
       // Initially zero
@@ -206,6 +237,7 @@ void main() {
       final now = DateTime.now();
       final today = now.toIso8601String().split('T')[0];
       final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+      final twoDaysAgo = now.subtract(const Duration(days: 2)).toIso8601String().split('T')[0];
 
       await appState.setQuranStreakForTesting(3, maxStreak: 3, lastDate: yesterday);
       expect(appState.quranDailyStreak, 3);
@@ -220,6 +252,55 @@ void main() {
       await appState.saveProgress(0, 1, 'Al-Fatihah', 2, 10);
       expect(appState.quranDailyStreak, 4);
       expect(appState.maxQuranDailyStreak, 4);
+
+      // Missing a day: simulate last read was 2 days ago
+      await appState.setQuranStreakForTesting(4, maxStreak: 4, lastDate: twoDaysAgo);
+      // Because 2 days ago is not today or yesterday, getter returns 0 active streak
+      expect(appState.quranDailyStreak, 0);
+      expect(appState.maxQuranDailyStreak, 4);
+
+      // Reading today resets current streak to 1, while preserving max streak of 4!
+      await appState.saveProgress(0, 2, 'Al-Fatihah', 3, 10);
+      expect(appState.quranDailyStreak, 1);
+      expect(appState.maxQuranDailyStreak, 4);
+    });
+
+    test('AppState tracks consecutive day dzikir streak and resets correctly when day missed', () async {
+      final appState = AppState(prefs);
+
+      // Initially zero
+      await appState.setDzikirStreakForTesting(0, maxStreak: 0, lastDate: '');
+      expect(appState.dzikirDailyStreak, 0);
+
+      final now = DateTime.now();
+      final today = now.toIso8601String().split('T')[0];
+      final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+      final twoDaysAgo = now.subtract(const Duration(days: 2)).toIso8601String().split('T')[0];
+
+      // Simulate dzikir yesterday
+      await appState.setDzikirStreakForTesting(5, maxStreak: 5, lastDate: yesterday);
+      expect(appState.dzikirDailyStreak, 5);
+
+      // Performing dzikir today via addDzikirCount increments streak to 6
+      await appState.addDzikirCount(33);
+      expect(appState.dzikirDailyStreak, 6);
+      expect(appState.maxDzikirDailyStreak, 6);
+      expect(appState.lastDzikirDate, today);
+
+      // Additional dzikir on same day via saveDzikirProgress does not double increment
+      await appState.saveDzikirProgress('Subhanallah', 33, 10);
+      expect(appState.dzikirDailyStreak, 6);
+      expect(appState.maxDzikirDailyStreak, 6);
+
+      // Missing a day: last dzikir was 2 days ago
+      await appState.setDzikirStreakForTesting(6, maxStreak: 6, lastDate: twoDaysAgo);
+      expect(appState.dzikirDailyStreak, 0);
+      expect(appState.maxDzikirDailyStreak, 6);
+
+      // Doing dzikir today resets streak to 1, but best record remains 6!
+      await appState.addDzikirCount(33);
+      expect(appState.dzikirDailyStreak, 1);
+      expect(appState.maxDzikirDailyStreak, 6);
     });
   });
 }

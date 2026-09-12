@@ -138,6 +138,11 @@ class AppState extends ChangeNotifier {
   int _maxQuranDailyStreak = 0;
   String _lastQuranReadDate = '';
 
+  // Persistent Dzikir Daily Streak
+  int _dzikirDailyStreak = 0;
+  int _maxDzikirDailyStreak = 0;
+  String _lastDzikirDate = '';
+
   // Persistent Daily Verse & Hadith
   String _dailySurahName = '';
   int _dailyAyahNumber = 0;
@@ -190,6 +195,19 @@ class AppState extends ChangeNotifier {
   int get rawQuranDailyStreak => _quranDailyStreak;
   int get maxQuranDailyStreak => _maxQuranDailyStreak;
   String get lastQuranReadDate => _lastQuranReadDate;
+
+  int get dzikirDailyStreak {
+    if (_lastDzikirDate.isEmpty) return 0;
+    final now = DateTime.now();
+    final today = now.toIso8601String().split('T')[0];
+    if (_lastDzikirDate == today) return _dzikirDailyStreak;
+    final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+    if (_lastDzikirDate == yesterday) return _dzikirDailyStreak;
+    return 0;
+  }
+  int get rawDzikirDailyStreak => _dzikirDailyStreak;
+  int get maxDzikirDailyStreak => _maxDzikirDailyStreak;
+  String get lastDzikirDate => _lastDzikirDate;
   List<dynamic> get quranData => _quranData;
   bool get isDataLoaded => _isDataLoaded;
   List<dynamic> get hadithData {
@@ -287,6 +305,10 @@ class AppState extends ChangeNotifier {
     _quranDailyStreak = prefs.getInt('quranDailyStreak') ?? 0;
     _maxQuranDailyStreak = prefs.getInt('maxQuranDailyStreak') ?? _quranDailyStreak;
     _lastQuranReadDate = prefs.getString('lastQuranReadDate') ?? '';
+
+    _dzikirDailyStreak = prefs.getInt('dzikirDailyStreak') ?? 0;
+    _maxDzikirDailyStreak = prefs.getInt('maxDzikirDailyStreak') ?? _dzikirDailyStreak;
+    _lastDzikirDate = prefs.getString('lastDzikirDate') ?? '';
 
     _userName = prefs.getString('userName') ?? '';
     final savedCompletedSurahs = prefs.getStringList('completedSurahsThisCycle') ?? [];
@@ -3353,6 +3375,43 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> _recordDzikirDailyRead() async {
+    final now = DateTime.now();
+    final today = now.toIso8601String().split('T')[0];
+    
+    if (_lastDzikirDate == today) {
+      return; // Already recorded today
+    }
+
+    final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+
+    if (_lastDzikirDate == yesterday) {
+      _dzikirDailyStreak += 1;
+    } else {
+      _dzikirDailyStreak = 1;
+    }
+
+    _lastDzikirDate = today;
+    if (_dzikirDailyStreak > _maxDzikirDailyStreak) {
+      _maxDzikirDailyStreak = _dzikirDailyStreak;
+      await prefs.setInt('maxDzikirDailyStreak', _maxDzikirDailyStreak);
+    }
+
+    await prefs.setInt('dzikirDailyStreak', _dzikirDailyStreak);
+    await prefs.setString('lastDzikirDate', today);
+  }
+
+  @visibleForTesting
+  Future<void> setDzikirStreakForTesting(int streak, {int? maxStreak, String? lastDate}) async {
+    _dzikirDailyStreak = streak;
+    _maxDzikirDailyStreak = maxStreak ?? streak;
+    _lastDzikirDate = lastDate ?? DateTime.now().toIso8601String().split('T')[0];
+    await prefs.setInt('dzikirDailyStreak', _dzikirDailyStreak);
+    await prefs.setInt('maxDzikirDailyStreak', _maxDzikirDailyStreak);
+    await prefs.setString('lastDzikirDate', _lastDzikirDate);
+    notifyListeners();
+  }
+
   bool canEarnPoints(int surahIndex, int ayahIndex) {
     // Points are earned ONLY if it's the exact next step
     if (surahIndex == _highestSurahIndex && ayahIndex == _highestAyahIndex + 1) {
@@ -3595,6 +3654,7 @@ class AppState extends ChangeNotifier {
     await prefs.setInt('totalDzikirCount', _totalDzikirCount);
 
     _addToHistory("Dzikir: $dzikirTitle (${count}x)", count, allocatedPoints);
+    await _recordDzikirDailyRead();
     notifyListeners();
 
     return {
@@ -3608,6 +3668,7 @@ class AppState extends ChangeNotifier {
     if (count <= 0) return;
     _totalDzikirCount += count;
     await prefs.setInt('totalDzikirCount', _totalDzikirCount);
+    await _recordDzikirDailyRead();
     notifyListeners();
   }
 

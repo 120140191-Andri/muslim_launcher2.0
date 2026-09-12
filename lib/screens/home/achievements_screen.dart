@@ -43,6 +43,7 @@ class AchievementsScreen extends StatefulWidget {
 
 class _AchievementsScreenState extends State<AchievementsScreen> {
   String _selectedCategory = 'all'; // 'all', 'quran', 'dzikir', 'focus'
+  String _streakTab = 'quran'; // 'quran' or 'dzikir'
 
   @override
   void initState() {
@@ -55,8 +56,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     final completedSurahs = appState.completedSurahsThisCycle.length;
     final totalDzikir = appState.totalDzikirCount;
     final points = appState.points;
-    final currentStreak = appState.quranDailyStreak;
-    final maxStreak = appState.maxQuranDailyStreak;
+    final currentQuranStreak = appState.quranDailyStreak;
+    final maxQuranStreak = appState.maxQuranDailyStreak;
+    final currentDzikirStreak = appState.dzikirDailyStreak;
+    final maxDzikirStreak = appState.maxDzikirDailyStreak;
     final hasReadAyah = appState.highestSurahIndex > 0 ||
         appState.highestAyahIndex >= 0 ||
         khatm > 0;
@@ -86,6 +89,25 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
+        id: 'quran_streak_1',
+        category: 'quran',
+        title: lang == 'en' ? 'Day 1 Habit' : 'Istiqomah 1 Hari',
+        description: lang == 'en'
+            ? 'Recite at least 1 ayah of the Holy Qur\'an today to spark your daily streak.'
+            : 'Membaca Al-Qur\'an minimal 1 ayat hari ini untuk menyalakan lentera istiqomah.',
+        fadhilah: lang == 'en'
+            ? '"The journey of a thousand miles begins with a single step in Allah\'s remembrance."'
+            : '"Langkah awal adalah penentu kebiasaan mulia. Setiap ayat yang dibaca mendatangkan rahmat."',
+        icon: Icons.wb_sunny_rounded,
+        isUnlocked: maxQuranStreak >= 1,
+        progress: (maxQuranStreak >= 1) ? 1.0 : (currentQuranStreak / 1).clamp(0.0, 1.0),
+        progressLabel: (maxQuranStreak >= 1)
+            ? '1 / 1 ${lang == 'en' ? 'Day' : 'Hari'}'
+            : '$currentQuranStreak / 1 ${lang == 'en' ? 'Day' : 'Hari'}',
+        pointsReward: 10,
+        rarity: BadgeRarity.common,
+      ),
+      SpiritualBadge(
         id: 'quran_streak_3',
         category: 'quran',
         title: lang == 'en' ? '3-Day Habit' : 'Istiqomah 3 Hari',
@@ -96,11 +118,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             ? '"The most beloved deed to Allah is the most regular and constant even if it were little." (Bukhari & Muslim)'
             : '"Amalan yang paling dicintai Allah adalah yang berkelanjutan (istiqomah) walaupun sedikit." (HR. Bukhari & Muslim)',
         icon: Icons.local_fire_department_rounded,
-        isUnlocked: maxStreak >= 3,
-        progress: (maxStreak >= 3) ? 1.0 : (currentStreak / 3).clamp(0.0, 1.0),
-        progressLabel: (maxStreak >= 3)
+        isUnlocked: maxQuranStreak >= 3,
+        progress: (maxQuranStreak >= 3) ? 1.0 : (currentQuranStreak / 3).clamp(0.0, 1.0),
+        progressLabel: (maxQuranStreak >= 3)
             ? '3 / 3 ${lang == 'en' ? 'Days' : 'Hari'}'
-            : '$currentStreak / 3 ${lang == 'en' ? 'Days' : 'Hari'}',
+            : '$currentQuranStreak / 3 ${lang == 'en' ? 'Days' : 'Hari'}',
         pointsReward: 30,
         rarity: BadgeRarity.common,
       ),
@@ -115,11 +137,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             ? '"Whoever recites a letter from Allah\'s Book will receive ten good rewards multiplied." (Tirmidhi)'
             : '"Siapa yang membaca satu huruf dari Kitabullah, baginya sepuluh kebaikan berlipat ganda." (HR. Tirmidzi)',
         icon: Icons.bolt_rounded,
-        isUnlocked: maxStreak >= 7,
-        progress: (maxStreak >= 7) ? 1.0 : (currentStreak / 7).clamp(0.0, 1.0),
-        progressLabel: (maxStreak >= 7)
+        isUnlocked: maxQuranStreak >= 7,
+        progress: (maxQuranStreak >= 7) ? 1.0 : (currentQuranStreak / 7).clamp(0.0, 1.0),
+        progressLabel: (maxQuranStreak >= 7)
             ? '7 / 7 ${lang == 'en' ? 'Days' : 'Hari'}'
-            : '$currentStreak / 7 ${lang == 'en' ? 'Days' : 'Hari'}',
+            : '$currentQuranStreak / 7 ${lang == 'en' ? 'Days' : 'Hari'}',
         pointsReward: 75,
         rarity: BadgeRarity.rare,
       ),
@@ -134,11 +156,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             ? '"Tranquility descends and mercy envelops the servant whose heart is attached to the Qur\'an." (Muslim)'
             : '"Ketenangan (sakinah) turun dan rahmat Ilahi senantiasa menaungi hamba yang teguh membaca firman Allah." (HR. Muslim)',
         icon: Icons.auto_awesome_rounded,
-        isUnlocked: maxStreak >= 14,
-        progress: (maxStreak >= 14) ? 1.0 : (currentStreak / 14).clamp(0.0, 1.0),
-        progressLabel: (maxStreak >= 14)
+        isUnlocked: maxQuranStreak >= 14,
+        progress: (maxQuranStreak >= 14) ? 1.0 : (currentQuranStreak / 14).clamp(0.0, 1.0),
+        progressLabel: (maxQuranStreak >= 14)
             ? '14 / 14 ${lang == 'en' ? 'Days' : 'Hari'}'
-            : '$currentStreak / 14 ${lang == 'en' ? 'Days' : 'Hari'}',
+            : '$currentQuranStreak / 14 ${lang == 'en' ? 'Days' : 'Hari'}',
         pointsReward: 150,
         rarity: BadgeRarity.epic,
       ),
@@ -153,12 +175,31 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             ? '"The best of you are those who learn the Qur\'an and teach it, holding steadfast to it." (Bukhari)'
             : '"Sebaik-baik kalian adalah orang yang belajar Al-Qur\'an, mengajarkannya, dan senantiasa melaziminya." (HR. Bukhari)',
         icon: Icons.military_tech_rounded,
-        isUnlocked: maxStreak >= 30,
-        progress: (maxStreak >= 30) ? 1.0 : (currentStreak / 30).clamp(0.0, 1.0),
-        progressLabel: (maxStreak >= 30)
+        isUnlocked: maxQuranStreak >= 30,
+        progress: (maxQuranStreak >= 30) ? 1.0 : (currentQuranStreak / 30).clamp(0.0, 1.0),
+        progressLabel: (maxQuranStreak >= 30)
             ? '30 / 30 ${lang == 'en' ? 'Days' : 'Hari'}'
-            : '$currentStreak / 30 ${lang == 'en' ? 'Days' : 'Hari'}',
+            : '$currentQuranStreak / 30 ${lang == 'en' ? 'Days' : 'Hari'}',
         pointsReward: 350,
+        rarity: BadgeRarity.legendary,
+      ),
+      SpiritualBadge(
+        id: 'quran_streak_365',
+        category: 'quran',
+        title: lang == 'en' ? '1-Year Legendary Devotion (365 Days)' : 'Istiqomah 1 Tahun Penuh (365 Hari)',
+        description: lang == 'en'
+            ? 'True legendary dedication: Recite the Holy Qur\'an daily for 365 consecutive days without missing a single day.'
+            : 'Pencapaian legendaris insan pilihan: Membaca Al-Qur\'an setiap hari selama 365 hari (1 tahun) berturut-turut tanpa jeda.',
+        fadhilah: lang == 'en'
+            ? '"Indeed, Allah has His own family among mankind: the People of the Qur\'an." (Ibn Majah)'
+            : '"Sesungguhnya Allah memiliki keluarga dari kalangan manusia: yaitu Ahlul Qur\'an, mereka adalah keluarga Allah dan orang-orang khusus-Nya." (HR. Ibnu Majah)',
+        icon: Icons.diamond_rounded,
+        isUnlocked: maxQuranStreak >= 365,
+        progress: (maxQuranStreak >= 365) ? 1.0 : (currentQuranStreak / 365).clamp(0.0, 1.0),
+        progressLabel: (maxQuranStreak >= 365)
+            ? '365 / 365 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentQuranStreak / 365 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 2000,
         rarity: BadgeRarity.legendary,
       ),
       SpiritualBadge(
@@ -356,6 +397,120 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: '${totalDzikir.clamp(0, 1)} / 1',
         pointsReward: 5,
         rarity: BadgeRarity.common,
+      ),
+      SpiritualBadge(
+        id: 'dzikir_streak_1',
+        category: 'dzikir',
+        title: lang == 'en' ? 'Day 1 Dhikr Habit' : 'Istiqomah Zikir 1 Hari',
+        description: lang == 'en'
+            ? 'Recite digital dhikr today to establish your daily remembrance streak.'
+            : 'Membasahi lisan dengan zikir tasbih hari ini untuk menyalakan istiqomah zikir.',
+        fadhilah: lang == 'en'
+            ? '"Keep your tongue constantly moist with the remembrance of Allah." (Tirmidhi)'
+            : '"Senantiasalah lisanmu basah karena mengingat Allah." (HR. Tirmidzi)',
+        icon: Icons.wb_sunny_rounded,
+        isUnlocked: maxDzikirStreak >= 1,
+        progress: (maxDzikirStreak >= 1) ? 1.0 : (currentDzikirStreak / 1).clamp(0.0, 1.0),
+        progressLabel: (maxDzikirStreak >= 1)
+            ? '1 / 1 ${lang == 'en' ? 'Day' : 'Hari'}'
+            : '$currentDzikirStreak / 1 ${lang == 'en' ? 'Day' : 'Hari'}',
+        pointsReward: 10,
+        rarity: BadgeRarity.common,
+      ),
+      SpiritualBadge(
+        id: 'dzikir_streak_3',
+        category: 'dzikir',
+        title: lang == 'en' ? '3-Day Dhikr Streak' : 'Istiqomah Zikir 3 Hari',
+        description: lang == 'en'
+            ? 'Recite dhikr daily for 3 consecutive days.'
+            : 'Rutin berzikir mengingat Allah setiap hari selama 3 hari berturut-turut.',
+        fadhilah: lang == 'en'
+            ? '"The similitude of the one who remembers his Lord and the one who does not is like that of the living and the dead." (Bukhari)'
+            : '"Perumpamaan orang yang berzikir kepada Tuhannya dan yang tidak, seperti orang hidup dan orang mati." (HR. Bukhari)',
+        icon: Icons.local_fire_department_rounded,
+        isUnlocked: maxDzikirStreak >= 3,
+        progress: (maxDzikirStreak >= 3) ? 1.0 : (currentDzikirStreak / 3).clamp(0.0, 1.0),
+        progressLabel: (maxDzikirStreak >= 3)
+            ? '3 / 3 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDzikirStreak / 3 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 30,
+        rarity: BadgeRarity.common,
+      ),
+      SpiritualBadge(
+        id: 'dzikir_streak_7',
+        category: 'dzikir',
+        title: lang == 'en' ? '7-Day Dhikr Steadfast (1 Week)' : 'Istiqomah Zikir 7 Hari (1 Pekan)',
+        description: lang == 'en'
+            ? 'Consistently recite dhikr every day for 7 consecutive days.'
+            : 'Konsisten bertasbih setiap hari selama 7 hari berturut-turut tanpa terputus.',
+        fadhilah: lang == 'en'
+            ? '"Two phrases are light on the tongue, heavy on the scales, and beloved to Ar-Rahman: Subhanallah wa bihamdihi, Subhanallahil \'Azhim." (Bukhari)'
+            : '"Dua kalimat yang ringan di lisan, berat di timbangan, dan dicintai Ar-Rahman: Subhanallah wa bihamdihi, Subhanallahil \'Azhim." (HR. Bukhari)',
+        icon: Icons.bolt_rounded,
+        isUnlocked: maxDzikirStreak >= 7,
+        progress: (maxDzikirStreak >= 7) ? 1.0 : (currentDzikirStreak / 7).clamp(0.0, 1.0),
+        progressLabel: (maxDzikirStreak >= 7)
+            ? '7 / 7 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDzikirStreak / 7 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 75,
+        rarity: BadgeRarity.rare,
+      ),
+      SpiritualBadge(
+        id: 'dzikir_streak_14',
+        category: 'dzikir',
+        title: lang == 'en' ? '14-Day Dhikr Devotion (2 Weeks)' : 'Istiqomah Zikir 14 Hari (2 Pekan)',
+        description: lang == 'en'
+            ? 'Keep your heart anchored in remembrance for 14 consecutive days.'
+            : 'Menjaga lisan senantiasa basah mengingat Allah selama 14 hari penuh berturut-turut.',
+        fadhilah: lang == 'en'
+            ? '"Unquestionably, by the remembrance of Allah hearts are assured." (Ar-Ra\'d: 28)'
+            : '"Ingatlah, hanya dengan mengingat Allah hati menjadi tenteram." (QS. Ar-Ra\'d: 28)',
+        icon: Icons.auto_awesome_rounded,
+        isUnlocked: maxDzikirStreak >= 14,
+        progress: (maxDzikirStreak >= 14) ? 1.0 : (currentDzikirStreak / 14).clamp(0.0, 1.0),
+        progressLabel: (maxDzikirStreak >= 14)
+            ? '14 / 14 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDzikirStreak / 14 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 150,
+        rarity: BadgeRarity.epic,
+      ),
+      SpiritualBadge(
+        id: 'dzikir_streak_30',
+        category: 'dzikir',
+        title: lang == 'en' ? '30-Day Dhikr Habit (1 Month)' : 'Istiqomah Zikir Sebulan (30 Hari)',
+        description: lang == 'en'
+            ? 'A full month of non-stop daily dhikr and tasbih devotion.'
+            : 'Sebulan penuh menghiasi hari-hari dengan tasbih dan zikir tanpa jeda.',
+        fadhilah: lang == 'en'
+            ? '"Shall I tell you of the best of your deeds and the purest in the sight of your Lord? Remembrance of Allah." (Tirmidhi)'
+            : '"Maukah kuberitahu amalan terbaik dan tersuci di sisi Tuhanmu? Yaitu senantiasa berzikir mengingat Allah." (HR. Tirmidzi)',
+        icon: Icons.military_tech_rounded,
+        isUnlocked: maxDzikirStreak >= 30,
+        progress: (maxDzikirStreak >= 30) ? 1.0 : (currentDzikirStreak / 30).clamp(0.0, 1.0),
+        progressLabel: (maxDzikirStreak >= 30)
+            ? '30 / 30 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDzikirStreak / 30 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 350,
+        rarity: BadgeRarity.legendary,
+      ),
+      SpiritualBadge(
+        id: 'dzikir_streak_365',
+        category: 'dzikir',
+        title: lang == 'en' ? '1-Year Legendary Dhikr (365 Days)' : 'Istiqomah Zikir 1 Tahun (365 Hari)',
+        description: lang == 'en'
+            ? 'Legendary milestone: Never a single day missed remembering Allah for 365 consecutive days.'
+            : 'Pencapaian agung ahli zikir yang lidah dan hatinya tak pernah luput mengingat Allah setiap hari selama 365 hari penuh.',
+        fadhilah: lang == 'en'
+            ? '"The men who remember Allah often and the women who do so - for them Allah has prepared forgiveness and a great reward." (Al-Ahzab: 35)'
+            : '"Laki-laki dan perempuan yang banyak berzikir mengingat Allah, Allah sediakan ampunan dan pahala yang besar." (QS. Al-Ahzab: 35)',
+        icon: Icons.diamond_rounded,
+        isUnlocked: maxDzikirStreak >= 365,
+        progress: (maxDzikirStreak >= 365) ? 1.0 : (currentDzikirStreak / 365).clamp(0.0, 1.0),
+        progressLabel: (maxDzikirStreak >= 365)
+            ? '365 / 365 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDzikirStreak / 365 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 2000,
+        rarity: BadgeRarity.legendary,
       ),
       SpiritualBadge(
         id: 'dzikir_round_1',
@@ -1058,18 +1213,28 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     String lang,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final currentStreak = appState.quranDailyStreak;
-    final maxStreak = appState.maxQuranDailyStreak;
+    final isQuran = _streakTab == 'quran';
 
-    // Determine next streak milestone target: 3, 7, 14, 30
-    final int nextTarget = currentStreak < 3
-        ? 3
-        : (currentStreak < 7
-            ? 7
-            : (currentStreak < 14
-                ? 14
-                : (currentStreak < 30 ? 30 : currentStreak + 10)));
+    final currentStreak = isQuran ? appState.quranDailyStreak : appState.dzikirDailyStreak;
+    final maxStreak = isQuran ? appState.maxQuranDailyStreak : appState.maxDzikirDailyStreak;
+
+    // Milestones: 1, 3, 7, 14, 30, 365
+    final int nextTarget = currentStreak < 1
+        ? 1
+        : (currentStreak < 3
+            ? 3
+            : (currentStreak < 7
+                ? 7
+                : (currentStreak < 14
+                    ? 14
+                    : (currentStreak < 30
+                        ? 30
+                        : (currentStreak < 365 ? 365 : currentStreak + 30)))));
     final double targetProgress = (currentStreak / nextTarget).clamp(0.0, 1.0);
+
+    final Color accentColor = isQuran ? const Color(0xFFF97316) : const Color(0xFF6366F1);
+    final Color darkAccent = isQuran ? const Color(0xFFEA580C) : const Color(0xFF4F46E5);
+    final Color textColor = isQuran ? const Color(0xFFC2410C) : const Color(0xFF4338CA);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1077,12 +1242,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFFF97316).withValues(alpha: 0.25),
+          color: accentColor.withValues(alpha: 0.25),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFEA580C).withValues(alpha: 0.08),
+            color: darkAccent.withValues(alpha: 0.08),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -1091,27 +1256,120 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Segmented Switcher between Tilawah and Dzikir
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _streakTab = 'quran'),
+                    borderRadius: BorderRadius.circular(11),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isQuran ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(11),
+                        boxShadow: isQuran
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.menu_book_rounded, size: 14, color: Color(0xFFEA580C)),
+                          const SizedBox(width: 5),
+                          Text(
+                            lang == 'en'
+                                ? 'Tilawah (${appState.quranDailyStreak}d)'
+                                : 'Tilawah (${appState.quranDailyStreak}h)',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: isQuran ? FontWeight.bold : FontWeight.w500,
+                              color: isQuran ? const Color(0xFFC2410C) : colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _streakTab = 'dzikir'),
+                    borderRadius: BorderRadius.circular(11),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      decoration: BoxDecoration(
+                        color: !isQuran ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(11),
+                        boxShadow: !isQuran
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.grain_rounded, size: 14, color: Color(0xFF4F46E5)),
+                          const SizedBox(width: 5),
+                          Text(
+                            lang == 'en'
+                                ? 'Dhikr (${appState.dzikirDailyStreak}d)'
+                                : 'Zikir (${appState.dzikirDailyStreak}h)',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: !isQuran ? FontWeight.bold : FontWeight.w500,
+                              color: !isQuran ? const Color(0xFF4338CA) : colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Streak details
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+                  gradient: LinearGradient(
+                    colors: [accentColor, darkAccent],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFEA580C).withValues(alpha: 0.3),
+                      color: darkAccent.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.local_fire_department_rounded,
+                child: Icon(
+                  isQuran ? Icons.local_fire_department_rounded : Icons.flare_rounded,
                   color: Colors.white,
                   size: 22,
                 ),
@@ -1125,26 +1383,28 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          lang == 'en' ? 'DAILY TILAWAH STREAK' : 'ISTIQOMAH TILAWAH HARIAN',
-                          style: const TextStyle(
+                          isQuran
+                              ? (lang == 'en' ? 'DAILY TILAWAH STREAK' : 'ISTIQOMAH TILAWAH HARIAN')
+                              : (lang == 'en' ? 'DAILY DHIKR STREAK' : 'ISTIQOMAH ZIKIR HARIAN'),
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.8,
-                            color: Color(0xFFC2410C),
+                            color: textColor,
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                            color: accentColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             lang == 'en' ? 'Best: $maxStreak Days' : 'Rekor: $maxStreak Hari',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFEA580C),
+                              color: darkAccent,
                             ),
                           ),
                         ),
@@ -1154,11 +1414,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     Text(
                       currentStreak > 0
                           ? (lang == 'en'
-                              ? '$currentStreak Day${currentStreak > 1 ? "s" : ""} in a row 🔥'
-                              : '$currentStreak Hari Berturut-turut 🔥')
+                              ? '$currentStreak Day${currentStreak > 1 ? "s" : ""} in a row ${isQuran ? "🔥" : "✨"}'
+                              : '$currentStreak Hari Berturut-turut ${isQuran ? "🔥" : "✨"}')
                           : (lang == 'en'
-                              ? 'Start streak today (min. 1 ayah)'
-                              : 'Mulai hari ini: Minimal 1 ayat'),
+                              ? (isQuran ? 'Start streak today (min. 1 ayah)' : 'Start dhikr streak today')
+                              : (isQuran ? 'Mulai hari ini: Minimal 1 ayat' : 'Mulai zikir tasbih hari ini')),
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -1185,10 +1445,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               ),
               Text(
                 '$currentStreak / $nextTarget ${lang == 'en' ? 'Days' : 'Hari'}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFC2410C),
+                  color: textColor,
                 ),
               ),
             ],
@@ -1199,8 +1459,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             child: LinearProgressIndicator(
               value: targetProgress,
               minHeight: 6,
-              backgroundColor: const Color(0xFFF97316).withValues(alpha: 0.15),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFEA580C)),
+              backgroundColor: accentColor.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(darkAccent),
             ),
           ),
         ],

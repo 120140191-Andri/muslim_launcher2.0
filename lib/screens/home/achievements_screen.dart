@@ -58,6 +58,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     final hasReadAyah = appState.highestSurahIndex > 0 ||
         appState.highestAyahIndex >= 0 ||
         khatm > 0;
+    final cumulativeAyahs = QuranProgressHelper.getCumulativeAyahs(
+      appState.currentSurahIndex,
+      appState.lastReadAyahNumber,
+      appState.quranData,
+    );
 
     return [
       // ── AL-QUR'AN & TILAWAH ──
@@ -159,18 +164,39 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
-        id: 'quran_khatam_1',
+        id: 'quran_maqam_1',
         category: 'quran',
         title: lang == 'en'
-            ? '1x Khatam • Al-Mubtadi\' Al-Karim'
-            : '1x Khatam • Al-Mubtadi\' Al-Karim',
+            ? 'Level 1 • Steadfast Seeker'
+            : 'Tingkat 1 • Pejuang Istiqomah',
         description: lang == 'en'
-            ? 'Complete all 30 Juz (6,236 ayahs) of the Holy Qur\'an for the first time.'
-            : 'Menuntaskan seluruh 30 Juz (6.236 ayat) Al-Qur\'an pertama kali.',
+            ? 'Towards 1st Khatam: Initial steps establishing daily recitation habit and balanced app usage unlock.'
+            : 'Menuju Khatam ke-1: Langkah awal membiasakan diri membaca firman Allah setiap hari. Membuka kuota aplikasi harian secara proporsional.',
+        fadhilah: lang == 'en'
+            ? '"The most beloved deed to Allah is the most regular and constant even if it were little." (Bukhari & Muslim)'
+            : '"Sebaik-baik amalan adalah yang konsisten (istiqomah) meskipun sedikit." (HR. Bukhari & Muslim)',
+        icon: Icons.local_florist_rounded,
+        isUnlocked: hasReadAyah || khatm > 0,
+        progress: (khatm > 0) ? 1.0 : (cumulativeAyahs / 6236).clamp(0.0, 1.0),
+        progressLabel: (khatm > 0)
+            ? '6.236 / 6.236 Ayat'
+            : '$cumulativeAyahs / 6.236 Ayat',
+        pointsReward: 50,
+        rarity: BadgeRarity.common,
+      ),
+      SpiritualBadge(
+        id: 'quran_maqam_2',
+        category: 'quran',
+        title: lang == 'en'
+            ? 'Level 2 • Al-Mubtadi\' Al-Karim'
+            : 'Tingkat 2 • Al-Mubtadi\' Al-Karim',
+        description: lang == 'en'
+            ? '1x Khatam (6,236 Verses): Successfully reciting all 30 Juz from Al-Fatihah to An-Nas.'
+            : '1x Khatam (6.236 Ayat): Berhasil menuntaskan seluruh 30 Juz Al-Qur\'an dari Al-Fatihah hingga An-Nas.',
         fadhilah: lang == 'en'
             ? '"The angels invoke blessings upon the servant who completes the Qur\'an." (Ad-Darimi)'
             : '"Doa orang yang mengkhatamkan Al-Qur\'an diaminkan oleh ribuan malaikat yang mendoakan rahmat baginya." (Ad-Darimi)',
-        icon: Icons.workspace_premium_rounded,
+        icon: Icons.star_rounded,
         isUnlocked: khatm >= 1,
         progress: (khatm / 1).clamp(0.0, 1.0),
         progressLabel: '$khatm / 1 Khatam',
@@ -178,14 +204,14 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
-        id: 'quran_khatam_2',
+        id: 'quran_maqam_3',
         category: 'quran',
         title: lang == 'en'
-            ? '2x Khatam • Companion of the Qur\'an'
-            : '2x Khatam • Sahabat Al-Qur\'an',
+            ? 'Level 3 • Companion of the Quran'
+            : 'Tingkat 3 • Sahabat Al-Qur\'an',
         description: lang == 'en'
-            ? 'Complete 2 full Khatam cycles (12,472 ayahs). The Qur\'an becomes a dear companion in daily life.'
-            : 'Mengkhatamkan Al-Qur\'an sebanyak 2 kali (12.472 ayat). Al-Qur\'an menjadi sahabat karib penyejuk hati.',
+            ? '2x Khatam: The Holy Qur\'an becomes a cherished companion in your daily life.'
+            : '2x Khatam: Al-Qur\'an telah menjadi sahabat karib penyejuk hati di setiap waktu luang dan keseharian.',
         fadhilah: lang == 'en'
             ? '"Read the Qur\'an, for it will come on the Day of Resurrection as an intercessor for its companions." (Muslim)'
             : '"Bacalah Al-Qur\'an, sesungguhnya ia akan datang pada hari kiamat sebagai pemberi syafa\'at bagi para sahabatnya." (HR. Muslim)',
@@ -197,56 +223,37 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         rarity: BadgeRarity.epic,
       ),
       SpiritualBadge(
-        id: 'quran_khatam_3',
+        id: 'quran_maqam_4',
         category: 'quran',
         title: lang == 'en'
-            ? '3x Khatam • Radiant Heart'
-            : '3x Khatam • Pelita Hati',
+            ? 'Level 4 • Guardian of Light'
+            : 'Tingkat 4 • Penjaga Cahaya',
         description: lang == 'en'
-            ? 'Complete 3 full Khatam cycles (18,708 ayahs). The heart is constantly illuminated with divine guidance.'
-            : 'Mengkhatamkan Al-Qur\'an sebanyak 3 kali (18.708 ayat). Hati senantiasa terbasuh cahaya kalam Ilahi.',
-        fadhilah: lang == 'en'
-            ? '"Tranquility descends and divine mercy envelops those who constantly recite the Book of Allah." (Muslim)'
-            : '"Ketenangan (sakinah) turun dan rahmat Ilahi senantiasa menaungi hamba yang teguh membaca firman Allah." (HR. Muslim)',
-        icon: Icons.auto_awesome_rounded,
-        isUnlocked: khatm >= 3,
-        progress: (khatm / 3).clamp(0.0, 1.0),
-        progressLabel: '$khatm / 3 Khatam',
-        pointsReward: 1000,
-        rarity: BadgeRarity.epic,
-      ),
-      SpiritualBadge(
-        id: 'quran_khatam_4',
-        category: 'quran',
-        title: lang == 'en'
-            ? '4x Khatam • Guardian of Light'
-            : '4x Khatam • Penjaga Cahaya',
-        description: lang == 'en'
-            ? 'Complete 4 full Khatam cycles (24,944 ayahs). A steadfast spiritual shield guarding the soul.'
-            : 'Mengkhatamkan Al-Qur\'an sebanyak 4 kali (24.944 ayat). Benteng kokoh pelindung jiwa dari kelalaian duniawi.',
+            ? '3–4x Khatam: Steady rhythm protecting your time and heart from digital distractions.'
+            : '3–4x Khatam: Ritme tilawah semakin kokoh dan menjadi perisai jiwa dari distraksi digital yang melalaikan.',
         fadhilah: lang == 'en'
             ? '"The one who is proficient in the recitation of the Qur\'an will be with the noble, obedient angels." (Bukhari & Muslim)'
             : '"Orang yang mahir dan istiqomah membaca Al-Qur\'an kelak bersama para malaikat yang mulia lagi taat." (HR. Bukhari & Muslim)',
         icon: Icons.shield_rounded,
-        isUnlocked: khatm >= 4,
-        progress: (khatm / 4).clamp(0.0, 1.0),
-        progressLabel: '$khatm / 4 Khatam',
+        isUnlocked: khatm >= 3,
+        progress: (khatm / 3).clamp(0.0, 1.0),
+        progressLabel: '$khatm / 3 Khatam',
         pointsReward: 1500,
-        rarity: BadgeRarity.legendary,
+        rarity: BadgeRarity.epic,
       ),
       SpiritualBadge(
-        id: 'quran_khatam_5',
+        id: 'quran_maqam_5',
         category: 'quran',
         title: lang == 'en'
-            ? '5x Khatam • Ahlul Qur\'an Al-Mubarok'
-            : '5x Khatam • Ahlul Qur\'an Al-Mubarok',
+            ? 'Level 5 • Ahlul Qur\'an Al-Mubarok'
+            : 'Tingkat 5 • Ahlul Qur\'an Al-Mubarok',
         description: lang == 'en'
-            ? 'Attain 5x Khatam (31,180 ayahs) - The highest spiritual Maqam Tier 5.'
-            : 'Mencapai 5x Khatam (31.180 ayat) - Puncak tertinggi Maqam Ahlul Qur\'an.',
+            ? '5x+ Khatam: The summit of lifelong devotion living with divine guidance every day.'
+            : '5x+ Khatam: Puncak kemuliaan insan yang senantiasa hidup, membaca, dan mengamalkan kalam Ilahi setiap harinya.',
         fadhilah: lang == 'en'
             ? '"Indeed, Allah has His own people among mankind: the People of the Qur\'an, they are the people of Allah and His special ones." (Ibn Majah)'
             : '"Sesungguhnya Allah memiliki keluarga dari kalangan manusia: yaitu Ahlul Qur\'an, mereka adalah keluarga Allah dan orang-orang khusus-Nya." (HR. Ibnu Majah)',
-        icon: Icons.military_tech_rounded,
+        icon: Icons.workspace_premium_rounded,
         isUnlocked: khatm >= 5,
         progress: (khatm / 5).clamp(0.0, 1.0),
         progressLabel: '$khatm / 5 Khatam',

@@ -140,17 +140,19 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify all 5 Khatam tier badges exist
-      expect(find.text('1x Khatam • Al-Mubtadi\' Al-Karim'), findsOneWidget);
-      expect(find.text('2x Khatam • Sahabat Al-Qur\'an'), findsOneWidget);
-      expect(find.text('3x Khatam • Pelita Hati'), findsOneWidget);
-      expect(find.text('4x Khatam • Penjaga Cahaya'), findsOneWidget);
-      expect(find.text('5x Khatam • Ahlul Qur\'an Al-Mubarok'), findsOneWidget);
+      expect(find.text('Tingkat 1 • Pejuang Istiqomah'), findsOneWidget);
+      expect(find.text('Tingkat 2 • Al-Mubtadi\' Al-Karim'), findsOneWidget);
+      expect(find.text('Tingkat 3 • Sahabat Al-Qur\'an'), findsOneWidget);
+      expect(find.text('Tingkat 4 • Penjaga Cahaya'), findsOneWidget);
+      expect(find.text('Tingkat 5 • Ahlul Qur\'an Al-Mubarok'), findsOneWidget);
 
-      // Verify 1x Khatam is unlocked (displays 'Tercapai' because khatmCount was 1 in setUp)
+      // Verify Tingkat 1 and Tingkat 2 are unlocked (display 'Tercapai' because khatmCount was 1 in setUp)
       expect(find.text('Tercapai'), findsWidgets);
-      // Verify 2x Khatam has progress 1 / 2 Khatam
+      // Verify Tingkat 3 has progress 1 / 2 Khatam
       expect(find.text('1 / 2 Khatam'), findsOneWidget);
-      // Verify 5x Khatam has progress 1 / 5 Khatam
+      // Verify Tingkat 4 has progress 1 / 3 Khatam
+      expect(find.text('1 / 3 Khatam'), findsOneWidget);
+      // Verify Tingkat 5 has progress 1 / 5 Khatam
       expect(find.text('1 / 5 Khatam'), findsOneWidget);
     });
   });

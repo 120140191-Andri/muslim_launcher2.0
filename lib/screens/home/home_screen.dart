@@ -22,6 +22,7 @@ import '../../utils/quran_progress_helper.dart';
 import '../../widgets/language_selection_dialog.dart';
 import '../../widgets/growth_tree_widget.dart';
 import '../../services/analytics_service.dart';
+import '../../services/streak_notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -119,6 +120,10 @@ class _HomeScreenState extends State<HomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final appState = Provider.of<AppState>(context, listen: false);
+
+      // Minta izin notifikasi saat pertama kali masuk ke home screen
+      _checkNotificationPermission(appState);
+
       AppListScreen.preload(
         onRawAppsFetched: (raw) {
           if (mounted) appState.syncAppsWithCategories(raw);
@@ -132,6 +137,18 @@ class _HomeScreenState extends State<HomeScreen>
         _checkAccessibilityStatus();
       }).catchError((_) {});
     });
+  }
+
+  Future<void> _checkNotificationPermission(AppState appState) async {
+    if (!appState.hasRequestedNotificationPermission) {
+      await appState.setHasRequestedNotificationPermission(true);
+      final granted = await StreakNotificationService.requestPermission(
+        navigatorKey: appState.navigatorKey,
+      );
+      if (granted && appState.isStreakReminderEnabled) {
+        await StreakNotificationService.checkAndSyncReminder(appState);
+      }
+    }
   }
 
   Future<void> _checkAccessibilityStatus() async {
@@ -275,12 +292,15 @@ class _HomeScreenState extends State<HomeScreen>
         children: [
           Icon(icon, color: Colors.amber, size: 14),
           const SizedBox(width: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 11.5,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 11.5,
+              ),
             ),
           ),
         ],
@@ -430,94 +450,100 @@ class _HomeScreenState extends State<HomeScreen>
                                         child: _GreetingWidget(lang: lang),
                                       ),
                                       const SizedBox(width: 8),
-                                      Row(
-                                        children: [
-                                          Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              onTap: () =>
-                                                  LanguageSelectionDialog.show(
-                                                    context,
+                                      Flexible(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  onTap: () =>
+                                                      LanguageSelectionDialog.show(
+                                                        context,
+                                                      ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 6,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white.withValues(
+                                                        alpha: 0.18,
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(16),
+                                                      border: Border.all(
+                                                        color: Colors.white.withValues(
+                                                          alpha: 0.25,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        const Icon(
+                                                          Icons.language_rounded,
+                                                          color: Colors.white,
+                                                          size: 15,
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                          lang.toUpperCase(),
+                                                          style: const TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 11,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 10,
-                                                  vertical: 6,
                                                 ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white.withValues(
-                                                    alpha: 0.18,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  onTap: () => appState
+                                                      .navigatorKey.currentState
+                                                      ?.push(
+                                                    AppPageRoute(
+                                                      child:
+                                                          const ReadingHistoryScreen(),
+                                                    ),
                                                   ),
                                                   borderRadius:
                                                       BorderRadius.circular(16),
-                                                  border: Border.all(
-                                                    color: Colors.white.withValues(
-                                                      alpha: 0.25,
-                                                    ),
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    const Icon(
-                                                      Icons.language_rounded,
-                                                      color: Colors.white,
-                                                      size: 15,
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      lang.toUpperCase(),
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 11,
-                                                        fontWeight: FontWeight.bold,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.all(8),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white.withValues(
+                                                        alpha: 0.18,
                                                       ),
+                                                      shape: BoxShape.circle,
                                                     ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              onTap: () => appState
-                                                  .navigatorKey.currentState
-                                                  ?.push(
-                                                AppPageRoute(
-                                                  child:
-                                                      const ReadingHistoryScreen(),
-                                                ),
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              child: Container(
-                                                padding: const EdgeInsets.all(8),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white.withValues(
-                                                    alpha: 0.18,
+                                                    child: const Icon(
+                                                      Icons.history_rounded,
+                                                      color: Colors.white,
+                                                      size: 18,
+                                                    ),
                                                   ),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(
-                                                  Icons.history_rounded,
-                                                  color: Colors.white,
-                                                  size: 18,
                                                 ),
                                               ),
-                                            ),
+                                              const SizedBox(width: 8),
+                                              _buildHeaderBadge(
+                                                context: context,
+                                                icon: Icons.stars_rounded,
+                                                value: "${appState.points} Pts",
+                                                color: Colors.amber,
+                                              ),
+                                            ],
                                           ),
-                                          const SizedBox(width: 8),
-                                          _buildHeaderBadge(
-                                            context: context,
-                                            icon: Icons.stars_rounded,
-                                            value: "${appState.points} Pts",
-                                            color: Colors.amber,
-                                          ),
-                                        ],
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -1003,9 +1029,7 @@ class _HomeScreenState extends State<HomeScreen>
 
     final dzikirLabel = lang == 'ar'
         ? 'ذكر'
-        : lang == 'ms'
-        ? 'Zikir'
-        : lang == 'id'
+        : (lang == 'id' || lang == 'ms')
         ? 'Dzikir'
         : 'Dhikr';
 
@@ -1264,41 +1288,44 @@ class _ClockWidgetState extends State<_ClockWidget> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              _hourString,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 84,
-                fontWeight: FontWeight.bold,
-                height: 1,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                ':',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontSize: 54,
-                  fontWeight: FontWeight.w200,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                _hourString,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 84,
+                  fontWeight: FontWeight.bold,
+                  height: 1,
                 ),
               ),
-            ),
-            Text(
-              _minuteString,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 72,
-                fontWeight: FontWeight.w300,
-                height: 1,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  ':',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 54,
+                    fontWeight: FontWeight.w200,
+                  ),
+                ),
               ),
-            ),
-          ],
+              Text(
+                _minuteString,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 72,
+                  fontWeight: FontWeight.w300,
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         Container(
@@ -1450,8 +1477,9 @@ class _QuickDock extends StatelessWidget {
     items.add(_buildTrophyButton(context));
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: 4,
+        horizontal: 8,
         vertical: 12,
       ),
       decoration: BoxDecoration(
@@ -1467,7 +1495,18 @@ class _QuickDock extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: items.map((w) => Flexible(child: w)).toList(),
+        children: items
+            .map(
+              (w) => Flexible(
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: w,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -1979,58 +2018,63 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: isDoneToday
-                            ? const Color(0xFF10B981)
-                            : accentColor.withValues(alpha: 0.12 + 0.10 * pulseVal),
-                        borderRadius: BorderRadius.circular(6),
-                        border: isCalling
-                            ? Border.all(
-                                color: accentColor.withValues(alpha: 0.35 + 0.35 * pulseVal),
-                                width: 0.8,
-                              )
-                            : null,
-                        boxShadow: isCalling
-                            ? [
-                                BoxShadow(
-                                  color: accentColor.withValues(alpha: 0.25 * pulseVal),
-                                  blurRadius: 4 * pulseVal,
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (isCalling) ...[
-                            Container(
-                              width: 4.5,
-                              height: 4.5,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: accentColor,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: accentColor.withValues(alpha: 0.4 + 0.6 * pulseVal),
-                                    blurRadius: 3 + 3 * pulseVal,
-                                    spreadRadius: 0.5 * pulseVal,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 3),
-                          ],
-                          Text(
-                            isDoneToday ? statusDone : statusPending,
-                            style: TextStyle(
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.bold,
-                              color: isDoneToday ? Colors.white : accentColor,
-                            ),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: isDoneToday
+                                ? const Color(0xFF10B981)
+                                : accentColor.withValues(alpha: 0.12 + 0.10 * pulseVal),
+                            borderRadius: BorderRadius.circular(6),
+                            border: isCalling
+                                ? Border.all(
+                                    color: accentColor.withValues(alpha: 0.35 + 0.35 * pulseVal),
+                                    width: 0.8,
+                                  )
+                                : null,
+                            boxShadow: isCalling
+                                ? [
+                                    BoxShadow(
+                                      color: accentColor.withValues(alpha: 0.25 * pulseVal),
+                                      blurRadius: 4 * pulseVal,
+                                    ),
+                                  ]
+                                : null,
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isCalling) ...[
+                                Container(
+                                  width: 4.5,
+                                  height: 4.5,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: accentColor,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: accentColor.withValues(alpha: 0.4 + 0.6 * pulseVal),
+                                        blurRadius: 3 + 3 * pulseVal,
+                                        spreadRadius: 0.5 * pulseVal,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 3),
+                              ],
+                              Text(
+                                isDoneToday ? statusDone : statusPending,
+                                style: TextStyle(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDoneToday ? Colors.white : accentColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -2098,26 +2142,31 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                     ),
                     if (isCalling) ...[
                       const SizedBox(width: 4),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            icon == Icons.menu_book_rounded ? t('streak_read_cta') : t('streak_dzikir_cta'),
-                            style: TextStyle(
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.bold,
-                              color: accentColor,
-                            ),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                icon == Icons.menu_book_rounded ? t('streak_read_cta') : t('streak_dzikir_cta'),
+                                style: TextStyle(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: accentColor,
+                                ),
+                              ),
+                              Transform.translate(
+                                offset: Offset(isAr ? -1.5 * pulseVal : 1.5 * pulseVal, 0),
+                                child: Icon(
+                                  isAr ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+                                  size: 11,
+                                  color: accentColor,
+                                ),
+                              ),
+                            ],
                           ),
-                          Transform.translate(
-                            offset: Offset(isAr ? -1.5 * pulseVal : 1.5 * pulseVal, 0),
-                            child: Icon(
-                              isAr ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
-                              size: 11,
-                              color: accentColor,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ],

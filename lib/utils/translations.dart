@@ -227,7 +227,7 @@ class Translations {
       'claim_all': 'Klaim Semua',
       'claim_pts': 'Klaim +{pts}',
       'streak_daily_tilawah': 'ISTIQOMAH TILAWAH HARIAN',
-      'streak_daily_dzikir': 'ISTIQOMAH Dzikir HARIAN',
+      'streak_daily_dzikir': 'ISTIQOMAH DZIKIR HARIAN',
       'streak_best': 'Rekor: {n} Hari',
       'streak_days_row': '{n} Hari Berturut-turut',
       'streak_start_today_quran': 'Mulai hari ini: Minimal 1 ayat',
@@ -237,7 +237,7 @@ class Translations {
       'streak_open_quran': 'Buka Al-Qur\'an',
       'streak_open_dzikir': 'Buka Menu Dzikir',
       'streak_tab_tilawah': 'Tilawah ({n}h)',
-      'streak_tab_dzikir': 'Zikir ({n}h)',
+      'streak_tab_dzikir': 'Dzikir ({n}h)',
       'daily_reminder_title': 'Pengingat Harian (20:00)',
       'daily_reminder_desc': 'Ingatkan jika belum istiqomah',
       // Notification content
@@ -262,7 +262,7 @@ class Translations {
       'streak_read_cta': 'Yuk baca',
       'streak_dzikir_cta': 'Yuk Dzikir',
       'streak_tilawah_title': 'Tilawah',
-      'streak_dhikr_title': 'Zikir',
+      'streak_dhikr_title': 'Dzikir',
     },
     'en': {
       'language_selection': 'Select Language',
@@ -605,7 +605,7 @@ class Translations {
       'reading_hadith_progress': 'Sedang Membaca & Mentadabbur',
       'all_hadiths_read': 'Semua Hadis Telah Selesai Dibaca!',
       'hadith_completed': 'Selesai',
-      'dzikir': 'Zikir & Tasbih',
+      'dzikir': 'Dzikir & Tasbih',
       'dzikir_mode_title': 'Mod Dzikir Khusyuk',
       'dzikir_tap_instruction': 'Ketik bulatan dengan tenang untuk berzikir',
       'dzikir_face_detected': 'Wajah Dikesan (Boleh pejam mata)',
@@ -756,7 +756,7 @@ class Translations {
       'streak_open_quran': 'Buka Al-Quran',
       'streak_open_dzikir': 'Buka Menu Dzikir',
       'streak_tab_tilawah': 'Tilawah ({n}h)',
-      'streak_tab_dzikir': 'Zikir ({n}h)',
+      'streak_tab_dzikir': 'Dzikir ({n}h)',
       'daily_reminder_title': 'Peringatan Harian (20:00)',
       'daily_reminder_desc': 'Ingatkan jika belum istiqomah',
       // Notification content
@@ -766,7 +766,7 @@ class Translations {
       'notif_quran_title': 'Masa untuk Tilawah Hari Ini! 🔥',
       'notif_quran_body':
           'Streak tilawah anda sedang berjalan! Luangkan 1 minit untuk membaca sekurang-kurangnya 1 ayat hari ini.',
-      'notif_dzikir_title': 'Sempatkanlah Berzikir Hari Ini! ✨',
+      'notif_dzikir_title': 'Sempatkanlah Berdzikir Hari Ini! ✨',
       'notif_dzikir_body':
           'Lengkapkan sekurang-kurangnya 1 pusingan (33x) Dzikir tasbih agar streak Dzikir anda tidak terputus.',
       // Home screen streak card labels
@@ -781,7 +781,7 @@ class Translations {
       'streak_read_cta': 'Jom baca',
       'streak_dzikir_cta': 'Jom Dzikir',
       'streak_tilawah_title': 'Tilawah',
-      'streak_dhikr_title': 'Zikir',
+      'streak_dhikr_title': 'Dzikir',
     },
     'ar': {
       'language_selection': 'اختر اللغة',

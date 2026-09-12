@@ -77,10 +77,10 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final state = Provider.of<AppState>(context, listen: false);
-      StreakNotificationService.initialize(navigatorKey: state.navigatorKey);
-      StreakNotificationService.checkAndSyncReminder(state);
+      await StreakNotificationService.initialize(navigatorKey: state.navigatorKey);
+      await StreakNotificationService.checkAndSyncReminder(state);
     });
   }
 
@@ -160,7 +160,7 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
         final clampedMediaQuery = mediaQuery.copyWith(
           textScaler: mediaQuery.textScaler.clamp(
             minScaleFactor: 0.85,
-            maxScaleFactor: 1.15,
+            maxScaleFactor: 1.0,
           ),
         );
 

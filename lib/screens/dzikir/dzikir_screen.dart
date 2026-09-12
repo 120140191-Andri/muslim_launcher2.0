@@ -147,7 +147,7 @@ final List<DzikirPreset> kDzikirPresets = [
     virtues: {
       'id': 'Dzikir yang paling utama dan kunci utama pintu surga. (HR. Tirmidzi)',
       'en': 'The most superior dhikr and the key to Paradise. (Tirmidhi)',
-      'ms': 'Zikir yang paling utama dan kunci utama pintu syurga. (HR. Tirmizi)',
+      'ms': 'Dzikir yang paling utama dan kunci utama pintu syurga. (HR. Tirmizi)',
       'ar': 'أفضل الذكر لا إله إلا الله (رواه الترمذي)',
       'af': 'Die voortreflikste gedenking en die sleutel tot die Paradys.',
       'sw': 'Dhikri bora zaidi na ufunguo mkuu wa Pepo.',

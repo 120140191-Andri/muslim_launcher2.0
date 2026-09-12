@@ -109,6 +109,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     final maxQuranStreak = appState.maxQuranDailyStreak;
     final currentDzikirStreak = appState.dzikirDailyStreak;
     final maxDzikirStreak = appState.maxDzikirDailyStreak;
+    final currentDisciplineStreak = appState.disciplineDailyStreak;
+    final maxDisciplineStreak = appState.maxDisciplineDailyStreak;
     final hasReadAyah = appState.highestSurahIndex > 0 ||
         appState.highestAyahIndex >= 0 ||
         khatm > 0;
@@ -436,7 +438,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         title: lang == 'en' ? 'Moistening the Tongue' : 'Basahi Lisan',
         description: lang == 'en'
             ? 'Complete your first digital tasbih count.'
-            : 'Memulai zikir tasbih pertama kali.',
+            : 'Memulai dzikir tasbih pertama kali.',
         fadhilah: lang == 'en'
             ? '"Keep your tongue constantly moist with the remembrance of Allah." (Tirmidhi)'
             : '"Senantiasalah lisanmu basah karena mengingat Allah." (HR. Tirmidzi)',
@@ -450,10 +452,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       SpiritualBadge(
         id: 'dzikir_streak_1',
         category: 'dzikir',
-        title: lang == 'en' ? 'Day 1 Dhikr Habit' : 'Istiqomah Zikir 1 Hari',
+        title: lang == 'en' ? 'Day 1 Dhikr Habit' : 'Istiqomah Dzikir 1 Hari',
         description: lang == 'en'
             ? 'Complete at least 1 round of digital dhikr (33x) today to establish your daily remembrance streak.'
-            : 'Tuntaskan minimal 1 putaran zikir tasbih (33x) hari ini untuk menyalakan istiqomah zikir.',
+            : 'Tuntaskan minimal 1 putaran dzikir tasbih (33x) hari ini untuk menyalakan istiqomah dzikir.',
         fadhilah: lang == 'en'
             ? '"Keep your tongue constantly moist with the remembrance of Allah." (Tirmidhi)'
             : '"Senantiasalah lisanmu basah karena mengingat Allah." (HR. Tirmidzi)',
@@ -469,13 +471,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       SpiritualBadge(
         id: 'dzikir_streak_3',
         category: 'dzikir',
-        title: lang == 'en' ? '3-Day Dhikr Streak' : 'Istiqomah Zikir 3 Hari',
+        title: lang == 'en' ? '3-Day Dhikr Streak' : 'Istiqomah Dzikir 3 Hari',
         description: lang == 'en'
             ? 'Complete at least 1 round of dhikr (33x) daily for 3 consecutive days.'
             : 'Rutin bertasbih minimal 1 putaran (33x) setiap hari selama 3 hari berturut-turut.',
         fadhilah: lang == 'en'
             ? '"The similitude of the one who remembers his Lord and the one who does not is like that of the living and the dead." (Bukhari)'
-            : '"Perumpamaan orang yang berzikir kepada Tuhannya dan yang tidak, seperti orang hidup dan orang mati." (HR. Bukhari)',
+            : '"Perumpamaan orang yang berdzikir kepada Tuhannya dan yang tidak, seperti orang hidup dan orang mati." (HR. Bukhari)',
         icon: Icons.local_fire_department_rounded,
         isUnlocked: maxDzikirStreak >= 3,
         progress: (maxDzikirStreak >= 3) ? 1.0 : (currentDzikirStreak / 3).clamp(0.0, 1.0),
@@ -488,7 +490,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       SpiritualBadge(
         id: 'dzikir_streak_7',
         category: 'dzikir',
-        title: lang == 'en' ? '7-Day Dhikr Steadfast (1 Week)' : 'Istiqomah Zikir 7 Hari (1 Pekan)',
+        title: lang == 'en' ? '7-Day Dhikr Steadfast (1 Week)' : 'Istiqomah Dzikir 7 Hari (1 Pekan)',
         description: lang == 'en'
             ? 'Consistently recite at least 1 round of dhikr (33x) every day for 7 consecutive days.'
             : 'Konsisten bertasbih minimal 1 putaran (33x) setiap hari selama 7 hari berturut-turut tanpa terputus.',
@@ -507,10 +509,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       SpiritualBadge(
         id: 'dzikir_streak_14',
         category: 'dzikir',
-        title: lang == 'en' ? '14-Day Dhikr Devotion (2 Weeks)' : 'Istiqomah Zikir 14 Hari (2 Pekan)',
+        title: lang == 'en' ? '14-Day Dhikr Devotion (2 Weeks)' : 'Istiqomah Dzikir 14 Hari (2 Pekan)',
         description: lang == 'en'
             ? 'Keep your heart anchored in daily dhikr (min. 33x) for 14 consecutive days.'
-            : 'Menjaga lisan berzikir minimal 1 putaran (33x) selama 14 hari penuh berturut-turut.',
+            : 'Menjaga lisan berdzikir minimal 1 putaran (33x) selama 14 hari penuh berturut-turut.',
         fadhilah: lang == 'en'
             ? '"Unquestionably, by the remembrance of Allah hearts are assured." (Ar-Ra\'d: 28)'
             : '"Ingatlah, hanya dengan mengingat Allah hati menjadi tenteram." (QS. Ar-Ra\'d: 28)',
@@ -526,13 +528,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       SpiritualBadge(
         id: 'dzikir_streak_30',
         category: 'dzikir',
-        title: lang == 'en' ? '30-Day Dhikr Habit (1 Month)' : 'Istiqomah Zikir Sebulan (30 Hari)',
+        title: lang == 'en' ? '30-Day Dhikr Habit (1 Month)' : 'Istiqomah Dzikir Sebulan (30 Hari)',
         description: lang == 'en'
             ? 'A full month of daily dhikr devotion (min. 33x/day) without missing a single day.'
             : 'Sebulan penuh menghiasi hari-hari dengan tasbih (min. 33x/hari) tanpa jeda.',
         fadhilah: lang == 'en'
             ? '"Shall I tell you of the best of your deeds and the purest in the sight of your Lord? Remembrance of Allah." (Tirmidhi)'
-            : '"Maukah kuberitahu amalan terbaik dan tersuci di sisi Tuhanmu? Yaitu senantiasa berzikir mengingat Allah." (HR. Tirmidzi)',
+            : '"Maukah kuberitahu amalan terbaik dan tersuci di sisi Tuhanmu? Yaitu senantiasa berdzikir mengingat Allah." (HR. Tirmidzi)',
         icon: Icons.military_tech_rounded,
         isUnlocked: maxDzikirStreak >= 30,
         progress: (maxDzikirStreak >= 30) ? 1.0 : (currentDzikirStreak / 30).clamp(0.0, 1.0),
@@ -545,13 +547,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       SpiritualBadge(
         id: 'dzikir_streak_365',
         category: 'dzikir',
-        title: lang == 'en' ? '1-Year Legendary Dhikr (365 Days)' : 'Istiqomah Zikir 1 Tahun (365 Hari)',
+        title: lang == 'en' ? '1-Year Legendary Dhikr (365 Days)' : 'Istiqomah Dzikir 1 Tahun (365 Hari)',
         description: lang == 'en'
             ? 'Legendary milestone: Recite at least 1 round of dhikr (33x) every single day for 365 consecutive days.'
-            : 'Pencapaian agung ahli zikir: Membaca tasbih minimal 1 putaran (33x) setiap hari selama 365 hari penuh tanpa terlewat.',
+            : 'Pencapaian agung ahli dzikir: Membaca tasbih minimal 1 putaran (33x) setiap hari selama 365 hari penuh tanpa terlewat.',
         fadhilah: lang == 'en'
             ? '"The men who remember Allah often and the women who do so - for them Allah has prepared forgiveness and a great reward." (Al-Ahzab: 35)'
-            : '"Laki-laki dan perempuan yang banyak berzikir mengingat Allah, Allah sediakan ampunan dan pahala yang besar." (QS. Al-Ahzab: 35)',
+            : '"Laki-laki dan perempuan yang banyak berdzikir mengingat Allah, Allah sediakan ampunan dan pahala yang besar." (QS. Al-Ahzab: 35)',
         icon: Icons.diamond_rounded,
         isUnlocked: maxDzikirStreak >= 365,
         progress: (maxDzikirStreak >= 365) ? 1.0 : (currentDzikirStreak / 365).clamp(0.0, 1.0),
@@ -615,74 +617,154 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
       // ── DISIPLIN & GHADHUL BASHAR ──
       SpiritualBadge(
-        id: 'focus_guardian',
-        category: 'focus',
-        title: lang == 'en' ? 'Guardian of Gaze' : 'Penjaga Pandangan',
-        description: lang == 'en'
-            ? 'Active protective barrier guarding vision from harmful digital content.'
-            : 'Pelindung aktif dari paparan konten digital yang melalaikan.',
-        fadhilah: lang == 'en'
-            ? '"Tell the believing men to lower their gaze and guard their modesty." (An-Nur: 30)'
-            : '"Katakanlah kepada orang laki-laki yang beriman: Hendaklah mereka menahan pandangannya, dan memelihara kemaluannya." (QS. An-Nur: 30)',
-        icon: Icons.visibility_rounded,
-        isUnlocked: appState.hasSeenAccessibilitySetup || points > 0,
-        progress: (appState.hasSeenAccessibilitySetup || points > 0) ? 1.0 : 0.0,
-        progressLabel: (appState.hasSeenAccessibilitySetup || points > 0)
-            ? 'Aktif'
-            : 'Siap',
-        pointsReward: 15,
-        rarity: BadgeRarity.common,
-      ),
-      SpiritualBadge(
-        id: 'focus_shield',
-        category: 'focus',
-        title: lang == 'en' ? 'Digital Fortress' : 'Benteng Digital',
-        description: lang == 'en'
-            ? 'Block distracting or time-wasting apps to safeguard worship time.'
-            : 'Memilih dan memblokir aplikasi adiktif untuk menjaga fokus ibadah.',
-        fadhilah: lang == 'en'
-            ? 'Controlling screen time gives you hours of real blessings and focus.'
-            : 'Mengendalikan waktu layar menyelamatkan ratusan jam berharga untuk hal yang bermanfaat.',
-        icon: Icons.shield_rounded,
-        isUnlocked: appState.blockedApps.isNotEmpty,
-        progress: appState.blockedApps.isNotEmpty ? 1.0 : 0.0,
-        progressLabel: '${appState.blockedApps.length} Aplikasi',
-        pointsReward: 20,
-        rarity: BadgeRarity.rare,
-      ),
-      SpiritualBadge(
-        id: 'focus_points_50',
+        id: 'focus_points_250',
         category: 'focus',
         title: lang == 'en' ? 'Redeemer of Time' : 'Penebus Waktu',
         description: lang == 'en'
-            ? 'Accumulate 50 spiritual points through Qur\'an reading & dhikr.'
-            : 'Mengumpulkan 50 poin ibadah dari tilawah Al-Qur\'an dan zikir.',
+            ? 'Accumulate 250 spiritual points through Qur\'an reading & dhikr.'
+            : 'Mengumpulkan 250 poin ibadah dari tilawah Al-Qur\'an dan dzikir.',
         fadhilah: lang == 'en'
             ? 'Your good deeds directly unlock balanced app usage quotas.'
             : 'Ibadahmu membuka kuota aplikasi harian secara proporsional dan seimbang.',
         icon: Icons.stars_rounded,
-        isUnlocked: points >= 50,
-        progress: (points / 50).clamp(0.0, 1.0),
-        progressLabel: '${points.clamp(0, 50)} / 50 Poin',
-        pointsReward: 25,
+        isUnlocked: points >= 250,
+        progress: (points / 250).clamp(0.0, 1.0),
+        progressLabel: '${points.clamp(0, 250)} / 250 Poin',
+        pointsReward: 50,
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
-        id: 'focus_points_500',
+        id: 'focus_points_1000',
         category: 'focus',
         title: lang == 'en' ? 'Abundant Rewards' : 'Kolektor Kebaikan',
         description: lang == 'en'
-            ? 'Earn 500 spiritual points through consistent daily worship.'
-            : 'Mengumpulkan 500 poin ibadah dari ketekunan harian.',
+            ? 'Earn 1,000 spiritual points through consistent daily worship.'
+            : 'Mengumpulkan 1.000 poin ibadah dari ketekunan harian.',
         fadhilah: lang == 'en'
             ? '"The most beloved deed to Allah is the most regular, even if small." (Bukhari)'
             : '"Amalan yang paling dicintai Allah adalah amalan yang rutin dikerjakan walaupun sedikit." (HR. Bukhari)',
         icon: Icons.diamond_rounded,
-        isUnlocked: points >= 500,
-        progress: (points / 500).clamp(0.0, 1.0),
-        progressLabel: '${points.clamp(0, 500)} / 500 Poin',
+        isUnlocked: points >= 1000,
+        progress: (points / 1000).clamp(0.0, 1.0),
+        progressLabel: '${points.clamp(0, 1000)} / 1000 Poin',
+        pointsReward: 150,
+        rarity: BadgeRarity.epic,
+      ),
+
+      // ── DISIPLIN LAYAR & KENDALI DIRI (STREAK <= 50 POIN/HARI) ──
+      SpiritualBadge(
+        id: 'focus_streak_3',
+        category: 'focus',
+        title: lang == 'en' ? '3-Day Screen Discipline' : 'Disiplin Layar 3 Hari',
+        description: lang == 'en'
+            ? 'Spend at most 50 points daily (max 1 hour non-productive apps) for 3 consecutive days.'
+            : 'Maksimal hanya menggunakan 50 poin/hari (1 jam aplikasi non-produktif) selama 3 hari berturut-turut.',
+        fadhilah: lang == 'en'
+            ? '"Part of the perfection of one\'s Islam is leaving what does not concern him." (Tirmidhi)'
+            : '"Di antara kebaikan Islam seseorang adalah meninggalkan hal yang tidak bermanfaat baginya." (HR. Tirmidzi)',
+        icon: Icons.timer_rounded,
+        isUnlocked: maxDisciplineStreak >= 3,
+        progress: (maxDisciplineStreak >= 3) ? 1.0 : (currentDisciplineStreak / 3).clamp(0.0, 1.0),
+        progressLabel: (maxDisciplineStreak >= 3)
+            ? '3 / 3 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDisciplineStreak / 3 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 20,
+        rarity: BadgeRarity.common,
+      ),
+      SpiritualBadge(
+        id: 'focus_streak_7',
+        category: 'focus',
+        title: lang == 'en' ? '7-Day Screen Discipline (1 Week)' : 'Disiplin Layar 7 Hari (1 Pekan)',
+        description: lang == 'en'
+            ? 'Spend at most 50 points daily (max 1 hour non-productive apps) for 7 consecutive days.'
+            : 'Maksimal hanya menggunakan 50 poin/hari (1 jam aplikasi non-produktif) selama 7 hari berturut-turut.',
+        fadhilah: lang == 'en'
+            ? '"Two blessings many people lose: health and free time." (Bukhari)'
+            : '"Dua nikmat yang banyak manusia tertipu di dalamnya: kesehatan dan waktu luang." (HR. Bukhari)',
+        icon: Icons.bolt_rounded,
+        isUnlocked: maxDisciplineStreak >= 7,
+        progress: (maxDisciplineStreak >= 7) ? 1.0 : (currentDisciplineStreak / 7).clamp(0.0, 1.0),
+        progressLabel: (maxDisciplineStreak >= 7)
+            ? '7 / 7 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDisciplineStreak / 7 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 50,
+        rarity: BadgeRarity.rare,
+      ),
+      SpiritualBadge(
+        id: 'focus_streak_14',
+        category: 'focus',
+        title: lang == 'en' ? '14-Day Time Guardian (2 Weeks)' : 'Disiplin Layar 14 Hari (2 Pekan)',
+        description: lang == 'en'
+            ? 'Keep non-productive screen time at or under 1 hour (<= 50 pts/day) for 14 consecutive days.'
+            : 'Maksimal hanya menggunakan 50 poin/hari (1 jam aplikasi non-produktif) selama 14 hari berturut-turut.',
+        fadhilah: lang == 'en'
+            ? '"By time, indeed, mankind is in loss, except for those who believe and do righteous deeds." (Al-\'Asr: 1-3)'
+            : '"Demi masa. Sesungguhnya manusia itu benar-benar dalam kerugian, kecuali orang-orang yang beriman dan beramal saleh." (QS. Al-\'Ashr: 1-3)',
+        icon: Icons.health_and_safety_rounded,
+        isUnlocked: maxDisciplineStreak >= 14,
+        progress: (maxDisciplineStreak >= 14) ? 1.0 : (currentDisciplineStreak / 14).clamp(0.0, 1.0),
+        progressLabel: (maxDisciplineStreak >= 14)
+            ? '14 / 14 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDisciplineStreak / 14 ${lang == 'en' ? 'Days' : 'Hari'}',
         pointsReward: 100,
         rarity: BadgeRarity.epic,
+      ),
+      SpiritualBadge(
+        id: 'focus_streak_30',
+        category: 'focus',
+        title: lang == 'en' ? '30-Day Master of Time (1 Month)' : 'Disiplin Layar Sebulan (30 Hari)',
+        description: lang == 'en'
+            ? 'A full month maintaining at most 50 points/day (1 hour non-productive apps).'
+            : 'Sebulan penuh konsisten maksimal hanya menggunakan 50 poin/hari (1 jam aplikasi non-produktif).',
+        fadhilah: lang == 'en'
+            ? '"Time is like a sword: if you do not cut it, it will cut you." (Imam Shafi\'i)'
+            : '"Waktu laksana pedang. Jika engkau tidak memotongnya, maka ia yang akan memotongmu." (Imam Syafi\'i)',
+        icon: Icons.military_tech_rounded,
+        isUnlocked: maxDisciplineStreak >= 30,
+        progress: (maxDisciplineStreak >= 30) ? 1.0 : (currentDisciplineStreak / 30).clamp(0.0, 1.0),
+        progressLabel: (maxDisciplineStreak >= 30)
+            ? '30 / 30 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDisciplineStreak / 30 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 250,
+        rarity: BadgeRarity.epic,
+      ),
+      SpiritualBadge(
+        id: 'focus_streak_60',
+        category: 'focus',
+        title: lang == 'en' ? '60-Day Self-Mastery (2 Months)' : 'Disiplin Layar 2 Bulan (60 Hari)',
+        description: lang == 'en'
+            ? 'Two continuous months limiting non-productive app usage to at most 1 hour (<= 50 pts/day).'
+            : 'Dua bulan penuh disiplin maksimal hanya menggunakan 50 poin/hari (1 jam aplikasi non-produktif).',
+        fadhilah: lang == 'en'
+            ? '"The strong man is not the wrestler, but the one who controls himself in desires." (Bukhari)'
+            : '"Orang yang perkasa bukanlah yang menang bergulat, melainkan yang mampu mengendalikan hawa nafsunya." (HR. Bukhari)',
+        icon: Icons.workspace_premium_rounded,
+        isUnlocked: maxDisciplineStreak >= 60,
+        progress: (maxDisciplineStreak >= 60) ? 1.0 : (currentDisciplineStreak / 60).clamp(0.0, 1.0),
+        progressLabel: (maxDisciplineStreak >= 60)
+            ? '60 / 60 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDisciplineStreak / 60 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 500,
+        rarity: BadgeRarity.legendary,
+      ),
+      SpiritualBadge(
+        id: 'focus_streak_90',
+        category: 'focus',
+        title: lang == 'en' ? '90-Day Digital Legend (3 Months)' : 'Legenda Disiplin Layar (90 Hari)',
+        description: lang == 'en'
+            ? 'Legendary focus milestone: 90 consecutive days using at most 50 points/day (1 hour non-productive apps).'
+            : 'Pencapaian legendaris: 90 hari berturut-turut konsisten maksimal hanya menggunakan 50 poin/hari (1 jam aplikasi non-produktif).',
+        fadhilah: lang == 'en'
+            ? '"Take benefit of five before five: your youth before your old age, health before illness, and free time before preoccupation." (Al-Hakim)'
+            : '"Manfaatkan lima perkara sebelum lima perkara: waktu mudamu sebelum tuamu, sehatmu sebelum sakitmu, dan luangmu sebelum sibukmu." (HR. Al-Hakim)',
+        icon: Icons.diamond_rounded,
+        isUnlocked: maxDisciplineStreak >= 90,
+        progress: (maxDisciplineStreak >= 90) ? 1.0 : (currentDisciplineStreak / 90).clamp(0.0, 1.0),
+        progressLabel: (maxDisciplineStreak >= 90)
+            ? '90 / 90 ${lang == 'en' ? 'Days' : 'Hari'}'
+            : '$currentDisciplineStreak / 90 ${lang == 'en' ? 'Days' : 'Hari'}',
+        pointsReward: 1000,
+        rarity: BadgeRarity.legendary,
       ),
     ].map((b) => SpiritualBadge(
       id: b.id,
@@ -1161,32 +1243,39 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 16),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  '${_t(lang, 'maqam_label')} $currentLevel ${_t(lang, 'maqam_suffix')}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${_t(lang, 'maqam_label')} $currentLevel ${_t(lang, 'maqam_suffix')}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
+                      const SizedBox(width: 8),
                       InkWell(
                         onTap: () => QuranProgressHelper.showKhatamLevelInfoModal(context, lang, khatm),
                         borderRadius: BorderRadius.circular(12),
@@ -1305,13 +1394,18 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        _t(lang, 'sanctuary_bloom'),
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: Colors.white.withValues(alpha: 0.85),
+                      Expanded(
+                        child: Text(
+                          _t(lang, 'sanctuary_bloom'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         '${(combinedProgress * 100).toStringAsFixed(1)}%',
                         style: const TextStyle(
@@ -1397,15 +1491,20 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  _t(lang, 'lifetime_badges'),
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                    color: colorScheme.onSurfaceVariant,
+                Expanded(
+                  child: Text(
+                    _t(lang, 'lifetime_badges'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   '$unlockedCount / ${allBadges.length} ${_t(lang, 'earned_count')}',
                   style: TextStyle(
@@ -1540,12 +1639,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         children: [
                           const Icon(Icons.menu_book_rounded, size: 14, color: Color(0xFFEA580C)),
                           const SizedBox(width: 5),
-                          Text(
-                            _t(lang, 'streak_tab_tilawah', {'n': '${appState.quranDailyStreak}'}),
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: isQuran ? FontWeight.bold : FontWeight.w500,
-                              color: isQuran ? const Color(0xFFC2410C) : colorScheme.onSurfaceVariant,
+                          Flexible(
+                            child: Text(
+                              _t(lang, 'streak_tab_tilawah', {'n': '${appState.quranDailyStreak}'}),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: isQuran ? FontWeight.bold : FontWeight.w500,
+                                color: isQuran ? const Color(0xFFC2410C) : colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                         ],
@@ -1583,12 +1686,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         children: [
                           const Icon(Icons.grain_rounded, size: 14, color: Color(0xFF4F46E5)),
                           const SizedBox(width: 5),
-                          Text(
-                            _t(lang, 'streak_tab_dzikir', {'n': '${appState.dzikirDailyStreak}'}),
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: !isQuran ? FontWeight.bold : FontWeight.w500,
-                              color: !isQuran ? const Color(0xFF4338CA) : colorScheme.onSurfaceVariant,
+                          Flexible(
+                            child: Text(
+                              _t(lang, 'streak_tab_dzikir', {'n': '${appState.dzikirDailyStreak}'}),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: !isQuran ? FontWeight.bold : FontWeight.w500,
+                                color: !isQuran ? const Color(0xFF4338CA) : colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                         ],
@@ -1645,17 +1752,22 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    isQuran
-                                        ? _t(lang, 'streak_daily_tilawah')
-                                        : _t(lang, 'streak_daily_dzikir'),
-                                    style: TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.8,
-                                      color: textColor,
+                                  Expanded(
+                                    child: Text(
+                                      isQuran
+                                          ? _t(lang, 'streak_daily_tilawah')
+                                          : _t(lang, 'streak_daily_dzikir'),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.8,
+                                        color: textColor,
+                                      ),
                                     ),
                                   ),
+                                  const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                                     decoration: BoxDecoration(
@@ -1697,13 +1809,18 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _t(lang, 'streak_target', {'n': '$nextTarget'}),
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: colorScheme.onSurfaceVariant,
+                        Flexible(
+                          child: Text(
+                            _t(lang, 'streak_target', {'n': '$nextTarget'}),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           '$currentStreak / $nextTarget ${_t(lang, 'streak_days')}',
                           style: TextStyle(
@@ -1738,32 +1855,35 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           width: 1,
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            isQuran ? Icons.menu_book_rounded : Icons.grain_rounded,
-                            size: 15,
-                            color: darkAccent,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            isQuran
-                                ? _t(lang, 'streak_open_quran')
-                                : _t(lang, 'streak_open_dzikir'),
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.bold,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isQuran ? Icons.menu_book_rounded : Icons.grain_rounded,
+                              size: 15,
                               color: darkAccent,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 14,
-                            color: darkAccent,
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              isQuran
+                                  ? _t(lang, 'streak_open_quran')
+                                  : _t(lang, 'streak_open_dzikir'),
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.bold,
+                                color: darkAccent,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 14,
+                              color: darkAccent,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -1781,42 +1901,50 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      appState.isStreakReminderEnabled
-                          ? Icons.notifications_active_rounded
-                          : Icons.notifications_off_rounded,
-                      size: 16,
-                      color: appState.isStreakReminderEnabled
-                          ? darkAccent
-                          : colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _t(lang, 'daily_reminder_title'),
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
-                          ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        appState.isStreakReminderEnabled
+                            ? Icons.notifications_active_rounded
+                            : Icons.notifications_off_rounded,
+                        size: 16,
+                        color: appState.isStreakReminderEnabled
+                            ? darkAccent
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _t(lang, 'daily_reminder_title'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                            Text(
+                              _t(lang, 'daily_reminder_desc'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          _t(lang, 'daily_reminder_desc'),
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Transform.scale(
                   scale: 0.8,
                   child: Switch(
@@ -1868,22 +1996,28 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              color: colorScheme.onSurfaceVariant,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 10.5,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -2079,11 +2213,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           ],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Badge Icon Circle
+            // Badge Icon Circle (Proportional 46x46)
             Container(
-              width: 50,
-              height: 50,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
@@ -2100,42 +2235,50 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               ),
               child: Icon(
                 badge.icon,
-                size: 26,
+                size: 24,
                 color: badge.isUnlocked
                     ? rarityColor
                     : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
 
             // Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Top Row: Title + Status/Reward Pill
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Text(
                           badge.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 14.5,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.bold,
                             color: colorScheme.onSurface,
                           ),
                         ),
                       ),
-                      if (badge.isUnlocked) ...[
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
+                      const SizedBox(width: 8),
+                      if (badge.isUnlocked)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF10B981)),
+                              const SizedBox(width: 3),
+                              Text(
                                 _t(lang, 'badge_unlocked'),
                                 style: const TextStyle(
                                   fontSize: 10,
@@ -2143,136 +2286,142 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                                   color: Color(0xFF10B981),
                                 ),
                               ),
-                            ),
-                            if (!badge.isClaimed) ...[
-                              const SizedBox(width: 5),
-                              InkWell(
-                                onTap: () async {
-                                  await appState.claimBadgeReward(badge.id, badge.pointsReward, badge.title);
-                                  HapticFeedback.mediumImpact();
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Row(
-                                          children: [
-                                            const Icon(Icons.stars_rounded, color: Colors.amber, size: 18),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                _t(lang, 'claim_badge_success', {'pts': '${badge.pointsReward}', 'title': badge.title}),
-                                                style: const TextStyle(fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        backgroundColor: const Color(0xFF047857),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
-                                  }
-                                },
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF059669), Color(0xFF10B981)],
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF10B981).withValues(alpha: 0.35),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.stars_rounded, size: 10, color: Colors.white),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        _t(lang, 'claim_pts', {'pts': '${badge.pointsReward}'}),
-                                        style: const TextStyle(
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
                             ],
-                          ],
-                        ),
-                      ] else ...[
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                badge.progressLabel,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.stars_rounded, size: 11, color: Color(0xFFD97706)),
+                              const SizedBox(width: 3),
+                              Text(
                                 '+${badge.pointsReward}',
                                 style: const TextStyle(
-                                  fontSize: 9.5,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFFB45309),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ],
                     ],
                   ),
                   const SizedBox(height: 3),
+
+                  // Middle: Description
                   Text(
                     badge.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 11.5,
+                      fontSize: 11,
                       color: colorScheme.onSurfaceVariant,
                       height: 1.3,
                     ),
                   ),
                   const SizedBox(height: 8),
 
-                  // Progress Bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: badge.progress,
-                      minHeight: 4.5,
-                      backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        badge.isUnlocked ? const Color(0xFF10B981) : rarityColor,
+                  // Bottom Row: Progress Bar + Progress Label / Claim Button
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: badge.progress,
+                            minHeight: 5,
+                            backgroundColor: badge.isUnlocked
+                                ? const Color(0xFF10B981).withValues(alpha: 0.18)
+                                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              badge.isUnlocked ? const Color(0xFF10B981) : rarityColor,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      if (badge.isUnlocked && !badge.isClaimed)
+                        InkWell(
+                          onTap: () async {
+                            await appState.claimBadgeReward(badge.id, badge.pointsReward, badge.title);
+                            HapticFeedback.mediumImpact();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.stars_rounded, color: Colors.amber, size: 18),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _t(lang, 'claim_badge_success', {'pts': '${badge.pointsReward}', 'title': badge.title}),
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: const Color(0xFF047857),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF059669), Color(0xFF10B981)],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.stars_rounded, size: 11, color: Colors.white),
+                                const SizedBox(width: 3),
+                                Text(
+                                  _t(lang, 'claim_pts', {'pts': '${badge.pointsReward}'}),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Text(
+                          badge.progressLabel,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: badge.isUnlocked
+                                ? const Color(0xFF10B981)
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),

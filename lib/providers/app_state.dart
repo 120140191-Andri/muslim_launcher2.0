@@ -103,6 +103,7 @@ class AppState extends ChangeNotifier {
   bool _isAccessibilityEnabled = false;
   bool _isDefaultLauncher = false;
   bool _hasSeenAccessibilitySetup = false;
+  bool _hasRequestedNotificationPermission = false;
   bool _hasAcknowledgedAutostart = false;
   String _manufacturer = '';
   String _deviceModel = '';
@@ -150,6 +151,13 @@ class AppState extends ChangeNotifier {
   int _dzikirDailyStreak = 0;
   int _maxDzikirDailyStreak = 0;
   String _lastDzikirDate = '';
+
+  // Persistent Daily Focus / Screen Time Discipline Streak (<= 50 pts/day)
+  int _disciplineDailyStreak = 0;
+  int _maxDisciplineDailyStreak = 0;
+  String _lastDisciplineDate = '';
+  int _dailyPointsSpent = 0;
+  String _dailyPointsSpentDate = '';
 
   // Persistent Streak Notification Settings
   bool _isStreakReminderEnabled = true;
@@ -225,6 +233,20 @@ class AppState extends ChangeNotifier {
   int get maxDzikirDailyStreak => _maxDzikirDailyStreak;
   String get lastDzikirDate => _lastDzikirDate;
 
+  int get disciplineDailyStreak {
+    _checkDailyDiscipline();
+    return _disciplineDailyStreak;
+  }
+  int get rawDisciplineDailyStreak => _disciplineDailyStreak;
+  int get maxDisciplineDailyStreak {
+    _checkDailyDiscipline();
+    return _maxDisciplineDailyStreak;
+  }
+  int get dailyPointsSpent {
+    _checkDailyDiscipline();
+    return _dailyPointsSpent;
+  }
+
   bool get hasReadQuranToday {
     if (_lastQuranReadDate.isEmpty) return false;
     final today = DateTime.now().toIso8601String().split('T')[0];
@@ -284,6 +306,7 @@ class AppState extends ChangeNotifier {
   bool get isAccessibilityEnabled => _isAccessibilityEnabled;
   bool get isDefaultLauncher => _isDefaultLauncher;
   bool get hasSeenAccessibilitySetup => _hasSeenAccessibilitySetup;
+  bool get hasRequestedNotificationPermission => _hasRequestedNotificationPermission;
   bool get hasAcknowledgedAutostart => _hasAcknowledgedAutostart;
   String get manufacturer => _manufacturer;
   String get deviceModel => _deviceModel;
@@ -350,6 +373,7 @@ class AppState extends ChangeNotifier {
     _lastReadSurah = prefs.getString('lastReadSurah') ?? '';
     _lastReadAyahNumber = prefs.getInt('lastReadAyahNumber') ?? 0;
     _hasSeenAccessibilitySetup = prefs.getBool('hasSeenAccessibilitySetup') ?? false;
+    _hasRequestedNotificationPermission = prefs.getBool('hasRequestedNotificationPermission') ?? false;
     _hasAcknowledgedAutostart = prefs.getBool('hasAcknowledgedAutostart') ?? false;
     
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
@@ -367,6 +391,13 @@ class AppState extends ChangeNotifier {
     _isStreakReminderEnabled = prefs.getBool('isStreakReminderEnabled') ?? true;
     _streakReminderHour = prefs.getInt('streakReminderHour') ?? 20;
     _streakReminderMinute = prefs.getInt('streakReminderMinute') ?? 0;
+
+    _disciplineDailyStreak = prefs.getInt('disciplineDailyStreak') ?? 0;
+    _maxDisciplineDailyStreak = prefs.getInt('maxDisciplineDailyStreak') ?? _disciplineDailyStreak;
+    _lastDisciplineDate = prefs.getString('lastDisciplineDate') ?? '';
+    _dailyPointsSpent = prefs.getInt('dailyPointsSpent') ?? 0;
+    _dailyPointsSpentDate = prefs.getString('dailyPointsSpentDate') ?? '';
+    _checkDailyDiscipline();
 
     final savedClaimedBadges = prefs.getStringList('claimedBadgeIds') ?? [];
     _claimedBadgeIds = savedClaimedBadges.toSet();
@@ -3290,6 +3321,8 @@ class AppState extends ChangeNotifier {
       return false;
     }
 
+    await _recordPointsSpentForDiscipline(cost);
+
     notifyListeners();
     return true;
   }
@@ -3334,6 +3367,12 @@ class AppState extends ChangeNotifier {
   Future<void> setHasSeenAccessibilitySetup(bool value) async {
     _hasSeenAccessibilitySetup = value;
     await prefs.setBool('hasSeenAccessibilitySetup', value);
+    notifyListeners();
+  }
+
+  Future<void> setHasRequestedNotificationPermission(bool value) async {
+    _hasRequestedNotificationPermission = value;
+    await prefs.setBool('hasRequestedNotificationPermission', value);
     notifyListeners();
   }
 
@@ -3484,6 +3523,97 @@ class AppState extends ChangeNotifier {
     await prefs.setInt('dzikirDailyStreak', _dzikirDailyStreak);
     await prefs.setInt('maxDzikirDailyStreak', _maxDzikirDailyStreak);
     await prefs.setString('lastDzikirDate', _lastDzikirDate);
+    notifyListeners();
+  }
+
+  void _checkDailyDiscipline() {
+    final now = DateTime.now();
+    final today = now.toIso8601String().split('T')[0];
+
+    // First time initializing: start day 1 of discipline
+    if (_lastDisciplineDate.isEmpty) {
+      _lastDisciplineDate = today;
+      _dailyPointsSpent = 0;
+      _dailyPointsSpentDate = today;
+      _disciplineDailyStreak = 1;
+      _maxDisciplineDailyStreak = 1;
+      prefs.setInt('disciplineDailyStreak', _disciplineDailyStreak);
+      prefs.setInt('maxDisciplineDailyStreak', _maxDisciplineDailyStreak);
+      prefs.setString('lastDisciplineDate', _lastDisciplineDate);
+      prefs.setInt('dailyPointsSpent', _dailyPointsSpent);
+      prefs.setString('dailyPointsSpentDate', _dailyPointsSpentDate);
+      return;
+    }
+
+    // Still same day:
+    if (_dailyPointsSpentDate == today) {
+      if (_dailyPointsSpent > 50 && _disciplineDailyStreak > 0) {
+        _disciplineDailyStreak = 0;
+        prefs.setInt('disciplineDailyStreak', 0);
+      }
+      return;
+    }
+
+    // New day has arrived:
+    final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+
+    if (_dailyPointsSpentDate == yesterday) {
+      // Yesterday finished! Check if yesterday was successful (<= 50 points spent)
+      if (_dailyPointsSpent <= 50) {
+        if (_disciplineDailyStreak == 0) {
+          _disciplineDailyStreak = 1;
+        } else {
+          _disciplineDailyStreak += 1;
+        }
+      } else {
+        _disciplineDailyStreak = 1;
+      }
+    } else {
+      // More than 1 day passed without launcher active
+      _disciplineDailyStreak = 1;
+    }
+
+    _lastDisciplineDate = today;
+    _dailyPointsSpent = 0;
+    _dailyPointsSpentDate = today;
+
+    if (_disciplineDailyStreak > _maxDisciplineDailyStreak) {
+      _maxDisciplineDailyStreak = _disciplineDailyStreak;
+      prefs.setInt('maxDisciplineDailyStreak', _maxDisciplineDailyStreak);
+    }
+
+    prefs.setInt('disciplineDailyStreak', _disciplineDailyStreak);
+    prefs.setString('lastDisciplineDate', _lastDisciplineDate);
+    prefs.setInt('dailyPointsSpent', _dailyPointsSpent);
+    prefs.setString('dailyPointsSpentDate', _dailyPointsSpentDate);
+  }
+
+  Future<void> _recordPointsSpentForDiscipline(int cost) async {
+    _checkDailyDiscipline();
+    _dailyPointsSpent += cost;
+    await prefs.setInt('dailyPointsSpent', _dailyPointsSpent);
+
+    if (_dailyPointsSpent > 50) {
+      _disciplineDailyStreak = 0;
+      await prefs.setInt('disciplineDailyStreak', 0);
+    }
+  }
+
+  @visibleForTesting
+  Future<void> setDisciplineStreakForTesting(int streak, {int? maxStreak, String? lastDate, int? dailyPointsSpent}) async {
+    _disciplineDailyStreak = streak;
+    _maxDisciplineDailyStreak = maxStreak ?? streak;
+    final date = lastDate ?? DateTime.now().toIso8601String().split('T')[0];
+    _lastDisciplineDate = date;
+    _dailyPointsSpentDate = date;
+    if (dailyPointsSpent != null) {
+      _dailyPointsSpent = dailyPointsSpent;
+      await prefs.setInt('dailyPointsSpent', _dailyPointsSpent);
+    }
+    await prefs.setInt('disciplineDailyStreak', _disciplineDailyStreak);
+    await prefs.setInt('maxDisciplineDailyStreak', _maxDisciplineDailyStreak);
+    await prefs.setString('lastDisciplineDate', _lastDisciplineDate);
+    await prefs.setString('dailyPointsSpentDate', _dailyPointsSpentDate);
     notifyListeners();
   }
 

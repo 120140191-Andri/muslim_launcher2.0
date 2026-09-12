@@ -18,7 +18,7 @@ class StreakNotificationService {
   static const String channelId = 'muslim_launcher_streak_reminders';
   static const String channelName = 'Pengingat Istiqomah Harian';
   static const String channelDescription =
-      'Pengingat harian tilawah Al-Qur\'an dan zikir agar streak tidak terputus';
+      'Pengingat harian tilawah Al-Qur\'an dan dzikir agar streak tidak terputus';
 
   static bool _isInitialized = false;
   static GlobalKey<NavigatorState>? _navigatorKey;
@@ -73,7 +73,10 @@ class StreakNotificationService {
   }
 
   /// Meminta izin notifikasi (Android 13+ / iOS)
-  static Future<bool> requestPermission() async {
+  static Future<bool> requestPermission({GlobalKey<NavigatorState>? navigatorKey}) async {
+    if (!_isInitialized) {
+      await initialize(navigatorKey: navigatorKey);
+    }
     try {
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -120,7 +123,7 @@ class StreakNotificationService {
     }
   }
 
-  /// Konten judul dan pesan pengingat berdasarkan status Tilawah & Zikir
+  /// Konten judul dan pesan pengingat berdasarkan status Tilawah & Dzikir
   static Map<String, String> getReminderContent({
     required bool hasQuranToday,
     required bool hasDzikirToday,

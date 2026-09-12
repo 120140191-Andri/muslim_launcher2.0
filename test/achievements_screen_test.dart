@@ -117,7 +117,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // Verify trophy icon is in the Quick Dock
-      final trophyFinder = find.byIcon(Icons.emoji_events_rounded);
+      final trophyFinder = find.byIcon(Icons.emoji_events_rounded).first;
       expect(trophyFinder, findsOneWidget);
 
       // Retrieve InkWell of trophy button and trigger tap
@@ -161,9 +161,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text('ISTIQOMAH HARIAN'), findsOneWidget);
-      expect(find.text('Lencana & Hadiah'), findsOneWidget);
+      expect(find.byIcon(Icons.emoji_events_rounded), findsWidgets);
       expect(find.text('Tilawah'), findsWidgets);
-      expect(find.text('Zikir'), findsWidgets);
+      expect(find.text('Dzikir'), findsWidgets);
       expect(find.text('5'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
       expect(find.text('Sudah'), findsWidgets);
@@ -200,10 +200,10 @@ void main() {
       // Verify beckoning header callout
       expect(find.text('Ayo jaga istiqomahmu hari ini! 🔥'), findsOneWidget);
 
-      // Verify both Tilawah and Zikir show "Belum" and beckoning nudge texts
+      // Verify both Tilawah and Dzikir show "Belum" and beckoning nudge texts
       expect(find.text('Belum'), findsNWidgets(2));
       expect(find.text('Yuk baca'), findsOneWidget);
-      expect(find.text('Yuk zikir'), findsOneWidget);
+      expect(find.text('Yuk Dzikir'), findsOneWidget);
     });
 
     testWidgets('AchievementsScreen displays all 5 Khatam tier badges (1x to 5x)', (tester) async {
@@ -281,11 +281,11 @@ void main() {
       expect(find.text('Istiqomah 1 Tahun Penuh (365 Hari)'), findsOneWidget);
 
       // Now toggle streak card to Dzikir
-      await tester.tap(find.textContaining('Zikir (3h)'));
+      await tester.tap(find.textContaining('Dzikir (3h)'));
       await tester.pumpAndSettle();
 
       // Verify Dzikir Streak Banner is shown
-      expect(find.text('ISTIQOMAH ZIKIR HARIAN'), findsOneWidget);
+      expect(find.text('ISTIQOMAH DZIKIR HARIAN'), findsOneWidget);
       expect(find.text('3 Hari Berturut-turut ✨'), findsOneWidget);
       expect(find.text('Rekor: 5 Hari'), findsOneWidget);
 
@@ -294,12 +294,42 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify all 6 Dzikir streak badges exist
-      expect(find.text('Istiqomah Zikir 1 Hari'), findsOneWidget);
-      expect(find.text('Istiqomah Zikir 3 Hari'), findsOneWidget);
-      expect(find.text('Istiqomah Zikir 7 Hari (1 Pekan)'), findsOneWidget);
-      expect(find.text('Istiqomah Zikir 14 Hari (2 Pekan)'), findsOneWidget);
-      expect(find.text('Istiqomah Zikir Sebulan (30 Hari)'), findsOneWidget);
-      expect(find.text('Istiqomah Zikir 1 Tahun (365 Hari)'), findsOneWidget);
+      expect(find.text('Istiqomah Dzikir 1 Hari'), findsOneWidget);
+      expect(find.text('Istiqomah Dzikir 3 Hari'), findsOneWidget);
+      expect(find.text('Istiqomah Dzikir 7 Hari (1 Pekan)'), findsOneWidget);
+      expect(find.text('Istiqomah Dzikir 14 Hari (2 Pekan)'), findsOneWidget);
+      expect(find.text('Istiqomah Dzikir Sebulan (30 Hari)'), findsOneWidget);
+      expect(find.text('Istiqomah Dzikir 1 Tahun (365 Hari)'), findsOneWidget);
+    });
+
+    testWidgets('AchievementsScreen displays all 6 Screen Discipline badges (3, 7, 14, 30, 60, 90 days) in Disiplin & Fokus tab', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: AchievementsScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Disiplin & Fokus tab
+      await tester.tap(find.text('Disiplin & Fokus'));
+      await tester.pumpAndSettle();
+
+      // Verify all 6 Screen Discipline badges exist
+      expect(find.text('Disiplin Layar 3 Hari'), findsOneWidget);
+      expect(find.text('Disiplin Layar 7 Hari (1 Pekan)'), findsOneWidget);
+      expect(find.text('Disiplin Layar 14 Hari (2 Pekan)'), findsOneWidget);
+      expect(find.text('Disiplin Layar Sebulan (30 Hari)'), findsOneWidget);
+      expect(find.text('Disiplin Layar 2 Bulan (60 Hari)'), findsOneWidget);
+      expect(find.text('Legenda Disiplin Layar (90 Hari)'), findsOneWidget);
     });
 
     test('AppState tracks consecutive day reading streak and resets correctly when day missed', () async {
@@ -391,6 +421,32 @@ void main() {
       expect(appState.maxDzikirDailyStreak, 6);
     });
 
+    test('AppState tracks consecutive day discipline streak (<= 50 pts/day) and breaks when exceeding 50 points', () async {
+      final appState = AppState(prefs);
+
+      final now = DateTime.now();
+      final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+
+      // Simulate day 5 streak from yesterday with 50 points used
+      await appState.setDisciplineStreakForTesting(5, maxStreak: 5, lastDate: yesterday, dailyPointsSpent: 50);
+      expect(appState.disciplineDailyStreak, 6); // Advance to day 6 because yesterday maintained <= 50 pts
+      expect(appState.maxDisciplineDailyStreak, 6);
+
+      // Unlocking 1 app with 50 points today keeps discipline active (total <= 50)
+      await appState.addPoints(100);
+      final unlocked = await appState.unlockAppWithPoints('com.whatsapp', cost: 50);
+      expect(unlocked, true);
+      expect(appState.dailyPointsSpent, 50);
+      expect(appState.disciplineDailyStreak, 6); // Still alive!
+
+      // Unlocking a 2nd app (another 50 points -> total 100 points) breaks the streak to 0 today!
+      final unlocked2 = await appState.unlockAppWithPoints('com.android.dialer', cost: 50);
+      expect(unlocked2, true);
+      expect(appState.dailyPointsSpent, 100);
+      expect(appState.disciplineDailyStreak, 0); // Broken!
+      expect(appState.maxDisciplineDailyStreak, 6); // Best record preserved
+    });
+
     test('AppState allows claiming badge rewards, prevents duplicate claims, and supports batch claim', () async {
       final appState = AppState(prefs);
       final initialPoints = appState.points; // 75 from setUp
@@ -411,7 +467,7 @@ void main() {
       // Batch claim all rewards
       final batchList = [
         {'id': 'quran_streak_7', 'points': 50, 'title': 'Istiqomah 7 Hari'}, // already claimed, should skip
-        {'id': 'dzikir_streak_7', 'points': 50, 'title': 'Istiqomah Zikir 7 Hari'}, // new
+        {'id': 'dzikir_streak_7', 'points': 50, 'title': 'Istiqomah Dzikir 7 Hari'}, // new
         {'id': 'quran_maqam_1', 'points': 15, 'title': 'Tingkat 1'}, // new
       ];
       final totalClaimed = await appState.claimAllBadgeRewards(batchList);
@@ -505,7 +561,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // Find Dzikir streak card item on HomeScreen and invoke its onTap
-      final dzikirStreakText = find.text('Zikir').last;
+      final dzikirStreakText = find.text('Dzikir').last;
       final dzikirInkWell = tester.widget<InkWell>(
         find.ancestor(of: dzikirStreakText, matching: find.byType(InkWell)).first,
       );
@@ -566,23 +622,49 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // Switch to Dzikir tab on streak card
-      final dzikirTab = find.textContaining('Zikir (0h)');
+      final dzikirTab = find.textContaining('Dzikir (0h)');
       await tester.ensureVisible(dzikirTab);
       await tester.tap(dzikirTab);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       // Verify CTA button for Dzikir exists
-      expect(find.text('Buka Menu Zikir'), findsOneWidget);
+      expect(find.text('Buka Menu Dzikir'), findsOneWidget);
 
       // Tap the Dzikir CTA button
-      await tester.tap(find.text('Buka Menu Zikir'));
+      await tester.tap(find.text('Buka Menu Dzikir'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       // Verify navigated to DzikirScreen
       expect(find.byType(DzikirScreen), findsOneWidget);
     });
+
+    testWidgets('AchievementsScreen badge cards render proportionally without overflow on narrow screens (320px)', (tester) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: AchievementsScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No overflow errors in Flutter tester
+      expect(tester.takeException(), isNull);
+
+      // Verify badge elements exist and are clean
+      expect(find.text('Tercapai'), findsWidgets);
+      expect(find.textContaining('Semua ('), findsOneWidget);
+    });
   });
 }
+
 

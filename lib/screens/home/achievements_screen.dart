@@ -4,6 +4,10 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/quran_progress_helper.dart';
 import '../../services/analytics_service.dart';
+import '../../utils/page_transitions.dart';
+import '../quran/surah_list_screen.dart';
+import '../quran/surah_detail_screen.dart';
+import '../dzikir/dzikir_screen.dart';
 
 enum BadgeRarity { common, rare, epic, legendary }
 
@@ -52,6 +56,39 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   void initState() {
     super.initState();
     AnalyticsService.logScreenView('AchievementsScreen');
+  }
+
+  void _openQuran(AppState appState) {
+    if (appState.lastReadSurah.isNotEmpty && appState.quranData.isNotEmpty) {
+      final surahIdx = appState.currentSurahIndex;
+      if (surahIdx >= 0 && surahIdx < appState.quranData.length) {
+        Navigator.of(context).push(
+          AppPageRoute(
+            child: SurahDetailScreen(
+              surah: appState.quranData[surahIdx],
+              initialAyahIndex: appState.currentAyahIndex,
+            ),
+          ),
+        ).then((_) {
+          if (mounted) setState(() {});
+        });
+        return;
+      }
+    }
+
+    Navigator.of(context).push(
+      AppPageRoute(child: const SurahListScreen()),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _openDzikir() {
+    Navigator.of(context).push(
+      AppPageRoute(child: const DzikirScreen()),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   List<SpiritualBadge> _generateBadges(AppState appState, String lang) {
@@ -1488,7 +1525,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               children: [
                 Expanded(
                   child: InkWell(
-                    onTap: () => setState(() => _streakTab = 'quran'),
+                    onTap: () {
+                      if (_streakTab != 'quran') {
+                        setState(() => _streakTab = 'quran');
+                      } else {
+                        _openQuran(appState);
+                      }
+                    },
                     borderRadius: BorderRadius.circular(11),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1527,7 +1570,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 ),
                 Expanded(
                   child: InkWell(
-                    onTap: () => setState(() => _streakTab = 'dzikir'),
+                    onTap: () {
+                      if (_streakTab != 'dzikir') {
+                        setState(() => _streakTab = 'dzikir');
+                      } else {
+                        _openDzikir();
+                      }
+                    },
                     borderRadius: BorderRadius.circular(11),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1567,121 +1616,178 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
-          // Streak details
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [accentColor, darkAccent],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: darkAccent.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  isQuran ? Icons.local_fire_department_rounded : Icons.flare_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
+          // Tappable Streak Details (Opens Quran for Tilawah, Dzikir for Dzikir)
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: isQuran ? () => _openQuran(appState) : () => _openDzikir(),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          isQuran
-                              ? (lang == 'en' ? 'DAILY TILAWAH STREAK' : 'ISTIQOMAH TILAWAH HARIAN')
-                              : (lang == 'en' ? 'DAILY DHIKR STREAK' : 'ISTIQOMAH ZIKIR HARIAN'),
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.8,
-                            color: textColor,
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [accentColor, darkAccent],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: darkAccent.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isQuran ? Icons.local_fire_department_rounded : Icons.flare_rounded,
+                            color: Colors.white,
+                            size: 22,
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                          decoration: BoxDecoration(
-                            color: accentColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            lang == 'en' ? 'Best: $maxStreak Days' : 'Rekor: $maxStreak Hari',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.bold,
-                              color: darkAccent,
-                            ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    isQuran
+                                        ? (lang == 'en' ? 'DAILY TILAWAH STREAK' : 'ISTIQOMAH TILAWAH HARIAN')
+                                        : (lang == 'en' ? 'DAILY DHIKR STREAK' : 'ISTIQOMAH ZIKIR HARIAN'),
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.8,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: accentColor.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      lang == 'en' ? 'Best: $maxStreak Days' : 'Rekor: $maxStreak Hari',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: darkAccent,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                currentStreak > 0
+                                    ? (lang == 'en'
+                                        ? '$currentStreak Day${currentStreak > 1 ? "s" : ""} in a row ${isQuran ? "🔥" : "✨"}'
+                                        : '$currentStreak Hari Berturut-turut ${isQuran ? "🔥" : "✨"}')
+                                    : (lang == 'en'
+                                        ? (isQuran ? 'Start streak today (min. 1 ayah)' : 'Start streak today (min. 33x)')
+                                        : (isQuran ? 'Mulai hari ini: Minimal 1 ayat' : 'Mulai hari ini: Minimal 1 putaran (33x)')),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      currentStreak > 0
-                          ? (lang == 'en'
-                              ? '$currentStreak Day${currentStreak > 1 ? "s" : ""} in a row ${isQuran ? "🔥" : "✨"}'
-                              : '$currentStreak Hari Berturut-turut ${isQuran ? "🔥" : "✨"}')
-                          : (lang == 'en'
-                              ? (isQuran ? 'Start streak today (min. 1 ayah)' : 'Start streak today (min. 33x)')
-                              : (isQuran ? 'Mulai hari ini: Minimal 1 ayat' : 'Mulai hari ini: Minimal 1 putaran (33x)')),
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          lang == 'en'
+                              ? 'Target: $nextTarget consecutive days'
+                              : 'Target: $nextTarget hari berturut-turut',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          '$currentStreak / $nextTarget ${lang == 'en' ? 'Days' : 'Hari'}',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: targetProgress,
+                        minHeight: 6,
+                        backgroundColor: accentColor.withValues(alpha: 0.15),
+                        valueColor: AlwaysStoppedAnimation<Color>(darkAccent),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Action CTA Bar
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: darkAccent.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: darkAccent.withValues(alpha: 0.22),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isQuran ? Icons.menu_book_rounded : Icons.grain_rounded,
+                            size: 15,
+                            color: darkAccent,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isQuran
+                                ? (lang == 'en' ? 'Open Holy Qur\'an' : 'Buka Al-Qur\'an')
+                                : (lang == 'en' ? 'Open Dhikr Menu' : 'Buka Menu Zikir'),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              color: darkAccent,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 14,
+                            color: darkAccent,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                lang == 'en'
-                    ? 'Target: $nextTarget consecutive days'
-                    : 'Target: $nextTarget hari berturut-turut',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              Text(
-                '$currentStreak / $nextTarget ${lang == 'en' ? 'Days' : 'Hari'}',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: targetProgress,
-              minHeight: 6,
-              backgroundColor: accentColor.withValues(alpha: 0.15),
-              valueColor: AlwaysStoppedAnimation<Color>(darkAccent),
             ),
           ),
         ],

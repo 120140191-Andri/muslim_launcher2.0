@@ -826,6 +826,10 @@ class _HomeScreenState extends State<HomeScreen>
                                       child: _HomeStreakCard(
                                         appState: appState,
                                         lang: lang,
+                                        onOpenQuran: () => _resumeReading(appState),
+                                        onOpenDzikir: () => appState.navigatorKey.currentState?.push(
+                                          AppPageRoute(child: const DzikirScreen()),
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 24),
@@ -1592,10 +1596,14 @@ class _DockIconState extends State<_DockIcon> {
 class _HomeStreakCard extends StatelessWidget {
   final AppState appState;
   final String lang;
+  final VoidCallback? onOpenQuran;
+  final VoidCallback? onOpenDzikir;
 
   const _HomeStreakCard({
     required this.appState,
     required this.lang,
+    this.onOpenQuran,
+    this.onOpenDzikir,
   });
 
   @override
@@ -1637,109 +1645,114 @@ class _HomeStreakCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            appState.navigatorKey.currentState?.push(
-              AppPageRoute(child: const AchievementsScreen()),
-            );
-          },
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Header Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF97316).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Header Row (Tappable to AchievementsScreen)
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  appState.navigatorKey.currentState?.push(
+                    AppPageRoute(child: const AchievementsScreen()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.local_fire_department_rounded,
+                              size: 15,
+                              color: Color(0xFFEA580C),
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.local_fire_department_rounded,
+                          const SizedBox(width: 8),
+                          Text(
+                            titleText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.8,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            linkText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.chevron_right_rounded,
                             size: 15,
-                            color: Color(0xFFEA580C),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          titleText,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.8,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          linkText,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
                             color: colorScheme.primary,
                           ),
-                        ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 15,
-                          color: colorScheme.primary,
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
+              ),
+            ),
+            const SizedBox(height: 12),
 
-                // Dual Streak Cards: Tilawah (Left) & Dzikir (Right)
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStreakItem(
-                        context: context,
-                        icon: Icons.menu_book_rounded,
-                        title: isAr ? 'التلاوة' : (isEn ? 'Tilawah' : 'Tilawah'),
-                        streakCount: quranStreak,
-                        isDoneToday: hasQuranToday,
-                        accentColor: const Color(0xFFEA580C),
-                        bgGradient: const [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
-                        borderColor: const Color(0xFFFDBA74),
-                        isEn: isEn,
-                        isAr: isAr,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _buildStreakItem(
-                        context: context,
-                        icon: Icons.grain_rounded,
-                        title: isAr ? 'الذكر' : (isEn ? 'Dhikr' : 'Zikir'),
-                        streakCount: dzikirStreak,
-                        isDoneToday: hasDzikirToday,
-                        accentColor: const Color(0xFF4F46E5),
-                        bgGradient: const [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
-                        borderColor: const Color(0xFFA5B4FC),
-                        isEn: isEn,
-                        isAr: isAr,
-                      ),
-                    ),
-                  ],
+            // Dual Streak Cards: Tilawah (Left) & Dzikir (Right)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStreakItem(
+                    context: context,
+                    icon: Icons.menu_book_rounded,
+                    title: isAr ? 'التلاوة' : (isEn ? 'Tilawah' : 'Tilawah'),
+                    streakCount: quranStreak,
+                    isDoneToday: hasQuranToday,
+                    accentColor: const Color(0xFFEA580C),
+                    bgGradient: const [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
+                    borderColor: const Color(0xFFFDBA74),
+                    isEn: isEn,
+                    isAr: isAr,
+                    onTap: onOpenQuran,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildStreakItem(
+                    context: context,
+                    icon: Icons.grain_rounded,
+                    title: isAr ? 'الذكر' : (isEn ? 'Dhikr' : 'Zikir'),
+                    streakCount: dzikirStreak,
+                    isDoneToday: hasDzikirToday,
+                    accentColor: const Color(0xFF4F46E5),
+                    bgGradient: const [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
+                    borderColor: const Color(0xFFA5B4FC),
+                    isEn: isEn,
+                    isAr: isAr,
+                    onTap: onOpenDzikir,
+                  ),
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -1756,6 +1769,7 @@ class _HomeStreakCard extends StatelessWidget {
     required Color borderColor,
     required bool isEn,
     required bool isAr,
+    VoidCallback? onTap,
   }) {
     final nextTarget = streakCount < 1
         ? 1
@@ -1775,99 +1789,112 @@ class _HomeStreakCard extends StatelessWidget {
         ? 'الهدف: $nextTarget'
         : (isEn ? 'Target: $nextTarget d' : 'Target: $nextTarget hari');
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: bgGradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor.withValues(alpha: 0.6), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: bgGradient,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor.withValues(alpha: 0.6), width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(icon, size: 13, color: accentColor),
-                  const SizedBox(width: 4),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: accentColor,
+                  Row(
+                    children: [
+                      Icon(icon, size: 13, color: accentColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: accentColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: isDoneToday ? const Color(0xFF10B981) : Colors.black.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      isDoneToday ? statusDone : statusPending,
+                      style: TextStyle(
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.bold,
+                        color: isDoneToday ? Colors.white : Colors.black54,
+                      ),
                     ),
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                decoration: BoxDecoration(
-                  color: isDoneToday ? const Color(0xFF10B981) : Colors.black.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  isDoneToday ? statusDone : statusPending,
-                  style: TextStyle(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.bold,
-                    color: isDoneToday ? Colors.white : Colors.black54,
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '$streakCount',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: accentColor,
+                      height: 1.0,
+                    ),
                   ),
+                  const SizedBox(width: 4),
+                  Text(
+                    daysUnit,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      color: accentColor.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 13,
+                    color: accentColor.withValues(alpha: 0.6),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 3.5,
+                  backgroundColor: borderColor.withValues(alpha: 0.35),
+                  valueColor: AlwaysStoppedAnimation<Color>(accentColor),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
+              const SizedBox(height: 3),
               Text(
-                '$streakCount',
+                targetLabel,
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: accentColor,
-                  height: 1.0,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                daysUnit,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 9,
                   color: accentColor.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 5),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 3.5,
-              backgroundColor: borderColor.withValues(alpha: 0.35),
-              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            targetLabel,
-            style: TextStyle(
-              fontSize: 9,
-              color: accentColor.withValues(alpha: 0.8),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

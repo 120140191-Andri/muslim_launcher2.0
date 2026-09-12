@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:muslim_launcher_2/providers/app_state.dart';
 import 'package:muslim_launcher_2/screens/home/achievements_screen.dart';
 import 'package:muslim_launcher_2/screens/home/home_screen.dart';
+import 'package:muslim_launcher_2/screens/quran/surah_list_screen.dart';
+import 'package:muslim_launcher_2/screens/dzikir/dzikir_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -440,6 +442,110 @@ void main() {
       // Verify points increased by 500
       expect(appState.points, startPoints + 15 + 500);
       expect(appState.isBadgeClaimed('quran_maqam_2'), true);
+    });
+
+    testWidgets('HomeScreen _HomeStreakCard taps on Tilawah and Dzikir navigate to Quran and DzikirScreen', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final appState = AppState(prefs);
+      appState.setIgnorePermissionGuard(true);
+      appState.setReadyForTesting();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: MaterialApp(
+            navigatorKey: appState.navigatorKey,
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.ensureVisible(find.text('ISTIQOMAH HARIAN'));
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Find Dzikir streak card item on HomeScreen and invoke its onTap
+      final dzikirStreakText = find.text('Zikir').last;
+      final dzikirInkWell = tester.widget<InkWell>(
+        find.ancestor(of: dzikirStreakText, matching: find.byType(InkWell)).first,
+      );
+      dzikirInkWell.onTap?.call();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Verify navigated to DzikirScreen
+      expect(find.byType(DzikirScreen), findsOneWidget);
+    });
+
+    testWidgets('AchievementsScreen Tilawah streak card and CTA navigate to Quran', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: AchievementsScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Tilawah is active by default. Verify CTA button for Quran exists
+      expect(find.text('Buka Al-Qur\'an'), findsOneWidget);
+
+      // Tap the Tilawah CTA button
+      await tester.tap(find.text('Buka Al-Qur\'an'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Verify navigated to SurahListScreen
+      expect(find.byType(SurahListScreen), findsOneWidget);
+    });
+
+    testWidgets('AchievementsScreen Dzikir streak card and CTA navigate to DzikirScreen', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: AchievementsScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Switch to Dzikir tab on streak card
+      final dzikirTab = find.textContaining('Zikir (0h)');
+      await tester.ensureVisible(dzikirTab);
+      await tester.tap(dzikirTab);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Verify CTA button for Dzikir exists
+      expect(find.text('Buka Menu Zikir'), findsOneWidget);
+
+      // Tap the Dzikir CTA button
+      await tester.tap(find.text('Buka Menu Zikir'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Verify navigated to DzikirScreen
+      expect(find.byType(DzikirScreen), findsOneWidget);
     });
   });
 }

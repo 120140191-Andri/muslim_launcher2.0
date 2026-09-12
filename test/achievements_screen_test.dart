@@ -169,6 +169,42 @@ void main() {
       expect(find.text('Sudah'), findsWidgets);
     });
 
+    testWidgets('HomeScreen _HomeStreakCard displays beckoning callout ("Belum", "Yuk baca", "Yuk zikir") when inactive today', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // Streak was done yesterday, so active streak count is preserved but not yet done today
+      final yesterday = DateTime.now().subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+      await prefs.setInt('quranDailyStreak', 4);
+      await prefs.setInt('dzikirDailyStreak', 2);
+      await prefs.setString('lastQuranReadDate', yesterday);
+      await prefs.setString('lastDzikirDate', yesterday);
+
+      final appState = AppState(prefs);
+      appState.setIgnorePermissionGuard(true);
+      appState.setReadyForTesting();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: MaterialApp(
+            navigatorKey: appState.navigatorKey,
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Verify beckoning header callout
+      expect(find.text('Ayo jaga istiqomahmu hari ini! 🔥'), findsOneWidget);
+
+      // Verify both Tilawah and Zikir show "Belum" and beckoning nudge texts
+      expect(find.text('Belum'), findsNWidgets(2));
+      expect(find.text('Yuk baca'), findsOneWidget);
+      expect(find.text('Yuk zikir'), findsOneWidget);
+    });
 
     testWidgets('AchievementsScreen displays all 5 Khatam tier badges (1x to 5x)', (tester) async {
       tester.view.physicalSize = const Size(800, 2400);

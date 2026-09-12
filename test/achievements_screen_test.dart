@@ -131,6 +131,43 @@ void main() {
       expect(find.text('Pencapaian & Lencana'), findsOneWidget);
     });
 
+    testWidgets('HomeScreen renders _HomeStreakCard below Quick Dock with Tilawah and Zikir streaks', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await prefs.setInt('quranDailyStreak', 5);
+      await prefs.setInt('dzikirDailyStreak', 3);
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      await prefs.setString('lastQuranReadDate', today);
+      await prefs.setString('lastDzikirDate', today);
+
+      final appState = AppState(prefs);
+      appState.setIgnorePermissionGuard(true);
+      appState.setReadyForTesting();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: MaterialApp(
+            navigatorKey: appState.navigatorKey,
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('ISTIQOMAH HARIAN'), findsOneWidget);
+      expect(find.text('Lencana & Hadiah'), findsOneWidget);
+      expect(find.text('Tilawah'), findsWidgets);
+      expect(find.text('Zikir'), findsWidgets);
+      expect(find.text('5'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('Sudah'), findsWidgets);
+    });
+
+
     testWidgets('AchievementsScreen displays all 5 Khatam tier badges (1x to 5x)', (tester) async {
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1.0;

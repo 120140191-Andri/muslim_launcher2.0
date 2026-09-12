@@ -821,6 +821,13 @@ class _HomeScreenState extends State<HomeScreen>
 
                                     const SizedBox(height: 12),
                                     const RepaintBoundary(child: _QuickDock()),
+                                    const SizedBox(height: 16),
+                                    RepaintBoundary(
+                                      child: _HomeStreakCard(
+                                        appState: appState,
+                                        lang: lang,
+                                      ),
+                                    ),
                                     const SizedBox(height: 24),
 
                                     // Daily Hadith / Inspiration
@@ -1576,6 +1583,291 @@ class _DockIconState extends State<_DockIcon> {
                 filterQuality: FilterQuality.medium,
               )
             : Icon(widget.fallback, color: Colors.teal.shade700, size: 24),
+      ),
+    );
+  }
+}
+
+// ── _HomeStreakCard ──────────────────────────────────────────────────────────
+class _HomeStreakCard extends StatelessWidget {
+  final AppState appState;
+  final String lang;
+
+  const _HomeStreakCard({
+    required this.appState,
+    required this.lang,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final today = DateTime.now().toIso8601String().split('T')[0];
+
+    final int quranStreak = appState.quranDailyStreak;
+    final bool hasQuranToday = appState.lastQuranReadDate == today;
+
+    final int dzikirStreak = appState.dzikirDailyStreak;
+    final bool hasDzikirToday = appState.lastDzikirDate == today;
+
+    final isEn = lang == 'en';
+    final isAr = lang == 'ar';
+
+    final String titleText = isAr
+        ? 'الاستقامة اليومية'
+        : (isEn ? 'DAILY STREAK' : 'ISTIQOMAH HARIAN');
+
+    final String linkText = isAr
+        ? 'الأوسمة والجوائز'
+        : (isEn ? 'Badges & Rewards' : 'Lencana & Hadiah');
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            appState.navigatorKey.currentState?.push(
+              AppPageRoute(child: const AchievementsScreen()),
+            );
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Header Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.local_fire_department_rounded,
+                            size: 15,
+                            color: Color(0xFFEA580C),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          titleText,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          linkText,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 15,
+                          color: colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Dual Streak Cards: Tilawah (Left) & Dzikir (Right)
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStreakItem(
+                        context: context,
+                        icon: Icons.menu_book_rounded,
+                        title: isAr ? 'التلاوة' : (isEn ? 'Tilawah' : 'Tilawah'),
+                        streakCount: quranStreak,
+                        isDoneToday: hasQuranToday,
+                        accentColor: const Color(0xFFEA580C),
+                        bgGradient: const [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
+                        borderColor: const Color(0xFFFDBA74),
+                        isEn: isEn,
+                        isAr: isAr,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildStreakItem(
+                        context: context,
+                        icon: Icons.grain_rounded,
+                        title: isAr ? 'الذكر' : (isEn ? 'Dhikr' : 'Zikir'),
+                        streakCount: dzikirStreak,
+                        isDoneToday: hasDzikirToday,
+                        accentColor: const Color(0xFF4F46E5),
+                        bgGradient: const [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
+                        borderColor: const Color(0xFFA5B4FC),
+                        isEn: isEn,
+                        isAr: isAr,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStreakItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required int streakCount,
+    required bool isDoneToday,
+    required Color accentColor,
+    required List<Color> bgGradient,
+    required Color borderColor,
+    required bool isEn,
+    required bool isAr,
+  }) {
+    final nextTarget = streakCount < 1
+        ? 1
+        : (streakCount < 3
+            ? 3
+            : (streakCount < 7
+                ? 7
+                : (streakCount < 14
+                    ? 14
+                    : (streakCount < 30 ? 30 : streakCount + 30))));
+    final double progress = (streakCount / nextTarget).clamp(0.0, 1.0);
+
+    final String statusDone = isAr ? 'تم' : (isEn ? 'Done' : 'Sudah');
+    final String statusPending = isAr ? 'متبقي' : (isEn ? 'Pending' : 'Belum');
+    final String daysUnit = isAr ? 'يوم' : (isEn ? 'days' : 'hari');
+    final String targetLabel = isAr
+        ? 'الهدف: $nextTarget'
+        : (isEn ? 'Target: $nextTarget d' : 'Target: $nextTarget hari');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: bgGradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor.withValues(alpha: 0.6), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 13, color: accentColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: accentColor,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: isDoneToday ? const Color(0xFF10B981) : Colors.black.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  isDoneToday ? statusDone : statusPending,
+                  style: TextStyle(
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.bold,
+                    color: isDoneToday ? Colors.white : Colors.black54,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$streakCount',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: accentColor,
+                  height: 1.0,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                daysUnit,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: accentColor.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 3.5,
+              backgroundColor: borderColor.withValues(alpha: 0.35),
+              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            targetLabel,
+            style: TextStyle(
+              fontSize: 9,
+              color: accentColor.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

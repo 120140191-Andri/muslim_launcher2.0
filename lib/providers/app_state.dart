@@ -149,6 +149,13 @@ class AppState extends ChangeNotifier {
 
   bool get isReady => _isDataLoaded && _isInitialized;
 
+  @visibleForTesting
+  void setReadyForTesting() {
+    _isDataLoaded = true;
+    _isInitialized = true;
+    notifyListeners();
+  }
+
   Set<int> get readHadithIds => _readHadithIds;
   bool isHadithRead(int id) => _readHadithIds.contains(id);
   int get totalHadithsCount => _hadithData.length;

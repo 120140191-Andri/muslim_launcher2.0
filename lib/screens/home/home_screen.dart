@@ -15,6 +15,7 @@ import '../hadith/hadith_list_screen.dart';
 import '../dzikir/dzikir_screen.dart';
 import 'app_list_screen.dart';
 import 'accessibility_setup_screen.dart';
+import 'achievements_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 import '../../utils/quran_progress_helper.dart';
@@ -1434,6 +1435,9 @@ class _QuickDock extends StatelessWidget {
       items.add(_buildIcon(Icons.photo_library_rounded, 'com.google.android.apps.photos'));
     }
 
+    // 7. Spiritual Achievements / Pencapaian (Trophy Icon at the far right)
+    items.add(_buildTrophyButton(context));
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 4,
@@ -1462,6 +1466,56 @@ class _QuickDock extends StatelessWidget {
       fallback: fallback,
       pkg: pkg,
       overrideTap: overrideTap,
+    );
+  }
+
+  Widget _buildTrophyButton(BuildContext context) {
+    final lang = Provider.of<AppState>(context, listen: false).languageCode;
+    return Tooltip(
+      message: Translations.get(lang, 'achievements'),
+      child: InkWell(
+        onTap: () {
+          final appState = Provider.of<AppState>(context, listen: false);
+          appState.navigatorKey.currentState?.push(
+            AppPageRoute(child: const AchievementsScreen()),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 44,
+          height: 44,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFEF3C7),
+                Color(0xFFFFFBEB),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFFCD34D),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.emoji_events_rounded,
+              color: Color(0xFFD97706),
+              size: 24,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

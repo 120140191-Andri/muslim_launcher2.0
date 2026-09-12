@@ -143,6 +143,9 @@ class AppState extends ChangeNotifier {
   int _maxDzikirDailyStreak = 0;
   String _lastDzikirDate = '';
 
+  // Persistent Claimed Achievement Badges
+  Set<String> _claimedBadgeIds = {};
+
   // Persistent Daily Verse & Hadith
   String _dailySurahName = '';
   int _dailyAyahNumber = 0;
@@ -208,6 +211,8 @@ class AppState extends ChangeNotifier {
   int get rawDzikirDailyStreak => _dzikirDailyStreak;
   int get maxDzikirDailyStreak => _maxDzikirDailyStreak;
   String get lastDzikirDate => _lastDzikirDate;
+  Set<String> get claimedBadgeIds => _claimedBadgeIds;
+  bool isBadgeClaimed(String badgeId) => _claimedBadgeIds.contains(badgeId);
   List<dynamic> get quranData => _quranData;
   bool get isDataLoaded => _isDataLoaded;
   List<dynamic> get hadithData {
@@ -309,6 +314,9 @@ class AppState extends ChangeNotifier {
     _dzikirDailyStreak = prefs.getInt('dzikirDailyStreak') ?? 0;
     _maxDzikirDailyStreak = prefs.getInt('maxDzikirDailyStreak') ?? _dzikirDailyStreak;
     _lastDzikirDate = prefs.getString('lastDzikirDate') ?? '';
+
+    final savedClaimedBadges = prefs.getStringList('claimedBadgeIds') ?? [];
+    _claimedBadgeIds = savedClaimedBadges.toSet();
 
     _userName = prefs.getString('userName') ?? '';
     final savedCompletedSurahs = prefs.getStringList('completedSurahsThisCycle') ?? [];
@@ -3409,6 +3417,46 @@ class AppState extends ChangeNotifier {
     await prefs.setInt('dzikirDailyStreak', _dzikirDailyStreak);
     await prefs.setInt('maxDzikirDailyStreak', _maxDzikirDailyStreak);
     await prefs.setString('lastDzikirDate', _lastDzikirDate);
+    notifyListeners();
+  }
+
+  Future<bool> claimBadgeReward(String badgeId, int pointsReward, String badgeTitle) async {
+    if (_claimedBadgeIds.contains(badgeId) || pointsReward <= 0) return false;
+    _claimedBadgeIds.add(badgeId);
+    await prefs.setStringList('claimedBadgeIds', _claimedBadgeIds.toList());
+    _points += pointsReward;
+    await prefs.setInt('points', _points);
+    _addToHistory("🏆 Lencana: $badgeTitle", 1, pointsReward);
+    notifyListeners();
+    return true;
+  }
+
+  Future<int> claimAllBadgeRewards(List<Map<String, dynamic>> claimableBadges) async {
+    if (claimableBadges.isEmpty) return 0;
+    int totalClaimed = 0;
+    for (final item in claimableBadges) {
+      final badgeId = item['id'] as String;
+      final points = item['points'] as int;
+      final title = item['title'] as String;
+      if (!_claimedBadgeIds.contains(badgeId) && points > 0) {
+        _claimedBadgeIds.add(badgeId);
+        totalClaimed += points;
+        _addToHistory("🏆 Lencana: $title", 1, points);
+      }
+    }
+    if (totalClaimed > 0) {
+      await prefs.setStringList('claimedBadgeIds', _claimedBadgeIds.toList());
+      _points += totalClaimed;
+      await prefs.setInt('points', _points);
+      notifyListeners();
+    }
+    return totalClaimed;
+  }
+
+  @visibleForTesting
+  Future<void> setClaimedBadgesForTesting(Set<String> badgeIds) async {
+    _claimedBadgeIds = Set.from(badgeIds);
+    await prefs.setStringList('claimedBadgeIds', _claimedBadgeIds.toList());
     notifyListeners();
   }
 

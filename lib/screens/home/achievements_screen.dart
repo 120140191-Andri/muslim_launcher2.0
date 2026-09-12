@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/quran_progress_helper.dart';
@@ -14,6 +15,7 @@ class SpiritualBadge {
   final String fadhilah;
   final IconData icon;
   final bool isUnlocked;
+  final bool isClaimed;
   final double progress; // 0.0 to 1.0
   final String progressLabel;
   final int pointsReward;
@@ -27,6 +29,7 @@ class SpiritualBadge {
     required this.fadhilah,
     required this.icon,
     required this.isUnlocked,
+    this.isClaimed = false,
     required this.progress,
     required this.progressLabel,
     required this.pointsReward,
@@ -123,7 +126,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxQuranStreak >= 3)
             ? '3 / 3 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentQuranStreak / 3 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 30,
+        pointsReward: 20,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -142,7 +145,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxQuranStreak >= 7)
             ? '7 / 7 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentQuranStreak / 7 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 75,
+        pointsReward: 50,
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
@@ -161,7 +164,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxQuranStreak >= 14)
             ? '14 / 14 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentQuranStreak / 14 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 150,
+        pointsReward: 100,
         rarity: BadgeRarity.epic,
       ),
       SpiritualBadge(
@@ -180,7 +183,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxQuranStreak >= 30)
             ? '30 / 30 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentQuranStreak / 30 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 350,
+        pointsReward: 250,
         rarity: BadgeRarity.legendary,
       ),
       SpiritualBadge(
@@ -199,7 +202,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxQuranStreak >= 365)
             ? '365 / 365 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentQuranStreak / 365 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 2000,
+        pointsReward: 1000,
         rarity: BadgeRarity.legendary,
       ),
       SpiritualBadge(
@@ -216,7 +219,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: completedSurahs >= 1 || khatm > 0,
         progress: (completedSurahs / 1).clamp(0.0, 1.0),
         progressLabel: '${completedSurahs.clamp(0, 1)} / 1 Surah',
-        pointsReward: 25,
+        pointsReward: 20,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -279,7 +282,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (appState.completedSurahsThisCycle.contains(114) || khatm > 0)
             ? 'Selesai'
             : 'Belum',
-        pointsReward: 75,
+        pointsReward: 50,
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
@@ -300,7 +303,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (khatm > 0)
             ? '6.236 / 6.236 Ayat'
             : '$cumulativeAyahs / 6.236 Ayat',
-        pointsReward: 50,
+        pointsReward: 15,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -357,7 +360,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: khatm >= 3,
         progress: (khatm / 3).clamp(0.0, 1.0),
         progressLabel: '$khatm / 3 Khatam',
-        pointsReward: 1500,
+        pointsReward: 1200,
         rarity: BadgeRarity.epic,
       ),
       SpiritualBadge(
@@ -433,7 +436,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxDzikirStreak >= 3)
             ? '3 / 3 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentDzikirStreak / 3 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 30,
+        pointsReward: 20,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -452,7 +455,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxDzikirStreak >= 7)
             ? '7 / 7 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentDzikirStreak / 7 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 75,
+        pointsReward: 50,
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
@@ -471,7 +474,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxDzikirStreak >= 14)
             ? '14 / 14 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentDzikirStreak / 14 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 150,
+        pointsReward: 100,
         rarity: BadgeRarity.epic,
       ),
       SpiritualBadge(
@@ -490,7 +493,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxDzikirStreak >= 30)
             ? '30 / 30 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentDzikirStreak / 30 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 350,
+        pointsReward: 250,
         rarity: BadgeRarity.legendary,
       ),
       SpiritualBadge(
@@ -509,7 +512,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxDzikirStreak >= 365)
             ? '365 / 365 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentDzikirStreak / 365 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 2000,
+        pointsReward: 1000,
         rarity: BadgeRarity.legendary,
       ),
       SpiritualBadge(
@@ -543,7 +546,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: appState.dailyDzikirRounds >= 3 || totalDzikir >= 99,
         progress: (appState.dailyDzikirRounds / 3).clamp(0.0, 1.0),
         progressLabel: '${appState.dailyDzikirRounds.clamp(0, 3)} / 3 Putaran',
-        pointsReward: 19,
+        pointsReward: 20,
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
@@ -560,7 +563,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: totalDzikir >= 990,
         progress: (totalDzikir / 990).clamp(0.0, 1.0),
         progressLabel: '$totalDzikir / 990 Dzikir',
-        pointsReward: 300,
+        pointsReward: 150,
         rarity: BadgeRarity.legendary,
       ),
 
@@ -615,7 +618,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: points >= 50,
         progress: (points / 50).clamp(0.0, 1.0),
         progressLabel: '${points.clamp(0, 50)} / 50 Poin',
-        pointsReward: 50,
+        pointsReward: 25,
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
@@ -632,10 +635,23 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: points >= 500,
         progress: (points / 500).clamp(0.0, 1.0),
         progressLabel: '${points.clamp(0, 500)} / 500 Poin',
-        pointsReward: 200,
+        pointsReward: 100,
         rarity: BadgeRarity.epic,
       ),
-    ];
+    ].map((b) => SpiritualBadge(
+      id: b.id,
+      category: b.category,
+      title: b.title,
+      description: b.description,
+      fadhilah: b.fadhilah,
+      icon: b.icon,
+      isUnlocked: b.isUnlocked,
+      isClaimed: appState.isBadgeClaimed(b.id),
+      progress: b.progress,
+      progressLabel: b.progressLabel,
+      pointsReward: b.pointsReward,
+      rarity: b.rarity,
+    )).toList();
   }
 
   void _showBadgeDetailModal(BuildContext context, SpiritualBadge badge, String lang) {
@@ -853,28 +869,156 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-              // Close Button
-              SizedBox(
+              // Reward Status Box
+              Container(
                 width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    lang == 'en' ? 'Close' : 'Tutup',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                decoration: BoxDecoration(
+                  color: badge.isClaimed
+                      ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                      : (badge.isUnlocked
+                          ? const Color(0xFFF59E0B).withValues(alpha: 0.12)
+                          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: badge.isClaimed
+                        ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                        : (badge.isUnlocked
+                            ? const Color(0xFFF59E0B).withValues(alpha: 0.4)
+                            : colorScheme.outlineVariant.withValues(alpha: 0.3)),
                   ),
                 ),
+                child: Row(
+                  children: [
+                    Icon(
+                      badge.isClaimed
+                          ? Icons.check_circle_rounded
+                          : (badge.isUnlocked ? Icons.stars_rounded : Icons.lock_rounded),
+                      size: 18,
+                      color: badge.isClaimed
+                          ? const Color(0xFF10B981)
+                          : (badge.isUnlocked ? const Color(0xFFD97706) : colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        badge.isClaimed
+                            ? (lang == 'en'
+                                ? 'Reward claimed (+${badge.pointsReward} Points)'
+                                : 'Hadiah telah diklaim (+${badge.pointsReward} Poin)')
+                            : (badge.isUnlocked
+                                ? (lang == 'en'
+                                    ? 'Reward ready to claim: +${badge.pointsReward} Points!'
+                                    : 'Hadiah siap diklaim: +${badge.pointsReward} Poin!')
+                                : (lang == 'en'
+                                    ? 'Reward on unlock: +${badge.pointsReward} Points'
+                                    : 'Hadiah jika tercapai: +${badge.pointsReward} Poin')),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: badge.isClaimed
+                              ? const Color(0xFF047857)
+                              : (badge.isUnlocked ? const Color(0xFFB45309) : colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(height: 20),
+
+              // Action Buttons
+              if (badge.isUnlocked && !badge.isClaimed) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.stars_rounded, size: 20),
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      final appState = Provider.of<AppState>(context, listen: false);
+                      await appState.claimBadgeReward(badge.id, badge.pointsReward, badge.title);
+                      HapticFeedback.heavyImpact();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    lang == 'en'
+                                        ? 'Alhamdulillah! Claimed +${badge.pointsReward} Points for "${badge.title}"'
+                                        : 'Alhamdulillah! Berhasil mengklaim +${badge.pointsReward} Poin untuk "${badge.title}"',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFF047857),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 2,
+                    ),
+                    label: Text(
+                      lang == 'en'
+                          ? 'Claim Reward (+${badge.pointsReward} Pts)'
+                          : 'Klaim Hadiah (+${badge.pointsReward} Poin)',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(
+                      lang == 'en' ? 'Close' : 'Tutup',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                // Close Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      lang == 'en' ? 'Close' : 'Tutup',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
@@ -923,6 +1067,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         : allBadges.where((b) => b.category == _selectedCategory).toList();
 
     final unlockedCount = allBadges.where((b) => b.isUnlocked).length;
+    final claimableBadges = allBadges.where((b) => b.isUnlocked && !b.isClaimed).toList();
+    final totalClaimablePoints = claimableBadges.fold<int>(0, (sum, b) => sum + b.pointsReward);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFA),
@@ -1146,6 +1292,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             // ── DAILY TILAWAH STREAK BANNER ──
             _buildStreakCard(context, appState, lang),
 
+            if (claimableBadges.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildClaimAllBanner(context, appState, claimableBadges, totalClaimablePoints, lang),
+            ],
+
             const SizedBox(height: 24),
 
             // ── CATEGORY FILTER PILLS ──
@@ -1198,7 +1349,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final badge = filteredBadges[index];
-                return _buildBadgeCard(context, badge, lang);
+                return _buildBadgeCard(context, badge, lang, appState);
               },
             ),
           ],
@@ -1561,7 +1712,130 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     );
   }
 
-  Widget _buildBadgeCard(BuildContext context, SpiritualBadge badge, String lang) {
+  Widget _buildClaimAllBanner(
+    BuildContext context,
+    AppState appState,
+    List<SpiritualBadge> claimableBadges,
+    int totalClaimablePoints,
+    String lang,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF047857), Color(0xFF0D9488)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF047857).withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.redeem_rounded,
+              color: Colors.amber,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  lang == 'en'
+                      ? '${claimableBadges.length} Badge${claimableBadges.length > 1 ? "s" : ""} Ready to Claim!'
+                      : '${claimableBadges.length} Lencana Siap Diklaim!',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  lang == 'en'
+                      ? 'Total +$totalClaimablePoints Spiritual Points'
+                      : 'Total bonus +$totalClaimablePoints Poin Ibadah',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () async {
+              final payload = claimableBadges.map((b) => {
+                'id': b.id,
+                'points': b.pointsReward,
+                'title': b.title,
+              }).toList();
+              final claimed = await appState.claimAllBadgeRewards(payload);
+              HapticFeedback.heavyImpact();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            lang == 'en'
+                                ? 'Alhamdulillah! Claimed +$claimed Points from ${claimableBadges.length} badges!'
+                                : 'Alhamdulillah! Berhasil mengklaim +$claimed Poin dari ${claimableBadges.length} lencana!',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: const Color(0xFF047857),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: const Color(0xFF1E293B),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              lang == 'en' ? 'Claim All' : 'Klaim Semua',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadgeCard(BuildContext context, SpiritualBadge badge, String lang, AppState appState) {
     final colorScheme = Theme.of(context).colorScheme;
     final rarityColor = _getRarityColor(badge.rarity);
 
@@ -1636,27 +1910,130 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           ),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: badge.isUnlocked
-                              ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                              : colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(10),
+                      if (badge.isUnlocked) ...[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                lang == 'en' ? 'Earned' : 'Tercapai',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF10B981),
+                                ),
+                              ),
+                            ),
+                            if (!badge.isClaimed) ...[
+                              const SizedBox(width: 5),
+                              InkWell(
+                                onTap: () async {
+                                  await appState.claimBadgeReward(badge.id, badge.pointsReward, badge.title);
+                                  HapticFeedback.mediumImpact();
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            const Icon(Icons.stars_rounded, color: Colors.amber, size: 18),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                lang == 'en'
+                                                    ? 'Alhamdulillah! Claimed +${badge.pointsReward} Points for "${badge.title}"'
+                                                    : 'Alhamdulillah! Berhasil klaim +${badge.pointsReward} Poin untuk "${badge.title}"',
+                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        backgroundColor: const Color(0xFF047857),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF059669), Color(0xFF10B981)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.stars_rounded, size: 10, color: Colors.white),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        lang == 'en' ? 'Claim +${badge.pointsReward}' : 'Klaim +${badge.pointsReward}',
+                                        style: const TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                        child: Text(
-                          badge.isUnlocked
-                              ? (lang == 'en' ? 'Earned' : 'Tercapai')
-                              : badge.progressLabel,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: badge.isUnlocked
-                                ? const Color(0xFF10B981)
-                                : colorScheme.onSurfaceVariant,
-                          ),
+                      ] else ...[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                badge.progressLabel,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '+${badge.pointsReward}',
+                                style: const TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFB45309),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 3),

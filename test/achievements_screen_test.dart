@@ -67,8 +67,9 @@ void main() {
       expect(find.text('Dzikir'), findsNWidgets(2));
       expect(find.text('Poin'), findsOneWidget);
 
-      // Verify Category Filter Chips
-      expect(find.textContaining('Semua'), findsOneWidget);
+      // Verify Category Filter Chips & Claim Banner
+      expect(find.textContaining('Semua ('), findsOneWidget);
+      expect(find.text('Klaim Semua'), findsOneWidget);
       expect(find.text("Al-Qur'an"), findsOneWidget);
       expect(find.text('Disiplin & Fokus'), findsOneWidget);
 
@@ -301,6 +302,95 @@ void main() {
       await appState.addDzikirCount(33);
       expect(appState.dzikirDailyStreak, 1);
       expect(appState.maxDzikirDailyStreak, 6);
+    });
+
+    test('AppState allows claiming badge rewards, prevents duplicate claims, and supports batch claim', () async {
+      final appState = AppState(prefs);
+      final initialPoints = appState.points; // 75 from setUp
+
+      expect(appState.isBadgeClaimed('quran_streak_7'), false);
+
+      // Claim single badge reward (+50 points)
+      final success = await appState.claimBadgeReward('quran_streak_7', 50, 'Istiqomah 7 Hari');
+      expect(success, true);
+      expect(appState.points, initialPoints + 50);
+      expect(appState.isBadgeClaimed('quran_streak_7'), true);
+
+      // Duplicate claim must be rejected
+      final duplicateSuccess = await appState.claimBadgeReward('quran_streak_7', 50, 'Istiqomah 7 Hari');
+      expect(duplicateSuccess, false);
+      expect(appState.points, initialPoints + 50);
+
+      // Batch claim all rewards
+      final batchList = [
+        {'id': 'quran_streak_7', 'points': 50, 'title': 'Istiqomah 7 Hari'}, // already claimed, should skip
+        {'id': 'dzikir_streak_7', 'points': 50, 'title': 'Istiqomah Zikir 7 Hari'}, // new
+        {'id': 'quran_maqam_1', 'points': 15, 'title': 'Tingkat 1'}, // new
+      ];
+      final totalClaimed = await appState.claimAllBadgeRewards(batchList);
+      expect(totalClaimed, 65); // 50 + 15
+      expect(appState.points, initialPoints + 50 + 65);
+      expect(appState.isBadgeClaimed('dzikir_streak_7'), true);
+      expect(appState.isBadgeClaimed('quran_maqam_1'), true);
+
+      // History should record these claimed badges
+      final history = appState.readingHistory;
+      expect(history.any((e) => ((e['surah'] as String?) ?? '').contains('Istiqomah 7 Hari')), true);
+      expect(history.any((e) => ((e['surah'] as String?) ?? '').contains('Tingkat 1')), true);
+    });
+
+    testWidgets('AchievementsScreen allows claiming badge reward directly from card and modal', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final appState = AppState(prefs);
+      // Khatm count = 1, so Tingkat 1 (15 pts) and Tingkat 2 (500 pts) are unlocked
+      await appState.setClaimedBadgesForTesting({});
+      final startPoints = appState.points;
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: AchievementsScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify Claim All button is present
+      expect(find.text('Klaim Semua'), findsOneWidget);
+
+      // Switch to Al-Qur'an tab
+      await tester.tap(find.text("Al-Qur'an"));
+      await tester.pumpAndSettle();
+
+      // Find Tingkat 1 claim button
+      expect(find.text('Klaim +15'), findsOneWidget);
+
+      // Tap claim on Tingkat 1
+      await tester.tap(find.text('Klaim +15'));
+      await tester.pumpAndSettle();
+
+      // Verify points increased by 15
+      expect(appState.points, startPoints + 15);
+      expect(appState.isBadgeClaimed('quran_maqam_1'), true);
+
+      // Now tap on Tingkat 2 card to open modal dialog
+      await tester.tap(find.text('Tingkat 2 • Al-Mubtadi\' Al-Karim'));
+      await tester.pumpAndSettle();
+
+      // Verify modal has "Klaim Hadiah (+500 Poin)" button
+      expect(find.text('Klaim Hadiah (+500 Poin)'), findsOneWidget);
+
+      // Tap the modal claim button
+      await tester.tap(find.text('Klaim Hadiah (+500 Poin)'));
+      await tester.pumpAndSettle();
+
+      // Verify points increased by 500
+      expect(appState.points, startPoints + 15 + 500);
+      expect(appState.isBadgeClaimed('quran_maqam_2'), true);
     });
   });
 }

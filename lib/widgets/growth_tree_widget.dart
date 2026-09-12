@@ -423,8 +423,11 @@ class _SilhouetteGardenPainter extends CustomPainter {
   void _drawSingleSwan(Canvas canvas, double cx, double cy, double scale, Paint paint, bool faceRight) {
     canvas.save();
     canvas.translate(cx, cy);
-    if (!faceRight) canvas.scale(-scale, scale);
-    else canvas.scale(scale, scale);
+    if (!faceRight) {
+      canvas.scale(-scale, scale);
+    } else {
+      canvas.scale(scale, scale);
+    }
 
     final swanPath = Path()
       ..moveTo(-7, 0)

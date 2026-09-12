@@ -61,15 +61,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _appState = Provider.of<AppState>(context, listen: false);
-    if (_sessionStartProgress == null) {
-      _sessionStartProgress = QuranProgressHelper.getCombinedSpiritualProgress(
-        khatmCount: _appState.khatmCount,
-        currentSurahIndex: _appState.currentSurahIndex,
-        currentAyahNumber: _appState.lastReadAyahNumber,
-        quranData: _appState.quranData,
-        totalDzikirCount: _appState.totalDzikirCount,
-      );
-    }
+    _sessionStartProgress ??= QuranProgressHelper.getCombinedSpiritualProgress(
+      khatmCount: _appState.khatmCount,
+      currentSurahIndex: _appState.currentSurahIndex,
+      currentAyahNumber: _appState.lastReadAyahNumber,
+      quranData: _appState.quranData,
+      totalDzikirCount: _appState.totalDzikirCount,
+    );
   }
 
   @override

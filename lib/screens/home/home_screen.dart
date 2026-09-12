@@ -1672,16 +1672,15 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
     final bool hasBothToday = hasQuranToday && hasDzikirToday;
     final bool hasAnyPending = !hasBothToday;
 
-    final isEn = widget.lang == 'en';
-    final isAr = widget.lang == 'ar';
+    final lang = widget.lang;
+    String t(String key, [Map<String, String>? vars]) {
+      String s = Translations.get(lang, key);
+      vars?.forEach((k, v) => s = s.replaceAll('{$k}', v));
+      return s;
+    }
+    final isAr = lang == 'ar';
 
-    final String titleText = isAr
-        ? 'الاستقامة اليومية'
-        : (isEn ? 'DAILY STREAK' : 'ISTIQOMAH HARIAN');
-
-    final String linkText = isAr
-        ? 'الأوسمة والجوائز'
-        : (isEn ? 'Badges & Rewards' : 'Lencana & Hadiah');
+    final String titleText = t('streak_section_title');
 
     return AnimatedBuilder(
       animation: _pulseAnimation,
@@ -1734,90 +1733,95 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF97316).withValues(
-                                    alpha: hasAnyPending ? 0.12 + 0.08 * pulseVal : 0.12,
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF97316).withValues(
+                                      alpha: hasAnyPending ? 0.12 + 0.08 * pulseVal : 0.12,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: hasAnyPending
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(0xFFEA580C).withValues(alpha: 0.25 * pulseVal),
+                                              blurRadius: 6 * pulseVal,
+                                            ),
+                                          ]
+                                        : null,
                                   ),
-                                  borderRadius: BorderRadius.circular(8),
-                                  boxShadow: hasAnyPending
-                                      ? [
-                                          BoxShadow(
-                                            color: const Color(0xFFEA580C).withValues(alpha: 0.25 * pulseVal),
-                                            blurRadius: 6 * pulseVal,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Transform.scale(
-                                  scale: hasAnyPending ? 1.0 + 0.10 * pulseVal : 1.0,
-                                  child: const Icon(
-                                    Icons.local_fire_department_rounded,
-                                    size: 15,
-                                    color: Color(0xFFEA580C),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    titleText,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.8,
-                                      color: colorScheme.onSurfaceVariant,
+                                  child: Transform.scale(
+                                    scale: hasAnyPending ? 1.0 + 0.10 * pulseVal : 1.0,
+                                    child: const Icon(
+                                      Icons.local_fire_department_rounded,
+                                      size: 15,
+                                      color: Color(0xFFEA580C),
                                     ),
                                   ),
-                                  Text(
-                                    hasBothToday
-                                        ? (isAr
-                                            ? 'أحسنت! حافظت على الاستقامة اليوم'
-                                            : (isEn
-                                                ? 'Masha Allah! Streak maintained today'
-                                                : 'Masha Allah! Istiqomah terjaga hari ini'))
-                                        : (isAr
-                                            ? 'حافظ على استقامتك اليوم'
-                                            : (isEn
-                                                ? 'Keep your streak alive today!'
-                                                : 'Ayo jaga istiqomahmu hari ini! 🔥')),
-                                    style: TextStyle(
-                                      fontSize: 9.5,
-                                      color: hasBothToday
-                                          ? const Color(0xFF10B981)
-                                          : const Color(0xFFEA580C),
-                                      fontWeight: hasBothToday ? FontWeight.w500 : FontWeight.bold,
-                                    ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        titleText,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.8,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                      Text(
+                                        hasBothToday
+                                            ? t('streak_all_done')
+                                            : t('streak_call_to_action'),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          color: hasBothToday
+                                              ? const Color(0xFF10B981)
+                                              : const Color(0xFFEA580C),
+                                          fontWeight: hasBothToday ? FontWeight.w500 : FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                              ],
+                            ),
                           ),
-                          Row(
-                            children: [
-                              Text(
-                                linkText,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Transform.translate(
-                                offset: Offset(hasAnyPending ? (isAr ? -2.0 * pulseVal : 2.0 * pulseVal) : 0.0, 0),
-                                child: Icon(
-                                  isAr ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.emoji_events_rounded,
                                   size: 15,
                                   color: colorScheme.primary,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 2),
+                                Transform.translate(
+                                  offset: Offset(hasAnyPending ? (isAr ? -2.0 * pulseVal : 2.0 * pulseVal) : 0.0, 0),
+                                  child: Icon(
+                                    isAr ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+                                    size: 14,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -1833,14 +1837,13 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                       child: _buildStreakItem(
                         context: context,
                         icon: Icons.menu_book_rounded,
-                        title: isAr ? 'التلاوة' : (isEn ? 'Tilawah' : 'Tilawah'),
+                        title: t('streak_tilawah_title'),
                         streakCount: quranStreak,
                         isDoneToday: hasQuranToday,
                         accentColor: const Color(0xFFEA580C),
                         bgGradient: const [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
                         borderColor: const Color(0xFFFDBA74),
-                        isEn: isEn,
-                        isAr: isAr,
+                        lang: lang,
                         pulseVal: pulseVal,
                         onTap: widget.onOpenQuran,
                       ),
@@ -1850,14 +1853,13 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                       child: _buildStreakItem(
                         context: context,
                         icon: Icons.grain_rounded,
-                        title: isAr ? 'الذكر' : (isEn ? 'Dhikr' : 'Zikir'),
+                        title: t('streak_dhikr_title'),
                         streakCount: dzikirStreak,
                         isDoneToday: hasDzikirToday,
                         accentColor: const Color(0xFF4F46E5),
                         bgGradient: const [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
                         borderColor: const Color(0xFFA5B4FC),
-                        isEn: isEn,
-                        isAr: isAr,
+                        lang: lang,
                         pulseVal: pulseVal,
                         onTap: widget.onOpenDzikir,
                       ),
@@ -1881,11 +1883,16 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
     required Color accentColor,
     required List<Color> bgGradient,
     required Color borderColor,
-    required bool isEn,
-    required bool isAr,
+    required String lang,
     required double pulseVal,
     VoidCallback? onTap,
   }) {
+    final isAr = lang == 'ar';
+    String t(String key, [Map<String, String>? vars]) {
+      String s = Translations.get(lang, key);
+      vars?.forEach((k, v) => s = s.replaceAll('{$k}', v));
+      return s;
+    }
     final nextTarget = streakCount < 1
         ? 1
         : (streakCount < 3
@@ -1897,12 +1904,10 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                     : (streakCount < 30 ? 30 : streakCount + 30))));
     final double progress = (streakCount / nextTarget).clamp(0.0, 1.0);
 
-    final String statusDone = isAr ? 'تم' : (isEn ? 'Done' : 'Sudah');
-    final String statusPending = isAr ? 'متبقي' : (isEn ? 'Pending' : 'Belum');
-    final String daysUnit = isAr ? 'يوم' : (isEn ? 'days' : 'hari');
-    final String targetLabel = isAr
-        ? 'الهدف: $nextTarget'
-        : (isEn ? 'Target: $nextTarget d' : 'Target: $nextTarget hari');
+    final String statusDone = t('streak_status_done');
+    final String statusPending = t('streak_status_pending');
+    final String daysUnit = t('streak_days_unit');
+    final String targetLabel = t('streak_target_short', {'n': '$nextTarget'});
 
     final bool isCalling = !isDoneToday;
 
@@ -1914,7 +1919,7 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: bgGradient,
@@ -1929,9 +1934,7 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                         accentColor,
                         0.25 + 0.55 * pulseVal,
                       )!
-                    : (isDoneToday
-                        ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                        : borderColor.withValues(alpha: 0.6)),
+                    : borderColor.withValues(alpha: 0.5),
                 width: isCalling ? 1.2 + 0.6 * pulseVal : 1.0,
               ),
               boxShadow: isCalling
@@ -1951,25 +1954,33 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Transform.scale(
-                          scale: isCalling ? 1.0 + 0.12 * pulseVal : 1.0,
-                          child: Icon(icon, size: 13, color: accentColor),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: accentColor,
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Transform.scale(
+                            scale: isCalling ? 1.0 + 0.12 * pulseVal : 1.0,
+                            child: Icon(icon, size: 13, color: accentColor),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: accentColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                       decoration: BoxDecoration(
                         color: isDoneToday
                             ? const Color(0xFF10B981)
@@ -1995,8 +2006,8 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                         children: [
                           if (isCalling) ...[
                             Container(
-                              width: 5,
-                              height: 5,
+                              width: 4.5,
+                              height: 4.5,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: accentColor,
@@ -2009,7 +2020,7 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 3.5),
+                            const SizedBox(width: 3),
                           ],
                           Text(
                             isDoneToday ? statusDone : statusPending,
@@ -2070,13 +2081,13 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                     ),
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Flexible(
+                    Expanded(
                       child: Text(
                         targetLabel,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 9,
@@ -2085,16 +2096,13 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                         ),
                       ),
                     ),
-                    if (isCalling)
+                    if (isCalling) ...[
+                      const SizedBox(width: 4),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            isAr
-                                ? (icon == Icons.menu_book_rounded ? 'اقرأ' : 'اذكر')
-                                : (isEn
-                                    ? (icon == Icons.menu_book_rounded ? 'Read' : 'Dhikr')
-                                    : (icon == Icons.menu_book_rounded ? 'Yuk baca' : 'Yuk zikir')),
+                            icon == Icons.menu_book_rounded ? t('streak_read_cta') : t('streak_dzikir_cta'),
                             style: TextStyle(
                               fontSize: 8.5,
                               fontWeight: FontWeight.bold,
@@ -2111,6 +2119,7 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                           ),
                         ],
                       ),
+                    ],
                   ],
                 ),
               ],

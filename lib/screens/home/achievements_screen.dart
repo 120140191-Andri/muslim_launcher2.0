@@ -5,6 +5,7 @@ import '../../providers/app_state.dart';
 import '../../utils/quran_progress_helper.dart';
 import '../../services/analytics_service.dart';
 import '../../utils/page_transitions.dart';
+import '../../utils/translations.dart';
 import '../quran/surah_list_screen.dart';
 import '../quran/surah_detail_screen.dart';
 import '../dzikir/dzikir_screen.dart';
@@ -52,6 +53,13 @@ class AchievementsScreen extends StatefulWidget {
 class _AchievementsScreenState extends State<AchievementsScreen> {
   String _selectedCategory = 'all'; // 'all', 'quran', 'dzikir', 'focus'
   String _streakTab = 'quran'; // 'quran' or 'dzikir'
+
+  /// Helper: get translated string, substituting {key: value} template vars.
+  String _t(String lang, String key, [Map<String, String>? vars]) {
+    String s = Translations.get(lang, key);
+    vars?.forEach((k, v) => s = s.replaceAll('{$k}', v));
+    return s;
+  }
 
   @override
   void initState() {
@@ -794,8 +802,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         const SizedBox(width: 4),
                         Text(
                           badge.isUnlocked
-                              ? (lang == 'en' ? 'Unlocked' : 'Tercapai')
-                              : (lang == 'en' ? 'In Progress' : 'Dalam Proses'),
+                              ? _t(lang, 'badge_unlocked')
+                              : _t(lang, 'badge_in_progress'),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -878,7 +886,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    lang == 'en' ? 'Progress' : 'Progres',
+                    _t(lang, 'progress_label'),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -943,16 +951,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     Expanded(
                       child: Text(
                         badge.isClaimed
-                            ? (lang == 'en'
-                                ? 'Reward claimed (+${badge.pointsReward} Points)'
-                                : 'Hadiah telah diklaim (+${badge.pointsReward} Poin)')
+                            ? _t(lang, 'reward_claimed', {'pts': '${badge.pointsReward}'})
                             : (badge.isUnlocked
-                                ? (lang == 'en'
-                                    ? 'Reward ready to claim: +${badge.pointsReward} Points!'
-                                    : 'Hadiah siap diklaim: +${badge.pointsReward} Poin!')
-                                : (lang == 'en'
-                                    ? 'Reward on unlock: +${badge.pointsReward} Points'
-                                    : 'Hadiah jika tercapai: +${badge.pointsReward} Poin')),
+                                ? _t(lang, 'reward_ready', {'pts': '${badge.pointsReward}'})
+                                : _t(lang, 'reward_on_unlock', {'pts': '${badge.pointsReward}'})),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -988,9 +990,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    lang == 'en'
-                                        ? 'Alhamdulillah! Claimed +${badge.pointsReward} Points for "${badge.title}"'
-                                        : 'Alhamdulillah! Berhasil mengklaim +${badge.pointsReward} Poin untuk "${badge.title}"',
+                                    _t(lang, 'claim_badge_success', {'pts': '${badge.pointsReward}', 'title': badge.title}),
                                     style: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
                                 ),
@@ -1013,9 +1013,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       elevation: 2,
                     ),
                     label: Text(
-                      lang == 'en'
-                          ? 'Claim Reward (+${badge.pointsReward} Pts)'
-                          : 'Klaim Hadiah (+${badge.pointsReward} Poin)',
+                      _t(lang, 'claim_reward_btn', {'pts': '${badge.pointsReward}'}),
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
                     ),
                   ),
@@ -1027,7 +1025,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   child: TextButton(
                     onPressed: () => Navigator.pop(ctx),
                     child: Text(
-                      lang == 'en' ? 'Close' : 'Tutup',
+                      _t(lang, 'close'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onSurfaceVariant,
@@ -1051,7 +1049,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       elevation: 0,
                     ),
                     child: Text(
-                      lang == 'en' ? 'Close' : 'Tutup',
+                      _t(lang, 'close'),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -1112,7 +1110,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       backgroundColor: const Color(0xFFF8FAFA),
       appBar: AppBar(
         title: Text(
-          lang == 'en' ? 'Milestones & Badges' : 'Pencapaian & Lencana',
+          _t(lang, 'milestones_badges'),
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         backgroundColor: colorScheme.surface,
@@ -1121,7 +1119,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         scrolledUnderElevation: 1,
         actions: [
           IconButton(
-            tooltip: lang == 'en' ? 'Maqam Journey Guide' : 'Panduan Tingkatan Maqam',
+            tooltip: _t(lang, 'maqam_journey_guide'),
             icon: const Icon(Icons.help_outline_rounded),
             onPressed: () {
               QuranProgressHelper.showKhatamLevelInfoModal(context, lang, khatm);
@@ -1178,7 +1176,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                             const Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 16),
                             const SizedBox(width: 6),
                             Text(
-                              'TINGKAT $currentLevel • MAQAM',
+                              '${_t(lang, 'maqam_label')} $currentLevel ${_t(lang, 'maqam_suffix')}',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -1199,19 +1197,19 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '5 Tingkat',
-                                style: TextStyle(
+                                _t(lang, 'five_levels'),
+                                style: const TextStyle(
                                   color: Colors.amber,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              SizedBox(width: 2),
-                              Icon(Icons.chevron_right_rounded, color: Colors.amber, size: 14),
+                              const SizedBox(width: 2),
+                              const Icon(Icons.chevron_right_rounded, color: Colors.amber, size: 14),
                             ],
                           ),
                         ),
@@ -1232,12 +1230,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   const SizedBox(height: 6),
                   Text(
                     khatm <= 0
-                        ? (lang == 'en'
-                            ? 'Steadfast on the path towards completing the 1st Khatam'
-                            : 'Sedang berproses dengan sabar menuju Khatam ke-1')
-                        : (lang == 'en'
-                            ? 'Alhamdulillah, completed $khatm Khatam cycles'
-                            : 'Alhamdulillah, telah menuntaskan $khatm kali Khatam 30 Juz'),
+                        ? _t(lang, 'towards_khatam_1_desc')
+                        : _t(lang, 'khatam_completed_desc', {'n': '$khatm'}),
                     style: TextStyle(
                       fontSize: 12.5,
                       color: Colors.white.withValues(alpha: 0.85),
@@ -1274,12 +1268,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                               children: [
                                 Text(
                                   khatm <= 0
-                                      ? (lang == 'en'
-                                          ? 'Point Boost: 1.0x (Standard)'
-                                          : 'Boost Poin: 1.0x (Dasar)')
-                                      : (lang == 'en'
-                                          ? 'Active Point Boost: +${appState.maqamBoostPercent}% (Level $currentLevel)'
-                                          : 'Boost Poin Aktif: +${appState.maqamBoostPercent}% (Tingkat $currentLevel)'),
+                                      ? _t(lang, 'boost_standard')
+                                      : _t(lang, 'boost_active', {'pct': '${appState.maqamBoostPercent}', 'lvl': '$currentLevel'}),
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -1289,12 +1279,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                                 const SizedBox(height: 1),
                                 Text(
                                   khatm <= 0
-                                      ? (lang == 'en'
-                                          ? 'Complete 1st Khatam to unlock +25% points boost!'
-                                          : 'Khatamkan 1x untuk membuka boost +25% poin!')
-                                      : (lang == 'en'
-                                          ? 'Enjoy boosted points for every Quran ayah & dhikr'
-                                          : 'Poin berlipat ganda untuk setiap ayat & zikir harian'),
+                                      ? _t(lang, 'boost_hint_unlock')
+                                      : _t(lang, 'boost_hint_active'),
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     color: Colors.white.withValues(alpha: 0.8),
@@ -1320,7 +1306,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        lang == 'en' ? 'Sanctuary Bloom Progress' : 'Mekarnya Taman Surga',
+                        _t(lang, 'sanctuary_bloom'),
                         style: TextStyle(
                           fontSize: 11.5,
                           color: Colors.white.withValues(alpha: 0.85),
@@ -1412,7 +1398,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  lang == 'en' ? 'LIFETIME BADGES' : 'LENCANA PENCAPAIAN',
+                  _t(lang, 'lifetime_badges'),
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.bold,
@@ -1421,7 +1407,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   ),
                 ),
                 Text(
-                  '$unlockedCount / ${allBadges.length} ${lang == 'en' ? 'Earned' : 'Diraih'}',
+                  '$unlockedCount / ${allBadges.length} ${_t(lang, 'earned_count')}',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.bold,
@@ -1437,13 +1423,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               physics: const BouncingScrollPhysics(),
               child: Row(
                 children: [
-                  _buildCategoryFilterPill('all', lang == 'en' ? 'All (${allBadges.length})' : 'Semua (${allBadges.length})'),
+                  _buildCategoryFilterPill('all', '${_t(lang, 'all_filter')} (${allBadges.length})'),
                   const SizedBox(width: 8),
-                  _buildCategoryFilterPill('quran', lang == 'en' ? 'Al-Qur\'an' : 'Al-Qur\'an'),
+                  _buildCategoryFilterPill('quran', 'Al-Qur\'an'),
                   const SizedBox(width: 8),
-                  _buildCategoryFilterPill('dzikir', lang == 'en' ? 'Dzikir' : 'Dzikir'),
+                  _buildCategoryFilterPill('dzikir', 'Dzikir'),
                   const SizedBox(width: 8),
-                  _buildCategoryFilterPill('focus', lang == 'en' ? 'Focus & Screen Time' : 'Disiplin & Fokus'),
+                  _buildCategoryFilterPill('focus', _t(lang, 'focus_filter')),
                 ],
               ),
             ),
@@ -1555,9 +1541,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           const Icon(Icons.menu_book_rounded, size: 14, color: Color(0xFFEA580C)),
                           const SizedBox(width: 5),
                           Text(
-                            lang == 'en'
-                                ? 'Tilawah (${appState.quranDailyStreak}d)'
-                                : 'Tilawah (${appState.quranDailyStreak}h)',
+                            _t(lang, 'streak_tab_tilawah', {'n': '${appState.quranDailyStreak}'}),
                             style: TextStyle(
                               fontSize: 11.5,
                               fontWeight: isQuran ? FontWeight.bold : FontWeight.w500,
@@ -1600,9 +1584,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           const Icon(Icons.grain_rounded, size: 14, color: Color(0xFF4F46E5)),
                           const SizedBox(width: 5),
                           Text(
-                            lang == 'en'
-                                ? 'Dhikr (${appState.dzikirDailyStreak}d)'
-                                : 'Zikir (${appState.dzikirDailyStreak}h)',
+                            _t(lang, 'streak_tab_dzikir', {'n': '${appState.dzikirDailyStreak}'}),
                             style: TextStyle(
                               fontSize: 11.5,
                               fontWeight: !isQuran ? FontWeight.bold : FontWeight.w500,
@@ -1665,8 +1647,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                                 children: [
                                   Text(
                                     isQuran
-                                        ? (lang == 'en' ? 'DAILY TILAWAH STREAK' : 'ISTIQOMAH TILAWAH HARIAN')
-                                        : (lang == 'en' ? 'DAILY DHIKR STREAK' : 'ISTIQOMAH ZIKIR HARIAN'),
+                                        ? _t(lang, 'streak_daily_tilawah')
+                                        : _t(lang, 'streak_daily_dzikir'),
                                     style: TextStyle(
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.bold,
@@ -1681,7 +1663,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Text(
-                                      lang == 'en' ? 'Best: $maxStreak Days' : 'Rekor: $maxStreak Hari',
+                                      isQuran
+                                          ? _t(lang, 'streak_best', {'n': '$maxStreak'})
+                                          : _t(lang, 'streak_best', {'n': '$maxStreak'}),
                                       style: TextStyle(
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.bold,
@@ -1694,12 +1678,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 currentStreak > 0
-                                    ? (lang == 'en'
-                                        ? '$currentStreak Day${currentStreak > 1 ? "s" : ""} in a row ${isQuran ? "🔥" : "✨"}'
-                                        : '$currentStreak Hari Berturut-turut ${isQuran ? "🔥" : "✨"}')
-                                    : (lang == 'en'
-                                        ? (isQuran ? 'Start streak today (min. 1 ayah)' : 'Start streak today (min. 33x)')
-                                        : (isQuran ? 'Mulai hari ini: Minimal 1 ayat' : 'Mulai hari ini: Minimal 1 putaran (33x)')),
+                                    ? '${_t(lang, 'streak_days_row', {'n': '$currentStreak', 's': currentStreak > 1 ? 's' : ''})} ${isQuran ? "🔥" : "✨"}'
+                                    : (isQuran
+                                        ? _t(lang, 'streak_start_today_quran')
+                                        : _t(lang, 'streak_start_today_dzikir')),
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
@@ -1716,16 +1698,14 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          lang == 'en'
-                              ? 'Target: $nextTarget consecutive days'
-                              : 'Target: $nextTarget hari berturut-turut',
+                          _t(lang, 'streak_target', {'n': '$nextTarget'}),
                           style: TextStyle(
                             fontSize: 11.5,
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                         Text(
-                          '$currentStreak / $nextTarget ${lang == 'en' ? 'Days' : 'Hari'}',
+                          '$currentStreak / $nextTarget ${_t(lang, 'streak_days')}',
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.bold,
@@ -1769,8 +1749,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           const SizedBox(width: 8),
                           Text(
                             isQuran
-                                ? (lang == 'en' ? 'Open Holy Qur\'an' : 'Buka Al-Qur\'an')
-                                : (lang == 'en' ? 'Open Dhikr Menu' : 'Buka Menu Zikir'),
+                                ? _t(lang, 'streak_open_quran')
+                                : _t(lang, 'streak_open_dzikir'),
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.bold,
@@ -1819,9 +1799,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          lang == 'en'
-                              ? 'Daily Reminder (20:00)'
-                              : 'Pengingat Harian (20:00)',
+                          _t(lang, 'daily_reminder_title'),
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
@@ -1829,9 +1807,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           ),
                         ),
                         Text(
-                          lang == 'en'
-                              ? 'Alert if streak is unfinished'
-                              : 'Ingatkan jika belum istiqomah',
+                          _t(lang, 'daily_reminder_desc'),
                           style: TextStyle(
                             fontSize: 9.5,
                             color: colorScheme.onSurfaceVariant,
@@ -1999,9 +1975,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  lang == 'en'
-                      ? '${claimableBadges.length} Badge${claimableBadges.length > 1 ? "s" : ""} Ready to Claim!'
-                      : '${claimableBadges.length} Lencana Siap Diklaim!',
+                  claimableBadges.length > 1
+                      ? _t(lang, 'badges_ready_to_claim', {'n': '${claimableBadges.length}', 's': ''})
+                      : _t(lang, 'badges_ready_to_claim', {'n': '${claimableBadges.length}', 's': ''}),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -2010,9 +1986,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  lang == 'en'
-                      ? 'Total +$totalClaimablePoints Spiritual Points'
-                      : 'Total bonus +$totalClaimablePoints Poin Ibadah',
+                  _t(lang, 'total_claimable', {'pts': '$totalClaimablePoints'}),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.85),
                     fontSize: 11.5,
@@ -2040,9 +2014,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            lang == 'en'
-                                ? 'Alhamdulillah! Claimed +$claimed Points from ${claimableBadges.length} badges!'
-                                : 'Alhamdulillah! Berhasil mengklaim +$claimed Poin dari ${claimableBadges.length} lencana!',
+                            _t(lang, 'claim_all_success', {'pts': '$claimed', 'n': '${claimableBadges.length}'}),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -2066,7 +2038,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               elevation: 0,
             ),
             child: Text(
-              lang == 'en' ? 'Claim All' : 'Klaim Semua',
+              _t(lang, 'claim_all'),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
@@ -2164,7 +2136,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
-                                lang == 'en' ? 'Earned' : 'Tercapai',
+                                _t(lang, 'badge_unlocked'),
                                 style: const TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
@@ -2187,9 +2159,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                                             const SizedBox(width: 8),
                                             Expanded(
                                               child: Text(
-                                                lang == 'en'
-                                                    ? 'Alhamdulillah! Claimed +${badge.pointsReward} Points for "${badge.title}"'
-                                                    : 'Alhamdulillah! Berhasil klaim +${badge.pointsReward} Poin untuk "${badge.title}"',
+                                                _t(lang, 'claim_badge_success', {'pts': '${badge.pointsReward}', 'title': badge.title}),
                                                 style: const TextStyle(fontWeight: FontWeight.bold),
                                               ),
                                             ),
@@ -2225,7 +2195,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                                       const Icon(Icons.stars_rounded, size: 10, color: Colors.white),
                                       const SizedBox(width: 3),
                                       Text(
-                                        lang == 'en' ? 'Claim +${badge.pointsReward}' : 'Klaim +${badge.pointsReward}',
+                                        _t(lang, 'claim_pts', {'pts': '${badge.pointsReward}'}),
                                         style: const TextStyle(
                                           fontSize: 9.5,
                                           fontWeight: FontWeight.bold,

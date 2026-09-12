@@ -8,6 +8,7 @@ import '../screens/home/achievements_screen.dart';
 import '../screens/dzikir/dzikir_screen.dart';
 import '../screens/quran/surah_list_screen.dart';
 import '../utils/page_transitions.dart';
+import '../utils/translations.dart';
 
 class StreakNotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -125,43 +126,24 @@ class StreakNotificationService {
     required bool hasDzikirToday,
     String lang = 'id',
   }) {
-    final isEn = lang == 'en';
-    final isAr = lang == 'ar';
+    String t(String key) => Translations.get(lang, key);
 
     if (!hasQuranToday && !hasDzikirToday) {
       return {
-        'title': isAr
-            ? 'حافظ على استقامتك اليومية! 🔥✨'
-            : (isEn ? 'Keep Your Daily Streak Alive! 🔥✨' : 'Jaga Istiqomah Harianmu! 🔥✨'),
-        'body': isAr
-            ? 'بضع ساعات متبقية قبل نهاية اليوم. اقرأ آية واحدة واذكر الله للمحافظة على الورد!'
-            : (isEn
-                ? 'A few hours left before today ends. Read 1 ayah and complete 1 round of dhikr to keep your streak!'
-                : 'Tinggal beberapa jam sebelum hari berganti. Yuk baca 1 ayat dan zikir 33x agar streak-mu tetap menyala!'),
+        'title': t('notif_both_title'),
+        'body': t('notif_both_body'),
         'payload': 'streak',
       };
     } else if (!hasQuranToday) {
       return {
-        'title': isAr
-            ? 'حان وقت التلاوة اليومية! 🔥'
-            : (isEn ? 'Time for Daily Tilawah! 🔥' : 'Waktunya Tilawah Hari Ini! 🔥'),
-        'body': isAr
-            ? 'استمر في وردك القرآني! اقرأ آية واحدة على الأقل قبل نهاية اليوم.'
-            : (isEn
-                ? 'Your reading streak is active! Take 1 minute to read at least 1 ayah today.'
-                : 'Streak tilawahmu sedang berjalan! Yuk luangkan 1 menit membaca minimal 1 ayat hari ini.'),
+        'title': t('notif_quran_title'),
+        'body': t('notif_quran_body'),
         'payload': 'quran',
       };
     } else if (!hasDzikirToday) {
       return {
-        'title': isAr
-            ? 'حان وقت الذكر اليومي! ✨'
-            : (isEn ? 'Time for Daily Dhikr! ✨' : 'Sempatkan Zikir Hari Ini! ✨'),
-        'body': isAr
-            ? 'أكمل جولة تسبيح واحدة (33 مرة) للمحافظة على استقامة لسانك بذكر الله.'
-            : (isEn
-                ? 'Complete at least 1 round (33x) of tasbih dhikr to keep your daily streak.'
-                : 'Yuk tuntaskan minimal 1 putaran (33x) zikir tasbih agar streak zikirmu tidak terputus.'),
+        'title': t('notif_dzikir_title'),
+        'body': t('notif_dzikir_body'),
         'payload': 'dzikir',
       };
     }

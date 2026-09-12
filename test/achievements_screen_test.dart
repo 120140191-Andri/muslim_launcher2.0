@@ -114,13 +114,44 @@ void main() {
         find.ancestor(of: trophyFinder, matching: find.byType(InkWell)).first,
       );
       trophyInkWell.onTap?.call();
-
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
       // Verify navigation to AchievementsScreen
       expect(find.byType(AchievementsScreen), findsOneWidget);
       expect(find.text('Pencapaian & Lencana'), findsOneWidget);
+    });
+
+    testWidgets('AchievementsScreen displays all 5 Khatam tier badges (1x to 5x)', (tester) async {
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: AchievementsScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Al-Qur'an filter tab
+      await tester.tap(find.text("Al-Qur'an"));
+      await tester.pumpAndSettle();
+
+      // Verify all 5 Khatam tier badges exist
+      expect(find.text('1x Khatam • Al-Mubtadi\' Al-Karim'), findsOneWidget);
+      expect(find.text('2x Khatam • Sahabat Al-Qur\'an'), findsOneWidget);
+      expect(find.text('3x Khatam • Pelita Hati'), findsOneWidget);
+      expect(find.text('4x Khatam • Penjaga Cahaya'), findsOneWidget);
+      expect(find.text('5x Khatam • Ahlul Qur\'an Al-Mubarok'), findsOneWidget);
+
+      // Verify 1x Khatam is unlocked (displays 'Tercapai' because khatmCount was 1 in setUp)
+      expect(find.text('Tercapai'), findsWidgets);
+      // Verify 2x Khatam has progress 1 / 2 Khatam
+      expect(find.text('1 / 2 Khatam'), findsOneWidget);
+      // Verify 5x Khatam has progress 1 / 5 Khatam
+      expect(find.text('1 / 5 Khatam'), findsOneWidget);
     });
   });
 }

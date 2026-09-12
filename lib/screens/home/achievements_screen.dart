@@ -161,29 +161,90 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       SpiritualBadge(
         id: 'quran_khatam_1',
         category: 'quran',
-        title: lang == 'en' ? 'Crown of Khatam' : 'Mahkota Khatam',
+        title: lang == 'en'
+            ? '1x Khatam • Al-Mubtadi\' Al-Karim'
+            : '1x Khatam • Al-Mubtadi\' Al-Karim',
         description: lang == 'en'
-            ? 'Complete all 30 Juz (6,236 ayahs) of the Holy Qur\'an.'
-            : 'Menuntaskan seluruh 30 Juz (6.236 ayat) Al-Qur\'an.',
+            ? 'Complete all 30 Juz (6,236 ayahs) of the Holy Qur\'an for the first time.'
+            : 'Menuntaskan seluruh 30 Juz (6.236 ayat) Al-Qur\'an pertama kali.',
         fadhilah: lang == 'en'
             ? '"The angels invoke blessings upon the servant who completes the Qur\'an." (Ad-Darimi)'
-            : '"Doa orang yang mengkhatamkan Al-Qur\'an diaminkan oleh ribuan malaikat yang mendoakan rahmat baginya."',
+            : '"Doa orang yang mengkhatamkan Al-Qur\'an diaminkan oleh ribuan malaikat yang mendoakan rahmat baginya." (Ad-Darimi)',
         icon: Icons.workspace_premium_rounded,
         isUnlocked: khatm >= 1,
         progress: (khatm / 1).clamp(0.0, 1.0),
         progressLabel: '$khatm / 1 Khatam',
         pointsReward: 500,
+        rarity: BadgeRarity.rare,
+      ),
+      SpiritualBadge(
+        id: 'quran_khatam_2',
+        category: 'quran',
+        title: lang == 'en'
+            ? '2x Khatam • Companion of the Qur\'an'
+            : '2x Khatam • Sahabat Al-Qur\'an',
+        description: lang == 'en'
+            ? 'Complete 2 full Khatam cycles (12,472 ayahs). The Qur\'an becomes a dear companion in daily life.'
+            : 'Mengkhatamkan Al-Qur\'an sebanyak 2 kali (12.472 ayat). Al-Qur\'an menjadi sahabat karib penyejuk hati.',
+        fadhilah: lang == 'en'
+            ? '"Read the Qur\'an, for it will come on the Day of Resurrection as an intercessor for its companions." (Muslim)'
+            : '"Bacalah Al-Qur\'an, sesungguhnya ia akan datang pada hari kiamat sebagai pemberi syafa\'at bagi para sahabatnya." (HR. Muslim)',
+        icon: Icons.menu_book_rounded,
+        isUnlocked: khatm >= 2,
+        progress: (khatm / 2).clamp(0.0, 1.0),
+        progressLabel: '$khatm / 2 Khatam',
+        pointsReward: 750,
         rarity: BadgeRarity.epic,
+      ),
+      SpiritualBadge(
+        id: 'quran_khatam_3',
+        category: 'quran',
+        title: lang == 'en'
+            ? '3x Khatam • Radiant Heart'
+            : '3x Khatam • Pelita Hati',
+        description: lang == 'en'
+            ? 'Complete 3 full Khatam cycles (18,708 ayahs). The heart is constantly illuminated with divine guidance.'
+            : 'Mengkhatamkan Al-Qur\'an sebanyak 3 kali (18.708 ayat). Hati senantiasa terbasuh cahaya kalam Ilahi.',
+        fadhilah: lang == 'en'
+            ? '"Tranquility descends and divine mercy envelops those who constantly recite the Book of Allah." (Muslim)'
+            : '"Ketenangan (sakinah) turun dan rahmat Ilahi senantiasa menaungi hamba yang teguh membaca firman Allah." (HR. Muslim)',
+        icon: Icons.auto_awesome_rounded,
+        isUnlocked: khatm >= 3,
+        progress: (khatm / 3).clamp(0.0, 1.0),
+        progressLabel: '$khatm / 3 Khatam',
+        pointsReward: 1000,
+        rarity: BadgeRarity.epic,
+      ),
+      SpiritualBadge(
+        id: 'quran_khatam_4',
+        category: 'quran',
+        title: lang == 'en'
+            ? '4x Khatam • Guardian of Light'
+            : '4x Khatam • Penjaga Cahaya',
+        description: lang == 'en'
+            ? 'Complete 4 full Khatam cycles (24,944 ayahs). A steadfast spiritual shield guarding the soul.'
+            : 'Mengkhatamkan Al-Qur\'an sebanyak 4 kali (24.944 ayat). Benteng kokoh pelindung jiwa dari kelalaian duniawi.',
+        fadhilah: lang == 'en'
+            ? '"The one who is proficient in the recitation of the Qur\'an will be with the noble, obedient angels." (Bukhari & Muslim)'
+            : '"Orang yang mahir dan istiqomah membaca Al-Qur\'an kelak bersama para malaikat yang mulia lagi taat." (HR. Bukhari & Muslim)',
+        icon: Icons.shield_rounded,
+        isUnlocked: khatm >= 4,
+        progress: (khatm / 4).clamp(0.0, 1.0),
+        progressLabel: '$khatm / 4 Khatam',
+        pointsReward: 1500,
+        rarity: BadgeRarity.legendary,
       ),
       SpiritualBadge(
         id: 'quran_khatam_5',
         category: 'quran',
-        title: 'Ahlul Qur\'an Al-Mubarok',
+        title: lang == 'en'
+            ? '5x Khatam • Ahlul Qur\'an Al-Mubarok'
+            : '5x Khatam • Ahlul Qur\'an Al-Mubarok',
         description: lang == 'en'
-            ? 'Attain 5x Khatam (The highest spiritual Maqam Tier 5).'
-            : 'Mencapai 5x Khatam (Tingkat 5 Maqam tertinggi).',
+            ? 'Attain 5x Khatam (31,180 ayahs) - The highest spiritual Maqam Tier 5.'
+            : 'Mencapai 5x Khatam (31.180 ayat) - Puncak tertinggi Maqam Ahlul Qur\'an.',
         fadhilah: lang == 'en'
-            ? '"Indeed, Allah has His own people among mankind: the People of the Qur\'an." (Ibn Majah)'
+            ? '"Indeed, Allah has His own people among mankind: the People of the Qur\'an, they are the people of Allah and His special ones." (Ibn Majah)'
             : '"Sesungguhnya Allah memiliki keluarga dari kalangan manusia: yaitu Ahlul Qur\'an, mereka adalah keluarga Allah dan orang-orang khusus-Nya." (HR. Ibnu Majah)',
         icon: Icons.military_tech_rounded,
         isUnlocked: khatm >= 5,

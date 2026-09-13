@@ -239,43 +239,43 @@ void main() {
       const shortAyahLen = 40;
       const longAyahLen = 120;
 
-      // Level 1 (0 Khatam): 2 pts short, 3 pts long
+      // Level 1 (0 Khatam): 3 pts short, 5 pts long
       final t1Short = QuranProgressHelper.calculateAyahPoints(arabicLength: shortAyahLen, khatmCount: 0);
       final t1Long = QuranProgressHelper.calculateAyahPoints(arabicLength: longAyahLen, khatmCount: 0);
-      expect(t1Short, 2);
-      expect(t1Long, 3);
+      expect(t1Short, 3);
+      expect(t1Long, 5);
       expect(t1Short, isA<int>());
       expect(t1Long, isA<int>());
 
-      // Level 2 (1 Khatam): 3 pts short, 4 pts long
+      // Level 2 (1 Khatam): 4 pts short, 6 pts long
       final t2Short = QuranProgressHelper.calculateAyahPoints(arabicLength: shortAyahLen, khatmCount: 1);
       final t2Long = QuranProgressHelper.calculateAyahPoints(arabicLength: longAyahLen, khatmCount: 1);
-      expect(t2Short, 3);
-      expect(t2Long, 4);
+      expect(t2Short, 4);
+      expect(t2Long, 6);
       expect(t2Short, isA<int>());
       expect(t2Long, isA<int>());
 
-      // Level 3 (2 Khatam): 4 pts short, 5 pts long
+      // Level 3 (2 Khatam): 5 pts short, 8 pts long
       final t3Short = QuranProgressHelper.calculateAyahPoints(arabicLength: shortAyahLen, khatmCount: 2);
       final t3Long = QuranProgressHelper.calculateAyahPoints(arabicLength: longAyahLen, khatmCount: 2);
-      expect(t3Short, 4);
-      expect(t3Long, 5);
+      expect(t3Short, 5);
+      expect(t3Long, 8);
       expect(t3Short, isA<int>());
       expect(t3Long, isA<int>());
 
-      // Level 4 (3-4 Khatam): 4 pts short, 6 pts long
+      // Level 4 (3-4 Khatam): 6 pts short, 9 pts long
       final t4Short = QuranProgressHelper.calculateAyahPoints(arabicLength: shortAyahLen, khatmCount: 3);
       final t4Long = QuranProgressHelper.calculateAyahPoints(arabicLength: longAyahLen, khatmCount: 4);
-      expect(t4Short, 4);
-      expect(t4Long, 6);
+      expect(t4Short, 6);
+      expect(t4Long, 9);
       expect(t4Short, isA<int>());
       expect(t4Long, isA<int>());
 
-      // Level 5 (5+ Khatam): 5 pts short, 7 pts long (Double points!)
+      // Level 5 (5+ Khatam): 7 pts short, 10 pts long (Double points!)
       final t5Short = QuranProgressHelper.calculateAyahPoints(arabicLength: shortAyahLen, khatmCount: 5);
       final t5Long = QuranProgressHelper.calculateAyahPoints(arabicLength: longAyahLen, khatmCount: 12);
-      expect(t5Short, 5);
-      expect(t5Long, 7);
+      expect(t5Short, 7);
+      expect(t5Long, 10);
       expect(t5Short, isA<int>());
       expect(t5Long, isA<int>());
     });
@@ -361,6 +361,82 @@ void main() {
       // Total daily points = 10 + 4 + 10 = 24
       expect(appStateLevel5.dailyDzikirPoints, 24);
       expect(appStateLevel5.points, 24);
+    });
+
+    test('Progressive Grand Khatam Bonus helper returns progressive rewards', () {
+      expect(QuranProgressHelper.getGrandKhatamBonus(0), 500);
+      expect(QuranProgressHelper.getGrandKhatamBonus(1), 500);
+      expect(QuranProgressHelper.getGrandKhatamBonus(2), 750);
+      expect(QuranProgressHelper.getGrandKhatamBonus(3), 1000);
+      expect(QuranProgressHelper.getGrandKhatamBonus(4), 1250);
+      expect(QuranProgressHelper.getGrandKhatamBonus(5), 1500);
+      expect(QuranProgressHelper.getGrandKhatamBonus(10), 1500);
+    });
+
+    test('Daily 10-Ayahs Boost adds +2 pts bonus for first 10 ayahs and resets daily', () async {
+      final appState = AppState(prefs);
+
+      expect(appState.dailyAyahsReadCount, 0);
+      expect(appState.dailyAyahsBoostRemaining, 10);
+
+      // Level 1 base for short ayah (len 30) is 3 pts. With boost: 3 + 2 = 5 pts.
+      for (int i = 0; i < 10; i++) {
+        expect(appState.dailyAyahsBoostRemaining, 10 - i);
+        final pts = appState.calculateAndConsumeAyahPoints(30);
+        expect(pts, 5); // 3 base + 2 boost
+        expect(appState.dailyAyahsReadCount, i + 1);
+      }
+
+      expect(appState.dailyAyahsReadCount, 10);
+      expect(appState.dailyAyahsBoostRemaining, 0);
+
+      // 11th ayah: boost consumed, returns standard base 3 pts
+      final pts11 = appState.calculateAndConsumeAyahPoints(30);
+      expect(pts11, 3);
+      expect(appState.dailyAyahsReadCount, 10);
+      expect(appState.dailyAyahsBoostRemaining, 0);
+
+      // Simulate day reset
+      appState.setDailyAyahsReadForTesting(10, date: '2026-01-01');
+      expect(appState.dailyAyahsBoostRemaining, 10);
+      expect(appState.dailyAyahsReadCount, 0);
+    });
+
+    test('Scaling Unlock Cost scales from 50 to 75 to 100 pts and resets daily', () async {
+      final appState = AppState(prefs);
+
+      expect(appState.dailyUnlocksCount, 0);
+      expect(appState.currentUnlockCost, 50);
+
+      // Add points to test unlocking
+      appState.addPoints(500);
+      expect(appState.points, 500);
+
+      // Unlock 1: costs 50 pts
+      final u1 = await appState.unlockAppWithPoints('com.test.app1');
+      expect(u1, true);
+      expect(appState.points, 450);
+      expect(appState.dailyUnlocksCount, 1);
+      expect(appState.currentUnlockCost, 75);
+
+      // Unlock 2: costs 75 pts
+      final u2 = await appState.unlockAppWithPoints('com.test.app2');
+      expect(u2, true);
+      expect(appState.points, 375);
+      expect(appState.dailyUnlocksCount, 2);
+      expect(appState.currentUnlockCost, 100);
+
+      // Unlock 3: costs 100 pts
+      final u3 = await appState.unlockAppWithPoints('com.test.app3');
+      expect(u3, true);
+      expect(appState.points, 275);
+      expect(appState.dailyUnlocksCount, 3);
+      expect(appState.currentUnlockCost, 100);
+
+      // Simulate day reset
+      appState.setDailyUnlocksForTesting(3, date: '2026-01-01');
+      expect(appState.dailyUnlocksCount, 0);
+      expect(appState.currentUnlockCost, 50);
     });
   });
 }

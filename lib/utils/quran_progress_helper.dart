@@ -341,11 +341,11 @@ class QuranProgressHelper {
 
   /// Calculates the whole integer points awarded for reciting a Quran ayah.
   /// Strictly whole integers (rounded, no decimal / koma anywhere).
-  /// Level 1: 2 pts (long: 3 pts)
-  /// Level 2: 3 pts (long: 4 pts)
-  /// Level 3: 4 pts (long: 5 pts)
-  /// Level 4: 4 pts (long: 6 pts)
-  /// Level 5: 5 pts (long: 7 pts)
+  /// Level 1: 3 pts (long: 5 pts)
+  /// Level 2: 4 pts (long: 6 pts)
+  /// Level 3: 5 pts (long: 8 pts)
+  /// Level 4: 6 pts (long: 9 pts)
+  /// Level 5: 7 pts (long: 10 pts)
   static int calculateAyahPoints({
     required int arabicLength,
     required int khatmCount,
@@ -354,17 +354,31 @@ class QuranProgressHelper {
     final int level = getMaqamLevel(khatmCount);
     switch (level) {
       case 1:
-        return isLong ? 3 : 2;
+        return isLong ? 5 : 3;
       case 2:
-        return isLong ? 4 : 3;
-      case 3:
-        return isLong ? 5 : 4;
-      case 4:
         return isLong ? 6 : 4;
+      case 3:
+        return isLong ? 8 : 5;
+      case 4:
+        return isLong ? 9 : 6;
       case 5:
       default:
-        return isLong ? 7 : 5;
+        return isLong ? 10 : 7;
     }
+  }
+
+  /// Progressive Grand Khatam Bonus points awarded upon completing all 30 Juz (114 Surahs).
+  /// Khatam 1: +500 pts
+  /// Khatam 2: +750 pts
+  /// Khatam 3: +1000 pts
+  /// Khatam 4: +1250 pts
+  /// Khatam 5+: +1500 pts
+  static int getGrandKhatamBonus(int newKhatmCount) {
+    if (newKhatmCount <= 1) return 500;
+    if (newKhatmCount == 2) return 750;
+    if (newKhatmCount == 3) return 1000;
+    if (newKhatmCount == 4) return 1250;
+    return 1500;
   }
 
   /// Localized boost label describing the bonus for each level (1 to 5).

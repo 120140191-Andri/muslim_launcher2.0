@@ -510,15 +510,15 @@ void main() {
       await tester.tap(find.text("Al-Qur'an"));
       await tester.pumpAndSettle();
 
-      // Find Tingkat 1 claim button
-      expect(find.text('Klaim +15'), findsOneWidget);
+      // Find Tingkat 1 claim button (both Penjelajah Surah and Tingkat 1 have +25 reward)
+      expect(find.text('Klaim +25'), findsNWidgets(2));
 
       // Tap claim on Tingkat 1
-      await tester.tap(find.text('Klaim +15'));
+      await tester.tap(find.text('Klaim +25').last);
       await tester.pumpAndSettle();
 
-      // Verify points increased by 15
-      expect(appState.points, startPoints + 15);
+      // Verify points increased by 25
+      expect(appState.points, startPoints + 25);
       expect(appState.isBadgeClaimed('quran_maqam_1'), true);
 
       // Now tap on Tingkat 2 card to open modal dialog
@@ -533,7 +533,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify points increased by 500
-      expect(appState.points, startPoints + 15 + 500);
+      expect(appState.points, startPoints + 25 + 500);
       expect(appState.isBadgeClaimed('quran_maqam_2'), true);
     });
 

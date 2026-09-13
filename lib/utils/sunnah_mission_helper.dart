@@ -227,17 +227,17 @@ class SunnahMission {
       case 'albaqarah_akhir_malam':
         switch (lang) {
           case 'en':
-            return 'Tonight (19:00 - 04:30)';
+            return 'Tonight (19:00 - 23:59)';
           case 'ar':
-            return 'الليلة (١٩:٠٠ - ٠٤:٣٠)';
+            return 'الليلة (١٩:٠٠ - ٢٣:٥٩)';
           case 'af':
-            return 'Vanaand (19:00 - 04:30)';
+            return 'Vanaand (19:00 - 23:59)';
           case 'sw':
-            return 'Usiku Huu (19:00 - 04:30)';
+            return 'Usiku Huu (19:00 - 23:59)';
           case 'ms':
           case 'id':
           default:
-            return 'Malam Ini (19:00 - 04:30)';
+            return 'Malam Ini (19:00 - 23:59)';
         }
       case 'quran_fajar':
       default:
@@ -254,6 +254,87 @@ class SunnahMission {
           case 'id':
           default:
             return 'Waktu Subuh (04:00 - 06:30)';
+        }
+    }
+  }
+
+  String getAyahRangeText(String lang) {
+    switch (id) {
+      case 'alkahf_jumat':
+        switch (lang) {
+          case 'en':
+            return 'Ayah 1 - 110';
+          case 'ar':
+            return 'الآيات ١ - ١١٠';
+          case 'af':
+            return 'Vers 1 - 110';
+          case 'sw':
+            return 'Aya 1 - 110';
+          case 'ms':
+          case 'id':
+          default:
+            return 'Ayat 1 - 110';
+        }
+      case 'almulk_malam':
+        switch (lang) {
+          case 'en':
+            return 'Ayah 1 - 30';
+          case 'ar':
+            return 'الآيات ١ - ٣٠';
+          case 'af':
+            return 'Vers 1 - 30';
+          case 'sw':
+            return 'Aya 1 - 30';
+          case 'ms':
+          case 'id':
+          default:
+            return 'Ayat 1 - 30';
+        }
+      case 'ayat_kursi_malam':
+        switch (lang) {
+          case 'en':
+            return 'Ayah 255';
+          case 'ar':
+            return 'الآية ٢٥٥';
+          case 'af':
+            return 'Vers 255';
+          case 'sw':
+            return 'Aya 255';
+          case 'ms':
+          case 'id':
+          default:
+            return 'Ayat 255';
+        }
+      case 'albaqarah_akhir_malam':
+        switch (lang) {
+          case 'en':
+            return 'Ayah 285 - 286';
+          case 'ar':
+            return 'الآيات ٢٨٥ - ٢٨٦';
+          case 'af':
+            return 'Vers 285 - 286';
+          case 'sw':
+            return 'Aya 285 - 286';
+          case 'ms':
+          case 'id':
+          default:
+            return 'Ayat 285 - 286';
+        }
+      case 'quran_fajar':
+      default:
+        switch (lang) {
+          case 'en':
+            return 'Min. 3 Ayahs';
+          case 'ar':
+            return '٣ آيات فأكثر';
+          case 'af':
+            return 'Min. 3 Verse';
+          case 'sw':
+            return 'Aya 3 au zaidi';
+          case 'ms':
+          case 'id':
+          default:
+            return 'Min. 3 Ayat';
         }
     }
   }
@@ -580,7 +661,9 @@ class SunnahMissionHelper {
     id: 'alkahf_jumat',
     type: SunnahMissionType.fridayKahf,
     targetSurahNumber: 18,
-    pointsReward: 75,
+    targetAyahStart: 1,
+    targetAyahEnd: 110,
+    pointsReward: 150,
     icon: Icons.light_mode_rounded,
     primaryColor: Color(0xFF0D5C3A),
     gradientStart: Color(0xFF0F5E3B),
@@ -591,7 +674,9 @@ class SunnahMissionHelper {
     id: 'almulk_malam',
     type: SunnahMissionType.nightMulk,
     targetSurahNumber: 67,
-    pointsReward: 50,
+    targetAyahStart: 1,
+    targetAyahEnd: 30,
+    pointsReward: 60,
     icon: Icons.shield_moon_rounded,
     primaryColor: Color(0xFF1E1B4B),
     gradientStart: Color(0xFF2E1065),
@@ -604,7 +689,7 @@ class SunnahMissionHelper {
     targetSurahNumber: 2,
     targetAyahStart: 255,
     targetAyahEnd: 255,
-    pointsReward: 25,
+    pointsReward: 15,
     icon: Icons.security_rounded,
     primaryColor: Color(0xFF1E293B),
     gradientStart: Color(0xFF0F766E),
@@ -617,7 +702,7 @@ class SunnahMissionHelper {
     targetSurahNumber: 2,
     targetAyahStart: 285,
     targetAyahEnd: 286,
-    pointsReward: 25,
+    pointsReward: 20,
     icon: Icons.auto_stories_rounded,
     primaryColor: Color(0xFF1E293B),
     gradientStart: Color(0xFF065F46),
@@ -628,7 +713,7 @@ class SunnahMissionHelper {
     id: 'quran_fajar',
     type: SunnahMissionType.fajrReading,
     targetSurahNumber: 1, // Any reading during dawn
-    pointsReward: 40,
+    pointsReward: 35,
     icon: Icons.wb_twilight_rounded,
     primaryColor: Color(0xFFB45309),
     gradientStart: Color(0xFFD97706),
@@ -736,13 +821,10 @@ class SunnahMissionHelper {
     return false;
   }
 
-  /// Checks if night reading window is active (19:00 - 04:30)
+  /// Checks if night reading window is active (19:00 - 23:59, sebelum pergantian hari)
   static bool isNightActive([DateTime? dateTime]) {
     final now = dateTime ?? debugSimulatedTime ?? DateTime.now();
-    if (now.hour >= 19) return true;
-    if (now.hour < 4) return true;
-    if (now.hour == 4 && now.minute <= 30) return true;
-    return false;
+    return now.hour >= 19;
   }
 
   /// Checks if Fajr/Subuh window is active (04:00 - 06:30)
@@ -791,9 +873,109 @@ class SunnahMissionHelper {
     return list;
   }
 
+  /// Checks whether a surah should visually appear alive/active (bypassing future dimmed state).
+  /// - Ya-Sin (Surah 36): always active.
+  /// - Al-Kahf (Surah 18): active during Friday window.
+  /// - Al-Mulk (Surah 67): active during Night window.
+  /// - Al-Baqarah (Surah 2): active during Night window (contains Ayat Kursi & 2 last verses).
+  static bool isSurahAlwaysActive(int surahNumber, [DateTime? dateTime]) {
+    // 1. Ya-Sin (Surah 36) is always active
+    if (surahNumber == 36) return true;
+
+    final now = dateTime ?? debugSimulatedTime ?? DateTime.now();
+
+    // 2. Surah Al-Kahf (Surah 18) active during Friday window
+    if (surahNumber == 18 && isFridayKahfActive(now)) {
+      return true;
+    }
+
+    // 3. Surah Al-Mulk (Surah 67) active during Night window
+    if (surahNumber == 67 && isNightActive(now)) {
+      return true;
+    }
+
+    // 4. Surah Al-Baqarah (Surah 2) active during Night window
+    if (surahNumber == 2 && isNightActive(now)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Checks whether a specific ayah in a surah should visually appear alive/active (bypassing future dimmed state).
+  /// - Ya-Sin (Surah 36): all ayahs always active.
+  /// - Al-Kahf (Surah 18): all ayahs active during Friday window.
+  /// - Al-Mulk (Surah 67): all ayahs active during Night window.
+  /// - Al-Baqarah (Surah 2): Ayat Kursi (255) and last 2 verses (285, 286) active during Night window.
+  static bool isAyahAlwaysActive(
+    int surahNumber,
+    int ayahIndex, [
+    DateTime? dateTime,
+    int? explicitAyahNumber,
+  ]) {
+    // 1. Ya-Sin (Surah 36): all ayahs always active
+    if (surahNumber == 36) return true;
+
+    final now = dateTime ?? debugSimulatedTime ?? DateTime.now();
+
+    // 2. Surah Al-Kahf (Surah 18): all ayahs active during Friday window
+    if (surahNumber == 18 && isFridayKahfActive(now)) {
+      return true;
+    }
+
+    // 3. Surah Al-Mulk (Surah 67): all ayahs active during Night window
+    if (surahNumber == 67 && isNightActive(now)) {
+      return true;
+    }
+
+    // 4. Surah Al-Baqarah (Surah 2): Ayat Kursi (255) and last 2 verses (285, 286) active during Night window
+    if (surahNumber == 2 && isNightActive(now)) {
+      final ayahNum = explicitAyahNumber ?? (ayahIndex + 1);
+      if (ayahNum == 255 || ayahNum == 285 || ayahNum == 286) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Returns the active SunnahMission matching this surah and ayah (if any) at the given time.
+  static SunnahMission? getActiveMissionForAyah(
+    int surahNumber,
+    int ayahNumber, [
+    DateTime? dateTime,
+  ]) {
+    final now = dateTime ?? debugSimulatedTime ?? DateTime.now();
+
+    // 1. Surah Al-Kahf (18), ayahs 1..110 during Friday window
+    if (surahNumber == 18 && isFridayKahfActive(now)) {
+      if (ayahNumber >= 1 && ayahNumber <= 110) {
+        return fridayKahf;
+      }
+    }
+
+    // 2. Surah Al-Mulk (67), ayahs 1..30 during Night window
+    if (surahNumber == 67 && isNightActive(now)) {
+      if (ayahNumber >= 1 && ayahNumber <= 30) {
+        return nightMulk;
+      }
+    }
+
+    // 3. Ayat Kursi (Surah 2, Ayah 255) during Night window
+    if (surahNumber == 2 && ayahNumber == 255 && isNightActive(now)) {
+      return nightAyatKursi;
+    }
+
+    // 4. Last 2 Verses of Al-Baqarah (Surah 2, Ayahs 285-286) during Night window
+    if (surahNumber == 2 && (ayahNumber == 285 || ayahNumber == 286) && isNightActive(now)) {
+      return nightBaqarahEnd;
+    }
+
+    return null;
+  }
+
   /// Generates a bulletproof anti-gaming date key to prevent farming.
-  /// For night sessions (19:00 - 04:30), subtracting 5 hours normalizes the entire night
-  /// to the single date on which the night started.
+  /// For night sessions (19:00 - 23:59), the key uses the date of that night.
   static String getAntiGamingClaimKey(String missionId, [DateTime? dateTime]) {
     final now = dateTime ?? debugSimulatedTime ?? DateTime.now();
 
@@ -807,15 +989,6 @@ class SunnahMissionHelper {
       final dateStr =
           "${fridayDate.year}-${fridayDate.month.toString().padLeft(2, '0')}-${fridayDate.day.toString().padLeft(2, '0')}";
       return "sunnah_claim_alkahf_$dateStr";
-    }
-
-    if (missionId == 'almulk_malam' ||
-        missionId == 'ayat_kursi_malam' ||
-        missionId == 'albaqarah_akhir_malam') {
-      final nightSessionDate = now.subtract(const Duration(hours: 5));
-      final dateStr =
-          "${nightSessionDate.year}-${nightSessionDate.month.toString().padLeft(2, '0')}-${nightSessionDate.day.toString().padLeft(2, '0')}";
-      return "sunnah_claim_${missionId}_$dateStr";
     }
 
     final dateStr =
@@ -976,7 +1149,7 @@ class SunnahMissionHelper {
                     buildOption(
                       icon: Icons.nightlight_round,
                       color: const Color(0xFF1E293B),
-                      title: 'Simulasi Malam Hari (19:00 - 04:30)',
+                      title: 'Simulasi Malam Hari (19:00 - 23:59)',
                       subtitle: 'Menampilkan Al-Mulk (+50), Ayat Kursi (+25), & 2 Ayat Baqarah (+25)',
                       isSelected: activeSim != null && isNightActive(activeSim),
                       onTap: () {
@@ -1149,7 +1322,7 @@ class SunnahMissionHelper {
                   ),
                   const SizedBox(height: 16),
 
-                  // Header Badge: ANJURAN SUNNAH NABI ﷺ
+                  // Header Badge: SUNNAH NABI ﷺ
                   Row(
                     children: [
                       Container(
@@ -1223,19 +1396,51 @@ class SunnahMissionHelper {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
+                  const SizedBox(height: 5),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
-                      Icon(Icons.access_time_filled_rounded,
-                          size: 14, color: Colors.teal.shade700),
-                      const SizedBox(width: 5),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.access_time_filled_rounded,
+                              size: 13.5, color: Colors.teal.shade700),
+                          const SizedBox(width: 5),
+                          Text(
+                            mission.getTimeBadge(lang),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.teal.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                       Text(
-                        mission.getTimeBadge(lang),
+                        "•",
                         style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.teal.shade700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal.shade700.withValues(alpha: 0.5),
                         ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.menu_book_rounded,
+                              size: 13.5, color: Colors.teal.shade700),
+                          const SizedBox(width: 5),
+                          Text(
+                            mission.getAyahRangeText(lang),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.teal.shade700,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1325,6 +1530,79 @@ class SunnahMissionHelper {
                   ),
                   const SizedBox(height: 20),
 
+                  if (!isCompleted &&
+                      mission.targetAyahStart != null &&
+                      mission.targetAyahEnd != null) () {
+                    final readAyahs = appState.getSunnahReadAyahs(mission.id);
+                    final totalAyahs =
+                        mission.targetAyahEnd! - mission.targetAyahStart! + 1;
+                    if (readAyahs.isEmpty) return const SizedBox.shrink();
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: mission.primaryColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: mission.primaryColor.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                Translations.get(lang, 'progress_ayah_count')
+                                    .replaceAll('{read}', '${readAyahs.length}')
+                                    .replaceAll('{total}', '$totalAyahs'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? Colors.teal.shade200
+                                      : mission.primaryColor,
+                                ),
+                              ),
+                              Text(
+                                '${((readAyahs.length / totalAyahs) * 100).toInt()}%',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? Colors.teal.shade200
+                                      : mission.primaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: totalAyahs > 0
+                                  ? (readAyahs.length / totalAyahs)
+                                      .clamp(0.0, 1.0)
+                                  : 0.0,
+                              backgroundColor: isDark
+                                  ? Colors.white12
+                                  : Colors.grey.shade200,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                mission.primaryColor,
+                              ),
+                              minHeight: 6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }(),
+
                   // Action Button
                   if (isCompleted)
                     Container(
@@ -1354,8 +1632,27 @@ class SunnahMissionHelper {
                         ],
                       ),
                     )
-                  else
-                    FilledButton.icon(
+                  else () {
+                    final readAyahs = appState.getSunnahReadAyahs(mission.id);
+                    int? nextUnreadAyah;
+                    if (mission.targetAyahStart != null &&
+                        mission.targetAyahEnd != null) {
+                      for (int a = mission.targetAyahStart!;
+                          a <= mission.targetAyahEnd!;
+                          a++) {
+                        if (!readAyahs.contains(a)) {
+                          nextUnreadAyah = a;
+                          break;
+                        }
+                      }
+                    }
+                    final String buttonLabel = (readAyahs.isNotEmpty &&
+                            nextUnreadAyah != null)
+                        ? Translations.get(lang, 'continue_reading_ayah')
+                            .replaceAll('{ayah}', '$nextUnreadAyah')
+                        : Translations.get(lang, 'start_recitation_now');
+
+                    return FilledButton.icon(
                       style: FilledButton.styleFrom(
                         backgroundColor: mission.primaryColor,
                         foregroundColor: Colors.white,
@@ -1370,13 +1667,14 @@ class SunnahMissionHelper {
                       },
                       icon: const Icon(Icons.menu_book_rounded, size: 18),
                       label: Text(
-                        Translations.get(lang, 'start_recitation_now'),
+                        buttonLabel,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
+                    );
+                  }(),
                 ],
               ),
             ),
@@ -1396,9 +1694,19 @@ class SunnahMissionHelper {
     if (surahIndex < 0 || surahIndex >= appState.quranData.length) return;
 
     final surah = appState.quranData[surahIndex];
-    final initialAyah = mission.targetAyahStart != null
+    int initialAyah = mission.targetAyahStart != null
         ? mission.targetAyahStart! - 1
         : 0;
+
+    final readAyahs = appState.getSunnahReadAyahs(mission.id);
+    if (mission.targetAyahStart != null && mission.targetAyahEnd != null) {
+      for (int a = mission.targetAyahStart!; a <= mission.targetAyahEnd!; a++) {
+        if (!readAyahs.contains(a)) {
+          initialAyah = a - 1;
+          break;
+        }
+      }
+    }
 
     Navigator.of(context).push(
       AppPageRoute(

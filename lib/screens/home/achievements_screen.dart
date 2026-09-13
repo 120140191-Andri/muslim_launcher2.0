@@ -154,7 +154,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: hasReadAyah,
         progress: hasReadAyah ? 1.0 : 0.0,
         progressLabel: hasReadAyah ? '1 / 1' : '0 / 1',
-        pointsReward: 10,
+        pointsReward: 15,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -173,7 +173,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxQuranStreak >= 1)
             ? '1 / 1 ${lang == 'en' ? 'Day' : 'Hari'}'
             : '$currentQuranStreak / 1 ${lang == 'en' ? 'Day' : 'Hari'}',
-        pointsReward: 10,
+        pointsReward: 15,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -192,7 +192,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxQuranStreak >= 3)
             ? '3 / 3 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentQuranStreak / 3 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 20,
+        pointsReward: 25,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -285,7 +285,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: completedSurahs >= 1 || khatm > 0,
         progress: (completedSurahs / 1).clamp(0.0, 1.0),
         progressLabel: '${completedSurahs.clamp(0, 1)} / 1 Surah',
-        pointsReward: 20,
+        pointsReward: 25,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -306,7 +306,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (appState.completedSurahsThisCycle.contains(2) || khatm > 0)
             ? '286 / 286 Ayat'
             : '0 / 286 Ayat',
-        pointsReward: 100,
+        pointsReward: 250,
         rarity: BadgeRarity.epic,
       ),
       SpiritualBadge(
@@ -327,7 +327,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (appState.completedSurahsThisCycle.contains(18) || khatm > 0)
             ? '110 / 110 Ayat'
             : '0 / 110 Ayat',
-        pointsReward: 50,
+        pointsReward: 100,
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
@@ -348,7 +348,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (appState.completedSurahsThisCycle.contains(114) || khatm > 0)
             ? 'Selesai'
             : 'Belum',
-        pointsReward: 50,
+        pointsReward: 75,
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
@@ -369,7 +369,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (khatm > 0)
             ? '6.236 / 6.236 Ayat'
             : '$cumulativeAyahs / 6.236 Ayat',
-        pointsReward: 15,
+        pointsReward: 25,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -426,7 +426,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: khatm >= 3,
         progress: (khatm / 3).clamp(0.0, 1.0),
         progressLabel: '$khatm / 3 Khatam',
-        pointsReward: 1200,
+        pointsReward: 1000,
         rarity: BadgeRarity.epic,
       ),
       SpiritualBadge(
@@ -445,11 +445,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: khatm >= 5,
         progress: (khatm / 5).clamp(0.0, 1.0),
         progressLabel: '$khatm / 5 Khatam',
-        pointsReward: 2500,
+        pointsReward: 2000,
         rarity: BadgeRarity.legendary,
       ),
 
-      // ── ANJURAN NABI ﷺ (SUNNAH MISSIONS) ──
+      // ── SUNNAH NABI ﷺ (SUNNAH MISSIONS) ──
       SpiritualBadge(
         id: 'sunnah_alkahf',
         category: 'sunnah',
@@ -467,7 +467,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 appState.isSunnahMissionCompletedToday('alkahf_jumat'))
             ? Translations.get(lang, 'badge_completed')
             : Translations.get(lang, 'badge_not_yet'),
-        pointsReward: 75,
+        pointsReward: 150,
         rarity: BadgeRarity.epic,
       ),
       SpiritualBadge(
@@ -487,7 +487,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 appState.isSunnahMissionCompletedToday('almulk_malam'))
             ? Translations.get(lang, 'badge_completed')
             : Translations.get(lang, 'badge_not_yet'),
-        pointsReward: 50,
+        pointsReward: 60,
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
@@ -507,7 +507,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 appState.isSunnahMissionCompletedToday('ayat_kursi_malam'))
             ? Translations.get(lang, 'badge_completed')
             : Translations.get(lang, 'badge_not_yet'),
-        pointsReward: 25,
+        pointsReward: 15,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -527,7 +527,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 appState.isSunnahMissionCompletedToday('albaqarah_akhir_malam'))
             ? Translations.get(lang, 'badge_completed')
             : Translations.get(lang, 'badge_not_yet'),
-        pointsReward: 25,
+        pointsReward: 20,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -547,7 +547,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 appState.isSunnahMissionCompletedToday('quran_fajar'))
             ? Translations.get(lang, 'badge_completed')
             : Translations.get(lang, 'badge_not_yet'),
-        pointsReward: 40,
+        pointsReward: 35,
         rarity: BadgeRarity.rare,
       ),
 
@@ -566,7 +566,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         isUnlocked: totalDzikir >= 1,
         progress: (totalDzikir / 1).clamp(0.0, 1.0),
         progressLabel: '${totalDzikir.clamp(0, 1)} / 1',
-        pointsReward: 5,
+        pointsReward: 10,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(
@@ -623,7 +623,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxDzikirStreak >= 7)
             ? '7 / 7 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentDzikirStreak / 7 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 50,
+        pointsReward: 40,
         rarity: BadgeRarity.rare,
       ),
       SpiritualBadge(
@@ -642,7 +642,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxDzikirStreak >= 14)
             ? '14 / 14 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentDzikirStreak / 14 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 100,
+        pointsReward: 80,
         rarity: BadgeRarity.epic,
       ),
       SpiritualBadge(
@@ -661,7 +661,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxDzikirStreak >= 30)
             ? '30 / 30 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentDzikirStreak / 30 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 250,
+        pointsReward: 200,
         rarity: BadgeRarity.legendary,
       ),
       SpiritualBadge(
@@ -680,7 +680,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxDzikirStreak >= 365)
             ? '365 / 365 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentDzikirStreak / 365 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 1000,
+        pointsReward: 750,
         rarity: BadgeRarity.legendary,
       ),
       SpiritualBadge(
@@ -788,7 +788,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: (maxDisciplineStreak >= 3)
             ? '3 / 3 ${lang == 'en' ? 'Days' : 'Hari'}'
             : '$currentDisciplineStreak / 3 ${lang == 'en' ? 'Days' : 'Hari'}',
-        pointsReward: 20,
+        pointsReward: 25,
         rarity: BadgeRarity.common,
       ),
       SpiritualBadge(

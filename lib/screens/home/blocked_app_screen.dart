@@ -34,37 +34,39 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final lang = appState.languageCode;
-    final canUnlock = appState.points >= 50;
+    final unlockCost = appState.currentUnlockCost;
+    final canUnlock = appState.points >= unlockCost;
     final appName = appState.getAppNameSync(widget.packageName);
     final category = appState.getAppCategorySync(widget.packageName);
     final isStrictlyNonProductive = AppState.isStrictlyNonProductive(widget.packageName, appName, category);
 
-    final int minAyahPts = QuranProgressHelper.calculateAyahPoints(
+    final int baseMinAyahPts = QuranProgressHelper.calculateAyahPoints(
       arabicLength: 10,
       khatmCount: appState.khatmCount,
     );
-    final int maxAyahPts = QuranProgressHelper.calculateAyahPoints(
+    final int baseMaxAyahPts = QuranProgressHelper.calculateAyahPoints(
       arabicLength: 100,
       khatmCount: appState.khatmCount,
     );
+    final int boostRem = appState.dailyAyahsBoostRemaining;
+    final int displayMinAyahPts = baseMinAyahPts + (boostRem > 0 ? 2 : 0);
+    final int displayMaxAyahPts = baseMaxAyahPts + (boostRem > 0 ? 2 : 0);
+
     final int minDzikirPts = (2 * appState.maqamBoostMultiplier).round();
     final int maxDzikirPts = (5 * appState.maqamBoostMultiplier).round();
 
-    final quranPtsLabel = lang == 'id'
-        ? '+$minAyahPts-$maxAyahPts Poin/Ayat'
-        : lang == 'ms'
-            ? '+$minAyahPts-$maxAyahPts Mata/Ayat'
-            : lang == 'ar'
-                ? '+$minAyahPts-$maxAyahPts نقاط/آية'
-                : '+$minAyahPts-$maxAyahPts Pts/Ayah';
+    final quranPtsLabel = (boostRem > 0)
+        ? Translations.get(lang, 'quran_boost_active')
+            .replaceAll('{min}', '$displayMinAyahPts')
+            .replaceAll('{max}', '$displayMaxAyahPts')
+            .replaceAll('{rem}', '$boostRem')
+        : Translations.get(lang, 'quran_normal_pts')
+            .replaceAll('{min}', '$displayMinAyahPts')
+            .replaceAll('{max}', '$displayMaxAyahPts');
 
-    final dzikirPtsLabel = lang == 'id'
-        ? '+$minDzikirPts-$maxDzikirPts Poin'
-        : lang == 'ms'
-            ? '+$minDzikirPts-$maxDzikirPts Mata'
-            : lang == 'ar'
-                ? '+$minDzikirPts-$maxDzikirPts نقطة'
-                : '+$minDzikirPts-$maxDzikirPts Pts';
+    final dzikirPtsLabel = Translations.get(lang, 'dzikir_label_pts_round')
+        .replaceAll('{min}', '$minDzikirPts')
+        .replaceAll('{max}', '$maxDzikirPts');
 
     final hadithPtsLabel = lang == 'id'
         ? '+1-4 Poin'
@@ -222,9 +224,9 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                         child: ElevatedButton.icon(
                           onPressed: (canUnlock && !_isUnlocking)
                             ? () async {
-                                if (appState.points < 50) return;
+                                if (appState.points < unlockCost) return;
                                 setState(() => _isUnlocking = true);
-                                final success = await appState.unlockAppWithPoints(widget.packageName, cost: 50);
+                                final success = await appState.unlockAppWithPoints(widget.packageName, cost: unlockCost);
                                 if (!success) {
                                   if (mounted) {
                                     setState(() => _isUnlocking = false);
@@ -260,8 +262,8 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                           ),
                           label: Text(
                             canUnlock
-                              ? Translations.get(lang, 'unlock_60m')
-                              : Translations.get(lang, 'need_50_points'),
+                              ? Translations.get(lang, 'unlock_cost_pts').replaceAll('{cost}', '$unlockCost')
+                              : Translations.get(lang, 'need_cost_points').replaceAll('{cost}', '$unlockCost'),
                             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center,
                           ),

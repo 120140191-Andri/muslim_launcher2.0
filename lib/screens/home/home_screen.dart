@@ -2684,13 +2684,14 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
       orElse: () => widget.activeMissions.first,
     );
     final isCompleted = widget.appState.isSunnahMissionCompletedToday(mission.id);
-    final int khatmCount = widget.appState.khatmCount;
-    final bool hasKhatam = khatmCount > 0;
-    final int levelNum = QuranProgressHelper.getMaqamLevel(khatmCount);
-    final String levelPrefix = Translations.get(widget.lang, 'level_prefix');
-    final String maqamTitle =
-        QuranProgressHelper.getMaqamTitle(khatmCount, widget.lang);
-    final String khatamBadgeText = "$levelPrefix $levelNum: $maqamTitle";
+    final hasInstallments =
+        mission.targetAyahStart != null && mission.targetAyahEnd != null;
+    final totalMissionAyahs = hasInstallments
+        ? (mission.targetAyahEnd! - mission.targetAyahStart! + 1)
+        : 0;
+    final readCount = hasInstallments
+        ? widget.appState.getSunnahProgressCount(mission.id)
+        : 0;
 
     return Container(
       width: double.infinity,
@@ -2728,7 +2729,7 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Header Row: Tingkatan Khatam on left, Bonus Points on right
+                  // 1. Header Row: Sunnah Nabi badge on left, Bonus Points on right
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -2737,10 +2738,11 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              QuranProgressHelper.showKhatamLevelInfoModal(
-                                context,
-                                widget.lang,
-                                khatmCount,
+                              SunnahMissionHelper.showMissionDetailModal(
+                                context: context,
+                                mission: mission,
+                                appState: widget.appState,
+                                lang: widget.lang,
                               );
                             },
                             borderRadius: BorderRadius.circular(20),
@@ -2750,16 +2752,12 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                                 vertical: 4.5,
                               ),
                               decoration: BoxDecoration(
-                                color: hasKhatam
-                                    ? Colors.amber.shade50
-                                    : colorScheme.primaryContainer
-                                        .withValues(alpha: 0.45),
+                                color: mission.primaryColor
+                                    .withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: hasKhatam
-                                      ? Colors.amber.shade400
-                                      : colorScheme.primary
-                                          .withValues(alpha: 0.25),
+                                  color: mission.primaryColor
+                                      .withValues(alpha: 0.3),
                                   width: 0.8,
                                 ),
                               ),
@@ -2767,58 +2765,29 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    hasKhatam
-                                        ? Icons.workspace_premium_rounded
-                                        : Icons.military_tech_rounded,
+                                    Icons.stars_rounded,
                                     size: 13.5,
-                                    color: hasKhatam
-                                        ? const Color(0xFFD97706)
-                                        : colorScheme.primary,
+                                    color: mission.primaryColor,
                                   ),
                                   const SizedBox(width: 5),
                                   Flexible(
                                     child: Text(
-                                      khatamBadgeText,
+                                      mission.getBadgeTitle(widget.lang),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        color: hasKhatam
-                                            ? const Color(0xFF92400E)
-                                            : colorScheme.primary,
+                                        color: mission.primaryColor,
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 0.2,
                                       ),
                                     ),
                                   ),
-                                  if (hasKhatam) ...[
-                                    const SizedBox(width: 5),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 5,
-                                        vertical: 1,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFD97706),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        "+${QuranProgressHelper.getMaqamBoostPercent(khatmCount)}%",
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
                                   const SizedBox(width: 4),
                                   Icon(
                                     Icons.info_outline_rounded,
                                     size: 13,
-                                    color: hasKhatam
-                                        ? const Color(0xFFD97706)
-                                        : colorScheme.primary,
+                                    color: mission.primaryColor,
                                   ),
                                 ],
                               ),
@@ -3022,6 +2991,56 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                       ),
                     ],
                   ),
+                  if (!isCompleted && hasInstallments && readCount > 0) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: mission.primaryColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: mission.primaryColor.withValues(alpha: 0.2),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.auto_stories_rounded,
+                            size: 13,
+                            color: mission.primaryColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              Translations.get(
+                                widget.lang,
+                                'progress_ayah_count',
+                              )
+                                  .replaceAll('{read}', '$readCount')
+                                  .replaceAll('{total}', '$totalMissionAyahs'),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: mission.primaryColor,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${((readCount / totalMissionAyahs) * 100).toInt()}%',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: mission.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 14),
 

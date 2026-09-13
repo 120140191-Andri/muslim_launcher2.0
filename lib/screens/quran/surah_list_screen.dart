@@ -8,6 +8,7 @@ import 'surah_detail_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 import '../../utils/quran_progress_helper.dart';
+import '../../utils/sunnah_mission_helper.dart';
 
 class SurahListScreen extends StatefulWidget {
   const SurahListScreen({super.key});
@@ -270,6 +271,10 @@ class _SurahListScreenState extends State<SurahListScreen> {
                         itemCount: appState.quranData.length,
                         itemBuilder: (context, index) {
                           final surah = appState.quranData[index];
+                          final int surahNumber =
+                              surah['surah_number'] as int? ?? (index + 1);
+                          final bool isAlwaysActive =
+                              SunnahMissionHelper.isSurahAlwaysActive(surahNumber);
 
                           final isLastRead = index == lastReadIdx;
                           final isFuture = index > unlockedUntilIndex;
@@ -288,7 +293,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
 
                           final tile = RepaintBoundary(
                             child: Opacity(
-                              opacity: isFuture ? 0.5 : 1.0,
+                              opacity: (isFuture && !isAlwaysActive) ? 0.5 : 1.0,
                               child: _SurahTile(
                                 surah: surah,
                                 lang: lang,
@@ -521,6 +526,9 @@ class _SurahTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final int surahNumber = surah['surah_number'] as int? ?? 0;
+    final bool isAlwaysActive =
+        SunnahMissionHelper.isSurahAlwaysActive(surahNumber);
 
     final Color borderColor = isHighlighted
         ? Colors.teal
@@ -565,7 +573,7 @@ class _SurahTile extends StatelessWidget {
                 _SurahNumberShape(
                   number: surah['surah_number'].toString(),
                   isLastRead: isLastRead,
-                  isFuture: isFuture,
+                  isFuture: isFuture && !isAlwaysActive,
                 ),
 
                 const SizedBox(width: 16),
@@ -606,7 +614,7 @@ class _SurahTile extends StatelessWidget {
                     color: colorScheme.primary,
                     size: 20,
                   )
-                else if (isFuture)
+                else if (isFuture && !isAlwaysActive)
                   Icon(
                     Icons.lock_outline_rounded,
                     color: colorScheme.outlineVariant,

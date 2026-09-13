@@ -68,6 +68,11 @@ class Translations {
           'Untuk membuka aplikasi ini, baca Al-Quran, berdzikir khusyu\', atau tadabbur hadits untuk mengumpulkan poin.',
       'unlock_60m': 'Buka 60m (50 Poin)',
       'need_50_points': 'Butuh 50 Poin',
+      'unlock_cost_pts': 'Buka 60m ({cost} Poin)',
+      'need_cost_points': 'Butuh {cost} Poin',
+      'dzikir_label_pts_round': '+{min}-{max} Poin / 33x Tasbih',
+      'quran_boost_active': '+{min}-{max} Poin/Ayat (Boost: {rem}/10)',
+      'quran_normal_pts': '+{min}-{max} Poin/Ayat (+Bonus Surah)',
       'read_quran_earn_points': 'Baca Al-Quran (+ Poin)',
       'read_hadith_earn_points': 'Sedang Berhalangan? Baca Hadits (+ Poin)',
       'hadith_excused_hint':
@@ -129,22 +134,23 @@ class Translations {
       'daily_hadith': 'INSIGHT HARI INI',
       'last_read': 'TERAKHIR DIBACA',
       'continue_journey': 'LANJUTKAN BACAAN',
-      'sunnah_mission_header': 'ANJURAN NABI ﷺ',
+      'sunnah_mission_header': 'SUNNAH NABI ﷺ',
       'switch_to_regular': 'Bacaan Rutin',
       'switch_to_sunnah': 'Misi Sunnah',
       'active_sunnah_badge': 'Misi Sunnah Aktif',
       'view_hadith_and_start': 'Lihat Dalil & Mulai',
-      'sunnah_event_badge': 'ANJURAN SUNNAH NABI ﷺ',
+      'sunnah_event_badge': 'SUNNAH NABI ﷺ',
       'virtue_and_hadith': 'Keutamaan & Dalil',
       'sunnah_outside_sequence_note':
           'Meskipun di luar urutan khatam 30 Juz Anda, Anda TETAP MENDAPATKAN +{pts} POIN BONUS saat menyelesaikan amalan ini!',
       'sunnah_completed_today_claimed':
-          'Sudah Selesai Hari Ini (+{pts} Poin Diklaim)',
+          'Sudah Selesai Hari Ini (+{pts} Poin)',
       'start_recitation_now': 'Mulai Membaca Sekarang',
       'sunnah_mission_completed_msg':
-          'Masha Allah! Amalan Sunnah Selesai (+{pts} Poin Bonus)',
+          'Masha Allah! Sunnah Nabi selesai (+{pts} Poin). Buka menu Pencapaian untuk klaim poin Anda!',
+      'claim_now_action': 'KLAIM',
       'pts_bonus_label': '+{pts} Poin Bonus',
-      'sunnah_filter': 'Anjuran Nabi ﷺ',
+      'sunnah_filter': 'Sunnah Nabi ﷺ',
       'badge_completed': 'Selesai',
       'badge_not_yet': 'Belum',
       'juz_label': 'Juz',
@@ -303,6 +309,10 @@ class Translations {
       'save_to_gallery_failed': 'Gagal menyimpan ke galeri. Silakan coba lagi.',
       'share_success_caption':
           'Alhamdulillah! Saya telah meraih pencapaian "{title}" di Muslim Launcher 2. Yuk bangun istiqomah ibadah harianmu bersama Muslim Launcher 2:\nhttps://play.google.com/store/apps/details?id=com.kraftech.muslim_launcher_2',
+      'sunnah_ayah_read': 'Sudah Dibaca',
+      'sunnah_last_read': 'Terakhir Dibaca',
+      'continue_reading_ayah': 'Lanjutkan Ayat {ayah}',
+      'progress_ayah_count': '{read} dari {total} Ayat',
     },
     'en': {
       'language_selection': 'Select Language',
@@ -372,6 +382,11 @@ class Translations {
           'To open this app, read the Quran, recite Khusyu\' Dhikr, or read Hadiths to earn points.',
       'unlock_60m': 'Unlock 60m (50 Pts)',
       'need_50_points': 'Need 50 Points',
+      'unlock_cost_pts': 'Unlock 60m ({cost} Pts)',
+      'need_cost_points': 'Need {cost} Points',
+      'dzikir_label_pts_round': '+{min}-{max} Pts / 33x Tasbih',
+      'quran_boost_active': '+{min}-{max} Pts/Ayah (Boost: {rem}/10)',
+      'quran_normal_pts': '+{min}-{max} Pts/Ayah (+Surah Bonus)',
       'read_quran_earn_points': 'Read Quran (+ Points)',
       'read_hadith_earn_points': 'Excused? Read Hadith (+ Points)',
       'hadith_excused_hint':
@@ -436,17 +451,18 @@ class Translations {
       'switch_to_sunnah': 'Sunnah Mission',
       'active_sunnah_badge': 'Active Sunnah',
       'view_hadith_and_start': 'View Hadith & Begin',
-      'sunnah_event_badge': 'PROPHET\'S SUNNAH EVENT',
+      'sunnah_event_badge': 'PROPHET\'S SUNNAH ﷺ',
       'virtue_and_hadith': 'Virtues & Hadith',
       'sunnah_outside_sequence_note':
           'Even if outside your 30-Juz khatam sequence, you STILL RECEIVE +{pts} BONUS POINTS upon completing this deed!',
       'sunnah_completed_today_claimed':
-          'Completed Today (+{pts} Pts Claimed)',
+          'Completed Today (+{pts} Pts)',
       'start_recitation_now': 'Start Recitation Now',
       'sunnah_mission_completed_msg':
-          'Masha Allah! Sunnah Deed Completed (+{pts} Bonus Points)',
+          'Masha Allah! Prophet\'s Sunnah completed (+{pts} Pts). Open the Achievements menu to claim your points!',
+      'claim_now_action': 'CLAIM',
       'pts_bonus_label': '+{pts} Pts Bonus',
-      'sunnah_filter': 'Sunnah Missions',
+      'sunnah_filter': 'Prophet\'s Sunnah ﷺ',
       'badge_completed': 'Completed',
       'badge_not_yet': 'Not yet',
       'juz_label': 'Juz',
@@ -599,6 +615,10 @@ class Translations {
       'save_to_gallery_failed': 'Failed to save to gallery. Please try again.',
       'share_success_caption':
           'Alhamdulillah! I achieved "{title}" on Muslim Launcher 2. Build your daily spiritual habits with Muslim Launcher 2:\nhttps://play.google.com/store/apps/details?id=com.kraftech.muslim_launcher_2',
+      'sunnah_ayah_read': 'Read',
+      'sunnah_last_read': 'Last Read',
+      'continue_reading_ayah': 'Continue Ayah {ayah}',
+      'progress_ayah_count': '{read} of {total} Ayahs',
     },
     'ms': {
       'language_selection': 'Pilih Bahasa',
@@ -669,6 +689,11 @@ class Translations {
           'Untuk membuka aplikasi ini, sila baca Al-Quran, berzikir khusyuk, atau tadabbur hadis untuk mengumpul mata.',
       'unlock_60m': 'Buka 60m (50 Mata)',
       'need_50_points': 'Perlu 50 Mata',
+      'unlock_cost_pts': 'Buka 60m ({cost} Mata)',
+      'need_cost_points': 'Perlu {cost} Mata',
+      'dzikir_label_pts_round': '+{min}-{max} Mata / 33x Tasbih',
+      'quran_boost_active': '+{min}-{max} Mata/Ayat (Boost: {rem}/10)',
+      'quran_normal_pts': '+{min}-{max} Mata/Ayat (+Bonus Surah)',
       'read_quran_earn_points': 'Baca Al-Quran (+ Mata)',
       'read_hadith_earn_points': 'Sedang Berhalangan? Baca Hadis (+ Mata)',
       'hadith_excused_hint':
@@ -729,22 +754,23 @@ class Translations {
       'daily_hadith': 'INSIGHT HARI INI',
       'last_read': 'TERAKHIR DIBACA',
       'continue_journey': 'TERUSKAN BACAAN',
-      'sunnah_mission_header': 'ANJURAN NABI ﷺ',
+      'sunnah_mission_header': 'SUNNAH NABI ﷺ',
       'switch_to_regular': 'Bacaan Rutin',
       'switch_to_sunnah': 'Misi Sunnah',
       'active_sunnah_badge': 'Misi Sunnah Aktif',
       'view_hadith_and_start': 'Lihat Dalil & Mula',
-      'sunnah_event_badge': 'ANJURAN SUNNAH NABI ﷺ',
+      'sunnah_event_badge': 'SUNNAH NABI ﷺ',
       'virtue_and_hadith': 'Keutamaan & Dalil',
       'sunnah_outside_sequence_note':
           'Walaupun di luar urutan khatam 30 Juzuk anda, anda TETAP MENDAPAT +{pts} MATA BONUS apabila menyelesaikan amalan ini!',
       'sunnah_completed_today_claimed':
-          'Telah Selesai Hari Ini (+{pts} Mata Dituntut)',
+          'Telah Selesai Hari Ini (+{pts} Mata)',
       'start_recitation_now': 'Mula Membaca Sekarang',
       'sunnah_mission_completed_msg':
-          'Masha Allah! Amalan Sunnah Selesai (+{pts} Mata Bonus)',
+          'Masha Allah! Sunnah Nabi selesai (+{pts} Mata). Buka menu Pencapaian untuk tuntut mata anda!',
+      'claim_now_action': 'TUNTUT',
       'pts_bonus_label': '+{pts} Mata Bonus',
-      'sunnah_filter': 'Anjuran Nabi ﷺ',
+      'sunnah_filter': 'Sunnah Nabi ﷺ',
       'badge_completed': 'Selesai',
       'badge_not_yet': 'Belum',
       'juz_label': 'Juzuk',
@@ -902,6 +928,10 @@ class Translations {
       'save_to_gallery_failed': 'Gagal menyimpan ke galeri. Sila cuba lagi.',
       'share_success_caption':
           'Alhamdulillah! Saya telah meraih pencapaian "{title}" di Muslim Launcher 2. Jom bina istiqomah ibadah harian bersama Muslim Launcher 2:\nhttps://play.google.com/store/apps/details?id=com.kraftech.muslim_launcher_2',
+      'sunnah_ayah_read': 'Sudah Dibaca',
+      'sunnah_last_read': 'Terakhir Dibaca',
+      'continue_reading_ayah': 'Teruskan Ayat {ayah}',
+      'progress_ayah_count': '{read} daripada {total} Ayat',
     },
     'ar': {
       'language_selection': 'اختر اللغة',
@@ -969,6 +999,11 @@ class Translations {
           'لفتح هذا التطبيق، يرجى قراءة القرآن، أو الذكر الخاشع، أو تدبر الأحاديث لكسب النقاط.',
       'unlock_60m': 'فتح 60 د (50 نقطة)',
       'need_50_points': 'تحتاج 50 نقطة',
+      'unlock_cost_pts': 'فتح 60 د ({cost} نقطة)',
+      'need_cost_points': 'تحتاج {cost} نقطة',
+      'dzikir_label_pts_round': '+{min}-{max} نقطة / ٣٣ تسبيحة',
+      'quran_boost_active': '+{min}-{max} نقاط/آية (مضاعف: {rem}/١٠)',
+      'quran_normal_pts': '+{min}-{max} نقاط/آية (+مكافأة السورة)',
       'read_quran_earn_points': 'اقرأ القرآن (+ نقاط)',
       'read_hadith_earn_points': 'معذور؟ اقرأ الحديث (+ نقاط)',
       'hadith_excused_hint':
@@ -1037,10 +1072,11 @@ class Translations {
       'sunnah_outside_sequence_note':
           'حتى لو كانت خارج تسلسل ختمتك لـ ٣٠ جزءاً، ستظل تحصل على +{pts} نقطة إضافية عند إتمام هذه السنة!',
       'sunnah_completed_today_claimed':
-          'تمت القراءة اليوم (تم استلام +{pts} نقطة)',
+          'تمت القراءة اليوم (+{pts} نقطة)',
       'start_recitation_now': 'ابدأ التلاوة الآن',
       'sunnah_mission_completed_msg':
-          'ما شاء الله! تمت سُنّة النبي ﷺ (+{pts} نقطة إضافية)',
+          'ما شاء الله! اكتملت سُنّة النبي ﷺ (+{pts} نقطة). افتح قائمة الإنجازات لاستلام نقاطك!',
+      'claim_now_action': 'استلام',
       'pts_bonus_label': '+{pts} نقطة إضافية',
       'sunnah_filter': 'سنة النبي ﷺ',
       'badge_completed': 'مكتمل',
@@ -1189,6 +1225,10 @@ class Translations {
       'save_to_gallery_failed': 'فشل الحفظ في المعرض. يرجى المحاولة مرة أخرى.',
       'share_success_caption':
           'الحمد لله! حققت إنجاز "{title}" عبر تطبيق Muslim Launcher 2:\nhttps://play.google.com/store/apps/details?id=com.kraftech.muslim_launcher_2',
+      'sunnah_ayah_read': 'تمت القراءة',
+      'sunnah_last_read': 'آخر قراءة',
+      'continue_reading_ayah': 'تابع الآية {ayah}',
+      'progress_ayah_count': '{read} من {total} آية',
     },
     'af': {
       'language_selection': 'Kies Taal',
@@ -1258,6 +1298,11 @@ class Translations {
           'Om hierdie toepassing oop te maak, lees die Koran, resiteer Dhikr, of lees Hadiete om punte te verdien.',
       'unlock_60m': 'Ontsluit 60m (50 Punte)',
       'need_50_points': 'Benodig 50 Punte',
+      'unlock_cost_pts': 'Ontsluit 60m ({cost} Punte)',
+      'need_cost_points': 'Benodig {cost} Punte',
+      'dzikir_label_pts_round': '+{min}-{max} Punte / 33x Tasbih',
+      'quran_boost_active': '+{min}-{max} Punte/Vers (Hupstoot: {rem}/10)',
+      'quran_normal_pts': '+{min}-{max} Punte/Vers (+Soera Bonus)',
       'read_quran_earn_points': 'Lees Koran (+ Punte)',
       'read_hadith_earn_points': 'Verskoon? Lees Hadieth (+ Punte)',
       'hadith_excused_hint':
@@ -1323,17 +1368,18 @@ class Translations {
       'switch_to_sunnah': 'Soennah Missie',
       'active_sunnah_badge': 'Aktiewe Soennah',
       'view_hadith_and_start': 'Kyk Hadis & Begin',
-      'sunnah_event_badge': 'PROFEET SE SOENNAH-GELEENTHEID',
+      'sunnah_event_badge': 'PROFEET SE SOENNAH ﷺ',
       'virtue_and_hadith': 'Deugde & Hadis',
       'sunnah_outside_sequence_note':
           'Al is dit buite jou 30-Juz khatam-volgorde, kry jy NOG STEEDS +{pts} BONUSPUNTE wanneer jy hierdie daad voltooi!',
       'sunnah_completed_today_claimed':
-          'Vandag Voltooi (+{pts} Punte Geëis)',
+          'Vandag Voltooi (+{pts} Punte)',
       'start_recitation_now': 'Begin Nou Lees',
       'sunnah_mission_completed_msg':
-          'Masha Allah! Soennah-daad Voltooi (+{pts} Bonuspunte)',
+          'Masha Allah! Soennah van die Profeet voltooi (+{pts} Punte). Maak die Prestasies-kieslys oop om jou punte op te eis!',
+      'claim_now_action': 'EIS OP',
       'pts_bonus_label': '+{pts} Bonuspunte',
-      'sunnah_filter': 'Soennah Missies',
+      'sunnah_filter': 'Soennah van die Profeet ﷺ',
       'badge_completed': 'Klaar',
       'badge_not_yet': 'Nog nie',
       'juz_label': 'Juz',
@@ -1487,6 +1533,10 @@ class Translations {
       'save_to_gallery_failed': 'Kon nie in galery stoor nie. Probeer asseblief weer.',
       'share_success_caption':
           'Alhamdulillah! Ek het die "{title}" prestasie behaal via Muslim Launcher 2:\nhttps://play.google.com/store/apps/details?id=com.kraftech.muslim_launcher_2',
+      'sunnah_ayah_read': 'Gelees',
+      'sunnah_last_read': 'Laas Gelees',
+      'continue_reading_ayah': 'Gaan voort Vers {ayah}',
+      'progress_ayah_count': '{read} van {total} Verse',
     },
     'sw': {
       'language_selection': 'Chagua Lugha',
@@ -1556,6 +1606,11 @@ class Translations {
           'Kufungua programu hii, soma Quran, fanya Dhikri, au soma Hadithi ili kupata pointi.',
       'unlock_60m': 'Fungua dkk 60 (Pointi 50)',
       'need_50_points': 'Unahitaji Pointi 50',
+      'unlock_cost_pts': 'Fungua dkk 60 (Pointi {cost})',
+      'need_cost_points': 'Unahitaji Pointi {cost}',
+      'dzikir_label_pts_round': '+{min}-{max} Pointi / Tasbihi 33',
+      'quran_boost_active': '+{min}-{max} Pointi/Aya (Boost: {rem}/10)',
+      'quran_normal_pts': '+{min}-{max} Pointi/Aya (+Bonasi ya Sura)',
       'read_quran_earn_points': 'Soma Quran (+ Pointi)',
       'read_hadith_earn_points': 'Umezuiwa? Soma Hadithi (+ Pointi)',
       'hadith_excused_hint':
@@ -1622,17 +1677,18 @@ class Translations {
       'switch_to_sunnah': 'Misheni ya Sunnah',
       'active_sunnah_badge': 'Sunnah Inayotumika',
       'view_hadith_and_start': 'Tazama Hadithi & Anza',
-      'sunnah_event_badge': 'TUKIO LA SUNNAH YA MTUME ﷺ',
+      'sunnah_event_badge': 'SUNNAH YA MTUME ﷺ',
       'virtue_and_hadith': 'Fadhila & Hadithi',
       'sunnah_outside_sequence_note':
           'Hata kama iko nje ya mlolongo wako wa juzuu 30, BADO UTAPATA POINTI ZA ZIADA +{pts} baada ya kukamilisha tendo hili!',
       'sunnah_completed_today_claimed':
-          'Imekamilika Leo (+Pointi {pts} Zimedaiwa)',
+          'Imekamilika Leo (+Pointi {pts})',
       'start_recitation_now': 'Anza Kusoma Sasa',
       'sunnah_mission_completed_msg':
-          'Masha Allah! Tendo la Sunnah Limekamilika (+Pointi {pts} za Ziada)',
+          'Masha Allah! Sunnah ya Mtume imekamilika (+Pointi {pts}). Fungua menyu ya Mafanikio ili kudai pointi zako!',
+      'claim_now_action': 'DAI',
       'pts_bonus_label': '+Pointi {pts} za Ziada',
-      'sunnah_filter': 'Misheni za Sunnah',
+      'sunnah_filter': 'Sunnah ya Mtume ﷺ',
       'badge_completed': 'Imekamilika',
       'badge_not_yet': 'Bado',
       'juz_label': 'Juzuu',
@@ -1787,6 +1843,10 @@ class Translations {
       'save_to_gallery_failed': 'Imeshindwa kuhifadhi kwenye matunzio. Tafadhali jaribu tena.',
       'share_success_caption':
           'Alhamdulillah! Nimefanikisha "{title}" kwenye Muslim Launcher 2:\nhttps://play.google.com/store/apps/details?id=com.kraftech.muslim_launcher_2',
+      'sunnah_ayah_read': 'Imesomwa',
+      'sunnah_last_read': 'Mwisho Kusomwa',
+      'continue_reading_ayah': 'Endelea Aya {ayah}',
+      'progress_ayah_count': '{read} kati ya {total} Aya',
     },
   };
 

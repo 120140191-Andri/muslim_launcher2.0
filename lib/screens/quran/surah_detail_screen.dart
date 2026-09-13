@@ -67,7 +67,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
   bool _isLongAyah(String arabic) {
     final clean = arabic.replaceAll(RegExp(r'\[[a-zA-Z0-9:]*\[|\]'), '');
-    final words = clean.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    final words = clean
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .length;
     return words >= 18 || clean.trim().length >= 130;
   }
 
@@ -184,7 +188,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
               _recognizedText = _cumulativeRecognizedText;
 
               // Check if reading is complete before restarting session
-              if (_checkMatch(_recognizedText, _targetArabicText, isFinalEvaluation: true)) {
+              if (_checkMatch(
+                _recognizedText,
+                _targetArabicText,
+                isFinalEvaluation: true,
+              )) {
                 _onSuccess(_recordingAyahIdx!, _targetArabicText);
                 _stopListening();
                 return;
@@ -204,8 +212,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       debugPrint("Speech init error: $e");
     }
   }
-
-
 
   void _startListeningSession() async {
     try {
@@ -287,7 +293,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   void _evaluateOnTimeout() {
     if (!mounted || _isDisposed || _recordingAyahIdx == null) return;
 
-    if (_checkMatch(_recognizedText, _targetArabicText, isFinalEvaluation: true)) {
+    if (_checkMatch(
+      _recognizedText,
+      _targetArabicText,
+      isFinalEvaluation: true,
+    )) {
       _onSuccess(_recordingAyahIdx!, _targetArabicText);
       _stopListening();
     } else {
@@ -308,11 +318,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                   child: Text(
                     hadVoice
                         ? (lang == 'en'
-                            ? "Recitation incomplete. Please recite until the end of the verse."
-                            : "Bacaan belum lengkap. Silakan baca hingga akhir ayat.")
+                              ? "Recitation incomplete. Please recite until the end of the verse."
+                              : "Bacaan belum lengkap. Silakan baca hingga akhir ayat.")
                         : (lang == 'en'
-                            ? "No voice detected. Please try again."
-                            : "Suara belum terdeteksi. Silakan coba lagi."),
+                              ? "No voice detected. Please try again."
+                              : "Suara belum terdeteksi. Silakan coba lagi."),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -422,7 +432,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     bool isEndWordMatched,
     int firstMatchedTargetIndex,
     int lastMatchedTargetIndex,
-  }) _calculateMatchMetrics(String recognized, String target) {
+  })
+  _calculateMatchMetrics(String recognized, String target) {
     if (recognized.trim().isEmpty || target.trim().isEmpty) {
       return (
         matchCount: 0,
@@ -497,12 +508,17 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     final int endThresholdIndex = targetWords.length <= 3
         ? (targetWords.length == 1 ? 0 : 1)
         : (targetWords.length <= 6
-            ? targetWords.length - 2
-            : (targetWords.length * 0.75).floor().clamp(0, targetWords.length - 2));
+              ? targetWords.length - 2
+              : (targetWords.length * 0.75).floor().clamp(
+                  0,
+                  targetWords.length - 2,
+                ));
 
-    final bool isStartWordMatched = firstMatchedTargetIndex != -1 &&
+    final bool isStartWordMatched =
+        firstMatchedTargetIndex != -1 &&
         firstMatchedTargetIndex <= startThresholdIndex;
-    final bool isEndWordMatched = lastMatchedTargetIndex != -1 &&
+    final bool isEndWordMatched =
+        lastMatchedTargetIndex != -1 &&
         lastMatchedTargetIndex >= endThresholdIndex;
 
     return (
@@ -544,7 +560,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     // Proportional word density requirement: ~40% of words (e.g. 4 words out of 8)
     // Prevents cheating by reciting only the first word and the last word.
-    final requiredMatches = (metrics.totalWords * 0.40).ceil().clamp(2, metrics.totalWords);
+    final requiredMatches = (metrics.totalWords * 0.40).ceil().clamp(
+      2,
+      metrics.totalWords,
+    );
 
     // Multi-Layer Anti-Gaming Verification:
     // 1. Density: user recited enough words across the verse (>= requiredMatches)
@@ -696,7 +715,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     }
   }
 
-  Future<void> _onSuccess(int index, String arabic, {String method = 'voice'}) async {
+  Future<void> _onSuccess(
+    int index,
+    String arabic, {
+    String method = 'voice',
+  }) async {
     if (!mounted || _isDisposed) return;
     final appState = Provider.of<AppState>(context, listen: false);
 
@@ -706,17 +729,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     int pointsEarned = 0;
     if (getsPoints) {
-      // Rebalanced Base Ayah Economy with Maqam Point Boost:
-      // Strictly whole integer (no decimals/commas):
-      // Level 1: 2 pts (long: 3 pts)
-      // Level 2: 3 pts (long: 4 pts)
-      // Level 3: 4 pts (long: 5 pts)
-      // Level 4: 4 pts (long: 6 pts)
-      // Level 5: 5 pts (long: 7 pts)
-      pointsEarned = QuranProgressHelper.calculateAyahPoints(
-        arabicLength: arabic.length,
-        khatmCount: appState.khatmCount,
-      );
+      // Rebalanced Base Ayah Economy with Maqam Point Boost + Daily 10-Ayahs Boost (+2 pts):
+      // Level 1: 3 pts (long: 5 pts) [Daily Boost 10 ayat: 5-7 pts]
+      // Level 2: 4 pts (long: 6 pts) [Daily Boost: 6-8 pts]
+      // Level 3: 5 pts (long: 8 pts) [Daily Boost: 7-10 pts]
+      // Level 4: 6 pts (long: 9 pts) [Daily Boost: 8-11 pts]
+      // Level 5: 7 pts (long: 10 pts) [Daily Boost: 9-12 pts]
+      pointsEarned = appState.calculateAndConsumeAyahPoints(arabic.length);
       appState.addPoints(pointsEarned);
       appState.setLastReadAyat(arabic);
     }
@@ -743,7 +762,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     if (index == totalAyahsInSurah - 1 && getsPoints) {
       milestoneResult = await appState.completeSurahMilestone(
         surahNumber: surahNumber,
-        surahName: widget.surah['surah_name'] as String? ?? 'Surah $surahNumber',
+        surahName:
+            widget.surah['surah_name'] as String? ?? 'Surah $surahNumber',
         totalAyahs: totalAyahsInSurah,
         readingDurationSeconds: durationSeconds,
       );
@@ -753,26 +773,51 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     final now = SunnahMissionHelper.debugSimulatedTime ?? DateTime.now();
     Map<String, dynamic>? sunnahResult;
 
-    // 1. Friday Kahf (Surah 18, finished)
+    // Track read ayah for active Sunnah mission (enables installment reading markers)
+    final activeSunnah = SunnahMissionHelper.getActiveMissionForAyah(
+      surahNumber,
+      index + 1,
+      now,
+    );
+    if (activeSunnah != null) {
+      await appState.recordSunnahAyahRead(activeSunnah.id, index + 1, now);
+    }
+    if (SunnahMissionHelper.isFajrActive(now)) {
+      await appState.recordSunnahAyahRead('quran_fajar', index + 1, now);
+    }
+
+    final kahfCount = appState.getSunnahProgressCount('alkahf_jumat', now);
+    final mulkCount = appState.getSunnahProgressCount('almulk_malam', now);
+    final baqarahAyahs = appState.getSunnahReadAyahs(
+      'albaqarah_akhir_malam',
+      now,
+    );
+    final fajrCount = appState.getSunnahProgressCount('quran_fajar', now);
+
+    // 1. Friday Kahf (Surah 18, finished or 110 ayahs completed in installments)
     if (surahNumber == 18 &&
-        index == totalAyahsInSurah - 1 &&
+        (index == totalAyahsInSurah - 1 || kahfCount >= 110) &&
         SunnahMissionHelper.isFridayKahfActive(now) &&
         !appState.isSunnahMissionCompletedToday('alkahf_jumat', now)) {
       sunnahResult = await appState.completeSunnahMission(
         missionId: 'alkahf_jumat',
-        missionTitle: SunnahMissionHelper.fridayKahf.getTitle(appState.languageCode),
+        missionTitle: SunnahMissionHelper.fridayKahf.getTitle(
+          appState.languageCode,
+        ),
         pointsReward: SunnahMissionHelper.fridayKahf.pointsReward,
         dateTime: now,
       );
     }
-    // 2. Night Al-Mulk (Surah 67, finished)
+    // 2. Night Al-Mulk (Surah 67, finished or 30 ayahs completed in installments)
     else if (surahNumber == 67 &&
-        index == totalAyahsInSurah - 1 &&
+        (index == totalAyahsInSurah - 1 || mulkCount >= 30) &&
         SunnahMissionHelper.isNightActive(now) &&
         !appState.isSunnahMissionCompletedToday('almulk_malam', now)) {
       sunnahResult = await appState.completeSunnahMission(
         missionId: 'almulk_malam',
-        missionTitle: SunnahMissionHelper.nightMulk.getTitle(appState.languageCode),
+        missionTitle: SunnahMissionHelper.nightMulk.getTitle(
+          appState.languageCode,
+        ),
         pointsReward: SunnahMissionHelper.nightMulk.pointsReward,
         dateTime: now,
       );
@@ -784,30 +829,39 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         !appState.isSunnahMissionCompletedToday('ayat_kursi_malam', now)) {
       sunnahResult = await appState.completeSunnahMission(
         missionId: 'ayat_kursi_malam',
-        missionTitle: SunnahMissionHelper.nightAyatKursi.getTitle(appState.languageCode),
+        missionTitle: SunnahMissionHelper.nightAyatKursi.getTitle(
+          appState.languageCode,
+        ),
         pointsReward: SunnahMissionHelper.nightAyatKursi.pointsReward,
         dateTime: now,
       );
     }
     // 4. Night Last 2 Verses of Al-Baqarah (Surah 2, Ayah 286 completing 285-286)
     else if (surahNumber == 2 &&
-        (index + 1) == 286 &&
+        ((index + 1) == 286 ||
+            (baqarahAyahs.contains(285) && baqarahAyahs.contains(286))) &&
         SunnahMissionHelper.isNightActive(now) &&
         !appState.isSunnahMissionCompletedToday('albaqarah_akhir_malam', now)) {
       sunnahResult = await appState.completeSunnahMission(
         missionId: 'albaqarah_akhir_malam',
-        missionTitle: SunnahMissionHelper.nightBaqarahEnd.getTitle(appState.languageCode),
+        missionTitle: SunnahMissionHelper.nightBaqarahEnd.getTitle(
+          appState.languageCode,
+        ),
         pointsReward: SunnahMissionHelper.nightBaqarahEnd.pointsReward,
         dateTime: now,
       );
     }
     // 5. Fajr Reading (Subuh window, reading finished or at least 3 ayahs recited in this session)
     else if (SunnahMissionHelper.isFajrActive(now) &&
-        (index == totalAyahsInSurah - 1 || _sessionAyahsCount >= 3) &&
+        (index == totalAyahsInSurah - 1 ||
+            _sessionAyahsCount >= 3 ||
+            fajrCount >= 3) &&
         !appState.isSunnahMissionCompletedToday('quran_fajar', now)) {
       sunnahResult = await appState.completeSunnahMission(
         missionId: 'quran_fajar',
-        missionTitle: SunnahMissionHelper.fajrReading.getTitle(appState.languageCode),
+        missionTitle: SunnahMissionHelper.fajrReading.getTitle(
+          appState.languageCode,
+        ),
         pointsReward: SunnahMissionHelper.fajrReading.pointsReward,
         dateTime: now,
       );
@@ -831,7 +885,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     // Show Sunnah Mission celebration SnackBar if earned
     if (sunnahResult != null && sunnahResult['isNewMilestone'] == true) {
       final int bonus = sunnahResult['pointsEarned'] as int? ?? 0;
-      final String mTitle = sunnahResult['missionTitle'] as String? ??
+      final String mTitle =
+          sunnahResult['missionTitle'] as String? ??
           Translations.get(appState.languageCode, 'sunnah_mission_header');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -846,12 +901,20 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                   children: [
                     Text(
                       mTitle,
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                     Text(
-                      Translations.get(appState.languageCode, 'sunnah_mission_completed_msg')
-                          .replaceAll('{pts}', '$bonus'),
-                      style: const TextStyle(fontSize: 12, color: Colors.white70),
+                      Translations.get(
+                        appState.languageCode,
+                        'sunnah_mission_completed_msg',
+                      ).replaceAll('{pts}', '$bonus'),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
                     ),
                   ],
                 ),
@@ -860,11 +923,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
           ),
           backgroundColor: const Color(0xFF065F46),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 4),
         ),
       );
-    } else if (milestoneResult != null && milestoneResult['isNewMilestone'] == true) {
+    } else if (milestoneResult != null &&
+        milestoneResult['isNewMilestone'] == true) {
       final int bonus = milestoneResult['bonusPoints'] as int? ?? 10;
       final int tier = milestoneResult['tier'] as int? ?? 1;
       final int boostPercent = milestoneResult['boostPercent'] as int? ?? 0;
@@ -892,7 +958,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
             ),
             backgroundColor: Colors.teal.shade900,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             duration: const Duration(seconds: 4),
           ),
         );
@@ -922,7 +990,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
               ? Colors.teal.shade700
               : Colors.blueGrey.shade700,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -1023,6 +1093,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     // Check progress
     final int surahIndex = widget.surah['surah_number'] - 1;
+    final int surahNumber =
+        widget.surah['surah_number'] as int? ?? (surahIndex + 1);
 
     final progress = context.select<AppState, (int, int)>(
       (s) => (s.highestSurahIndex, s.highestAyahIndex),
@@ -1069,346 +1141,459 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
             const SizedBox(width: 8),
           ],
         ),
-      body: Stack(
-        children: [
-          ScrollablePositionedList.builder(
-            itemCount:
-                ayahs.length +
-                (highestSurahIdx >= surahIndex &&
-                        highestAyahIdx == ayahs.length - 1 &&
-                        surahIndex <
-                            context.read<AppState>().quranData.length - 1
-                    ? 1
-                    : 0),
-            itemScrollController: _itemScrollController,
-            itemPositionsListener: _itemPositionsListener,
-            padding: EdgeInsets.only(
-              top: 8,
-              bottom: 96 + MediaQuery.of(context).padding.bottom,
-            ),
+        body: Stack(
+          children: [
+            ScrollablePositionedList.builder(
+              itemCount:
+                  ayahs.length +
+                  (highestSurahIdx >= surahIndex &&
+                          highestAyahIdx == ayahs.length - 1 &&
+                          surahIndex <
+                              context.read<AppState>().quranData.length - 1
+                      ? 1
+                      : 0),
+              itemScrollController: _itemScrollController,
+              itemPositionsListener: _itemPositionsListener,
+              padding: EdgeInsets.only(
+                top: 8,
+                bottom: 96 + MediaQuery.of(context).padding.bottom,
+              ),
 
-            itemBuilder: (context, index) {
-              if (index == ayahs.length) {
-                return Consumer<AppState>(
-                  builder: (context, state, _) =>
-                      _buildNextSurahButton(context, state, surahIndex),
-                );
-              }
+              itemBuilder: (context, index) {
+                if (index == ayahs.length) {
+                  return Consumer<AppState>(
+                    builder: (context, state, _) =>
+                        _buildNextSurahButton(context, state, surahIndex),
+                  );
+                }
 
-              final ayah = ayahs.isEmpty ? null : ayahs[index < 0 ? 0 : index];
-              final isRecording = _recordingAyahIdx == index;
+                final ayah = ayahs.isEmpty
+                    ? null
+                    : ayahs[index < 0 ? 0 : index];
+                final isRecording = _recordingAyahIdx == index;
 
-              return Selector<AppState, (bool, bool, bool)>(
-                selector: (_, state) => (
-                  state.isAyahReached(surahIndex, index),
-                  state.isNextAyah(surahIndex, index),
-                  state.currentSurahIndex == surahIndex &&
-                      index == state.currentAyahIndex,
-                ),
-                builder: (context, values, child) {
-                  final bool isDone = values.$1;
-                  final bool isNext = values.$2;
-                  final bool isLastReadAyah = values.$3;
-                  final bool isFuture = !isDone && !isNext;
+                return Selector<AppState, (bool, bool, bool, bool, bool)>(
+                  selector: (_, state) {
+                    final ayahNumberVal =
+                        ayah?['ayah_number'] as int? ?? (index + 1);
+                    final now =
+                        SunnahMissionHelper.debugSimulatedTime ??
+                        DateTime.now();
+                    final activeMission =
+                        SunnahMissionHelper.getActiveMissionForAyah(
+                          surahNumber,
+                          ayahNumberVal,
+                          now,
+                        );
+                    bool isSunnahRead = false;
+                    bool isSunnahLast = false;
+                    if (activeMission != null) {
+                      final isCompleted = state.isSunnahMissionCompletedToday(
+                        activeMission.id,
+                        now,
+                      );
+                      isSunnahRead =
+                          isCompleted ||
+                          state
+                              .getSunnahReadAyahs(activeMission.id, now)
+                              .contains(ayahNumberVal);
+                      isSunnahLast =
+                          !isCompleted &&
+                          state.getSunnahLastReadAyah(activeMission.id, now) ==
+                              ayahNumberVal;
+                    }
+                    return (
+                      state.isAyahReached(surahIndex, index),
+                      state.isNextAyah(surahIndex, index),
+                      state.currentSurahIndex == surahIndex &&
+                          index == state.currentAyahIndex,
+                      isSunnahRead,
+                      isSunnahLast,
+                    );
+                  },
+                  builder: (context, values, child) {
+                    final bool isDone = values.$1;
+                    final bool isNext = values.$2;
+                    final bool isLastReadAyah = values.$3;
+                    final bool isSunnahAyahRead = values.$4;
+                    final bool isSunnahLastRead = values.$5;
+                    final bool isAyahReadDisplay = isDone || isSunnahAyahRead;
+                    final bool isAyahLastReadDisplay =
+                        isLastReadAyah || isSunnahLastRead;
+                    final bool isFuture = !isAyahReadDisplay && !isNext;
+                    final int? ayahNumber = ayah?['ayah_number'] as int?;
+                    final bool isAlwaysActive =
+                        SunnahMissionHelper.isAyahAlwaysActive(
+                          surahNumber,
+                          index,
+                          null,
+                          ayahNumber,
+                        );
 
-                  return RepaintBoundary(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDone
-                            ? colorScheme.primaryContainer.withValues(
-                                alpha: 0.3,
-                              )
-                            : colorScheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: isLastReadAyah
-                              ? colorScheme.primary
-                              : colorScheme.outlineVariant.withValues(
-                                  alpha: 0.5,
-                                ),
-                          width: isLastReadAyah ? 2 : 1,
+                    return RepaintBoundary(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.02),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+                        decoration: BoxDecoration(
+                          color: isAyahReadDisplay
+                              ? colorScheme.primaryContainer.withValues(
+                                  alpha: 0.3,
+                                )
+                              : colorScheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isAyahLastReadDisplay
+                                ? colorScheme.primary
+                                : colorScheme.outlineVariant.withValues(
+                                    alpha: 0.5,
+                                  ),
+                            width: isAyahLastReadDisplay ? 2 : 1,
                           ),
-                        ],
-                      ),
-                      child: Opacity(
-                        opacity: isFuture && !isNext && !isRecording
-                            ? 0.6
-                            : 1.0,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Ayah Header
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDone
-                                    ? colorScheme.primaryContainer.withValues(
-                                        alpha: 0.5,
-                                      )
-                                    : colorScheme.surfaceContainerHigh,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(24),
-                                  topRight: Radius.circular(24),
-                                ),
-                              ),
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final textScale =
-                                      MediaQuery.textScalerOf(context).scale(14) / 14;
-                                  final effectiveWidth =
-                                      constraints.maxWidth / (textScale > 0 ? textScale : 1.0);
-                                  final isCompact = effectiveWidth < 360;
-                                  final hideActionLabels = effectiveWidth < 250;
-
-                                  final String? headerLabel = isLastReadAyah
-                                      ? _getLastReadLabel(lang)
-                                      : (isNext ? _getReadWithLabel(lang) : null);
-
-                                  return Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Left: Ayah Number Badge & Status Label
-                                      Flexible(
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                color: colorScheme.secondaryContainer,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Text(
-                                                "${index + 1}",
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: colorScheme.onSecondaryContainer,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            if (headerLabel != null) ...[
-                                              const SizedBox(width: 6),
-                                              Flexible(
-                                                child: Text(
-                                                  headerLabel,
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: isLastReadAyah
-                                                        ? colorScheme.primary
-                                                        : colorScheme.onSurfaceVariant,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  overflow: TextOverflow.ellipsis,
-                                                  maxLines: 1,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      // Right: Action Buttons
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          _MicButton(
-                                            lang: lang,
-                                            isRecording: isRecording,
-                                            isInitializing: isRecording && !_isMicReady,
-                                            isCompact: isCompact,
-                                            hideLabel: hideActionLabels,
-                                            onPressed: () => _onAyahMicPressed(
-                                              index,
-                                              ayah['arabic'],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          _EyeButton(
-                                            lang: lang,
-                                            isActive: _eyeReadingAyahIdx == index,
-                                            isFocused: _isEyeFocused,
-                                            isCompact: isCompact,
-                                            hideLabel: hideActionLabels,
-                                            onPressed: () => _onEyeReadingPressed(
-                                              index,
-                                              ayah['arabic'],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                            if (isRecording)
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                                child: _buildListeningInfoContent(context, lang),
-                              ),
-                            if (_eyeReadingAyahIdx == index)
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                                child: _buildEyeTrackingInfoContent(context, lang),
-                              ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                20,
-                                16,
-                                20,
-                                20,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  TajweedText(
-                                    text: ayah['arabic'],
-                                    textAlign: TextAlign.right,
-                                    style: TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: isDone
-                                          ? FontWeight.bold
-                                          : FontWeight.w500,
-                                      height: 2.2,
-                                      fontFamily: 'Amiri',
-                                      color: isDone
-                                          ? Colors.teal.shade900
-                                          : Colors.black,
-                                    ),
-                                    textDirection: TextDirection.rtl,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    ayah['latin'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: isDone
-                                          ? Colors.teal.shade800
-                                          : Colors.teal.shade700,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    (lang == 'id' || lang == 'ms')
-                                        ? (ayah['translation_id'] ?? '')
-                                        : (ayah['translation_en'] ?? ''),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: isDone
-                                          ? Colors.teal.shade800
-                                          : isFuture
-                                          ? Colors.grey.shade500
-                                          : Colors.grey.shade700,
-                                      fontStyle: FontStyle.italic,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
+                        child: Opacity(
+                          opacity:
+                              (isFuture &&
+                                  !isNext &&
+                                  !isRecording &&
+                                  !isAlwaysActive)
+                              ? 0.6
+                              : 1.0,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Ayah Header
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isAyahReadDisplay
+                                      ? colorScheme.primaryContainer.withValues(
+                                          alpha: 0.5,
+                                        )
+                                      : colorScheme.surfaceContainerHigh,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(24),
+                                    topRight: Radius.circular(24),
+                                  ),
+                                ),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final textScale =
+                                        MediaQuery.textScalerOf(
+                                          context,
+                                        ).scale(14) /
+                                        14;
+                                    final effectiveWidth =
+                                        constraints.maxWidth /
+                                        (textScale > 0 ? textScale : 1.0);
+                                    final isCompact = effectiveWidth < 360;
+                                    final hideActionLabels =
+                                        effectiveWidth < 250;
+
+                                    final String? headerLabel = isLastReadAyah
+                                        ? _getLastReadLabel(lang)
+                                        : (isSunnahLastRead
+                                              ? _getSunnahLastReadLabel(lang)
+                                              : (isSunnahAyahRead
+                                                    ? _getSunnahReadLabel(lang)
+                                                    : (isNext
+                                                          ? _getReadWithLabel(
+                                                              lang,
+                                                            )
+                                                          : null)));
+
+                                    return Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        // Left: Ayah Number Badge & Status Label
+                                        Flexible(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(
+                                                  6,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: isSunnahLastRead
+                                                      ? Colors.teal
+                                                      : (isSunnahAyahRead
+                                                            ? Colors
+                                                                  .teal
+                                                                  .shade100
+                                                            : colorScheme
+                                                                  .secondaryContainer),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Text(
+                                                  "${index + 1}",
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: isSunnahLastRead
+                                                        ? Colors.white
+                                                        : (isSunnahAyahRead
+                                                              ? Colors
+                                                                    .teal
+                                                                    .shade900
+                                                              : colorScheme
+                                                                    .onSecondaryContainer),
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (headerLabel != null) ...[
+                                                const SizedBox(width: 6),
+                                                Flexible(
+                                                  child: Text(
+                                                    headerLabel,
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color:
+                                                          isAyahLastReadDisplay
+                                                          ? colorScheme.primary
+                                                          : (isSunnahAyahRead
+                                                                ? Colors
+                                                                      .teal
+                                                                      .shade800
+                                                                : colorScheme
+                                                                      .onSurfaceVariant),
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        // Right: Action Buttons
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            _MicButton(
+                                              lang: lang,
+                                              isRecording: isRecording,
+                                              isInitializing:
+                                                  isRecording && !_isMicReady,
+                                              isCompact: isCompact,
+                                              hideLabel: hideActionLabels,
+                                              onPressed: () =>
+                                                  _onAyahMicPressed(
+                                                    index,
+                                                    ayah['arabic'],
+                                                  ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            _EyeButton(
+                                              lang: lang,
+                                              isActive:
+                                                  _eyeReadingAyahIdx == index,
+                                              isFocused: _isEyeFocused,
+                                              isCompact: isCompact,
+                                              hideLabel: hideActionLabels,
+                                              onPressed: () =>
+                                                  _onEyeReadingPressed(
+                                                    index,
+                                                    ayah['arabic'],
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                              if (isRecording)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    12,
+                                    16,
+                                    0,
+                                  ),
+                                  child: _buildListeningInfoContent(
+                                    context,
+                                    lang,
+                                  ),
+                                ),
+                              if (_eyeReadingAyahIdx == index)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    12,
+                                    16,
+                                    0,
+                                  ),
+                                  child: _buildEyeTrackingInfoContent(
+                                    context,
+                                    lang,
+                                  ),
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  16,
+                                  20,
+                                  20,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    TajweedText(
+                                      text: ayah['arabic'],
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: isAyahReadDisplay
+                                            ? FontWeight.bold
+                                            : FontWeight.w500,
+                                        height: 2.2,
+                                        fontFamily: 'Amiri',
+                                        color: isAyahReadDisplay
+                                            ? Colors.teal.shade900
+                                            : Colors.black,
+                                      ),
+                                      textDirection: TextDirection.rtl,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      ayah['latin'] ?? '',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: isAyahReadDisplay
+                                            ? Colors.teal.shade800
+                                            : Colors.teal.shade700,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      (lang == 'id' || lang == 'ms')
+                                          ? (ayah['translation_id'] ?? '')
+                                          : (ayah['translation_en'] ?? ''),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: isAyahReadDisplay
+                                            ? Colors.teal.shade800
+                                            : (isFuture && !isAlwaysActive)
+                                            ? Colors.grey.shade500
+                                            : Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-          // Sticky Ayah Header & Live Info Bar for Long Ayahs
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: RepaintBoundary(
-              child: ValueListenableBuilder<int?>(
-                valueListenable: _stickyAyahIndex,
-                builder: (context, stickyIdx, _) {
-                  if (stickyIdx == null || stickyIdx >= ayahs.length) {
-                    return const SizedBox.shrink();
-                  }
-                  return _buildStickyAyahHeader(
-                    context: context,
-                    ayahIndex: stickyIdx,
-                    ayahs: ayahs,
-                    lang: lang,
-                  );
-                },
-              ),
+                    );
+                  },
+                );
+              },
             ),
-          ),
-          if (_isInitializing)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.3),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          Translations.get(lang, 'initializing'),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          if (ayahs.length >= 7)
+            // Sticky Ayah Header & Live Info Bar for Long Ayahs
             Positioned(
-              right: 16,
-              bottom: 16 + MediaQuery.of(context).padding.bottom,
+              top: 0,
+              left: 0,
+              right: 0,
               child: RepaintBoundary(
-                child: ValueListenableBuilder<int>(
-                  valueListenable: _currentVisibleAyah,
-                  builder: (context, currentAyah, _) {
-                    return _AyahNavFloatingPill(
-                      currentAyah: currentAyah,
-                      totalAyahs: ayahs.length,
-                      onTap: () =>
-                          _showAyahNavigatorSheet(context, ayahs.length, lang),
+                child: ValueListenableBuilder<int?>(
+                  valueListenable: _stickyAyahIndex,
+                  builder: (context, stickyIdx, _) {
+                    if (stickyIdx == null || stickyIdx >= ayahs.length) {
+                      return const SizedBox.shrink();
+                    }
+                    return _buildStickyAyahHeader(
+                      context: context,
+                      ayahIndex: stickyIdx,
+                      ayahs: ayahs,
+                      lang: lang,
                     );
                   },
                 ),
               ),
             ),
-        ],
+            if (_isInitializing)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          const SizedBox(width: 16),
+                          Text(
+                            Translations.get(lang, 'initializing'),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (ayahs.length >= 7)
+              Positioned(
+                right: 16,
+                bottom: 16 + MediaQuery.of(context).padding.bottom,
+                child: RepaintBoundary(
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: _currentVisibleAyah,
+                    builder: (context, currentAyah, _) {
+                      return _AyahNavFloatingPill(
+                        currentAyah: currentAyah,
+                        totalAyahs: ayahs.length,
+                        onTap: () => _showAyahNavigatorSheet(
+                          context,
+                          ayahs.length,
+                          lang,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildNextSurahButton(
     BuildContext context,
@@ -1459,13 +1644,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     if (_sessionAyahsCount > 0) {
       try {
-        final currentProgress = QuranProgressHelper.getCombinedSpiritualProgress(
-          khatmCount: _appState.khatmCount,
-          currentSurahIndex: _appState.currentSurahIndex,
-          currentAyahNumber: _appState.lastReadAyahNumber,
-          quranData: _appState.quranData,
-          totalDzikirCount: _appState.totalDzikirCount,
-        );
+        final currentProgress =
+            QuranProgressHelper.getCombinedSpiritualProgress(
+              khatmCount: _appState.khatmCount,
+              currentSurahIndex: _appState.currentSurahIndex,
+              currentAyahNumber: _appState.lastReadAyahNumber,
+              quranData: _appState.quranData,
+              totalDzikirCount: _appState.totalDzikirCount,
+            );
         _appState.triggerSpiritualEnergy(
           previousProgress: _sessionStartProgress ?? currentProgress,
           targetProgress: currentProgress,
@@ -1498,9 +1684,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     // If SurahListScreen was not in the stack (e.g. user jumped straight to SurahDetailScreen from HomeScreen),
     // navigate to SurahListScreen so the user sees the Quran surah selection menu.
     if (!foundSurahList && mounted) {
-      Navigator.of(context).push(
-        AppPageRoute(child: const SurahListScreen()),
-      );
+      Navigator.of(context).push(AppPageRoute(child: const SurahListScreen()));
     }
   }
 
@@ -1613,11 +1797,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         surahNumber: surahNumber,
         totalAyahs: totalAyahs,
         currentVisibleAyah: _currentVisibleAyah.value,
-        lastReadAyahNumber: appState.currentSurahIndex == surahIndex &&
+        lastReadAyahNumber:
+            appState.currentSurahIndex == surahIndex &&
                 appState.lastReadAyahNumber > 0
             ? appState.lastReadAyahNumber
             : null,
-        nextUnreadAyahNumber: appState.highestSurahIndex == surahIndex &&
+        nextUnreadAyahNumber:
+            appState.highestSurahIndex == surahIndex &&
                 appState.highestAyahIndex + 1 < totalAyahs
             ? appState.highestAyahIndex + 2
             : null,
@@ -1644,7 +1830,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   void dispose() {
     _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
-    _itemPositionsListener.itemPositions.removeListener(_onItemPositionsChanged);
+    _itemPositionsListener.itemPositions.removeListener(
+      _onItemPositionsChanged,
+    );
 
     // Cancel all timers immediately
     _eyeTimer?.cancel();
@@ -1701,7 +1889,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                         width: 36,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -1729,7 +1919,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                isEn ? 'Reading Method Suggestion' : 'Saran Metode Membaca',
+                                isEn
+                                    ? 'Reading Method Suggestion'
+                                    : 'Saran Metode Membaca',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -1740,7 +1932,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                 '${widget.surah['surah_name']} • Ayat ${ayahIndex + 1} ($wordCount kata)',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: colorScheme.onSurface.withValues(alpha: 0.65),
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.65,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1759,10 +1953,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.grey.shade900 : Colors.amber.shade50,
+                        color: isDark
+                            ? Colors.grey.shade900
+                            : Colors.amber.shade50,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: isDark ? Colors.amber.shade900.withValues(alpha: 0.4) : Colors.amber.shade200,
+                          color: isDark
+                              ? Colors.amber.shade900.withValues(alpha: 0.4)
+                              : Colors.amber.shade200,
                           width: 1,
                         ),
                       ),
@@ -1772,7 +1970,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                           Icon(
                             Icons.info_outline_rounded,
                             size: 18,
-                            color: isDark ? Colors.amber.shade300 : Colors.amber.shade900,
+                            color: isDark
+                                ? Colors.amber.shade300
+                                : Colors.amber.shade900,
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -1783,7 +1983,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                               style: TextStyle(
                                 fontSize: 13,
                                 height: 1.45,
-                                color: isDark ? Colors.grey.shade300 : Colors.amber.shade900,
+                                color: isDark
+                                    ? Colors.grey.shade300
+                                    : Colors.amber.shade900,
                               ),
                             ),
                           ),
@@ -1820,10 +2022,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                isEn ? 'Do not show again for this surah' : 'Jangan ingatkan lagi untuk surah ini',
+                                isEn
+                                    ? 'Do not show again for this surah'
+                                    : 'Jangan ingatkan lagi untuk surah ini',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: colorScheme.onSurface.withValues(alpha: 0.75),
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.75,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1852,7 +2058,9 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                       },
                       icon: const Icon(Icons.remove_red_eye_rounded, size: 18),
                       label: Text(
-                        isEn ? 'Use Silent Reading (Recommended)' : 'Gunakan Baca Dalam Hati (Disarankan)',
+                        isEn
+                            ? 'Use Silent Reading (Recommended)'
+                            : 'Gunakan Baca Dalam Hati (Disarankan)',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -1914,6 +2122,40 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       case 'id':
       default:
         return 'Terakhir Dibaca';
+    }
+  }
+
+  static String _getSunnahReadLabel(String lang) {
+    switch (lang) {
+      case 'en':
+        return '✓ Read';
+      case 'ar':
+        return '✓ تمت القراءة';
+      case 'af':
+        return '✓ Gelees';
+      case 'sw':
+        return '✓ Imesomwa';
+      case 'ms':
+      case 'id':
+      default:
+        return '✓ Dibaca';
+    }
+  }
+
+  static String _getSunnahLastReadLabel(String lang) {
+    switch (lang) {
+      case 'en':
+        return '✓ Last Read';
+      case 'ar':
+        return '✓ آخر قراءة';
+      case 'af':
+        return '✓ Laas Gelees';
+      case 'sw':
+        return '✓ Mwisho Kusomwa';
+      case 'ms':
+      case 'id':
+      default:
+        return '✓ Terakhir Dibaca';
     }
   }
 
@@ -2032,14 +2274,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     return Container(
       padding: EdgeInsets.all(isCompact ? 10 : 12),
       decoration: BoxDecoration(
-        color: !_isMicReady
-            ? Colors.amber.shade50
-            : Colors.teal.shade50,
+        color: !_isMicReady ? Colors.amber.shade50 : Colors.teal.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: !_isMicReady
-              ? Colors.amber.shade300
-              : Colors.teal.shade200,
+          color: !_isMicReady ? Colors.amber.shade300 : Colors.teal.shade200,
         ),
       ),
       child: Column(
@@ -2052,12 +2290,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                 !_isMicReady
                     ? Icons.hourglass_top_rounded
                     : (_recognizedText.isEmpty
-                        ? Icons.mic_rounded
-                        : Icons.hearing_rounded),
+                          ? Icons.mic_rounded
+                          : Icons.hearing_rounded),
                 size: isCompact ? 16 : 18,
-                color: !_isMicReady
-                    ? Colors.amber.shade800
-                    : Colors.teal,
+                color: !_isMicReady ? Colors.amber.shade800 : Colors.teal,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -2065,8 +2301,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                   !_isMicReady
                       ? _getMicPreparingText(lang)
                       : (_recognizedText.isEmpty
-                          ? _getListeningPromptText(lang)
-                          : _recognizedText),
+                            ? _getListeningPromptText(lang)
+                            : _recognizedText),
                   style: TextStyle(
                     fontSize: isCompact ? 12 : 13,
                     color: !_isMicReady
@@ -2202,8 +2438,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
             color: isRecording
                 ? Colors.teal
                 : (isEyeReading
-                    ? Colors.indigo
-                    : colorScheme.outlineVariant.withValues(alpha: 0.6)),
+                      ? Colors.indigo
+                      : colorScheme.outlineVariant.withValues(alpha: 0.6)),
             width: (isRecording || isEyeReading) ? 1.8 : 1.2,
           ),
           boxShadow: [
@@ -2217,7 +2453,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         child: LayoutBuilder(
           builder: (context, constraints) {
             final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-            final effectiveWidth = constraints.maxWidth / (textScale > 0 ? textScale : 1.0);
+            final effectiveWidth =
+                constraints.maxWidth / (textScale > 0 ? textScale : 1.0);
             final isVeryNarrow = effectiveWidth < 250;
             final ayahLabel = Translations.get(lang, 'ayah');
 
@@ -2227,14 +2464,20 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
               children: [
                 // Header Bar
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Ayah badge (Clean, proportional, and overflow-protected)
                       Flexible(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: colorScheme.secondaryContainer,
                             borderRadius: BorderRadius.circular(10),
@@ -2275,10 +2518,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                             isInitializing: isRecording && !_isMicReady,
                             isCompact: true,
                             hideLabel: isVeryNarrow,
-                            onPressed: () => _onAyahMicPressed(
-                              ayahIndex,
-                              ayah['arabic'],
-                            ),
+                            onPressed: () =>
+                                _onAyahMicPressed(ayahIndex, ayah['arabic']),
                           ),
                           const SizedBox(width: 6),
                           _EyeButton(
@@ -2287,10 +2528,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                             isFocused: _isEyeFocused,
                             isCompact: true,
                             hideLabel: isVeryNarrow,
-                            onPressed: () => _onEyeReadingPressed(
-                              ayahIndex,
-                              ayah['arabic'],
-                            ),
+                            onPressed: () =>
+                                _onEyeReadingPressed(ayahIndex, ayah['arabic']),
                           ),
                         ],
                       ),
@@ -2301,13 +2540,21 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                 if (isRecording)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-                    child: _buildListeningInfoContent(context, lang, isCompact: true),
+                    child: _buildListeningInfoContent(
+                      context,
+                      lang,
+                      isCompact: true,
+                    ),
                   ),
                 // If eye tracking:
                 if (isEyeReading)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-                    child: _buildEyeTrackingInfoContent(context, lang, isCompact: true),
+                    child: _buildEyeTrackingInfoContent(
+                      context,
+                      lang,
+                      isCompact: true,
+                    ),
                   ),
               ],
             );
@@ -2777,279 +3024,289 @@ class _AyahNavigatorBottomSheetState extends State<_AyahNavigatorBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-          // Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.teal.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.near_me_rounded,
-                  color: Colors.teal,
-                  size: 20,
-                ),
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.near_me_rounded,
+                      color: Colors.teal,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isEn ? 'Jump to Ayah' : 'Lompat ke Ayat',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${widget.surahName} (Ayat 1 - ${widget.totalAyahs})',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurface.withValues(
+                              alpha: 0.65,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 10),
+
+              // Number Display Field
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey.shade900 : Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: _errorMessage != null
+                        ? Colors.red
+                        : Colors.teal.withValues(alpha: 0.3),
+                    width: _errorMessage != null ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
                   children: [
                     Text(
-                      isEn ? 'Jump to Ayah' : 'Lompat ke Ayat',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      isEn ? 'Ayah: ' : 'Ayat: ',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface.withValues(alpha: 0.65),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        _enteredNumber.isEmpty ? '-' : _enteredNumber,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                          color: _enteredNumber.isEmpty
+                              ? colorScheme.onSurface.withValues(alpha: 0.3)
+                              : Colors.teal,
+                        ),
                       ),
                     ),
                     Text(
-                      '${widget.surahName} (Ayat 1 - ${widget.totalAyahs})',
+                      '1 - ${widget.totalAyahs}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: colorScheme.onSurface.withValues(alpha: 0.65),
+                        color: colorScheme.onSurface.withValues(alpha: 0.45),
                       ),
+                    ),
+                    if (_enteredNumber.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: _onClearPressed,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.cancel_rounded,
+                            size: 20,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+
+              // Quick Shortcuts
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildQuickChip(
+                      label: isEn ? 'Ayah 1 (Start)' : 'Ayat 1 (Awal)',
+                      icon: Icons.first_page_rounded,
+                      onTap: () => widget.onAyahSelected(1),
+                    ),
+                    if (widget.lastReadAyahNumber != null &&
+                        widget.lastReadAyahNumber !=
+                            widget.currentVisibleAyah) ...[
+                      const SizedBox(width: 8),
+                      _buildQuickChip(
+                        label: isEn
+                            ? 'Last Read (${widget.lastReadAyahNumber})'
+                            : 'Terakhir Dibaca (${widget.lastReadAyahNumber})',
+                        icon: Icons.bookmark_added_rounded,
+                        color: Colors.teal,
+                        onTap: () =>
+                            widget.onAyahSelected(widget.lastReadAyahNumber!),
+                      ),
+                    ],
+                    if (widget.nextUnreadAyahNumber != null &&
+                        widget.nextUnreadAyahNumber! <= widget.totalAyahs) ...[
+                      const SizedBox(width: 8),
+                      _buildQuickChip(
+                        label: isEn
+                            ? 'Target (${widget.nextUnreadAyahNumber})'
+                            : 'Target Lanjut (${widget.nextUnreadAyahNumber})',
+                        icon: Icons.track_changes_rounded,
+                        color: Colors.orange.shade700,
+                        onTap: () =>
+                            widget.onAyahSelected(widget.nextUnreadAyahNumber!),
+                      ),
+                    ],
+                    for (final juz in widget.juzInSurah) ...[
+                      const SizedBox(width: 8),
+                      _buildQuickChip(
+                        label: 'Awal Juz ${juz['juz']} (Ayat ${juz['ayah']})',
+                        icon: Icons.auto_stories_rounded,
+                        color: Colors.indigo,
+                        onTap: () => widget.onAyahSelected(juz['ayah']!),
+                      ),
+                    ],
+                    const SizedBox(width: 8),
+                    _buildQuickChip(
+                      label: isEn
+                          ? 'Ayah ${widget.totalAyahs} (End)'
+                          : 'Ayat ${widget.totalAyahs} (Akhir)',
+                      icon: Icons.last_page_rounded,
+                      onTap: () => widget.onAyahSelected(widget.totalAyahs),
                     ),
                   ],
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded),
-                onPressed: () => Navigator.pop(context),
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-          // Number Display Field
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey.shade900 : Colors.teal.shade50,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _errorMessage != null
-                    ? Colors.red
-                    : Colors.teal.withValues(alpha: 0.3),
-                width: _errorMessage != null ? 1.5 : 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  isEn ? 'Ayah: ' : 'Ayat: ',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface.withValues(alpha: 0.65),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    _enteredNumber.isEmpty ? '-' : _enteredNumber,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                      color: _enteredNumber.isEmpty
-                          ? colorScheme.onSurface.withValues(alpha: 0.3)
-                          : Colors.teal,
-                    ),
-                  ),
-                ),
-                Text(
-                  '1 - ${widget.totalAyahs}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withValues(alpha: 0.45),
-                  ),
-                ),
-                if (_enteredNumber.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: _onClearPressed,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(
-                        Icons.cancel_rounded,
-                        size: 20,
-                        color: Colors.grey.shade500,
+              // In-App Numeric Keypad
+              _buildKeypadRow([1, 2, 3], isDark, colorScheme),
+              _buildKeypadRow([4, 5, 6], isDark, colorScheme),
+              _buildKeypadRow([7, 8, 9], isDark, colorScheme),
+              Row(
+                children: [
+                  _buildKeyButton(
+                    child: Text(
+                      'C',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red.shade400,
                       ),
                     ),
+                    onTap: _onClearPressed,
+                    isDark: isDark,
+                    colorScheme: colorScheme,
+                  ),
+                  _buildKeyButton(
+                    child: Text(
+                      '0',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    onTap: () => _onDigitPressed(0),
+                    isDark: isDark,
+                    colorScheme: colorScheme,
+                  ),
+                  _buildKeyButton(
+                    child: Icon(
+                      Icons.backspace_outlined,
+                      size: 20,
+                      color: colorScheme.onSurface,
+                    ),
+                    onTap: _onBackspacePressed,
+                    isDark: isDark,
+                    colorScheme: colorScheme,
                   ),
                 ],
-              ],
-            ),
-          ),
-          if (_errorMessage != null) ...[
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: Text(
-                _errorMessage!,
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
               ),
-            ),
-          ],
-          const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-          // Quick Shortcuts
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildQuickChip(
-                  label: isEn ? 'Ayah 1 (Start)' : 'Ayat 1 (Awal)',
-                  icon: Icons.first_page_rounded,
-                  onTap: () => widget.onAyahSelected(1),
-                ),
-                if (widget.lastReadAyahNumber != null &&
-                    widget.lastReadAyahNumber != widget.currentVisibleAyah) ...[
-                  const SizedBox(width: 8),
-                  _buildQuickChip(
-                    label: isEn
-                        ? 'Last Read (${widget.lastReadAyahNumber})'
-                        : 'Terakhir Dibaca (${widget.lastReadAyahNumber})',
-                    icon: Icons.bookmark_added_rounded,
-                    color: Colors.teal,
-                    onTap: () => widget.onAyahSelected(widget.lastReadAyahNumber!),
+              // Big Jump Action Button
+              SizedBox(
+                height: 46,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: isDark
+                        ? Colors.grey.shade800
+                        : Colors.grey.shade300,
+                    disabledForegroundColor: isDark
+                        ? Colors.grey.shade600
+                        : Colors.grey.shade500,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                ],
-                if (widget.nextUnreadAyahNumber != null &&
-                    widget.nextUnreadAyahNumber! <= widget.totalAyahs) ...[
-                  const SizedBox(width: 8),
-                  _buildQuickChip(
-                    label: isEn
-                        ? 'Target (${widget.nextUnreadAyahNumber})'
-                        : 'Target Lanjut (${widget.nextUnreadAyahNumber})',
-                    icon: Icons.track_changes_rounded,
-                    color: Colors.orange.shade700,
-                    onTap: () => widget.onAyahSelected(widget.nextUnreadAyahNumber!),
-                  ),
-                ],
-                for (final juz in widget.juzInSurah) ...[
-                  const SizedBox(width: 8),
-                  _buildQuickChip(
-                    label: 'Awal Juz ${juz['juz']} (Ayat ${juz['ayah']})',
-                    icon: Icons.auto_stories_rounded,
-                    color: Colors.indigo,
-                    onTap: () => widget.onAyahSelected(juz['ayah']!),
-                  ),
-                ],
-                const SizedBox(width: 8),
-                _buildQuickChip(
-                  label: isEn
-                      ? 'Ayah ${widget.totalAyahs} (End)'
-                      : 'Ayat ${widget.totalAyahs} (Akhir)',
-                  icon: Icons.last_page_rounded,
-                  onTap: () => widget.onAyahSelected(widget.totalAyahs),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // In-App Numeric Keypad
-          _buildKeypadRow([1, 2, 3], isDark, colorScheme),
-          _buildKeypadRow([4, 5, 6], isDark, colorScheme),
-          _buildKeypadRow([7, 8, 9], isDark, colorScheme),
-          Row(
-            children: [
-              _buildKeyButton(
-                child: Text(
-                  'C',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red.shade400,
+                  onPressed: _enteredNumber.isNotEmpty ? _onJumpPressed : null,
+                  icon: const Icon(Icons.near_me_rounded, size: 18),
+                  label: Text(
+                    _enteredNumber.isNotEmpty
+                        ? (isEn
+                              ? 'Jump to Ayah $_enteredNumber'
+                              : 'Lompat ke Ayat $_enteredNumber')
+                        : (isEn ? 'Enter Ayah Number' : 'Ketik Nomor Ayat'),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                onTap: _onClearPressed,
-                isDark: isDark,
-                colorScheme: colorScheme,
-              ),
-              _buildKeyButton(
-                child: Text(
-                  '0',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                onTap: () => _onDigitPressed(0),
-                isDark: isDark,
-                colorScheme: colorScheme,
-              ),
-              _buildKeyButton(
-                child: Icon(
-                  Icons.backspace_outlined,
-                  size: 20,
-                  color: colorScheme.onSurface,
-                ),
-                onTap: _onBackspacePressed,
-                isDark: isDark,
-                colorScheme: colorScheme,
               ),
             ],
           ),
-          const SizedBox(height: 10),
-
-          // Big Jump Action Button
-          SizedBox(
-            height: 46,
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor:
-                    isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-                disabledForegroundColor:
-                    isDark ? Colors.grey.shade600 : Colors.grey.shade500,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: _enteredNumber.isNotEmpty ? _onJumpPressed : null,
-              icon: const Icon(Icons.near_me_rounded, size: 18),
-              label: Text(
-                _enteredNumber.isNotEmpty
-                    ? (isEn
-                        ? 'Jump to Ayah $_enteredNumber'
-                        : 'Lompat ke Ayat $_enteredNumber')
-                    : (isEn ? 'Enter Ayah Number' : 'Ketik Nomor Ayat'),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 
   Widget _buildKeypadRow(
@@ -3117,10 +3374,7 @@ class _AyahNavigatorBottomSheetState extends State<_AyahNavigatorBottomSheet> {
         decoration: BoxDecoration(
           color: chipColor.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: chipColor.withValues(alpha: 0.3),
-            width: 1,
-          ),
+          border: Border.all(color: chipColor.withValues(alpha: 0.3), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

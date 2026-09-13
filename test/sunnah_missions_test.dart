@@ -1,9 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:muslim_launcher_2/providers/app_state.dart';
 import 'package:muslim_launcher_2/utils/sunnah_mission_helper.dart';
 import 'package:muslim_launcher_2/screens/home/achievements_screen.dart';
+import 'package:muslim_launcher_2/screens/home/home_screen.dart';
 import 'package:muslim_launcher_2/utils/translations.dart';
 
 void main() {
@@ -56,7 +59,7 @@ void main() {
       expect(SunnahMissionHelper.isFridayKahfActive(sat), isFalse);
     });
 
-    test('Night window detection (19:00 to 04:30)', () {
+    test('Night window detection (19:00 to 23:59)', () {
       // 18:59 -> inactive
       final beforeNight = DateTime(2026, 9, 12, 18, 59);
       expect(SunnahMissionHelper.isNightActive(beforeNight), isFalse);
@@ -65,21 +68,21 @@ void main() {
       final nightStart = DateTime(2026, 9, 12, 19, 0);
       expect(SunnahMissionHelper.isNightActive(nightStart), isTrue);
 
-      // 23:30 -> active
-      final lateNight = DateTime(2026, 9, 12, 23, 30);
+      // 21:00 -> active
+      final midNight = DateTime(2026, 9, 12, 21, 0);
+      expect(SunnahMissionHelper.isNightActive(midNight), isTrue);
+
+      // 23:59 -> active
+      final lateNight = DateTime(2026, 9, 12, 23, 59);
       expect(SunnahMissionHelper.isNightActive(lateNight), isTrue);
 
-      // 02:00 next morning -> active
-      final pastMidnight = DateTime(2026, 9, 13, 2, 0);
-      expect(SunnahMissionHelper.isNightActive(pastMidnight), isTrue);
+      // 00:00 (ganti hari) -> inactive
+      final pastMidnight = DateTime(2026, 9, 13, 0, 0);
+      expect(SunnahMissionHelper.isNightActive(pastMidnight), isFalse);
 
-      // 04:30 -> active
-      final dawnEdge = DateTime(2026, 9, 13, 4, 30);
-      expect(SunnahMissionHelper.isNightActive(dawnEdge), isTrue);
-
-      // 04:31 -> inactive
-      final afterDawn = DateTime(2026, 9, 13, 4, 31);
-      expect(SunnahMissionHelper.isNightActive(afterDawn), isFalse);
+      // 02:00 next morning -> inactive
+      final earlyMorning = DateTime(2026, 9, 13, 2, 0);
+      expect(SunnahMissionHelper.isNightActive(earlyMorning), isFalse);
     });
 
     test('Fajr window detection (04:00 to 06:30)', () {
@@ -104,20 +107,20 @@ void main() {
       expect(SunnahMissionHelper.isFajrActive(afterFajr), isFalse);
     });
 
-    test('Anti-gaming claim key continuity across midnight for night missions', () {
-      // 23:00 on Saturday night
-      final satNight = DateTime(2026, 9, 12, 23, 0);
-      final key1 = SunnahMissionHelper.getAntiGamingClaimKey('almulk_malam', satNight);
+    test('Anti-gaming claim key per night session (19:00 to 23:59)', () {
+      // 21:00 on Saturday night
+      final satNight1 = DateTime(2026, 9, 12, 21, 0);
+      final key1 = SunnahMissionHelper.getAntiGamingClaimKey('almulk_malam', satNight1);
 
-      // 02:30 on Sunday morning (same continuous night session)
-      final sunMorning = DateTime(2026, 9, 13, 2, 30);
-      final key2 = SunnahMissionHelper.getAntiGamingClaimKey('almulk_malam', sunMorning);
+      // 23:30 on Saturday night (same night before day change)
+      final satNight2 = DateTime(2026, 9, 12, 23, 30);
+      final key2 = SunnahMissionHelper.getAntiGamingClaimKey('almulk_malam', satNight2);
 
       expect(key1, equals(key2),
-          reason: 'Both timestamps must map to the same night claim session');
+          reason: 'Both timestamps on the same night before midnight map to the same claim session');
 
-      // Next Sunday evening (19:30) -> should be a new claim key
-      final nextNight = DateTime(2026, 9, 13, 19, 30);
+      // Next Sunday night (21:00) -> should be a new claim key
+      final nextNight = DateTime(2026, 9, 13, 21, 0);
       final key3 = SunnahMissionHelper.getAntiGamingClaimKey('almulk_malam', nextNight);
       expect(key1, isNot(equals(key3)));
     });
@@ -141,7 +144,7 @@ void main() {
       expect(appState.points, 0);
       expect(appState.isSunnahMissionCompletedToday('almulk_malam', nightTime), isFalse);
 
-      // First completion -> success +50 pts
+      // First completion -> marks milestone completed, points awarded via Achievements claim
       final res1 = await appState.completeSunnahMission(
         missionId: 'almulk_malam',
         missionTitle: 'Surah Al-Mulk',
@@ -152,12 +155,18 @@ void main() {
       expect(res1['isNewMilestone'], isTrue);
       expect(res1['alreadyClaimed'], isFalse);
       expect(res1['pointsEarned'], 50);
-      expect(appState.points, 50);
+      // Points must NOT be added directly upon reading (prevents double points)
+      expect(appState.points, 0);
       expect(appState.isSunnahMissionCompletedToday('almulk_malam', nightTime), isTrue);
       expect(appState.isSunnahMissionCompletedLifetime('almulk_malam'), isTrue);
 
-      // Attempt second completion at 01:30 (past midnight same night) -> rejected, 0 pts
-      final lateNightTime = DateTime(2026, 9, 13, 1, 30);
+      // User claims badge reward in AchievementsScreen
+      final claimed = await appState.claimBadgeReward('sunnah_almulk', 50, 'Surah Al-Mulk');
+      expect(claimed, isTrue);
+      expect(appState.points, 50);
+
+      // Attempt second completion at 23:30 (same night before day change) -> rejected, 0 pts
+      final lateNightTime = DateTime(2026, 9, 12, 23, 30);
       final res2 = await appState.completeSunnahMission(
         missionId: 'almulk_malam',
         missionTitle: 'Surah Al-Mulk',
@@ -171,7 +180,7 @@ void main() {
       expect(appState.points, 50, reason: 'Points balance must not increase on duplicate claim');
     });
 
-    test('Non-sequential reading earns 0 base points, but Sunnah bonus is awarded', () async {
+    test('Non-sequential reading earns 0 base points, but Sunnah bonus is claimable in Achievements', () async {
       final appState = AppState(prefs);
       // User is at Surah 1 (Al-Fatihah), index 0
       // Surah 67 (Al-Mulk) is out of sequence
@@ -187,7 +196,45 @@ void main() {
 
       expect(res['isNewMilestone'], isTrue);
       expect(res['pointsEarned'], 50);
+      expect(appState.points, 0, reason: 'Must not add points directly before claiming');
+
+      // Claiming adds points
+      await appState.claimBadgeReward('sunnah_almulk', 50, 'Surah Al-Mulk');
       expect(appState.points, 50);
+    });
+
+    test('Sunnah badge claim status resets when a new period mission is completed', () async {
+      final appState = AppState(prefs);
+      final friday1 = DateTime(2026, 9, 11, 10, 0); // Friday 1
+      await appState.completeSunnahMission(
+        missionId: 'alkahf_jumat',
+        missionTitle: 'Surah Al-Kahf',
+        pointsReward: 75,
+        dateTime: friday1,
+      );
+
+      // Claim for Friday 1
+      await appState.claimBadgeReward('sunnah_alkahf', 75, 'Surah Al-Kahf');
+      expect(appState.isBadgeClaimed('sunnah_alkahf'), isTrue);
+      expect(appState.points, 75);
+
+      // Next Friday comes
+      final friday2 = DateTime(2026, 9, 18, 10, 0); // Friday 2
+      final res2 = await appState.completeSunnahMission(
+        missionId: 'alkahf_jumat',
+        missionTitle: 'Surah Al-Kahf',
+        pointsReward: 75,
+        dateTime: friday2,
+      );
+
+      expect(res2['isNewMilestone'], isTrue);
+      // Badge claim status must be reset so user can claim for Friday 2!
+      expect(appState.isBadgeClaimed('sunnah_alkahf'), isFalse);
+
+      // Claim for Friday 2
+      await appState.claimBadgeReward('sunnah_alkahf', 75, 'Surah Al-Kahf');
+      expect(appState.isBadgeClaimed('sunnah_alkahf'), isTrue);
+      expect(appState.points, 150);
     });
   });
 
@@ -242,6 +289,7 @@ void main() {
       'sunnah_completed_today_claimed',
       'start_recitation_now',
       'sunnah_mission_completed_msg',
+      'claim_now_action',
       'pts_bonus_label',
       'sunnah_filter',
       'badge_completed',
@@ -271,6 +319,7 @@ void main() {
           final badgeTitle = mission.getBadgeTitle(lang);
           final badgeDesc = mission.getBadgeDesc(lang);
           final hadith = mission.getFadhilahHadith(lang);
+          final ayahRange = mission.getAyahRangeText(lang);
 
           expect(title, isNotEmpty, reason: '${mission.id} title empty in $lang');
           expect(subtitle, isNotEmpty, reason: '${mission.id} subtitle empty in $lang');
@@ -279,6 +328,7 @@ void main() {
           expect(badgeTitle, isNotEmpty, reason: '${mission.id} badgeTitle empty in $lang');
           expect(badgeDesc, isNotEmpty, reason: '${mission.id} badgeDesc empty in $lang');
           expect(hadith, isNotEmpty, reason: '${mission.id} hadith empty in $lang');
+          expect(ayahRange, isNotEmpty, reason: '${mission.id} ayahRange empty in $lang');
         }
       }
     });
@@ -298,4 +348,223 @@ void main() {
       }
     });
   });
+
+  group('HomeScreen Sunnah Mission Card Badge Tests', () {
+    testWidgets('SunnahMissionCard displays Sunnah Nabi badge and does not display Khatam Maqam badge', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      SunnahMissionHelper.debugSimulatedTime = DateTime(2026, 9, 12, 21, 0);
+      addTearDown(() {
+        SunnahMissionHelper.debugSimulatedTime = null;
+      });
+
+      await prefs.setString('languageCode', 'id');
+      final appState = AppState(prefs);
+      appState.setIgnorePermissionGuard(true);
+      appState.setReadyForTesting();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: MaterialApp(
+            navigatorKey: appState.navigatorKey,
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Header section outside card: SUNNAH NABI ﷺ
+      expect(find.text('SUNNAH NABI ﷺ'), findsOneWidget);
+      // Badge inside card displays the active event badge title (e.g. Pelindung Kubur (Surah Al-Mulk))
+      expect(find.text(SunnahMissionHelper.nightMulk.getBadgeTitle('id')), findsOneWidget);
+      expect(find.byIcon(Icons.stars_rounded), findsWidgets);
+      // Khatam level badge (e.g. "Tingkat 1: Pemula") must NOT be rendered on Sunnah card
+      expect(find.textContaining('Tingkat 1'), findsNothing);
+    });
+
+    testWidgets('Thursday night renders all 4 mission pills in a scrollable view without overflow', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // Thursday 20:00 (Malam Jum'at)
+      SunnahMissionHelper.debugSimulatedTime = DateTime(2026, 9, 10, 20, 0); // 2026-09-10 is Thursday
+      addTearDown(() {
+        SunnahMissionHelper.debugSimulatedTime = null;
+      });
+
+      await prefs.setString('languageCode', 'id');
+      final appState = AppState(prefs);
+      appState.setIgnorePermissionGuard(true);
+      appState.setReadyForTesting();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: MaterialApp(
+            navigatorKey: appState.navigatorKey,
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Check all 4 pills are present
+      expect(find.text('Al-Kahf'), findsWidgets);
+      expect(find.text('Al-Mulk'), findsWidgets);
+      expect(find.text('Ayat Kursi'), findsWidgets);
+      expect(find.text('2 Ayat Baqarah'), findsWidgets);
+
+      // Ensure SingleChildScrollView horizontal exists and is scrollable
+      final scrollViewFinder = find.byWidgetPredicate(
+        (w) => w is SingleChildScrollView && w.scrollDirection == Axis.horizontal,
+      );
+      expect(scrollViewFinder, findsWidgets);
+
+      // Verify no Flutter error / RenderFlex overflow occurred
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('Sunnah Installment Reading & Verse Markers Tests', () {
+    test('Records read ayahs per session and retrieves accurate count and last read ayah', () async {
+      final appState = AppState(prefs);
+      final fridayTime = DateTime(2026, 9, 11, 10, 0);
+
+      // Initially no ayahs read
+      expect(appState.getSunnahReadAyahs('alkahf_jumat', fridayTime), isEmpty);
+      expect(appState.getSunnahProgressCount('alkahf_jumat', fridayTime), 0);
+      expect(appState.getSunnahLastReadAyah('alkahf_jumat', fridayTime), isNull);
+
+      // Read ayahs 1, 2, 3 in installments
+      await appState.recordSunnahAyahRead('alkahf_jumat', 1, fridayTime);
+      await appState.recordSunnahAyahRead('alkahf_jumat', 2, fridayTime);
+      await appState.recordSunnahAyahRead('alkahf_jumat', 3, fridayTime);
+
+      expect(appState.getSunnahReadAyahs('alkahf_jumat', fridayTime), equals({1, 2, 3}));
+      expect(appState.getSunnahProgressCount('alkahf_jumat', fridayTime), 3);
+      expect(appState.getSunnahLastReadAyah('alkahf_jumat', fridayTime), 3);
+
+      // Duplicate read of ayah 2 does not increment count
+      await appState.recordSunnahAyahRead('alkahf_jumat', 2, fridayTime);
+      expect(appState.getSunnahProgressCount('alkahf_jumat', fridayTime), 3);
+      expect(appState.getSunnahLastReadAyah('alkahf_jumat', fridayTime), 2);
+    });
+
+    test('Session reset: Reading progress naturally resets across session boundaries', () async {
+      final appState = AppState(prefs);
+
+      // Saturday night: Read 10 ayahs of Al-Mulk
+      final satNight = DateTime(2026, 9, 12, 21, 0);
+      for (int i = 1; i <= 10; i++) {
+        await appState.recordSunnahAyahRead('almulk_malam', i, satNight);
+      }
+      expect(appState.getSunnahProgressCount('almulk_malam', satNight), 10);
+      expect(appState.getSunnahLastReadAyah('almulk_malam', satNight), 10);
+
+      // Next Sunday night: Progress starts fresh at 0
+      final sunNight = DateTime(2026, 9, 13, 21, 0);
+      expect(appState.getSunnahProgressCount('almulk_malam', sunNight), 0);
+      expect(appState.getSunnahLastReadAyah('almulk_malam', sunNight), isNull);
+    });
+
+    test('Thursday night and Friday morning share the same Al-Kahf session', () async {
+      final appState = AppState(prefs);
+
+      // Thursday night: Read ayahs 1 to 20
+      final thursNight = DateTime(2026, 9, 10, 20, 0);
+      for (int i = 1; i <= 20; i++) {
+        await appState.recordSunnahAyahRead('alkahf_jumat', i, thursNight);
+      }
+      expect(appState.getSunnahProgressCount('alkahf_jumat', thursNight), 20);
+
+      // Friday noon: Seamlessly resumes with ayahs 1 to 20 already marked
+      final friNoon = DateTime(2026, 9, 11, 12, 0);
+      expect(appState.getSunnahProgressCount('alkahf_jumat', friNoon), 20);
+      expect(appState.getSunnahLastReadAyah('alkahf_jumat', friNoon), 20);
+      expect(appState.getSunnahReadAyahs('alkahf_jumat', friNoon).contains(20), isTrue);
+      expect(appState.getSunnahReadAyahs('alkahf_jumat', friNoon).contains(21), isFalse);
+    });
+
+    test('getActiveMissionForAyah correctly identifies matching active missions', () {
+      final friNoon = DateTime(2026, 9, 11, 12, 0);
+      final monNoon = DateTime(2026, 9, 14, 12, 0);
+      final satNight = DateTime(2026, 9, 12, 21, 0);
+
+      // Surah 18, Ayah 1..110 on Friday -> Al-Kahf
+      expect(SunnahMissionHelper.getActiveMissionForAyah(18, 1, friNoon)?.id, 'alkahf_jumat');
+      expect(SunnahMissionHelper.getActiveMissionForAyah(18, 110, friNoon)?.id, 'alkahf_jumat');
+      // Surah 18 on Monday -> null (inactive)
+      expect(SunnahMissionHelper.getActiveMissionForAyah(18, 1, monNoon), isNull);
+
+      // Surah 67, Ayah 1..30 at Night -> Al-Mulk
+      expect(SunnahMissionHelper.getActiveMissionForAyah(67, 15, satNight)?.id, 'almulk_malam');
+      // Surah 67 at Noon -> null
+      expect(SunnahMissionHelper.getActiveMissionForAyah(67, 15, friNoon), isNull);
+
+      // Surah 2, Ayah 255 at Night -> Ayat Kursi
+      expect(SunnahMissionHelper.getActiveMissionForAyah(2, 255, satNight)?.id, 'ayat_kursi_malam');
+      // Surah 2, Ayahs 285 & 286 at Night -> Baqarah End
+      expect(SunnahMissionHelper.getActiveMissionForAyah(2, 285, satNight)?.id, 'albaqarah_akhir_malam');
+      expect(SunnahMissionHelper.getActiveMissionForAyah(2, 286, satNight)?.id, 'albaqarah_akhir_malam');
+    });
+
+    test('6-Language parity for new installment reading keys', () {
+      final languages = ['id', 'en', 'ms', 'ar', 'af', 'sw'];
+      final keys = [
+        'sunnah_ayah_read',
+        'sunnah_last_read',
+        'continue_reading_ayah',
+        'progress_ayah_count',
+      ];
+
+      for (final lang in languages) {
+        for (final key in keys) {
+          final val = Translations.get(lang, key);
+          expect(val, isNotEmpty, reason: 'Key $key must exist and not be empty in $lang');
+          expect(val, isNot(equals(key)), reason: 'Key $key must have a valid translation in $lang');
+        }
+      }
+    });
+
+    testWidgets('Home card renders installment progress when reading is in progress', (tester) async {
+      final nightTime = DateTime(2026, 9, 12, 21, 0);
+      SunnahMissionHelper.debugSimulatedTime = nightTime;
+      addTearDown(() {
+        SunnahMissionHelper.debugSimulatedTime = null;
+      });
+
+      await prefs.setString('languageCode', 'id');
+      final appState = AppState(prefs);
+      appState.setIgnorePermissionGuard(true);
+      appState.setReadyForTesting();
+
+      // Simulate user having read 15 of 30 ayahs of Al-Mulk
+      for (int i = 1; i <= 15; i++) {
+        await appState.recordSunnahAyahRead('almulk_malam', i, nightTime);
+      }
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: MaterialApp(
+            navigatorKey: appState.navigatorKey,
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Verify installment progress is displayed: "15 dari 30 Ayat" and "50%"
+      expect(find.text('15 dari 30 Ayat'), findsWidgets);
+      expect(find.text('50%'), findsWidgets);
+    });
+  });
 }
+

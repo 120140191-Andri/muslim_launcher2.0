@@ -176,6 +176,14 @@ class AppState extends ChangeNotifier {
   int _dailyPointsSpent = 0;
   String _dailyPointsSpentDate = '';
 
+  // Daily 10-Ayahs Boost (+2 pts bonus for first 10 ayahs read per day)
+  int _dailyAyahsReadCount = 0;
+  String _dailyAyahsReadDate = '';
+
+  // Daily Scaling Unlock Count (50 -> 75 -> 100 pts per day)
+  int _dailyUnlocksCount = 0;
+  String _dailyUnlocksDate = '';
+
   // Persistent Streak Notification Settings
   bool _isStreakReminderEnabled = true;
   int _streakReminderHour = 20;
@@ -325,6 +333,64 @@ class AppState extends ChangeNotifier {
   double get maqamBoostMultiplier => QuranProgressHelper.getMaqamBoostMultiplier(_khatmCount);
   int get maqamBoostPercent => QuranProgressHelper.getMaqamBoostPercent(_khatmCount);
   int get maqamLevel => QuranProgressHelper.getMaqamLevel(_khatmCount);
+
+  // Daily 10-Ayahs Boost Getters & Logic
+  int get dailyAyahsReadCount {
+    _syncDailyAyahsReadState();
+    return _dailyAyahsReadCount;
+  }
+
+  int get dailyAyahsBoostRemaining {
+    _syncDailyAyahsReadState();
+    return (10 - _dailyAyahsReadCount).clamp(0, 10);
+  }
+
+  void _syncDailyAyahsReadState() {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyAyahsReadDate != today) {
+      _dailyAyahsReadCount = 0;
+      _dailyAyahsReadDate = today;
+    }
+  }
+
+  /// Calculates ayah points taking into account base points (Maqam Level)
+  /// and the Daily 10-Ayahs Boost (+2 pts bonus for the first 10 ayahs read each day).
+  int calculateAndConsumeAyahPoints(int arabicLength) {
+    _syncDailyAyahsReadState();
+    final basePoints = QuranProgressHelper.calculateAyahPoints(
+      arabicLength: arabicLength,
+      khatmCount: _khatmCount,
+    );
+    int total = basePoints;
+    if (_dailyAyahsReadCount < 10) {
+      total += 2; // +2 bonus points for first 10 ayahs daily
+      _dailyAyahsReadCount++;
+      prefs.setInt('dailyAyahsReadCount', _dailyAyahsReadCount);
+      prefs.setString('dailyAyahsReadDate', _dailyAyahsReadDate);
+    }
+    return total;
+  }
+
+  // Daily Scaling Unlock Getters & Logic (50 -> 75 -> 100 pts)
+  int get dailyUnlocksCount {
+    _syncDailyUnlocksState();
+    return _dailyUnlocksCount;
+  }
+
+  void _syncDailyUnlocksState() {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyUnlocksDate != today) {
+      _dailyUnlocksCount = 0;
+      _dailyUnlocksDate = today;
+    }
+  }
+
+  int get currentUnlockCost {
+    _syncDailyUnlocksState();
+    if (_dailyUnlocksCount == 0) return 50;
+    if (_dailyUnlocksCount == 1) return 75;
+    return 100;
+  }
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
   String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
   String? get lastAttemptedGhadhulBasharPackage => _lastAttemptedGhadhulBasharPackage;
@@ -467,6 +533,26 @@ class AppState extends ChangeNotifier {
     } else {
       final readHadithList = prefs.getStringList('readHadithIds') ?? [];
       _readHadithIds = readHadithList.map((e) => int.tryParse(e) ?? 0).where((e) => e > 0).toSet();
+    }
+
+    _dailyAyahsReadDate = prefs.getString('dailyAyahsReadDate') ?? '';
+    if (_dailyAyahsReadDate != today) {
+      _dailyAyahsReadCount = 0;
+      _dailyAyahsReadDate = today;
+      prefs.setInt('dailyAyahsReadCount', 0);
+      prefs.setString('dailyAyahsReadDate', today);
+    } else {
+      _dailyAyahsReadCount = prefs.getInt('dailyAyahsReadCount') ?? 0;
+    }
+
+    _dailyUnlocksDate = prefs.getString('dailyUnlocksDate') ?? '';
+    if (_dailyUnlocksDate != today) {
+      _dailyUnlocksCount = 0;
+      _dailyUnlocksDate = today;
+      prefs.setInt('dailyUnlocksCount', 0);
+      prefs.setString('dailyUnlocksDate', today);
+    } else {
+      _dailyUnlocksCount = prefs.getInt('dailyUnlocksCount') ?? 0;
     }
 
     final historyJson = prefs.getString('readingHistory') ?? '[]';
@@ -3346,22 +3432,26 @@ class AppState extends ChangeNotifier {
 
   /// Unlocks a blocked non-productive app using user points in a strictly atomic transaction.
   /// Prevents any bypass or free unlock if points < cost.
+  /// Defaults to dynamic scaling unlock cost (50 -> 75 -> 100 pts per day).
   Future<bool> unlockAppWithPoints(
     String packageName, {
-    int cost = 50,
+    int? cost,
     int durationMinutes = 60,
   }) async {
     final pkg = packageName.toLowerCase().trim();
     if (pkg.isEmpty) return false;
 
+    _syncDailyUnlocksState();
+    final effectiveCost = cost ?? currentUnlockCost;
+
     // 1. Strict validation: Points MUST be at least the cost
-    if (_points < cost || cost <= 0) {
-      debugPrint("Security guard rejected unlock: User has $_points points, required $cost points for $pkg");
+    if (_points < effectiveCost || effectiveCost <= 0) {
+      debugPrint("Security guard rejected unlock: User has $_points points, required $effectiveCost points for $pkg");
       return false;
     }
 
     // 2. Deduct points first
-    _points -= cost;
+    _points -= effectiveCost;
     if (_points < 0) _points = 0;
     await prefs.setInt('points', _points);
 
@@ -3369,13 +3459,17 @@ class AppState extends ChangeNotifier {
     final success = await allowAppTemporarily(pkg, durationMinutes: durationMinutes);
     if (!success) {
       // Rollback points if native registration failed
-      _points += cost;
+      _points += effectiveCost;
       await prefs.setInt('points', _points);
       notifyListeners();
       return false;
     }
 
-    await _recordPointsSpentForDiscipline(cost);
+    _dailyUnlocksCount++;
+    await prefs.setInt('dailyUnlocksCount', _dailyUnlocksCount);
+    await prefs.setString('dailyUnlocksDate', _dailyUnlocksDate);
+
+    await _recordPointsSpentForDiscipline(effectiveCost);
 
     notifyListeners();
     return true;
@@ -3850,6 +3944,24 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  @visibleForTesting
+  void setDailyAyahsReadForTesting(int count, {String? date}) {
+    _dailyAyahsReadCount = count;
+    _dailyAyahsReadDate = date ?? DateTime.now().toIso8601String().split('T')[0];
+    prefs.setInt('dailyAyahsReadCount', _dailyAyahsReadCount);
+    prefs.setString('dailyAyahsReadDate', _dailyAyahsReadDate);
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void setDailyUnlocksForTesting(int count, {String? date}) {
+    _dailyUnlocksCount = count;
+    _dailyUnlocksDate = date ?? DateTime.now().toIso8601String().split('T')[0];
+    prefs.setInt('dailyUnlocksCount', _dailyUnlocksCount);
+    prefs.setString('dailyUnlocksDate', _dailyUnlocksDate);
+    notifyListeners();
+  }
+
   Future<void> setUserName(String name) async {
     _userName = name.trim();
     await prefs.setString('userName', _userName);
@@ -3895,12 +4007,6 @@ class AppState extends ChangeNotifier {
       baseBonusPoints = 100;
     }
 
-    // Special Friday Al-Kahf check (Surah 18)
-    final now = DateTime.now();
-    if (surahNumber == 18 && now.weekday == DateTime.friday) {
-      baseBonusPoints += 50;
-    }
-
     // Apply Maqam Point Boost Multiplier (strictly whole integer, rounded)
     final double multiplier = maqamBoostMultiplier;
     final int bonusPoints = (baseBonusPoints * multiplier).round();
@@ -3921,9 +4027,9 @@ class AppState extends ChangeNotifier {
       await prefs.setInt('khatmCount', _khatmCount);
       AnalyticsService.logQuranKhatm(khatmCount: _khatmCount);
 
-      // Grand bonus +500 base points for Khatam 30 Juz scaled by Maqam Boost
-      // (Strictly whole integer: T1: 500, T2: 625, T3: 750, T4: 875, T5: 1000)
-      final int grandKhatamPoints = (500 * multiplier).round();
+      // Progressive Grand Khatam Bonus for completing all 30 Juz (114 Surahs)
+      // Khatam 1: +500, Khatam 2: +750, Khatam 3: +1000, Khatam 4: +1250, Khatam 5+: +1500
+      final int grandKhatamPoints = QuranProgressHelper.getGrandKhatamBonus(_khatmCount);
       _points += grandKhatamPoints;
       await prefs.setInt('points', _points);
 
@@ -3966,8 +4072,63 @@ class AppState extends ChangeNotifier {
     return prefs.getBool('sunnah_lifetime_$missionId') ?? false;
   }
 
+  /// Records an ayah as read for a specific Sunnah Mission session.
+  Future<void> recordSunnahAyahRead(
+    String missionId,
+    int ayahNumber, [
+    DateTime? dateTime,
+  ]) async {
+    final key = SunnahMissionHelper.getAntiGamingClaimKey(missionId, dateTime);
+    final ayahs = getSunnahReadAyahs(missionId, dateTime);
+    if (!ayahs.contains(ayahNumber)) {
+      ayahs.add(ayahNumber);
+      await prefs.setStringList(
+        '${key}_ayahs',
+        ayahs.map((e) => e.toString()).toList(),
+      );
+    }
+    await prefs.setInt('${key}_last_ayah', ayahNumber);
+    notifyListeners();
+  }
+
+  /// Gets the set of read ayah numbers for a Sunnah Mission session.
+  Set<int> getSunnahReadAyahs(String missionId, [DateTime? dateTime]) {
+    final key = SunnahMissionHelper.getAntiGamingClaimKey(missionId, dateTime);
+    final list = prefs.getStringList('${key}_ayahs') ?? [];
+    return list.map((e) => int.tryParse(e) ?? 0).where((n) => n > 0).toSet();
+  }
+
+  /// Gets the last read ayah number for a Sunnah Mission session.
+  int? getSunnahLastReadAyah(String missionId, [DateTime? dateTime]) {
+    final key = SunnahMissionHelper.getAntiGamingClaimKey(missionId, dateTime);
+    return prefs.getInt('${key}_last_ayah');
+  }
+
+  /// Gets the number of unique read ayahs for a Sunnah Mission session.
+  int getSunnahProgressCount(String missionId, [DateTime? dateTime]) {
+    return getSunnahReadAyahs(missionId, dateTime).length;
+  }
+
+  static String? getSunnahBadgeIdForMission(String missionId) {
+    switch (missionId) {
+      case 'alkahf_jumat':
+        return 'sunnah_alkahf';
+      case 'almulk_malam':
+        return 'sunnah_almulk';
+      case 'ayat_kursi_malam':
+        return 'sunnah_ayat_kursi';
+      case 'albaqarah_akhir_malam':
+        return 'sunnah_albaqarah_akhir';
+      case 'quran_fajar':
+        return 'sunnah_fajar';
+      default:
+        return null;
+    }
+  }
+
   /// Completes a Sunnah Mission with anti-gaming protection (awarded max 1x per period).
-  /// Even if outside the sequential 30-Juz khatam progression, bonus points are awarded!
+  /// Unlocks the achievement badge in the Pencapaian menu so the user can claim points.
+  /// Points are awarded strictly upon claiming in the Achievements menu (no double points).
   Future<Map<String, dynamic>> completeSunnahMission({
     required String missionId,
     required String missionTitle,
@@ -3987,19 +4148,19 @@ class AppState extends ChangeNotifier {
     await prefs.setBool(key, true);
     await prefs.setBool('sunnah_lifetime_$missionId', true);
 
-    final double multiplier = maqamBoostMultiplier;
-    final int finalPoints = (pointsReward * multiplier).round();
+    // Reset claimed badge status for this mission so user can claim for this new period
+    final badgeId = getSunnahBadgeIdForMission(missionId);
+    if (badgeId != null && _claimedBadgeIds.contains(badgeId)) {
+      _claimedBadgeIds.remove(badgeId);
+      await prefs.setStringList('claimedBadgeIds', _claimedBadgeIds.toList());
+    }
 
-    _points += finalPoints;
-    await prefs.setInt('points', _points);
-
-    _addToHistory("🌟 Sunnah Nabi: $missionTitle", 1, finalPoints);
     notifyListeners();
 
     return {
       'isNewMilestone': true,
       'alreadyClaimed': false,
-      'pointsEarned': finalPoints,
+      'pointsEarned': pointsReward,
       'missionId': missionId,
       'missionTitle': missionTitle,
     };

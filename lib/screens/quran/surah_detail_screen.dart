@@ -13,6 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../utils/translations.dart';
 import '../../services/analytics_service.dart';
 import '../../utils/quran_progress_helper.dart';
+import '../../utils/sunnah_mission_helper.dart';
 
 class SurahDetailScreen extends StatefulWidget {
   final Map<String, dynamic> surah;
@@ -736,7 +737,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         : 0;
     _readingStartTime = null;
 
-    // Check if user completed the entire Surah!
+    // Check if user completed the entire Surah (Milestone Progression)
     final totalAyahsInSurah = (widget.surah['ayahs'] as List).length;
     Map<String, dynamic>? milestoneResult;
     if (index == totalAyahsInSurah - 1 && getsPoints) {
@@ -745,6 +746,70 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         surahName: widget.surah['surah_name'] as String? ?? 'Surah $surahNumber',
         totalAyahs: totalAyahsInSurah,
         readingDurationSeconds: durationSeconds,
+      );
+    }
+
+    // Check Prophet's Sunnah missions (independent of khatam progression, with anti-gaming 1x cap)
+    final now = SunnahMissionHelper.debugSimulatedTime ?? DateTime.now();
+    Map<String, dynamic>? sunnahResult;
+
+    // 1. Friday Kahf (Surah 18, finished)
+    if (surahNumber == 18 &&
+        index == totalAyahsInSurah - 1 &&
+        SunnahMissionHelper.isFridayKahfActive(now) &&
+        !appState.isSunnahMissionCompletedToday('alkahf_jumat', now)) {
+      sunnahResult = await appState.completeSunnahMission(
+        missionId: 'alkahf_jumat',
+        missionTitle: SunnahMissionHelper.fridayKahf.getTitle(appState.languageCode),
+        pointsReward: SunnahMissionHelper.fridayKahf.pointsReward,
+        dateTime: now,
+      );
+    }
+    // 2. Night Al-Mulk (Surah 67, finished)
+    else if (surahNumber == 67 &&
+        index == totalAyahsInSurah - 1 &&
+        SunnahMissionHelper.isNightActive(now) &&
+        !appState.isSunnahMissionCompletedToday('almulk_malam', now)) {
+      sunnahResult = await appState.completeSunnahMission(
+        missionId: 'almulk_malam',
+        missionTitle: SunnahMissionHelper.nightMulk.getTitle(appState.languageCode),
+        pointsReward: SunnahMissionHelper.nightMulk.pointsReward,
+        dateTime: now,
+      );
+    }
+    // 3. Night Ayat Kursi (Surah 2, Ayah 255)
+    else if (surahNumber == 2 &&
+        (index + 1) == 255 &&
+        SunnahMissionHelper.isNightActive(now) &&
+        !appState.isSunnahMissionCompletedToday('ayat_kursi_malam', now)) {
+      sunnahResult = await appState.completeSunnahMission(
+        missionId: 'ayat_kursi_malam',
+        missionTitle: SunnahMissionHelper.nightAyatKursi.getTitle(appState.languageCode),
+        pointsReward: SunnahMissionHelper.nightAyatKursi.pointsReward,
+        dateTime: now,
+      );
+    }
+    // 4. Night Last 2 Verses of Al-Baqarah (Surah 2, Ayah 286 completing 285-286)
+    else if (surahNumber == 2 &&
+        (index + 1) == 286 &&
+        SunnahMissionHelper.isNightActive(now) &&
+        !appState.isSunnahMissionCompletedToday('albaqarah_akhir_malam', now)) {
+      sunnahResult = await appState.completeSunnahMission(
+        missionId: 'albaqarah_akhir_malam',
+        missionTitle: SunnahMissionHelper.nightBaqarahEnd.getTitle(appState.languageCode),
+        pointsReward: SunnahMissionHelper.nightBaqarahEnd.pointsReward,
+        dateTime: now,
+      );
+    }
+    // 5. Fajr Reading (Subuh window, reading finished or at least 3 ayahs recited in this session)
+    else if (SunnahMissionHelper.isFajrActive(now) &&
+        (index == totalAyahsInSurah - 1 || _sessionAyahsCount >= 3) &&
+        !appState.isSunnahMissionCompletedToday('quran_fajar', now)) {
+      sunnahResult = await appState.completeSunnahMission(
+        missionId: 'quran_fajar',
+        missionTitle: SunnahMissionHelper.fajrReading.getTitle(appState.languageCode),
+        pointsReward: SunnahMissionHelper.fajrReading.pointsReward,
+        dateTime: now,
       );
     }
 
@@ -763,7 +828,43 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     if (!mounted) return;
 
-    if (milestoneResult != null && milestoneResult['isNewMilestone'] == true) {
+    // Show Sunnah Mission celebration SnackBar if earned
+    if (sunnahResult != null && sunnahResult['isNewMilestone'] == true) {
+      final int bonus = sunnahResult['pointsEarned'] as int? ?? 0;
+      final String mTitle = sunnahResult['missionTitle'] as String? ??
+          Translations.get(appState.languageCode, 'sunnah_mission_header');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.stars_rounded, color: Colors.amber, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      mTitle,
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    Text(
+                      Translations.get(appState.languageCode, 'sunnah_mission_completed_msg')
+                          .replaceAll('{pts}', '$bonus'),
+                      style: const TextStyle(fontSize: 12, color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF065F46),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } else if (milestoneResult != null && milestoneResult['isNewMilestone'] == true) {
       final int bonus = milestoneResult['bonusPoints'] as int? ?? 10;
       final int tier = milestoneResult['tier'] as int? ?? 1;
       final int boostPercent = milestoneResult['boostPercent'] as int? ?? 0;

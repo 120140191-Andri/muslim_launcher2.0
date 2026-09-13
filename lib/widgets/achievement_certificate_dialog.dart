@@ -102,9 +102,8 @@ class _AchievementCertificateDialogState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _statusMessage = widget.lang == 'en'
-              ? 'Failed to share certificate: $e'
-              : 'Gagal membagikan sertifikat: $e';
+          _statusMessage =
+              '${Translations.get(widget.lang, 'share_failed')}: $e';
           _statusIsError = true;
         });
       }

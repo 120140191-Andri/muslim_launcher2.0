@@ -11,6 +11,7 @@ import '../quran/surah_detail_screen.dart';
 import '../dzikir/dzikir_screen.dart';
 import '../../services/streak_notification_service.dart';
 import '../../widgets/achievement_certificate_dialog.dart';
+import '../../utils/sunnah_mission_helper.dart';
 
 enum BadgeRarity { common, rare, epic, legendary }
 
@@ -446,6 +447,108 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         progressLabel: '$khatm / 5 Khatam',
         pointsReward: 2500,
         rarity: BadgeRarity.legendary,
+      ),
+
+      // ── ANJURAN NABI ﷺ (SUNNAH MISSIONS) ──
+      SpiritualBadge(
+        id: 'sunnah_alkahf',
+        category: 'sunnah',
+        title: SunnahMissionHelper.fridayKahf.getBadgeTitle(lang),
+        description: SunnahMissionHelper.fridayKahf.getBadgeDesc(lang),
+        fadhilah: SunnahMissionHelper.fridayKahf.getFadhilahHadith(lang),
+        icon: Icons.light_mode_rounded,
+        isUnlocked: appState.isSunnahMissionCompletedLifetime('alkahf_jumat') ||
+            appState.isSunnahMissionCompletedToday('alkahf_jumat'),
+        progress: (appState.isSunnahMissionCompletedLifetime('alkahf_jumat') ||
+                appState.isSunnahMissionCompletedToday('alkahf_jumat'))
+            ? 1.0
+            : 0.0,
+        progressLabel: (appState.isSunnahMissionCompletedLifetime('alkahf_jumat') ||
+                appState.isSunnahMissionCompletedToday('alkahf_jumat'))
+            ? Translations.get(lang, 'badge_completed')
+            : Translations.get(lang, 'badge_not_yet'),
+        pointsReward: 75,
+        rarity: BadgeRarity.epic,
+      ),
+      SpiritualBadge(
+        id: 'sunnah_almulk',
+        category: 'sunnah',
+        title: SunnahMissionHelper.nightMulk.getBadgeTitle(lang),
+        description: SunnahMissionHelper.nightMulk.getBadgeDesc(lang),
+        fadhilah: SunnahMissionHelper.nightMulk.getFadhilahHadith(lang),
+        icon: Icons.shield_rounded,
+        isUnlocked: appState.isSunnahMissionCompletedLifetime('almulk_malam') ||
+            appState.isSunnahMissionCompletedToday('almulk_malam'),
+        progress: (appState.isSunnahMissionCompletedLifetime('almulk_malam') ||
+                appState.isSunnahMissionCompletedToday('almulk_malam'))
+            ? 1.0
+            : 0.0,
+        progressLabel: (appState.isSunnahMissionCompletedLifetime('almulk_malam') ||
+                appState.isSunnahMissionCompletedToday('almulk_malam'))
+            ? Translations.get(lang, 'badge_completed')
+            : Translations.get(lang, 'badge_not_yet'),
+        pointsReward: 50,
+        rarity: BadgeRarity.rare,
+      ),
+      SpiritualBadge(
+        id: 'sunnah_ayat_kursi',
+        category: 'sunnah',
+        title: SunnahMissionHelper.nightAyatKursi.getBadgeTitle(lang),
+        description: SunnahMissionHelper.nightAyatKursi.getBadgeDesc(lang),
+        fadhilah: SunnahMissionHelper.nightAyatKursi.getFadhilahHadith(lang),
+        icon: Icons.nightlight_round,
+        isUnlocked: appState.isSunnahMissionCompletedLifetime('ayat_kursi_malam') ||
+            appState.isSunnahMissionCompletedToday('ayat_kursi_malam'),
+        progress: (appState.isSunnahMissionCompletedLifetime('ayat_kursi_malam') ||
+                appState.isSunnahMissionCompletedToday('ayat_kursi_malam'))
+            ? 1.0
+            : 0.0,
+        progressLabel: (appState.isSunnahMissionCompletedLifetime('ayat_kursi_malam') ||
+                appState.isSunnahMissionCompletedToday('ayat_kursi_malam'))
+            ? Translations.get(lang, 'badge_completed')
+            : Translations.get(lang, 'badge_not_yet'),
+        pointsReward: 25,
+        rarity: BadgeRarity.common,
+      ),
+      SpiritualBadge(
+        id: 'sunnah_albaqarah_akhir',
+        category: 'sunnah',
+        title: SunnahMissionHelper.nightBaqarahEnd.getBadgeTitle(lang),
+        description: SunnahMissionHelper.nightBaqarahEnd.getBadgeDesc(lang),
+        fadhilah: SunnahMissionHelper.nightBaqarahEnd.getFadhilahHadith(lang),
+        icon: Icons.auto_stories_rounded,
+        isUnlocked: appState.isSunnahMissionCompletedLifetime('albaqarah_akhir_malam') ||
+            appState.isSunnahMissionCompletedToday('albaqarah_akhir_malam'),
+        progress: (appState.isSunnahMissionCompletedLifetime('albaqarah_akhir_malam') ||
+                appState.isSunnahMissionCompletedToday('albaqarah_akhir_malam'))
+            ? 1.0
+            : 0.0,
+        progressLabel: (appState.isSunnahMissionCompletedLifetime('albaqarah_akhir_malam') ||
+                appState.isSunnahMissionCompletedToday('albaqarah_akhir_malam'))
+            ? Translations.get(lang, 'badge_completed')
+            : Translations.get(lang, 'badge_not_yet'),
+        pointsReward: 25,
+        rarity: BadgeRarity.common,
+      ),
+      SpiritualBadge(
+        id: 'sunnah_fajar',
+        category: 'sunnah',
+        title: SunnahMissionHelper.fajrReading.getBadgeTitle(lang),
+        description: SunnahMissionHelper.fajrReading.getBadgeDesc(lang),
+        fadhilah: SunnahMissionHelper.fajrReading.getFadhilahHadith(lang),
+        icon: Icons.wb_twilight_rounded,
+        isUnlocked: appState.isSunnahMissionCompletedLifetime('quran_fajar') ||
+            appState.isSunnahMissionCompletedToday('quran_fajar'),
+        progress: (appState.isSunnahMissionCompletedLifetime('quran_fajar') ||
+                appState.isSunnahMissionCompletedToday('quran_fajar'))
+            ? 1.0
+            : 0.0,
+        progressLabel: (appState.isSunnahMissionCompletedLifetime('quran_fajar') ||
+                appState.isSunnahMissionCompletedToday('quran_fajar'))
+            ? Translations.get(lang, 'badge_completed')
+            : Translations.get(lang, 'badge_not_yet'),
+        pointsReward: 40,
+        rarity: BadgeRarity.rare,
       ),
 
       // ── DZIKIR & TASBIH ──
@@ -1489,7 +1592,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     context: context,
                     icon: Icons.workspace_premium_rounded,
                     value: '${khatm}x',
-                    label: lang == 'en' ? 'Khatam' : 'Khatam',
+                    label: Translations.get(lang, 'khatam'),
                     color: Colors.amber.shade800,
                   ),
                 ),
@@ -1499,7 +1602,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     context: context,
                     icon: Icons.menu_book_rounded,
                     value: '$completedSurahs/114',
-                    label: lang == 'en' ? 'Surahs' : 'Surah',
+                    label: Translations.get(lang, 'surahs'),
                     color: Colors.teal.shade700,
                   ),
                 ),
@@ -1509,7 +1612,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     context: context,
                     icon: Icons.grain_rounded,
                     value: '$totalDzikir',
-                    label: lang == 'en' ? 'Dhikr' : 'Dzikir',
+                    label: Translations.get(lang, 'dzikir'),
                     color: Colors.indigo.shade600,
                   ),
                 ),
@@ -1519,7 +1622,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     context: context,
                     icon: Icons.stars_rounded,
                     value: '$points',
-                    label: lang == 'en' ? 'Points' : 'Poin',
+                    label: Translations.get(lang, 'points'),
                     color: const Color(0xFF047857),
                   ),
                 ),
@@ -1573,6 +1676,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               child: Row(
                 children: [
                   _buildCategoryFilterPill('all', '${_t(lang, 'all_filter')} (${allBadges.length})'),
+                  const SizedBox(width: 8),
+                  _buildCategoryFilterPill('sunnah', Translations.get(lang, 'sunnah_filter')),
                   const SizedBox(width: 8),
                   _buildCategoryFilterPill('quran', 'Al-Qur\'an'),
                   const SizedBox(width: 8),

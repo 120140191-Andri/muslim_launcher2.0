@@ -19,6 +19,7 @@ import 'achievements_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 import '../../utils/quran_progress_helper.dart';
+import '../../utils/sunnah_mission_helper.dart';
 import '../../widgets/language_selection_dialog.dart';
 import '../../widgets/growth_tree_widget.dart';
 import '../../services/analytics_service.dart';
@@ -36,6 +37,10 @@ class _HomeScreenState extends State<HomeScreen>
   // Spiritual Energy Transmission Animation
   AnimationController? _spiritualEnergyController;
   SpiritualEnergySession? _activeEnergySession;
+
+  // Prophet's Sunnah Missions Card State
+  bool _showRegularCardOverride = false;
+  String? _selectedNightMissionId;
 
   @override
   void didChangeDependencies() {
@@ -689,142 +694,251 @@ class _HomeScreenState extends State<HomeScreen>
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          // Last Read Card Header with Khatam Count outside the card
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                Translations.get(
-                                                  lang,
-                                                  'continue_journey',
-                                                ).toUpperCase(),
-                                                style: TextStyle(
-                                                  color: Colors.teal.shade900
-                                                      .withValues(alpha: 0.5),
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  letterSpacing: 1.2,
-                                                ),
-                                              ),
-                                              // Badge jumlah khatam di luar card
-                                              Material(
-                                                color: Colors.transparent,
-                                                child: InkWell(
-                                                  onTap: () {
-                                                    QuranProgressHelper
-                                                        .showKhatamLevelInfoModal(
-                                                      context,
-                                                      lang,
-                                                      appState.khatmCount,
-                                                    );
-                                                  },
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  child: Container(
-                                                    padding:
-                                                        const EdgeInsets
-                                                            .symmetric(
-                                                      horizontal: 9,
-                                                      vertical: 3.5,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: appState.khatmCount >
-                                                              0
-                                                          ? Colors.amber.shade50
-                                                          : Colors.teal.shade50
-                                                              .withValues(
-                                                                alpha: 0.7,
-                                                              ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            12,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: appState.khatmCount >
-                                                                0
-                                                            ? Colors.amber.shade400
-                                                            : Colors.teal.shade200
-                                                                .withValues(
-                                                                  alpha: 0.6,
-                                                                ),
-                                                        width: 0.8,
-                                                      ),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons
-                                                              .workspace_premium_rounded,
-                                                          size: 13,
-                                                          color: appState.khatmCount >
-                                                                  0
-                                                              ? const Color(
-                                                                  0xFFD97706,
-                                                                )
-                                                              : Colors.teal.shade700,
-                                                        ),
-                                                        const SizedBox(width: 4),
-                                                        Text(
-                                                          "${appState.khatmCount}x ${Translations.get(lang, 'khatam')}",
-                                                          style: TextStyle(
-                                                            color: appState.khatmCount >
-                                                                    0
-                                                                ? const Color(
-                                                                    0xFF92400E,
-                                                                  )
-                                                                : Colors.teal.shade800,
-                                                            fontSize: 11,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Builder(
-                                            builder: (context) {
-                                              int totalAyahs = 0;
-                                              if (appState.quranData.isNotEmpty &&
-                                                  appState.currentSurahIndex >= 0 &&
-                                                  appState.currentSurahIndex <
-                                                      appState.quranData.length) {
-                                                totalAyahs =
-                                                    (appState.quranData[appState
-                                                                .currentSurahIndex]['ayahs']
-                                                            as List)
-                                                        .length;
-                                              }
+                                           Builder(
+                                             builder: (context) {
+                                               final colorScheme = Theme.of(context).colorScheme;
+                                               final activeSunnahMissions =
+                                                   SunnahMissionHelper.getCurrentlyActiveMissions();
+                                               final uncompletedSunnahMissions = activeSunnahMissions
+                                                   .where((m) =>
+                                                       !appState.isSunnahMissionCompletedToday(m.id))
+                                                   .toList();
+                                               final bool hasActiveSunnah =
+                                                   uncompletedSunnahMissions.isNotEmpty;
+                                               final bool showSunnahCard =
+                                                   hasActiveSunnah && !_showRegularCardOverride;
 
-                                              return RepaintBoundary(
-                                                child: _LastAyatCard(
-                                                  surah:
-                                                      appState.lastReadSurah,
-                                                  ayahNumber:
-                                                      appState.lastReadAyahNumber,
-                                                  totalAyahs: totalAyahs,
-                                                  currentSurahIdx:
-                                                      appState.currentSurahIndex,
-                                                  lang: lang,
-                                                  khatmCount:
-                                                      appState.khatmCount,
-                                                  quranData:
-                                                      appState.quranData,
-                                                  onTap: () =>
-                                                      _resumeReading(appState),
-                                                ),
-                                              );
-                                            },
-                                          ),
+                                               return Column(
+                                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                                 children: [
+                                                   // Card Header with Khatam Count outside the card
+                                                   Row(
+                                                     mainAxisAlignment:
+                                                         MainAxisAlignment.spaceBetween,
+                                                     crossAxisAlignment:
+                                                         CrossAxisAlignment.center,
+                                                     children: [
+                                                       Flexible(
+                                                         child: Row(
+                                                           mainAxisSize: MainAxisSize.min,
+                                                           children: [
+                                                             Flexible(
+                                                               child: Text(
+                                                                 showSunnahCard
+                                                                     ? Translations.get(
+                                                                         lang,
+                                                                         'sunnah_mission_header',
+                                                                       ).toUpperCase()
+                                                                     : Translations.get(
+                                                                         lang,
+                                                                         'continue_journey',
+                                                                       ).toUpperCase(),
+                                                                 maxLines: 1,
+                                                                 overflow: TextOverflow.ellipsis,
+                                                                 style: TextStyle(
+                                                                   color: showSunnahCard
+                                                                       ? const Color(0xFF065F46)
+                                                                       : Colors.teal.shade900
+                                                                           .withValues(alpha: 0.5),
+                                                                   fontSize: 11,
+                                                                   fontWeight: FontWeight.bold,
+                                                                   letterSpacing: 1.2,
+                                                                 ),
+                                                               ),
+                                                             ),
+                                                             if (hasActiveSunnah) ...[
+                                                               const SizedBox(width: 8),
+                                                               Material(
+                                                                 color: Colors.transparent,
+                                                                 child: InkWell(
+                                                                   onTap: () {
+                                                                     setState(() {
+                                                                       _showRegularCardOverride =
+                                                                           !_showRegularCardOverride;
+                                                                     });
+                                                                   },
+                                                                   borderRadius:
+                                                                       BorderRadius.circular(12),
+                                                                   child: Container(
+                                                                     padding:
+                                                                         const EdgeInsets.symmetric(
+                                                                       horizontal: 7,
+                                                                       vertical: 2.5,
+                                                                     ),
+                                                                     decoration: BoxDecoration(
+                                                                       color: showSunnahCard
+                                                                           ? colorScheme
+                                                                               .surfaceContainerHighest
+                                                                               .withValues(alpha: 0.6)
+                                                                           : Colors.amber.shade50,
+                                                                       borderRadius:
+                                                                           BorderRadius.circular(12),
+                                                                       border: Border.all(
+                                                                         color: showSunnahCard
+                                                                             ? colorScheme
+                                                                                 .outlineVariant
+                                                                                 .withValues(
+                                                                                     alpha: 0.4)
+                                                                             : Colors.amber.shade400,
+                                                                         width: 0.8,
+                                                                       ),
+                                                                     ),
+                                                                     child: Row(
+                                                                       mainAxisSize: MainAxisSize.min,
+                                                                       children: [
+                                                                         Icon(
+                                                                           showSunnahCard
+                                                                               ? Icons
+                                                                                   .swap_horiz_rounded
+                                                                               : Icons.stars_rounded,
+                                                                           size: 11.5,
+                                                                           color: showSunnahCard
+                                                                               ? colorScheme.primary
+                                                                               : const Color(
+                                                                                   0xFFD97706),
+                                                                         ),
+                                                                         const SizedBox(width: 3.5),
+                                                                         Text(
+                                                                           showSunnahCard
+                                                                               ? Translations.get(
+                                                                                   lang,
+                                                                                   'switch_to_regular',
+                                                                                 )
+                                                                               : Translations.get(
+                                                                                   lang,
+                                                                                   'switch_to_sunnah',
+                                                                                 ),
+                                                                           style: TextStyle(
+                                                                             fontSize: 10,
+                                                                             fontWeight:
+                                                                                 FontWeight.bold,
+                                                                             color: showSunnahCard
+                                                                                 ? colorScheme.primary
+                                                                                 : const Color(
+                                                                                     0xFF92400E),
+                                                                           ),
+                                                                         ),
+                                                                       ],
+                                                                     ),
+                                                                   ),
+                                                                 ),
+                                                               ),
+                                                             ],
+                                                           ],
+                                                         ),
+                                                       ),
+                                                       const SizedBox(width: 8),
+                                                       // Badge jumlah khatam di luar card
+                                                       Material(
+                                                         color: Colors.transparent,
+                                                         child: InkWell(
+                                                           onTap: () {
+                                                             QuranProgressHelper
+                                                                 .showKhatamLevelInfoModal(
+                                                               context,
+                                                               lang,
+                                                               appState.khatmCount,
+                                                             );
+                                                           },
+                                                           borderRadius:
+                                                               BorderRadius.circular(12),
+                                                           child: Container(
+                                                             padding: const EdgeInsets.symmetric(
+                                                               horizontal: 9,
+                                                               vertical: 3.5,
+                                                             ),
+                                                             decoration: BoxDecoration(
+                                                               color: appState.khatmCount > 0
+                                                                   ? Colors.amber.shade50
+                                                                   : Colors.teal.shade50
+                                                                       .withValues(alpha: 0.7),
+                                                               borderRadius:
+                                                                   BorderRadius.circular(12),
+                                                               border: Border.all(
+                                                                 color: appState.khatmCount > 0
+                                                                     ? Colors.amber.shade400
+                                                                     : Colors.teal.shade200
+                                                                         .withValues(alpha: 0.6),
+                                                                 width: 0.8,
+                                                               ),
+                                                             ),
+                                                             child: Row(
+                                                               mainAxisSize: MainAxisSize.min,
+                                                               children: [
+                                                                 Icon(
+                                                                   Icons.workspace_premium_rounded,
+                                                                   size: 13,
+                                                                   color: appState.khatmCount > 0
+                                                                       ? const Color(0xFFD97706)
+                                                                       : Colors.teal.shade700,
+                                                                 ),
+                                                                 const SizedBox(width: 4),
+                                                                 Text(
+                                                                   "${appState.khatmCount}x ${Translations.get(lang, 'khatam')}",
+                                                                   style: TextStyle(
+                                                                     color: appState.khatmCount > 0
+                                                                         ? const Color(0xFF92400E)
+                                                                         : Colors.teal.shade800,
+                                                                     fontSize: 11,
+                                                                     fontWeight: FontWeight.bold,
+                                                                   ),
+                                                                 ),
+                                                               ],
+                                                             ),
+                                                           ),
+                                                         ),
+                                                       ),
+                                                     ],
+                                                   ),
+                                                   const SizedBox(height: 12),
+                                                   if (showSunnahCard)
+                                                     RepaintBoundary(
+                                                       child: _SunnahMissionHomeCard(
+                                                         activeMissions: activeSunnahMissions,
+                                                         lang: lang,
+                                                         appState: appState,
+                                                         initialSelectedMissionId:
+                                                             _selectedNightMissionId,
+                                                         onMissionSelected: (id) {
+                                                           _selectedNightMissionId = id;
+                                                         },
+                                                       ),
+                                                     )
+                                                   else
+                                                     Builder(
+                                                       builder: (context) {
+                                                         int totalAyahs = 0;
+                                                         if (appState.quranData.isNotEmpty &&
+                                                             appState.currentSurahIndex >= 0 &&
+                                                             appState.currentSurahIndex <
+                                                                 appState.quranData.length) {
+                                                           totalAyahs = (appState.quranData[appState
+                                                                   .currentSurahIndex]['ayahs']
+                                                               as List)
+                                                               .length;
+                                                         }
+
+                                                         return RepaintBoundary(
+                                                           child: _LastAyatCard(
+                                                             surah: appState.lastReadSurah,
+                                                             ayahNumber:
+                                                                 appState.lastReadAyahNumber,
+                                                             totalAyahs: totalAyahs,
+                                                             currentSurahIdx:
+                                                                 appState.currentSurahIndex,
+                                                             lang: lang,
+                                                             khatmCount: appState.khatmCount,
+                                                             quranData: appState.quranData,
+                                                             onTap: () =>
+                                                                 _resumeReading(appState),
+                                                           ),
+                                                         );
+                                                       },
+                                                     ),
+                                                 ],
+                                               );
+                                             },
+                                           ),
                                         ],
                                       ),
                                     ),
@@ -2516,6 +2630,451 @@ class _GoldenLightBeamPainter extends CustomPainter {
   }
 }
 
+class _SunnahMissionHomeCard extends StatefulWidget {
+  final List<SunnahMission> activeMissions;
+  final String lang;
+  final AppState appState;
+  final String? initialSelectedMissionId;
+  final ValueChanged<String>? onMissionSelected;
+
+  const _SunnahMissionHomeCard({
+    required this.activeMissions,
+    required this.lang,
+    required this.appState,
+    this.initialSelectedMissionId,
+    this.onMissionSelected,
+  });
+
+  @override
+  State<_SunnahMissionHomeCard> createState() => _SunnahMissionHomeCardState();
+}
+
+class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
+  late String _selectedId;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSelectedMission();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SunnahMissionHomeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.activeMissions != oldWidget.activeMissions) {
+      _initSelectedMission();
+    }
+  }
+
+  void _initSelectedMission() {
+    if (widget.activeMissions.isEmpty) return;
+    if (widget.initialSelectedMissionId != null &&
+        widget.activeMissions.any((m) => m.id == widget.initialSelectedMissionId)) {
+      _selectedId = widget.initialSelectedMissionId!;
+      return;
+    }
+    final uncompleted = widget.activeMissions
+        .where((m) => !widget.appState.isSunnahMissionCompletedToday(m.id))
+        .toList();
+    if (uncompleted.isNotEmpty) {
+      _selectedId = uncompleted.first.id;
+    } else {
+      _selectedId = widget.activeMissions.first.id;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final mission = widget.activeMissions.firstWhere(
+      (m) => m.id == _selectedId,
+      orElse: () => widget.activeMissions.first,
+    );
+    final isCompleted = widget.appState.isSunnahMissionCompletedToday(mission.id);
+    final int khatmCount = widget.appState.khatmCount;
+    final bool hasKhatam = khatmCount > 0;
+    final int levelNum = QuranProgressHelper.getMaqamLevel(khatmCount);
+    final String levelPrefix = Translations.get(widget.lang, 'level_prefix');
+    final String maqamTitle =
+        QuranProgressHelper.getMaqamTitle(khatmCount, widget.lang);
+    final String khatamBadgeText = "$levelPrefix $levelNum: $maqamTitle";
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              SunnahMissionHelper.showMissionDetailModal(
+                context: context,
+                mission: mission,
+                appState: widget.appState,
+                lang: widget.lang,
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Header Row: Tingkatan Khatam on left, Bonus Points on right
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              QuranProgressHelper.showKhatamLevelInfoModal(
+                                context,
+                                widget.lang,
+                                khatmCount,
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: hasKhatam
+                                    ? Colors.amber.shade50
+                                    : colorScheme.primaryContainer
+                                        .withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: hasKhatam
+                                      ? Colors.amber.shade400
+                                      : colorScheme.primary
+                                          .withValues(alpha: 0.25),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    hasKhatam
+                                        ? Icons.workspace_premium_rounded
+                                        : Icons.military_tech_rounded,
+                                    size: 13.5,
+                                    color: hasKhatam
+                                        ? const Color(0xFFD97706)
+                                        : colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      khatamBadgeText,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: hasKhatam
+                                            ? const Color(0xFF92400E)
+                                            : colorScheme.primary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ),
+                                  if (hasKhatam) ...[
+                                    const SizedBox(width: 5),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 1,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFD97706),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        "+${QuranProgressHelper.getMaqamBoostPercent(khatmCount)}%",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.info_outline_rounded,
+                                    size: 13,
+                                    color: hasKhatam
+                                        ? const Color(0xFFD97706)
+                                        : colorScheme.primary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.amber.shade400,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.bolt_rounded,
+                              size: 13,
+                              color: Color(0xFFD97706),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              Translations.get(widget.lang, 'pts_bonus_label')
+                                  .replaceAll('{pts}', '${mission.pointsReward}'),
+                              style: const TextStyle(
+                                color: Color(0xFF92400E),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // 2. Multi-mission switcher (for Night window)
+                  if (widget.activeMissions.length > 1) ...[
+                    const SizedBox(height: 12),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: widget.activeMissions.map((m) {
+                          final isCurrent = m.id == _selectedId;
+                          final isDone =
+                              widget.appState.isSunnahMissionCompletedToday(m.id);
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _selectedId = m.id;
+                                });
+                                widget.onMissionSelected?.call(m.id);
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 9,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isCurrent
+                                      ? m.primaryColor.withValues(alpha: 0.15)
+                                      : colorScheme.surfaceContainerHighest
+                                          .withValues(alpha: 0.45),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isCurrent
+                                        ? m.primaryColor
+                                        : colorScheme.outlineVariant
+                                            .withValues(alpha: 0.3),
+                                    width: isCurrent ? 1.2 : 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (isDone) ...[
+                                      const Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 12,
+                                        color: Colors.green,
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Text(
+                                      m.getPillLabel(widget.lang),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: isCurrent
+                                            ? FontWeight.bold
+                                            : FontWeight.w500,
+                                        color: isCurrent
+                                            ? m.primaryColor
+                                            : colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 14),
+
+                  // 3. Middle Row: Icon + Title & Description + CTA Button
+                  Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [mission.gradientStart, mission.gradientEnd],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: mission.primaryColor.withValues(alpha: 0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          mission.icon,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              mission.getTitle(widget.lang),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colorScheme.onSurface,
+                                fontSize: 16.5,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              "${mission.getTimeBadge(widget.lang)} • ${mission.getSubtitle(widget.lang)}",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: isCompleted ? Colors.green : mission.primaryColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isCompleted ? Colors.green : mission.primaryColor)
+                                  .withValues(alpha: 0.28),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          isCompleted
+                              ? Icons.check_rounded
+                              : Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 26,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // 4. Bottom Row: Hadith quote snippet
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.format_quote_rounded,
+                          size: 15,
+                          color: mission.primaryColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            mission.getFadhilahHadith(widget.lang),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                              color: colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _LastAyatCard extends StatelessWidget {
   final String surah;
   final int ayahNumber;
@@ -2708,7 +3267,7 @@ class _LastAyatCard extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          "Juz $juzNumber / 30",
+                          "${Translations.get(lang, 'juz_label')} $juzNumber / 30",
                           style: TextStyle(
                             color: colorScheme.onSurfaceVariant,
                             fontSize: 11,
@@ -2765,7 +3324,7 @@ class _LastAyatCard extends StatelessWidget {
                             Text(
                               surah.isEmpty
                                   ? Translations.get(lang, 'find_guidance_today')
-                                  : "${Translations.get(lang, 'ayah')} $ayahNumber • Surah ${currentSurahIdx + 1}/114",
+                                  : "${Translations.get(lang, 'ayah')} $ayahNumber • ${Translations.get(lang, 'surahs')} ${currentSurahIdx + 1}/114",
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(

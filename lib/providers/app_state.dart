@@ -12,6 +12,7 @@ import '../services/streak_notification_service.dart';
 import '../screens/home/app_list_screen.dart';
 import '../utils/translations.dart';
 import '../utils/quran_progress_helper.dart';
+import '../utils/sunnah_mission_helper.dart';
 
 class SpiritualEnergySession {
   final double previousProgress;
@@ -3865,6 +3866,56 @@ class AppState extends ChangeNotifier {
       'surahNumber': surahNumber,
       'surahName': surahName,
       'totalAyahs': totalAyahs,
+    };
+  }
+
+  /// Checks if a Sunnah Mission is already completed for the current day/session.
+  bool isSunnahMissionCompletedToday(String missionId, [DateTime? dateTime]) {
+    final key = SunnahMissionHelper.getAntiGamingClaimKey(missionId, dateTime);
+    return prefs.getBool(key) ?? false;
+  }
+
+  /// Checks if a Sunnah Mission has ever been completed at least once in history.
+  bool isSunnahMissionCompletedLifetime(String missionId) {
+    return prefs.getBool('sunnah_lifetime_$missionId') ?? false;
+  }
+
+  /// Completes a Sunnah Mission with anti-gaming protection (awarded max 1x per period).
+  /// Even if outside the sequential 30-Juz khatam progression, bonus points are awarded!
+  Future<Map<String, dynamic>> completeSunnahMission({
+    required String missionId,
+    required String missionTitle,
+    required int pointsReward,
+    DateTime? dateTime,
+  }) async {
+    final key = SunnahMissionHelper.getAntiGamingClaimKey(missionId, dateTime);
+    final bool alreadyClaimed = prefs.getBool(key) ?? false;
+    if (alreadyClaimed) {
+      return {
+        'isNewMilestone': false,
+        'alreadyClaimed': true,
+        'pointsEarned': 0,
+      };
+    }
+
+    await prefs.setBool(key, true);
+    await prefs.setBool('sunnah_lifetime_$missionId', true);
+
+    final double multiplier = maqamBoostMultiplier;
+    final int finalPoints = (pointsReward * multiplier).round();
+
+    _points += finalPoints;
+    await prefs.setInt('points', _points);
+
+    _addToHistory("🌟 Sunnah Nabi: $missionTitle", 1, finalPoints);
+    notifyListeners();
+
+    return {
+      'isNewMilestone': true,
+      'alreadyClaimed': false,
+      'pointsEarned': finalPoints,
+      'missionId': missionId,
+      'missionTitle': missionTitle,
     };
   }
 

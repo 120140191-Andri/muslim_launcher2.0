@@ -309,6 +309,14 @@ class MainActivity : FlutterActivity() {
                         result.error("ERROR", "Package name missing", null)
                     }
                 }
+                "prepareSupportDeveloperBypass" -> {
+                    AppBlockService.prepareSupportDeveloperBypass()
+                    val intent = Intent("com.muslimlauncher.BYPASS_SUPPORT_DEV").apply {
+                        setPackage(packageName)
+                    }
+                    sendBroadcast(intent)
+                    result.success(true)
+                }
                 "setProhibitedPackages" -> {
                     val apps = call.argument<List<String>>("packages") ?: emptyList()
                     AppBlockService.updateProhibitedPackages(this, apps)

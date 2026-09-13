@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_block_service.dart';
 import '../services/analytics_service.dart';
@@ -121,6 +122,7 @@ class AppState extends ChangeNotifier {
   int _dailyDzikirPoints = 0;
   int _dailyDzikirCount = 0;
   String _dailyDzikirDate = '';
+  Map<String, int> _dailyDzikirPresetRounds = {};
   int _totalDzikirCount = 0;
 
   String get userName => _userName;
@@ -135,6 +137,17 @@ class AppState extends ChangeNotifier {
     if (_dailyDzikirDate != today) return 0;
     return _dailyDzikirCount;
   }
+  Map<String, int> get dailyDzikirPresetRounds {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyDzikirDate != today) return {};
+    return Map.unmodifiable(_dailyDzikirPresetRounds);
+  }
+  int getDzikirPresetRounds(String dzikirTitle) {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyDzikirDate != today) return 0;
+    return _dailyDzikirPresetRounds[dzikirTitle] ?? 0;
+  }
+  bool isDzikirPresetReadToday(String dzikirTitle) => getDzikirPresetRounds(dzikirTitle) > 0;
   int get totalDzikirCount => _totalDzikirCount;
   bool isSurahCompletedInThisCycle(int surahNumber) =>
       _completedSurahsThisCycle.contains(surahNumber);
@@ -191,6 +204,14 @@ class AppState extends ChangeNotifier {
   void setReadyForTesting() {
     _isDataLoaded = true;
     _isInitialized = true;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void setHadithDataForTesting(List<dynamic> data) {
+    _hadithData = data;
+    _cachedShuffledHadithData = [];
+    _cachedHadithShuffleDate = '';
     notifyListeners();
   }
 
@@ -416,15 +437,26 @@ class AppState extends ChangeNotifier {
       _dailyDzikirRounds = 0;
       _dailyDzikirPoints = 0;
       _dailyDzikirCount = 0;
+      _dailyDzikirPresetRounds = {};
       _dailyDzikirDate = today;
       prefs.setInt('dailyDzikirRounds', 0);
       prefs.setInt('dailyDzikirPoints', 0);
       prefs.setInt('dailyDzikirCount', 0);
       prefs.setString('dailyDzikirDate', today);
+      prefs.setString('dailyDzikirPresetRounds', '{}');
     } else {
       _dailyDzikirRounds = prefs.getInt('dailyDzikirRounds') ?? 0;
       _dailyDzikirPoints = prefs.getInt('dailyDzikirPoints') ?? 0;
       _dailyDzikirCount = prefs.getInt('dailyDzikirCount') ?? 0;
+      final rawPresetRounds = prefs.getString('dailyDzikirPresetRounds');
+      if (rawPresetRounds != null && rawPresetRounds.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(rawPresetRounds) as Map<String, dynamic>;
+          _dailyDzikirPresetRounds = decoded.map((k, v) => MapEntry(k, (v as num).toInt()));
+        } catch (_) {
+          _dailyDzikirPresetRounds = {};
+        }
+      }
     }
 
     final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
@@ -1488,6 +1520,24 @@ class AppState extends ChangeNotifier {
     return isIndonesianUser(appLanguageCode)
         ? 'https://trakteer.id/andri_setiawan108/tip'
         : 'https://ko-fi.com/andrisetiawan84153';
+  }
+
+  /// Opens the support / donation URL in the browser, specifically bypassing Ghadhul Bashar for this one-time action
+  Future<void> openSupportDeveloperUrl([String? lang]) async {
+    final url = getSupportUrl(lang ?? _languageCode);
+    try {
+      // 1. Arm one-time bypass in native AppBlockService so browser opens cleanly without Ghadhul Bashar trigger
+      await _appBlockService.prepareSupportDeveloperBypass();
+
+      // 2. Launch browser intent
+      final intent = AndroidIntent(
+        action: 'android.intent.action.VIEW',
+        data: url,
+      );
+      await intent.launch();
+    } catch (e) {
+      debugPrint("Failed to open support developer url: $e");
+    }
   }
 
   /// Returns the button label for supporting the developer based on language and detected platform
@@ -3521,8 +3571,10 @@ class AppState extends ChangeNotifier {
     } else if (lastDate != null && lastDate != DateTime.now().toIso8601String().split('T')[0]) {
       _dailyDzikirCount = 0;
       _dailyDzikirRounds = 0;
+      _dailyDzikirPresetRounds = {};
       await prefs.setInt('dailyDzikirCount', 0);
       await prefs.setInt('dailyDzikirRounds', 0);
+      await prefs.setString('dailyDzikirPresetRounds', '{}');
     }
     await prefs.setInt('dzikirDailyStreak', _dzikirDailyStreak);
     await prefs.setInt('maxDzikirDailyStreak', _maxDzikirDailyStreak);
@@ -3742,7 +3794,22 @@ class AppState extends ChangeNotifier {
     prefs.setString('readingHistory', json.encode(_readingHistory));
   }
 
-  Future<void> saveHadithProgress(int hadithId, String hadithTitle, int pointsEarned) async {
+  /// Calculates points to award for reading a hadith:
+  /// - First 3 distinct hadiths of the day: full points (2-4 pts, based on length)
+  /// - 4th hadith onwards or repeat reads of already completed hadiths: 1 pt (diminishing returns)
+  int getHadithPointsToAward(int hadithId, int basePoints) {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
+    if (lastHadithDate != today) {
+      return basePoints.clamp(2, 4);
+    }
+    if (_readHadithIds.contains(hadithId) || _readHadithIds.length >= 3) {
+      return 1;
+    }
+    return basePoints.clamp(2, 4);
+  }
+
+  Future<int> saveHadithProgress(int hadithId, String hadithTitle, int pointsEarned) async {
     final today = DateTime.now().toIso8601String().split('T')[0];
     final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
     if (lastHadithDate != today) {
@@ -3750,17 +3817,36 @@ class AppState extends ChangeNotifier {
       await prefs.setString('lastHadithDate', today);
     }
 
-    final isFirstTime = !_readHadithIds.contains(hadithId);
+    // Option 1 Hadith Economy:
+    // First 3 distinct hadiths of the day earn full points (2-4).
+    // Subsequent hadiths or repeat reads of already read hadiths earn 1 point.
+    final int pointsToAward = (_readHadithIds.contains(hadithId) || _readHadithIds.length >= 3)
+        ? 1
+        : pointsEarned.clamp(2, 4);
+
     _readHadithIds.add(hadithId);
     await prefs.setStringList('readHadithIds', _readHadithIds.map((e) => e.toString()).toList());
     await prefs.setString('lastHadithDate', today);
 
-    if (isFirstTime && pointsEarned > 0) {
-      _points += pointsEarned;
+    if (pointsToAward > 0) {
+      _points += pointsToAward;
       await prefs.setInt('points', _points);
     }
 
-    _addToHistory(hadithTitle, hadithId, isFirstTime ? pointsEarned : 0);
+    _addToHistory(hadithTitle, hadithId, pointsToAward);
+    notifyListeners();
+    return pointsToAward;
+  }
+
+  @visibleForTesting
+  Future<void> setHadithStateForTesting({Set<int>? readIds, String? lastDate}) async {
+    if (readIds != null) {
+      _readHadithIds = readIds;
+      await prefs.setStringList('readHadithIds', _readHadithIds.map((e) => e.toString()).toList());
+    }
+    if (lastDate != null) {
+      await prefs.setString('lastHadithDate', lastDate);
+    }
     notifyListeners();
   }
 
@@ -3919,11 +4005,11 @@ class AppState extends ChangeNotifier {
     };
   }
 
-  /// Saves Dzikir progress with scientific 3-round daily cap (99 butir = 19 points max).
-  /// Round 1 (33x): +3 pts
-  /// Round 2 (66x): +3 pts
-  /// Round 3 (99x): +13 pts (3 + 10 bonus)
-  /// Round > 3: 0 pts (still records count & history, no app unlock spamming)
+  /// Saves Dzikir progress per dzikir preset:
+  /// - Round 1 of each preset today: Full points (5 base pts)
+  /// - Round > 1 of the same preset today: Reduced points (1 base pt)
+  /// User can earn full points from each different preset once per day.
+  /// Points are multiplied by maqamBoostMultiplier.
   Future<Map<String, dynamic>> saveDzikirProgress(
     String dzikirTitle,
     int count,
@@ -3934,6 +4020,7 @@ class AppState extends ChangeNotifier {
       _dailyDzikirRounds = 0;
       _dailyDzikirPoints = 0;
       _dailyDzikirCount = 0;
+      _dailyDzikirPresetRounds = {};
       _dailyDzikirDate = today;
     }
 
@@ -3941,16 +4028,12 @@ class AppState extends ChangeNotifier {
     _dailyDzikirCount += count;
     await prefs.setInt('dailyDzikirCount', _dailyDzikirCount);
 
-    int baseAllocatedPoints = 0;
-    if (_dailyDzikirRounds == 1) {
-      baseAllocatedPoints = 3;
-    } else if (_dailyDzikirRounds == 2) {
-      baseAllocatedPoints = 3;
-    } else if (_dailyDzikirRounds == 3) {
-      baseAllocatedPoints = 13;
-    } else {
-      baseAllocatedPoints = 0;
-    }
+    final presetRound = (_dailyDzikirPresetRounds[dzikirTitle] ?? 0) + 1;
+    _dailyDzikirPresetRounds[dzikirTitle] = presetRound;
+    await prefs.setString('dailyDzikirPresetRounds', jsonEncode(_dailyDzikirPresetRounds));
+
+    // Base points: 5 points for round 1 per preset; 2 points for repeat rounds
+    final int baseAllocatedPoints = (presetRound == 1) ? 5 : 2;
 
     // Apply Maqam Point Boost Multiplier (strictly whole integer, rounded)
     final int allocatedPoints = (baseAllocatedPoints * maqamBoostMultiplier).round();
@@ -3977,8 +4060,11 @@ class AppState extends ChangeNotifier {
 
     return {
       'round': _dailyDzikirRounds,
+      'presetRound': presetRound,
+      'isFirstPresetRound': presetRound == 1,
       'pointsEarned': allocatedPoints,
-      'isDailyCapReached': _dailyDzikirRounds >= 3,
+      'basePoints': baseAllocatedPoints,
+      'isDailyCapReached': false,
     };
   }
 
@@ -3992,6 +4078,7 @@ class AppState extends ChangeNotifier {
       _dailyDzikirRounds = 0;
       _dailyDzikirPoints = 0;
       _dailyDzikirCount = 0;
+      _dailyDzikirPresetRounds = {};
       _dailyDzikirDate = today;
     }
     _dailyDzikirCount += count;

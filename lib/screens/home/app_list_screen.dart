@@ -5,7 +5,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:android_intent_plus/android_intent.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
@@ -66,10 +65,9 @@ class AppListScreen extends StatefulWidget {
     if (_pendingIconRequests.contains(packageName)) return null;
     _pendingIconRequests.add(packageName);
     try {
-      final bytes = await _channel.invokeMethod<Uint8List>(
-        'getAppIcon',
-        {'packageName': packageName},
-      );
+      final bytes = await _channel.invokeMethod<Uint8List>('getAppIcon', {
+        'packageName': packageName,
+      });
       if (bytes != null && bytes.isNotEmpty) {
         iconCache[packageName] = bytes;
         if (_storagePath != null) {
@@ -220,10 +218,9 @@ class AppListScreen extends StatefulWidget {
           final batch = missing.sublist(i, end);
 
           try {
-            final resIcons = await _channel.invokeMethod(
-              'getAllAppIcons',
-              {'packages': batch},
-            );
+            final resIcons = await _channel.invokeMethod('getAllAppIcons', {
+              'packages': batch,
+            });
             if (resIcons is Map) {
               resIcons.forEach((pkg, bytes) {
                 if (pkg is String && bytes is Uint8List) {
@@ -233,7 +230,9 @@ class AppListScreen extends StatefulWidget {
                   if (_storagePath != null) {
                     try {
                       final file = File('$_storagePath/app_icons/$pkg.bin');
-                      file.writeAsBytes(bytes, flush: false).catchError((_) => file);
+                      file
+                          .writeAsBytes(bytes, flush: false)
+                          .catchError((_) => file);
                     } catch (_) {}
                   }
                 }
@@ -255,13 +254,9 @@ class AppListScreen extends StatefulWidget {
   }
 
   static List<AppInfo> _processApps(List<dynamic> raw) {
-    return raw
-        .whereType<Map>()
-        .map((a) => AppInfo.fromMap(a))
-        .toList()
-      ..sort(
-        (a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()),
-      );
+    return raw.whereType<Map>().map((a) => AppInfo.fromMap(a)).toList()..sort(
+      (a, b) => a.appName.toLowerCase().compareTo(b.appName.toLowerCase()),
+    );
   }
 
   /// Invalidate only the app list. Icon cache is kept intact.
@@ -287,15 +282,29 @@ class AppListScreen extends StatefulWidget {
     final appState = context.read<AppState>();
     final lang = appState.languageCode;
     final cleanPkg = app.packageName.toLowerCase().trim();
-    final isBlocked = appState.blockedApps.contains(cleanPkg) ||
+    final isBlocked =
+        appState.blockedApps.contains(cleanPkg) ||
         appState.blockedApps.contains(app.packageName) ||
         appState.isAppBlocked(app.packageName) ||
-        (AppState.isNonProductiveApp(app.packageName, app.appName, app.category) &&
-            !AppState.isProductiveApp(app.packageName, app.appName, app.category));
+        (AppState.isNonProductiveApp(
+              app.packageName,
+              app.appName,
+              app.category,
+            ) &&
+            !AppState.isProductiveApp(
+              app.packageName,
+              app.appName,
+              app.category,
+            ));
     final isProhibited = appState.isAppProhibited(app.packageName, app.appName);
     final isSystemEssential = AppState.isSystemEssentialApp(app.packageName);
-    final canMarkProductive = isBlocked &&
-        !AppState.isStrictlyNonProductive(app.packageName, app.appName, app.category);
+    final canMarkProductive =
+        isBlocked &&
+        !AppState.isStrictlyNonProductive(
+          app.packageName,
+          app.appName,
+          app.category,
+        );
     final canMarkNonProductive =
         !isBlocked && !isProhibited && !isSystemEssential;
 
@@ -355,22 +364,22 @@ class AppListScreen extends StatefulWidget {
                         Text(
                           isProhibited
                               ? (lang == 'id'
-                                  ? 'Aplikasi Terlarang'
-                                  : 'Prohibited App')
+                                    ? 'Aplikasi Terlarang'
+                                    : 'Prohibited App')
                               : isBlocked
-                                  ? (lang == 'id'
-                                      ? 'Aplikasi Dibatasi'
-                                      : Translations.get(lang, 'app_blocked'))
-                                  : (lang == 'id'
-                                      ? 'Aplikasi Terpasang'
-                                      : 'Installed App'),
+                              ? (lang == 'id'
+                                    ? 'Aplikasi Dibatasi'
+                                    : Translations.get(lang, 'app_blocked'))
+                              : (lang == 'id'
+                                    ? 'Aplikasi Terpasang'
+                                    : 'Installed App'),
                           style: TextStyle(
                             fontSize: 12,
                             color: isProhibited
                                 ? Colors.red.shade700
                                 : isBlocked
-                                    ? Colors.amber.shade800
-                                    : Colors.grey.shade600,
+                                ? Colors.amber.shade800
+                                : Colors.grey.shade600,
                             fontWeight: (isBlocked || isProhibited)
                                 ? FontWeight.w600
                                 : FontWeight.normal,
@@ -393,14 +402,17 @@ class AppListScreen extends StatefulWidget {
                   iconColor: Colors.teal.shade700,
                   bgColor: Colors.teal.shade50,
                   title: Translations.get(lang, 'mark_as_productive'),
-                  subtitle: Translations.get(lang, 'mark_as_productive_subtitle'),
+                  subtitle: Translations.get(
+                    lang,
+                    'mark_as_productive_subtitle',
+                  ),
                   onTap: () {
                     Navigator.pop(ctx);
                     context.read<AppState>().markAppAsProductive(
-                          app.packageName,
-                          appName: app.appName,
-                          category: app.category,
-                        );
+                      app.packageName,
+                      appName: app.appName,
+                      category: app.category,
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -525,15 +537,17 @@ class AppListScreen extends StatefulWidget {
     );
   }
 
-  static void _confirmUninstall(BuildContext context, AppInfo app, String lang) {
+  static void _confirmUninstall(
+    BuildContext context,
+    AppInfo app,
+    String lang,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(Translations.get(lang, 'uninstall_app')),
-        content: Text(
-          Translations.get(lang, 'uninstall_confirm'),
-        ),
+        content: Text(Translations.get(lang, 'uninstall_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -558,7 +572,11 @@ class AppListScreen extends StatefulWidget {
     );
   }
 
-  static void _confirmMarkAsNonProductive(BuildContext context, AppInfo app, String lang) {
+  static void _confirmMarkAsNonProductive(
+    BuildContext context,
+    AppInfo app,
+    String lang,
+  ) {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -571,13 +589,20 @@ class AppListScreen extends StatefulWidget {
                 color: Colors.red.shade50,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 28),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.red.shade700,
+                size: 28,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 Translations.get(lang, 'confirm_mark_non_productive_title'),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
             ),
           ],
@@ -597,7 +622,9 @@ class AppListScreen extends StatefulWidget {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red.shade700,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () {
               Navigator.pop(dialogCtx);
@@ -722,7 +749,11 @@ class _AppListScreenState extends State<AppListScreen>
       appState.setBlockedPackage(app.packageName);
       return;
     }
-    if (AppState.shouldShowGhadhulBasharReminder(app.packageName, app.appName, appState.languageCode)) {
+    if (AppState.shouldShowGhadhulBasharReminder(
+      app.packageName,
+      app.appName,
+      appState.languageCode,
+    )) {
       appState.setGhadhulBasharPackage(app.packageName);
       return;
     }
@@ -734,15 +765,8 @@ class _AppListScreenState extends State<AppListScreen>
   }
 
   Future<void> _openSupportDeveloperUrl() async {
-    try {
-      final appState = Provider.of<AppState>(context, listen: false);
-      final url = appState.supportUrl;
-      final intent = AndroidIntent(
-        action: 'android.intent.action.VIEW',
-        data: url,
-      );
-      await intent.launch();
-    } catch (_) {}
+    final appState = Provider.of<AppState>(context, listen: false);
+    await appState.openSupportDeveloperUrl();
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -779,18 +803,27 @@ class _AppListScreenState extends State<AppListScreen>
               border: InputBorder.none,
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 8),
-              prefixIconConstraints: const BoxConstraints(minWidth: 36, maxHeight: 40),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 36,
+                maxHeight: 40,
+              ),
               prefixIcon: Icon(
                 Icons.search_rounded,
                 color: colorScheme.onSurfaceVariant,
                 size: 18,
               ),
-              suffixIconConstraints: const BoxConstraints(minWidth: 36, maxHeight: 40),
+              suffixIconConstraints: const BoxConstraints(
+                minWidth: 36,
+                maxHeight: 40,
+              ),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
                       iconSize: 16,
                       padding: EdgeInsets.zero,
-                      icon: Icon(Icons.close_rounded, color: colorScheme.onSurfaceVariant),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       onPressed: () {
                         _searchController.clear();
                         setState(() {
@@ -824,7 +857,9 @@ class _AppListScreenState extends State<AppListScreen>
                   height: 32,
                   padding: const EdgeInsets.symmetric(horizontal: 9),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.8,
+                    ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -871,10 +906,7 @@ class _AppListScreenState extends State<AppListScreen>
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF0F5E3B),
-                  Color(0xFF094027),
-                ],
+                colors: [Color(0xFF0F5E3B), Color(0xFF094027)],
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
@@ -896,7 +928,10 @@ class _AppListScreenState extends State<AppListScreen>
                 onTap: _openSupportDeveloperUrl,
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   child: Row(
                     children: [
                       Container(
@@ -1018,12 +1053,16 @@ class _AppListScreenState extends State<AppListScreen>
         final cleanPkg = app.packageName.toLowerCase().trim();
         final isBlockedConfig =
             blocked.contains(cleanPkg) || blocked.contains(app.packageName);
-        final isProhibited =
-            appState.isAppProhibited(app.packageName, app.appName);
-        final remainingMins =
-            appState.getUnlockRemainingMinutes(app.packageName);
+        final isProhibited = appState.isAppProhibited(
+          app.packageName,
+          app.appName,
+        );
+        final remainingMins = appState.getUnlockRemainingMinutes(
+          app.packageName,
+        );
         final isUnlocked =
-            isBlockedConfig && (remainingMins > 0 || appState.isAppUnlocked(app.packageName));
+            isBlockedConfig &&
+            (remainingMins > 0 || appState.isAppUnlocked(app.packageName));
         final isBlocked = isBlockedConfig && !isUnlocked;
 
         return RepaintBoundary(
@@ -1094,8 +1133,9 @@ class _AppTile extends StatelessWidget {
                         border: Border.all(color: Colors.white, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                const Color(0xFFE11D48).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFFE11D48,
+                            ).withValues(alpha: 0.35),
                             blurRadius: 4,
                           ),
                         ],
@@ -1225,10 +1265,26 @@ class _AppIconState extends State<_AppIcon> {
   }
 
   static const ColorFilter _grayscaleFilter = ColorFilter.matrix(<double>[
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0,      0,      0,      1, 0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
   ]);
 
   @override
@@ -1277,10 +1333,7 @@ class _AppIconState extends State<_AppIcon> {
     );
 
     if (widget.grayscale) {
-      img = ColorFiltered(
-        colorFilter: _grayscaleFilter,
-        child: img,
-      );
+      img = ColorFiltered(colorFilter: _grayscaleFilter, child: img);
     }
 
     return img;
@@ -1306,7 +1359,11 @@ class _PointsBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.stars_rounded, color: colorScheme.onTertiaryContainer, size: 15),
+            Icon(
+              Icons.stars_rounded,
+              color: colorScheme.onTertiaryContainer,
+              size: 15,
+            ),
             const SizedBox(width: 4),
             Text(
               points.toString(),

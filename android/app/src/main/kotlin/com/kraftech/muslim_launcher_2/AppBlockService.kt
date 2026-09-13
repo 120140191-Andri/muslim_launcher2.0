@@ -41,6 +41,15 @@ class AppBlockService : AccessibilityService() {
         private var lastBypassTime: Long = 0
         private var currentForegroundPackage: String? = null
 
+        // One-time bypass for opening Developer Support (Trakteer / Ko-fi) links
+        @Volatile
+        private var bypassSupportDeveloperUntil: Long = 0L
+
+        fun prepareSupportDeveloperBypass() {
+            bypassSupportDeveloperUntil = System.currentTimeMillis() + 10000L
+            Log.d("AppBlockService", "SUPPORT DEVELOPER BYPASS ARMED (10s window)")
+        }
+
         // Debounce to prevent multiple back-to-back startActivity calls on rapid accessibility events
         private var lastTriggeredPackage: String? = null
         private var lastTriggeredTime: Long = 0
@@ -529,6 +538,9 @@ class AppBlockService : AccessibilityService() {
                         resetGhadhulBasharSession(pkg)
                     }
                 }
+                "com.muslimlauncher.BYPASS_SUPPORT_DEV" -> {
+                    prepareSupportDeveloperBypass()
+                }
             }
         }
     }
@@ -566,7 +578,7 @@ class AppBlockService : AccessibilityService() {
                 checkAllExpiredUnlocks()
             }
 
-            // 0. PRIORITAS 0: PROHIBITED BYPASS BROWSER CHECK (Dilarang Total - Tanpa Poin/Waktu)
+            // 0. PRIORITAS 0: PROHIBITED BROWSER CHECK (Dilarang Total - Tanpa Poin/Waktu)
             if (prohibitedPackages.contains(packageName)) {
                 Log.d("AppBlockService", "PROHIBITED BROWSER DETECTED: $packageName")
                 lastTriggeredPackage = packageName
@@ -574,6 +586,17 @@ class AppBlockService : AccessibilityService() {
                 MainActivity.notifyAppProhibited(packageName)
                 bringLauncherToFront("prohibitedPackageName", packageName, "triggerProhibitedScreen")
                 return // DILARANG TOTAL SAMA SEKALI!
+            }
+
+            // Khusus: Bypass Ghadhul Bashar jika dibuka via tombol "Dukung Developer" (Trakteer / Ko-fi)
+            val isSupportDevBypass = (now < bypassSupportDeveloperUntil) &&
+                    (isKnownBrowser(packageName) || ghadhulBasharPackages.contains(packageName))
+            if (isSupportDevBypass) {
+                Log.d("AppBlockService", "GHADHUL BASHAR: Bypassed specifically for Dukung Developer ($packageName)")
+                bypassSupportDeveloperUntil = 0L // Segera reset agar hanya berlaku 1 kali (one-time)
+                lastBypassPackage = packageName
+                lastBypassTime = now
+                return
             }
 
             // 1. TRANSITION SHIELD (Highest Priority)
@@ -703,6 +726,7 @@ class AppBlockService : AccessibilityService() {
             addAction("com.muslimlauncher.ALLOW_PACKAGE")
             addAction("com.muslimlauncher.ALLOW_GHADHUL_BASHAR")
             addAction("com.muslimlauncher.RESET_GHADHUL_BASHAR")
+            addAction("com.muslimlauncher.BYPASS_SUPPORT_DEV")
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(allowReceiver, filter, Context.RECEIVER_NOT_EXPORTED)

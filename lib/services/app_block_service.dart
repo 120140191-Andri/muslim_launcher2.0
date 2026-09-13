@@ -119,6 +119,14 @@ class AppBlockService {
     }
   }
 
+  Future<void> prepareSupportDeveloperBypass() async {
+    try {
+      await _channel.invokeMethod('prepareSupportDeveloperBypass');
+    } on PlatformException catch (_) {
+      // Failed to arm bypass
+    }
+  }
+
   Future<void> setProhibitedPackages(List<String> packages) async {
     try {
       await _channel.invokeMethod('setProhibitedPackages', {'packages': packages});

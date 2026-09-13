@@ -104,15 +104,8 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _openSupportDeveloperUrl() async {
-    try {
-      final appState = Provider.of<AppState>(context, listen: false);
-      final url = appState.supportUrl;
-      final intent = AndroidIntent(
-        action: 'android.intent.action.VIEW',
-        data: url,
-      );
-      await intent.launch();
-    } catch (_) {}
+    final appState = Provider.of<AppState>(context, listen: false);
+    await appState.openSupportDeveloperUrl();
   }
 
   @override

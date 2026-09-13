@@ -29,9 +29,9 @@ class _HadithListScreenState extends State<HadithListScreen> {
   }
 
   int _calculateHadithPoints(String arabic, String translation) {
-    final arabicBonus = arabic.trim().length ~/ 25;
-    final translationBonus = translation.trim().length ~/ 60;
-    return (3 + arabicBonus + translationBonus).clamp(3, 8);
+    final arabicBonus = arabic.trim().length ~/ 60;
+    final translationBonus = translation.trim().length ~/ 150;
+    return (2 + arabicBonus + translationBonus).clamp(2, 4);
   }
 
   static final Map<String, List<String>> _staticThemesCache = {};
@@ -301,7 +301,10 @@ class _HadithListScreenState extends State<HadithListScreen> {
                     narrators['id'] as String? ??
                     '';
 
-                final pts = _calculateHadithPoints(arabic, translationText);
+                final pts = appState.getHadithPointsToAward(
+                  hadithId,
+                  _calculateHadithPoints(arabic, translationText),
+                );
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),

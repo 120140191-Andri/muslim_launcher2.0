@@ -79,9 +79,9 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
         translations['id'] as String? ??
         '';
 
-    final arabicBonus = arabic.trim().length ~/ 25;
-    final translationBonus = translationText.trim().length ~/ 60;
-    return (3 + arabicBonus + translationBonus).clamp(3, 8);
+    final arabicBonus = arabic.trim().length ~/ 60;
+    final translationBonus = translationText.trim().length ~/ 150;
+    return (2 + arabicBonus + translationBonus).clamp(2, 4);
   }
 
   void _calculateDuration() {
@@ -212,7 +212,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
     }
   }
 
-  void _onReadingCompleted() {
+  void _onReadingCompleted() async {
     if (_hasCompleted) return;
     _hasCompleted = true;
 
@@ -226,10 +226,10 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
         _currentHadith['theme'] as String? ??
         'Hadits Shahih';
 
-    final points = _pointsEarned;
+    final basePoints = _pointsEarned;
     final title = "Hadits #$hadithId: $theme";
     final bool isFirstTime = !appState.isHadithRead(hadithId);
-    appState.saveHadithProgress(hadithId, title, points);
+    final int awardedPoints = await appState.saveHadithProgress(hadithId, title, basePoints);
 
     final durationSeconds = _readingStartTime != null
         ? DateTime.now().difference(_readingStartTime!).inSeconds
@@ -239,7 +239,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
     AnalyticsService.logHadithSuccess(
       hadithId: hadithId,
       hadithTitle: title,
-      pointsEarned: points,
+      pointsEarned: awardedPoints,
       isFirstTime: isFirstTime,
       durationSeconds: durationSeconds,
     );
@@ -254,7 +254,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                "${Translations.get(appState.languageCode, 'hadith_read_success')} (+$points ${Translations.get(appState.languageCode, 'points')})",
+                "${Translations.get(appState.languageCode, 'hadith_read_success')} (+$awardedPoints ${Translations.get(appState.languageCode, 'points')})",
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -382,7 +382,7 @@ class _HadithDetailScreenState extends State<HadithDetailScreen>
         narrators['id'] as String? ??
         '';
 
-    final currentPoints = _pointsEarned;
+    final currentPoints = appState.getHadithPointsToAward(hadithId, _pointsEarned);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAF8),

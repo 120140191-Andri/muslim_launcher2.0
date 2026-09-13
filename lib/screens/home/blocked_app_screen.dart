@@ -6,6 +6,7 @@ import '../hadith/hadith_list_screen.dart';
 import '../dzikir/dzikir_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
+import '../../utils/quran_progress_helper.dart';
 
 class BlockedAppScreen extends StatefulWidget {
   final String packageName;
@@ -37,6 +38,41 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
     final appName = appState.getAppNameSync(widget.packageName);
     final category = appState.getAppCategorySync(widget.packageName);
     final isStrictlyNonProductive = AppState.isStrictlyNonProductive(widget.packageName, appName, category);
+
+    final int minAyahPts = QuranProgressHelper.calculateAyahPoints(
+      arabicLength: 10,
+      khatmCount: appState.khatmCount,
+    );
+    final int maxAyahPts = QuranProgressHelper.calculateAyahPoints(
+      arabicLength: 100,
+      khatmCount: appState.khatmCount,
+    );
+    final int minDzikirPts = (2 * appState.maqamBoostMultiplier).round();
+    final int maxDzikirPts = (5 * appState.maqamBoostMultiplier).round();
+
+    final quranPtsLabel = lang == 'id'
+        ? '+$minAyahPts-$maxAyahPts Poin/Ayat'
+        : lang == 'ms'
+            ? '+$minAyahPts-$maxAyahPts Mata/Ayat'
+            : lang == 'ar'
+                ? '+$minAyahPts-$maxAyahPts نقاط/آية'
+                : '+$minAyahPts-$maxAyahPts Pts/Ayah';
+
+    final dzikirPtsLabel = lang == 'id'
+        ? '+$minDzikirPts-$maxDzikirPts Poin'
+        : lang == 'ms'
+            ? '+$minDzikirPts-$maxDzikirPts Mata'
+            : lang == 'ar'
+                ? '+$minDzikirPts-$maxDzikirPts نقطة'
+                : '+$minDzikirPts-$maxDzikirPts Pts';
+
+    final hadithPtsLabel = lang == 'id'
+        ? '+1-4 Poin'
+        : lang == 'ms'
+            ? '+1-4 Mata'
+            : lang == 'ar'
+                ? '+١-٤ نقاط'
+                : '+1-4 Pts';
 
     return PopScope(
       canPop: false, // Prevent back button from bypassing block
@@ -322,9 +358,9 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                   color: Colors.amber.shade400.withValues(alpha: 0.25),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text(
-                                  '+10-25 Poin',
-                                  style: TextStyle(
+                                child: Text(
+                                  quranPtsLabel,
+                                  style: const TextStyle(
                                     color: Colors.amber,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
@@ -433,9 +469,9 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                                 color: Colors.amber.shade400.withValues(alpha: 0.2),
                                                 borderRadius: BorderRadius.circular(6),
                                               ),
-                                              child: const Text(
-                                                '+10 Poin',
-                                                style: TextStyle(
+                                              child: Text(
+                                                dzikirPtsLabel,
+                                                style: const TextStyle(
                                                   color: Colors.amber,
                                                   fontSize: 10,
                                                   fontWeight: FontWeight.bold,
@@ -534,9 +570,9 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                                 color: Colors.amber.shade400.withValues(alpha: 0.2),
                                                 borderRadius: BorderRadius.circular(6),
                                               ),
-                                              child: const Text(
-                                                '+3-8 Poin',
-                                                style: TextStyle(
+                                              child: Text(
+                                                hadithPtsLabel,
+                                                style: const TextStyle(
                                                   color: Colors.amber,
                                                   fontSize: 10,
                                                   fontWeight: FontWeight.bold,

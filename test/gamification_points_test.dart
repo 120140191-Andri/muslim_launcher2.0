@@ -93,46 +93,63 @@ void main() {
       expect(appState.points, 185);
     });
 
-    test('Dzikir 3-round daily cap test (3+3+13 = 19 points max at Level 1)', () async {
+    test('Dzikir per-preset 1-round daily reward (5 pts fresh, 1 pt repeat at Level 1)', () async {
       final appState = AppState(prefs);
 
       expect(appState.dailyDzikirRounds, 0);
       expect(appState.dailyDzikirPoints, 0);
 
-      // Round 1: 33x Subhanallah -> +3 points
+      // Round 1: 33x Subhanallah (fresh preset) -> +5 points
       final r1 = await appState.saveDzikirProgress('Subhanallah', 33, 10);
       expect(r1['round'], 1);
-      expect(r1['pointsEarned'], 3);
+      expect(r1['presetRound'], 1);
+      expect(r1['isFirstPresetRound'], true);
+      expect(r1['pointsEarned'], 5);
       expect(r1['pointsEarned'], isA<int>());
-      expect(r1['isDailyCapReached'], false);
-      expect(appState.dailyDzikirPoints, 3);
-      expect(appState.points, 3);
+      expect(appState.dailyDzikirPoints, 5);
+      expect(appState.points, 5);
+      expect(appState.getDzikirPresetRounds('Subhanallah'), 1);
 
-      // Round 2: 33x Alhamdulillah -> +3 points
+      // Round 2: 33x Alhamdulillah (fresh preset) -> +5 points
       final r2 = await appState.saveDzikirProgress('Alhamdulillah', 33, 10);
       expect(r2['round'], 2);
-      expect(r2['pointsEarned'], 3);
+      expect(r2['presetRound'], 1);
+      expect(r2['isFirstPresetRound'], true);
+      expect(r2['pointsEarned'], 5);
       expect(r2['pointsEarned'], isA<int>());
-      expect(r2['isDailyCapReached'], false);
-      expect(appState.dailyDzikirPoints, 6);
-      expect(appState.points, 6);
+      expect(appState.dailyDzikirPoints, 10);
+      expect(appState.points, 10);
+      expect(appState.getDzikirPresetRounds('Alhamdulillah'), 1);
 
-      // Round 3: 33x Allahu Akbar -> +13 points (bonus)
+      // Round 3: 33x Allahu Akbar (fresh preset) -> +5 points
       final r3 = await appState.saveDzikirProgress('Allahu Akbar', 33, 10);
       expect(r3['round'], 3);
-      expect(r3['pointsEarned'], 13);
+      expect(r3['presetRound'], 1);
+      expect(r3['isFirstPresetRound'], true);
+      expect(r3['pointsEarned'], 5);
       expect(r3['pointsEarned'], isA<int>());
-      expect(r3['isDailyCapReached'], true);
-      expect(appState.dailyDzikirPoints, 19);
-      expect(appState.points, 19);
+      expect(appState.dailyDzikirPoints, 15);
+      expect(appState.points, 15);
 
-      // Round 4 (exceeding 3 rounds): 0 points, but count recorded
-      final r4 = await appState.saveDzikirProgress('Astaghfirullah', 33, 10);
+      // Round 4: 33x Subhanallah (repeat of Subhanallah) -> reduced to +2 points
+      final r4 = await appState.saveDzikirProgress('Subhanallah', 33, 10);
       expect(r4['round'], 4);
-      expect(r4['pointsEarned'], 0);
-      expect(r4['isDailyCapReached'], true);
-      expect(appState.dailyDzikirPoints, 19); // unchanged
-      expect(appState.points, 19); // unchanged
+      expect(r4['presetRound'], 2);
+      expect(r4['isFirstPresetRound'], false);
+      expect(r4['pointsEarned'], 2); // Reduced points (2 pts), not 0
+      expect(r4['pointsEarned'], isA<int>());
+      expect(appState.dailyDzikirPoints, 17);
+      expect(appState.points, 17);
+      expect(appState.getDzikirPresetRounds('Subhanallah'), 2);
+
+      // Round 5: 33x Astaghfirullah (fresh preset) -> +5 points
+      final r5 = await appState.saveDzikirProgress('Astaghfirullah', 33, 10);
+      expect(r5['round'], 5);
+      expect(r5['presetRound'], 1);
+      expect(r5['isFirstPresetRound'], true);
+      expect(r5['pointsEarned'], 5);
+      expect(appState.dailyDzikirPoints, 22);
+      expect(appState.points, 22);
     });
 
     test('Khatam 30 Juz completion, level increment, +500 bonus, and cycle reset', () async {
@@ -301,24 +318,24 @@ void main() {
       await prefs.setInt('khatmCount', 1);
       final appStateLevel2 = AppState(prefs);
 
-      // Round 1: (3 * 1.25).round() = 4
+      // Round 1 (Subhanallah fresh): (5 * 1.25).round() = 6
       final l2r1 = await appStateLevel2.saveDzikirProgress('Subhanallah', 33, 10);
-      expect(l2r1['pointsEarned'], 4);
+      expect(l2r1['pointsEarned'], 6);
       expect(l2r1['pointsEarned'], isA<int>());
 
-      // Round 2: (3 * 1.25).round() = 4
-      final l2r2 = await appStateLevel2.saveDzikirProgress('Alhamdulillah', 33, 10);
-      expect(l2r2['pointsEarned'], 4);
+      // Round 2 (Subhanallah repeat): (2 * 1.25).round() = 3
+      final l2r2 = await appStateLevel2.saveDzikirProgress('Subhanallah', 33, 10);
+      expect(l2r2['pointsEarned'], 3);
       expect(l2r2['pointsEarned'], isA<int>());
 
-      // Round 3: (13 * 1.25).round() = 16
-      final l2r3 = await appStateLevel2.saveDzikirProgress('Allahu Akbar', 33, 10);
-      expect(l2r3['pointsEarned'], 16);
+      // Round 3 (Alhamdulillah fresh): (5 * 1.25).round() = 6
+      final l2r3 = await appStateLevel2.saveDzikirProgress('Alhamdulillah', 33, 10);
+      expect(l2r3['pointsEarned'], 6);
       expect(l2r3['pointsEarned'], isA<int>());
 
-      // Total daily points = 4 + 4 + 16 = 24
-      expect(appStateLevel2.dailyDzikirPoints, 24);
-      expect(appStateLevel2.points, 24);
+      // Total daily points = 6 + 3 + 6 = 15
+      expect(appStateLevel2.dailyDzikirPoints, 15);
+      expect(appStateLevel2.points, 15);
 
       // Test at Level 5 (2.0x double points)
       final prefsL5 = await SharedPreferences.getInstance();
@@ -326,24 +343,24 @@ void main() {
       await prefsL5.setInt('khatmCount', 5);
       final appStateLevel5 = AppState(prefsL5);
 
-      // Round 1: (3 * 2.0).round() = 6
+      // Round 1 (Subhanallah fresh): (5 * 2.0).round() = 10
       final l5r1 = await appStateLevel5.saveDzikirProgress('Subhanallah', 33, 10);
-      expect(l5r1['pointsEarned'], 6);
+      expect(l5r1['pointsEarned'], 10);
       expect(l5r1['pointsEarned'], isA<int>());
 
-      // Round 2: (3 * 2.0).round() = 6
-      final l5r2 = await appStateLevel5.saveDzikirProgress('Alhamdulillah', 33, 10);
-      expect(l5r2['pointsEarned'], 6);
+      // Round 2 (Subhanallah repeat): (2 * 2.0).round() = 4
+      final l5r2 = await appStateLevel5.saveDzikirProgress('Subhanallah', 33, 10);
+      expect(l5r2['pointsEarned'], 4);
       expect(l5r2['pointsEarned'], isA<int>());
 
-      // Round 3: (13 * 2.0).round() = 26
-      final l5r3 = await appStateLevel5.saveDzikirProgress('Allahu Akbar', 33, 10);
-      expect(l5r3['pointsEarned'], 26);
+      // Round 3 (Alhamdulillah fresh): (5 * 2.0).round() = 10
+      final l5r3 = await appStateLevel5.saveDzikirProgress('Alhamdulillah', 33, 10);
+      expect(l5r3['pointsEarned'], 10);
       expect(l5r3['pointsEarned'], isA<int>());
 
-      // Total daily points = 6 + 6 + 26 = 38 (Under 50 pts anchor, maintaining digital detox)
-      expect(appStateLevel5.dailyDzikirPoints, 38);
-      expect(appStateLevel5.points, 38);
+      // Total daily points = 10 + 4 + 10 = 24
+      expect(appStateLevel5.dailyDzikirPoints, 24);
+      expect(appStateLevel5.points, 24);
     });
   });
 }

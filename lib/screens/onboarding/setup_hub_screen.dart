@@ -110,14 +110,8 @@ class _SetupHubScreenState extends State<SetupHubScreen>
   }
 
   Future<void> _openSupportDeveloperUrl(String lang) async {
-    try {
-      final url = AppState.getSupportUrl(lang);
-      final intent = AndroidIntent(
-        action: 'android.intent.action.VIEW',
-        data: url,
-      );
-      await intent.launch();
-    } catch (_) {}
+    final appState = Provider.of<AppState>(context, listen: false);
+    await appState.openSupportDeveloperUrl(lang);
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────────

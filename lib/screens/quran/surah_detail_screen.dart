@@ -6,6 +6,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../providers/app_state.dart';
 import 'quran_tajweed_text.dart';
+import 'surah_list_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../services/eye_tracker_service.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -39,6 +40,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   String _cumulativeRecognizedText = "";
   String _currentSessionText = "";
   String _targetArabicText = "";
+  DateTime? _readingStartTime;
+  int _lastMatchedWordCount = 0;
+  Timer? _inactivityTimer;
+  bool _isMicReady = false;
+  final ValueNotifier<int> _currentVisibleAyah = ValueNotifier<int>(1);
+  final ValueNotifier<int?> _stickyAyahIndex = ValueNotifier<int?>(null);
+  bool _suppressLongAyahVoiceWarningForSurah = false;
 
   // Eye Focus Mode
   final EyeTrackerService _eyeTrackerService = EyeTrackerService();
@@ -50,12 +58,59 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   StreamSubscription? _eyeFocusSubscription;
   bool _isInitializing = false;
   bool _isDisposed = false;
-  DateTime? _readingStartTime;
 
   // Spiritual Energy Session Tracking
   late AppState _appState;
   double? _sessionStartProgress;
   int _sessionAyahsCount = 0;
+
+  bool _isLongAyah(String arabic) {
+    final clean = arabic.replaceAll(RegExp(r'\[[a-zA-Z0-9:]*\[|\]'), '');
+    final words = clean.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    return words >= 18 || clean.trim().length >= 130;
+  }
+
+  int _getWordCount(String arabic) {
+    final clean = arabic.replaceAll(RegExp(r'\[[a-zA-Z0-9:]*\[|\]'), '');
+    return clean.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+  }
+
+  void _onAyahMicPressed(int index, String arabic) async {
+    if (_recordingAyahIdx == index) {
+      _stopListening();
+      return;
+    }
+
+    final lang = Provider.of<AppState>(context, listen: false).languageCode;
+    if (_isLongAyah(arabic) && !_suppressLongAyahVoiceWarningForSurah) {
+      _showLongAyahVoiceSuggestionModal(
+        context: context,
+        ayahIndex: index,
+        arabic: arabic,
+        lang: lang,
+      );
+      return;
+    }
+
+    _startListeningForAyah(index, arabic);
+  }
+
+  void _startListeningForAyah(int index, String arabic) {
+    _stopListening(); // Make sure previous is stopped properly
+
+    _lastMatchedWordCount = 0;
+    setState(() {
+      _isInitializing = true;
+      _isMicReady = false;
+      _recordingAyahIdx = index;
+      _recognizedText = "";
+      _cumulativeRecognizedText = "";
+      _currentSessionText = "";
+      _targetArabicText = arabic;
+    });
+
+    _startListeningSession();
+  }
 
   @override
   void didChangeDependencies() {
@@ -78,9 +133,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     );
     WidgetsBinding.instance.addObserver(this);
     _initSpeech();
+    _itemPositionsListener.itemPositions.addListener(_onItemPositionsChanged);
 
     // Auto-scroll to initial ayah if provided
     if (widget.initialAyahIndex != null) {
+      _currentVisibleAyah.value = widget.initialAyahIndex! + 1;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _itemScrollController.jumpTo(index: widget.initialAyahIndex!);
       });
@@ -94,23 +151,46 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
           if (mounted) {
             if (_recordingAyahIdx != null && !_isDisposed) {
               Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted && _recordingAyahIdx != null) {
+                if (mounted && _recordingAyahIdx != null && !_isDisposed) {
                   _startListeningSession();
                 }
               });
             } else {
-              setState(() => _recordingAyahIdx = null);
+              setState(() {
+                _recordingAyahIdx = null;
+                _isMicReady = false;
+              });
             }
           }
         },
         onStatus: (val) {
-          if (val == 'done' || val == 'notListening') {
+          if (val == 'listening') {
             if (mounted && _recordingAyahIdx != null && !_isDisposed) {
+              HapticFeedback.selectionClick();
+              setState(() {
+                _isMicReady = true;
+                _isInitializing = false;
+              });
+              _readingStartTime ??= DateTime.now();
+              _resetInactivityTimer();
+            }
+          } else if (val == 'done' || val == 'notListening') {
+            if (mounted && _recordingAyahIdx != null && !_isDisposed) {
+              setState(() => _isMicReady = false);
               _cumulativeRecognizedText =
                   "$_cumulativeRecognizedText $_currentSessionText".trim();
               _currentSessionText = "";
+              _recognizedText = _cumulativeRecognizedText;
+
+              // Check if reading is complete before restarting session
+              if (_checkMatch(_recognizedText, _targetArabicText, isFinalEvaluation: true)) {
+                _onSuccess(_recordingAyahIdx!, _targetArabicText);
+                _stopListening();
+                return;
+              }
+
               Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted && _recordingAyahIdx != null) {
+                if (mounted && _recordingAyahIdx != null && !_isDisposed) {
                   _startListeningSession();
                 }
               });
@@ -124,40 +204,44 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     }
   }
 
-  void _onAyahMicPressed(int index, String arabic) async {
-    if (_recordingAyahIdx == index) {
-      _stopListening();
-    } else {
-      _stopListening(); // Make sure previous is stopped properly
 
-      _readingStartTime = DateTime.now();
-      setState(() {
-        _isInitializing = true;
-        _recordingAyahIdx = index;
-        _recognizedText = "";
-        _cumulativeRecognizedText = "";
-        _currentSessionText = "";
-        _targetArabicText = arabic;
-      });
-
-      _startListeningSession();
-    }
-  }
 
   void _startListeningSession() async {
     try {
-      if (!await _speech.initialize()) {
-        if (mounted) setState(() => _isInitializing = false);
-        return;
+      if (!_speech.isAvailable) {
+        final available = await _speech.initialize();
+        if (!available) {
+          if (mounted) {
+            setState(() {
+              _isInitializing = false;
+              _isMicReady = false;
+            });
+          }
+          return;
+        }
       }
+
       if (mounted && !_isDisposed && _recordingAyahIdx != null) {
-        _speech.listen(
+        await _speech.listen(
           onResult: (val) {
             if (mounted && !_isDisposed && _recordingAyahIdx != null) {
               setState(() {
                 _currentSessionText = val.recognizedWords;
                 _recognizedText =
                     "$_cumulativeRecognizedText $_currentSessionText".trim();
+
+                final metrics = _calculateMatchMetrics(
+                  _recognizedText,
+                  _targetArabicText,
+                );
+
+                // If user reached the end of the ayah, complete quickly (1.5s silence).
+                // If still mid-reading, give 8s breathing room.
+                _resetInactivityTimer(hasReachedEnd: metrics.isEndWordMatched);
+
+                if (metrics.matchCount > _lastMatchedWordCount) {
+                  _lastMatchedWordCount = metrics.matchCount;
+                }
 
                 if (_checkMatch(_recognizedText, _targetArabicText)) {
                   _onSuccess(_recordingAyahIdx!, _targetArabicText);
@@ -168,34 +252,187 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
           },
           localeId: 'ar_SA',
           pauseFor: const Duration(
-            seconds: 5,
-          ), // Provide enough time to breathe
+            seconds: 4,
+          ), // Natural pause allowance for native speech engine
         );
+
+        if (mounted && _speech.isListening && !_isMicReady) {
+          HapticFeedback.selectionClick();
+          setState(() {
+            _isMicReady = true;
+            _isInitializing = false;
+          });
+          _readingStartTime ??= DateTime.now();
+          _resetInactivityTimer(hasReachedEnd: false);
+        }
       }
     } finally {
-      if (mounted && !_isDisposed) {
+      if (mounted && !_isDisposed && !_speech.isListening) {
         setState(() => _isInitializing = false);
+      }
+    }
+  }
+
+  void _resetInactivityTimer({bool hasReachedEnd = false}) {
+    _inactivityTimer?.cancel();
+    final duration = hasReachedEnd
+        ? const Duration(milliseconds: 1500)
+        : const Duration(seconds: 8);
+    _inactivityTimer = Timer(duration, () {
+      _evaluateOnTimeout();
+    });
+  }
+
+  void _evaluateOnTimeout() {
+    if (!mounted || _isDisposed || _recordingAyahIdx == null) return;
+
+    if (_checkMatch(_recognizedText, _targetArabicText, isFinalEvaluation: true)) {
+      _onSuccess(_recordingAyahIdx!, _targetArabicText);
+      _stopListening();
+    } else {
+      // Reading incomplete or ambient noise after user stopped
+      final currentAyah = _recordingAyahIdx;
+      _stopListening();
+
+      if (mounted && currentAyah != null) {
+        final lang = Provider.of<AppState>(context, listen: false).languageCode;
+        final bool hadVoice = _recognizedText.trim().isNotEmpty;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, color: Colors.amber),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    hadVoice
+                        ? (lang == 'en'
+                            ? "Recitation incomplete. Please recite until the end of the verse."
+                            : "Bacaan belum lengkap. Silakan baca hingga akhir ayat.")
+                        : (lang == 'en'
+                            ? "No voice detected. Please try again."
+                            : "Suara belum terdeteksi. Silakan coba lagi."),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.blueGrey.shade800,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
 
   String _normalizeArabicText(String text) {
     if (text.isEmpty) return text;
-    String normalized = text.replaceAll(
-      RegExp(r'[\u064B-\u065F\u0670]'),
+
+    // 1. Strip Tajweed tags if present e.g. [h:13[ٱ] or [l[ل] or [s[و][n[ٲ]ةَ
+    String clean = text.replaceAll(RegExp(r'\[[a-zA-Z0-9:]*\[|\]'), '');
+
+    // 2. Remove Tashkeel, Quranic diacritics, Tatweel (ـ / \u0640), and Dagger Alif (\u0670)
+    clean = clean.replaceAll(
+      RegExp(r'[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]'),
       '',
-    ); // Remove tashkeel
-    normalized = normalized.replaceAll(RegExp(r'[أإآ]'), 'ا'); // Normalize Alif
-    normalized = normalized.replaceAll('ة', 'ه'); // Normalize Ta Marbuta
-    normalized = normalized.replaceAll(
-      RegExp(r'[^\u0600-\u06FF\s]'),
-      '',
-    ); // Remove punctuation
-    return normalized.trim();
+    );
+
+    // 3. Normalize all forms of Alif to standard bare Alif (ا - \u0627)
+    // Includes: \u0671 (Alef Wasla ٱ), \u0672 (ٲ), \u0673 (ٳ), \u0622 (آ), \u0623 (أ), \u0625 (إ)
+    clean = clean.replaceAll(RegExp(r'[أإآٱٲٳ]'), 'ا');
+
+    // 4. Normalize Ta Marbuta (ة) to Ha (ه)
+    clean = clean.replaceAll('ة', 'ه');
+
+    // 5. Normalize Alif Maqsura (ى) to Ya (ي)
+    clean = clean.replaceAll('ى', 'ي');
+
+    // 6. Normalize Rasm Utsmani words with silent Waw / special spellings to modern standard
+    clean = clean.replaceAll(RegExp(r'صل[واه]+ه'), 'صلاه'); // الصلاة / الصلوة
+    clean = clean.replaceAll(RegExp(r'زك[واه]+ه'), 'زكاه'); // الزكاة / الزكوة
+    clean = clean.replaceAll(RegExp(r'حي[واه]+ه'), 'حياه'); // الحياة / الحيوة
+    clean = clean.replaceAll(RegExp(r'مشك[واه]+ه'), 'مشكاه'); // مشكاة
+    clean = clean.replaceAll(RegExp(r'رب[واه]+[ا]?'), 'ربا'); // الربا
+
+    // 7. Remove any non-Arabic letters or punctuation, keeping only Arabic letters and whitespace
+    clean = clean.replaceAll(RegExp(r'[^\u0600-\u06FF\s]'), '');
+
+    return clean.trim();
   }
 
-  bool _checkMatch(String recognized, String target) {
-    if (recognized.trim().isEmpty) return false;
+  int _levenshteinDistance(String s, String t) {
+    if (s == t) return 0;
+    if (s.isEmpty) return t.length;
+    if (t.isEmpty) return s.length;
+
+    List<int> v0 = List<int>.generate(t.length + 1, (i) => i);
+    List<int> v1 = List<int>.filled(t.length + 1, 0);
+
+    for (int i = 0; i < s.length; i++) {
+      v1[0] = i + 1;
+      for (int j = 0; j < t.length; j++) {
+        int cost = (s[i] == t[j]) ? 0 : 1;
+        v1[j + 1] = [
+          v1[j] + 1,
+          v0[j + 1] + 1,
+          v0[j] + cost,
+        ].reduce((a, b) => a < b ? a : b);
+      }
+      for (int j = 0; j <= t.length; j++) {
+        v0[j] = v1[j];
+      }
+    }
+    return v0[t.length];
+  }
+
+  bool _isWordMatch(String targetWord, String recWord) {
+    if (targetWord == recWord) return true;
+    if (targetWord.isEmpty || recWord.isEmpty) return false;
+
+    // Substring containment for words >= 3 chars
+    if (targetWord.length >= 3 && recWord.length >= 3) {
+      if (targetWord.contains(recWord) || recWord.contains(targetWord)) {
+        return true;
+      }
+    }
+
+    // Levenshtein fuzzy match (handles STT phonetic misrecognitions like ويوكمون vs ويقيمون)
+    final distance = _levenshteinDistance(targetWord, recWord);
+    if (targetWord.length <= 4) {
+      return distance <= 1;
+    } else {
+      final maxLen = targetWord.length > recWord.length
+          ? targetWord.length
+          : recWord.length;
+      final similarity = 1.0 - (distance / maxLen);
+      return distance <= 2 || similarity >= 0.65;
+    }
+  }
+
+  ({
+    int matchCount,
+    int totalWords,
+    double matchPercentage,
+    bool isStartWordMatched,
+    bool isEndWordMatched,
+    int firstMatchedTargetIndex,
+    int lastMatchedTargetIndex,
+  }) _calculateMatchMetrics(String recognized, String target) {
+    if (recognized.trim().isEmpty || target.trim().isEmpty) {
+      return (
+        matchCount: 0,
+        totalWords: 0,
+        matchPercentage: 0.0,
+        isStartWordMatched: false,
+        isEndWordMatched: false,
+        firstMatchedTargetIndex: -1,
+        lastMatchedTargetIndex: -1,
+      );
+    }
 
     final normRecognized = _normalizeArabicText(recognized);
     final normTarget = _normalizeArabicText(target);
@@ -209,35 +446,121 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         .where((w) => w.isNotEmpty)
         .toList();
 
-    if (targetWords.isEmpty) return false;
+    if (targetWords.isEmpty) {
+      return (
+        matchCount: 0,
+        totalWords: 0,
+        matchPercentage: 0.0,
+        isStartWordMatched: false,
+        isEndWordMatched: false,
+        firstMatchedTargetIndex: -1,
+        lastMatchedTargetIndex: -1,
+      );
+    }
 
     int matchCount = 0;
+    int firstMatchedTargetIndex = -1;
+    int lastMatchedTargetIndex = -1;
     List<String> remainingRecWords = List.from(recWords);
-    for (String word in targetWords) {
-      int idx = remainingRecWords.indexOf(word);
-      if (idx != -1) {
-        matchCount++;
-        remainingRecWords.removeAt(idx);
-      } else if (word.length >= 3) {
-        int partialIdx = remainingRecWords.indexWhere(
-          (rw) => rw.length >= 3 && (rw.contains(word) || word.contains(rw)),
-        );
-        if (partialIdx != -1) {
-          matchCount++;
-          remainingRecWords.removeAt(partialIdx);
+
+    for (int tIdx = 0; tIdx < targetWords.length; tIdx++) {
+      final tWord = targetWords[tIdx];
+      int foundIdx = -1;
+
+      for (int rIdx = 0; rIdx < remainingRecWords.length; rIdx++) {
+        if (_isWordMatch(tWord, remainingRecWords[rIdx])) {
+          foundIdx = rIdx;
+          break;
         }
+      }
+
+      if (foundIdx != -1) {
+        matchCount++;
+        if (firstMatchedTargetIndex == -1) {
+          firstMatchedTargetIndex = tIdx;
+        }
+        lastMatchedTargetIndex = tIdx;
+        remainingRecWords.removeAt(foundIdx);
       }
     }
 
-    double matchPercentage = matchCount / targetWords.length;
-    if (targetWords.length <= 4) {
-      return matchCount >= 1; // 1 word for very short ayahs
-    } else {
-      return matchPercentage >= 0.45; // 45% matching words
+    final double matchPercentage = matchCount / targetWords.length;
+
+    // Start anchor: user must match a word in the first ~35% of the ayah
+    final int startThresholdIndex = targetWords.length <= 3
+        ? (targetWords.length == 1 ? 0 : 1)
+        : (targetWords.length <= 6 ? 1 : (targetWords.length * 0.35).floor());
+
+    // End threshold: user must reach into the final segment of the ayah (last 2-3 words)
+    // ensuring the user actually recited through to the end of the verse.
+    final int endThresholdIndex = targetWords.length <= 3
+        ? (targetWords.length == 1 ? 0 : 1)
+        : (targetWords.length <= 6
+            ? targetWords.length - 2
+            : (targetWords.length * 0.75).floor().clamp(0, targetWords.length - 2));
+
+    final bool isStartWordMatched = firstMatchedTargetIndex != -1 &&
+        firstMatchedTargetIndex <= startThresholdIndex;
+    final bool isEndWordMatched = lastMatchedTargetIndex != -1 &&
+        lastMatchedTargetIndex >= endThresholdIndex;
+
+    return (
+      matchCount: matchCount,
+      totalWords: targetWords.length,
+      matchPercentage: matchPercentage,
+      isStartWordMatched: isStartWordMatched,
+      isEndWordMatched: isEndWordMatched,
+      firstMatchedTargetIndex: firstMatchedTargetIndex,
+      lastMatchedTargetIndex: lastMatchedTargetIndex,
+    );
+  }
+
+  bool _checkMatch(
+    String recognized,
+    String target, {
+    bool isFinalEvaluation = false,
+  }) {
+    final metrics = _calculateMatchMetrics(recognized, target);
+    if (metrics.totalWords == 0) return false;
+
+    // Minimum reading duration benchmark (anti-cheat against instant completion):
+    // Fastest human recitation is ~0.30s per word, minimum 1.0s.
+    final minDurationSeconds = (metrics.totalWords * 0.30).clamp(1.0, 120.0);
+    final elapsedSeconds = _readingStartTime != null
+        ? DateTime.now().difference(_readingStartTime!).inMilliseconds / 1000.0
+        : 0.0;
+
+    // Guard against completing too early
+    if (elapsedSeconds < minDurationSeconds) {
+      return false;
     }
+
+    // For very short ayahs (<= 3 words)
+    if (metrics.totalWords <= 3) {
+      final requiredWords = metrics.totalWords == 1 ? 1 : 2;
+      return metrics.matchCount >= requiredWords && metrics.isEndWordMatched;
+    }
+
+    // Proportional word density requirement: ~40% of words (e.g. 4 words out of 8)
+    // Prevents cheating by reciting only the first word and the last word.
+    final requiredMatches = (metrics.totalWords * 0.40).ceil().clamp(2, metrics.totalWords);
+
+    // Multi-Layer Anti-Gaming Verification:
+    // 1. Density: user recited enough words across the verse (>= requiredMatches)
+    // 2. Start Anchor: user started recitation from the beginning segment (isStartWordMatched)
+    // 3. End Anchor: user recited through to the end segment (isEndWordMatched)
+    // 4. Time: elapsed time >= min duration benchmark
+    return metrics.matchCount >= requiredMatches &&
+        metrics.isStartWordMatched &&
+        metrics.isEndWordMatched;
   }
 
   void _stopListening({bool isDisposing = false}) {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = null;
+    _lastMatchedWordCount = 0;
+    _isMicReady = false;
+    _isInitializing = false;
     if (!isDisposing && mounted) {
       setState(() {
         _recordingAyahIdx = null;
@@ -616,22 +939,35 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         }
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: colorScheme.surfaceContainerLowest,
         appBar: AppBar(
-        title: Text(widget.surah['surah_name']),
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        scrolledUnderElevation: 2,
-        elevation: 0,
-        actions: [
-          Selector<AppState, (int, int)>(
-            selector: (_, s) => (s.points, s.khatmCount),
-            builder: (_, values, child) =>
-                _PointsBadge(points: values.$1, khatmCount: values.$2),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: _handleBackToSurahList,
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
+          title: Text(widget.surah['surah_name']),
+          backgroundColor: colorScheme.surface,
+          foregroundColor: colorScheme.onSurface,
+          scrolledUnderElevation: 2,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.format_list_numbered_rounded),
+              tooltip: (lang == 'id' || lang == 'ms')
+                  ? 'Navigasi Ayat'
+                  : 'Jump to Ayah',
+              onPressed: () =>
+                  _showAyahNavigatorSheet(context, ayahs.length, lang),
+            ),
+            Selector<AppState, (int, int)>(
+              selector: (_, s) => (s.points, s.khatmCount),
+              builder: (_, values, child) =>
+                  _PointsBadge(points: values.$1, khatmCount: values.$2),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
       body: Stack(
         children: [
           ScrollablePositionedList.builder(
@@ -645,7 +981,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                     : 0),
             itemScrollController: _itemScrollController,
             itemPositionsListener: _itemPositionsListener,
-            padding: const EdgeInsets.only(top: 8, bottom: 64),
+            padding: EdgeInsets.only(
+              top: 8,
+              bottom: 96 + MediaQuery.of(context).padding.bottom,
+            ),
 
             itemBuilder: (context, index) {
               if (index == ayahs.length) {
@@ -710,8 +1049,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                             // Ayah Header
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
+                                horizontal: 12,
+                                vertical: 7,
                               ),
                               decoration: BoxDecoration(
                                 color: isDone
@@ -724,68 +1063,107 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                   topRight: Radius.circular(24),
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.secondaryContainer,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Text(
-                                      "${index + 1}",
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: colorScheme.onSecondaryContainer,
-                                        fontWeight: FontWeight.bold,
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final textScale =
+                                      MediaQuery.textScalerOf(context).scale(14) / 14;
+                                  final effectiveWidth =
+                                      constraints.maxWidth / (textScale > 0 ? textScale : 1.0);
+                                  final isCompact = effectiveWidth < 360;
+                                  final hideActionLabels = effectiveWidth < 250;
+
+                                  final String? headerLabel = isLastReadAyah
+                                      ? _getLastReadLabel(lang)
+                                      : (isNext ? _getReadWithLabel(lang) : null);
+
+                                  return Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      // Left: Ayah Number Badge & Status Label
+                                      Flexible(
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: colorScheme.secondaryContainer,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Text(
+                                                "${index + 1}",
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: colorScheme.onSecondaryContainer,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            if (headerLabel != null) ...[
+                                              const SizedBox(width: 6),
+                                              Flexible(
+                                                child: Text(
+                                                  headerLabel,
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: isLastReadAyah
+                                                        ? colorScheme.primary
+                                                        : colorScheme.onSurfaceVariant,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                  maxLines: 1,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  if (isLastReadAyah)
-                                    Text(
-                                      lang == 'en'
-                                          ? 'Last Read'
-                                          : 'Terakhir Dibaca',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: colorScheme.primary,
-                                        fontWeight: FontWeight.bold,
+                                      const SizedBox(width: 6),
+                                      // Right: Action Buttons
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          _MicButton(
+                                            lang: lang,
+                                            isRecording: isRecording,
+                                            isInitializing: isRecording && !_isMicReady,
+                                            isCompact: isCompact,
+                                            hideLabel: hideActionLabels,
+                                            onPressed: () => _onAyahMicPressed(
+                                              index,
+                                              ayah['arabic'],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          _EyeButton(
+                                            lang: lang,
+                                            isActive: _eyeReadingAyahIdx == index,
+                                            isFocused: _isEyeFocused,
+                                            isCompact: isCompact,
+                                            hideLabel: hideActionLabels,
+                                            onPressed: () => _onEyeReadingPressed(
+                                              index,
+                                              ayah['arabic'],
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    )
-                                  else if (isNext)
-                                    Text(
-                                      lang == 'en'
-                                          ? 'Read with:'
-                                          : 'Baca dengan:',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: colorScheme.onSurfaceVariant,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  const Spacer(),
-                                  _MicButton(
-                                    lang: lang,
-                                    isRecording: isRecording,
-                                    onPressed: () => _onAyahMicPressed(
-                                      index,
-                                      ayah['arabic'],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  _EyeButton(
-                                    lang: lang,
-                                    isActive: _eyeReadingAyahIdx == index,
-                                    isFocused: _isEyeFocused,
-                                    onPressed: () => _onEyeReadingPressed(
-                                      index,
-                                      ayah['arabic'],
-                                    ),
-                                  ),
-                                ],
+                                    ],
+                                  );
+                                },
                               ),
                             ),
+                            if (isRecording)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                                child: _buildListeningInfoContent(context, lang),
+                              ),
+                            if (_eyeReadingAyahIdx == index)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                                child: _buildEyeTrackingInfoContent(context, lang),
+                              ),
                             Padding(
                               padding: const EdgeInsets.fromLTRB(
                                 20,
@@ -812,28 +1190,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                     ),
                                     textDirection: TextDirection.rtl,
                                   ),
-                                  if (_eyeReadingAyahIdx == index) ...[
-                                    const SizedBox(height: 12),
-                                    // Progress bar hidden based on user request for cleaner UI
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      _isEyeFocused
-                                          ? (lang == 'en'
-                                                ? "Eye Detected: Reading..."
-                                                : "Mata Terdeteksi: Membaca...")
-                                          : (lang == 'en'
-                                                ? "NOT FOCUSED: Look at Ayah to read"
-                                                : "TIDAK FOKUS: Tatap Ayat untuk Membaca"),
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: _isEyeFocused
-                                            ? Colors.green.shade800
-                                            : Colors.red.shade700,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
                                   const SizedBox(height: 12),
                                   Text(
                                     ayah['latin'] ?? '',
@@ -862,47 +1218,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                       height: 1.5,
                                     ),
                                   ),
-                                  if (isRecording) ...[
-                                    const SizedBox(height: 16),
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.teal.shade50,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            _recognizedText.isEmpty
-                                                ? Icons.mic_none_rounded
-                                                : Icons.hearing_rounded,
-                                            size: 16,
-                                            color: Colors.teal,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              _recognizedText.isEmpty
-                                                  ? Translations.get(
-                                                      lang,
-                                                      'listening',
-                                                    )
-                                                  : _recognizedText,
-                                              style: TextStyle(
-                                                color: Colors.teal.shade800,
-                                                fontWeight: FontWeight.bold,
-                                                fontStyle:
-                                                    _recognizedText.isEmpty
-                                                    ? FontStyle.italic
-                                                    : FontStyle.normal,
-                                              ),
-                                              textDirection: TextDirection.rtl,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
                                 ],
                               ),
                             ),
@@ -914,6 +1229,28 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                 },
               );
             },
+          ),
+          // Sticky Ayah Header & Live Info Bar for Long Ayahs
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: RepaintBoundary(
+              child: ValueListenableBuilder<int?>(
+                valueListenable: _stickyAyahIndex,
+                builder: (context, stickyIdx, _) {
+                  if (stickyIdx == null || stickyIdx >= ayahs.length) {
+                    return const SizedBox.shrink();
+                  }
+                  return _buildStickyAyahHeader(
+                    context: context,
+                    ayahIndex: stickyIdx,
+                    ayahs: ayahs,
+                    lang: lang,
+                  );
+                },
+              ),
+            ),
           ),
           if (_isInitializing)
             Positioned.fill(
@@ -945,6 +1282,24 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                       ],
                     ),
                   ),
+                ),
+              ),
+            ),
+          if (ayahs.length >= 7)
+            Positioned(
+              right: 16,
+              bottom: 16 + MediaQuery.of(context).padding.bottom,
+              child: RepaintBoundary(
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _currentVisibleAyah,
+                  builder: (context, currentAyah, _) {
+                    return _AyahNavFloatingPill(
+                      currentAyah: currentAyah,
+                      totalAyahs: ayahs.length,
+                      onTap: () =>
+                          _showAyahNavigatorSheet(context, ayahs.length, lang),
+                    );
+                  },
                 ),
               ),
             ),
@@ -1022,6 +1377,159 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     }
   }
 
+  bool _isExiting = false;
+
+  void _handleBackToSurahList() {
+    if (_isExiting || !mounted) return;
+    _isExiting = true;
+    _finalizeSpiritualEnergySession();
+
+    // Check if SurahListScreen is already in the navigation stack below
+    bool foundSurahList = false;
+    Navigator.of(context).popUntil((route) {
+      if (route.settings.name == 'SurahListScreen') {
+        foundSurahList = true;
+        return true;
+      }
+      return route.isFirst;
+    });
+
+    // If SurahListScreen was not in the stack (e.g. user jumped straight to SurahDetailScreen from HomeScreen),
+    // navigate to SurahListScreen so the user sees the Quran surah selection menu.
+    if (!foundSurahList && mounted) {
+      Navigator.of(context).push(
+        AppPageRoute(child: const SurahListScreen()),
+      );
+    }
+  }
+
+  void _onItemPositionsChanged() {
+    if (!mounted || _isDisposed) return;
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
+
+    int minIdx = 999999;
+    for (final position in positions) {
+      if (position.itemTrailingEdge > 0 && position.index < minIdx) {
+        minIdx = position.index;
+      }
+    }
+
+    final ayahs = widget.surah['ayahs'] as List<dynamic>;
+    final totalAyahs = ayahs.length;
+    if (minIdx >= 0 && minIdx < totalAyahs) {
+      final newAyah = minIdx + 1;
+      if (newAyah != _currentVisibleAyah.value) {
+        _currentVisibleAyah.value = newAyah;
+      }
+    }
+
+    // Determine sticky header for long ayahs
+    int? stickyIdx;
+    final activeIdx = _recordingAyahIdx ?? _eyeReadingAyahIdx;
+
+    // 1. Prioritize active reading ayah if it is long and scrolled past top
+    if (activeIdx != null && activeIdx >= 0 && activeIdx < totalAyahs) {
+      final activeArabic = ayahs[activeIdx]['arabic'] as String? ?? '';
+      if (_isLongAyah(activeArabic)) {
+        for (final position in positions) {
+          if (position.index == activeIdx &&
+              position.itemLeadingEdge < -0.015 &&
+              position.itemTrailingEdge > 0.08) {
+            stickyIdx = activeIdx;
+            break;
+          }
+        }
+      }
+    }
+
+    // 2. Otherwise find the topmost long ayah spanning past top of viewport
+    if (stickyIdx == null) {
+      double bestLeading = -999999.0;
+      for (final position in positions) {
+        if (position.index >= 0 && position.index < totalAyahs) {
+          final ayahArabic = ayahs[position.index]['arabic'] as String? ?? '';
+          if (_isLongAyah(ayahArabic)) {
+            if (position.itemLeadingEdge < -0.015 &&
+                position.itemTrailingEdge > 0.08) {
+              if (position.itemLeadingEdge > bestLeading) {
+                bestLeading = position.itemLeadingEdge;
+                stickyIdx = position.index;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (_stickyAyahIndex.value != stickyIdx) {
+      _stickyAyahIndex.value = stickyIdx;
+    }
+  }
+
+  void _scrollToAyah(int index) {
+    if (index < 0) index = 0;
+    final totalAyahs = (widget.surah['ayahs'] as List).length;
+    if (index >= totalAyahs) index = totalAyahs - 1;
+
+    if (_itemScrollController.isAttached) {
+      _itemScrollController.jumpTo(index: index);
+    }
+    _currentVisibleAyah.value = index + 1;
+  }
+
+  void _showAyahNavigatorSheet(
+    BuildContext context,
+    int totalAyahs,
+    String lang,
+  ) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    final int surahIndex = widget.surah['surah_number'] - 1;
+    final int surahNumber = widget.surah['surah_number'];
+
+    // Identify Juz starting points located inside this surah
+    final juzInSurah = <Map<String, int>>[];
+    for (int i = 0; i < QuranProgressHelper.juzStarts.length; i++) {
+      if (QuranProgressHelper.juzStarts[i][0] == surahNumber) {
+        juzInSurah.add({
+          'juz': i + 1,
+          'ayah': QuranProgressHelper.juzStarts[i][1],
+        });
+      }
+    }
+
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      elevation: 6,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => _AyahNavigatorBottomSheet(
+        surahName: widget.surah['surah_name'],
+        surahNumber: surahNumber,
+        totalAyahs: totalAyahs,
+        currentVisibleAyah: _currentVisibleAyah.value,
+        lastReadAyahNumber: appState.currentSurahIndex == surahIndex &&
+                appState.lastReadAyahNumber > 0
+            ? appState.lastReadAyahNumber
+            : null,
+        nextUnreadAyahNumber: appState.highestSurahIndex == surahIndex &&
+                appState.highestAyahIndex + 1 < totalAyahs
+            ? appState.highestAyahIndex + 2
+            : null,
+        juzInSurah: juzInSurah,
+        lang: lang,
+        onAyahSelected: (ayahNum) {
+          Navigator.pop(ctx);
+          _scrollToAyah(ayahNum - 1);
+        },
+      ),
+    );
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
@@ -1035,6 +1543,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   void dispose() {
     _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
+    _itemPositionsListener.itemPositions.removeListener(_onItemPositionsChanged);
 
     // Cancel all timers immediately
     _eyeTimer?.cancel();
@@ -1046,50 +1555,789 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     _stopListening(isDisposing: true);
     _stopEyeReading(isDisposing: true);
 
+    _currentVisibleAyah.dispose();
+    _stickyAyahIndex.dispose();
     _finalizeSpiritualEnergySession();
 
     super.dispose();
+  }
+
+  void _showLongAyahVoiceSuggestionModal({
+    required BuildContext context,
+    required int ayahIndex,
+    required String arabic,
+    required String lang,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final isEn = lang == 'en';
+    final wordCount = _getWordCount(arabic);
+    bool doNotShowAgain = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surface,
+      elevation: 6,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Drag Handle
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Header with Icon
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.lightbulb_rounded,
+                            color: Colors.amber.shade800,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isEn ? 'Reading Method Suggestion' : 'Saran Metode Membaca',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${widget.surah['surah_name']} • Ayat ${ayahIndex + 1} ($wordCount kata)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colorScheme.onSurface.withValues(alpha: 0.65),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.pop(ctx),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Information Card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.grey.shade900 : Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark ? Colors.amber.shade900.withValues(alpha: 0.4) : Colors.amber.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            size: 18,
+                            color: isDark ? Colors.amber.shade300 : Colors.amber.shade900,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              isEn
+                                  ? 'This ayah is quite long ($wordCount words). Voice recognition for long ayahs is currently under development. We recommend using the "Silent Reading" method (eye tracking) for a smoother recitation.'
+                                  : 'Ayat ini tergolong panjang ($wordCount kata). Fitur suara untuk ayat panjang masih dalam tahap pengembangan. Disarankan menggunakan metode "Baca Dalam Hati" (deteksi fokus mata) agar tilawah lebih lancar.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.45,
+                                color: isDark ? Colors.grey.shade300 : Colors.amber.shade900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Checkbox
+                    InkWell(
+                      onTap: () {
+                        setModalState(() {
+                          doNotShowAgain = !doNotShowAgain;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Checkbox(
+                                value: doNotShowAgain,
+                                activeColor: Colors.teal,
+                                onChanged: (val) {
+                                  setModalState(() {
+                                    doNotShowAgain = val ?? false;
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                isEn ? 'Do not show again for this surah' : 'Jangan ingatkan lagi untuk surah ini',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colorScheme.onSurface.withValues(alpha: 0.75),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Primary Button: Gunakan Baca Dalam Hati
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () {
+                        if (doNotShowAgain) {
+                          _suppressLongAyahVoiceWarningForSurah = true;
+                        }
+                        Navigator.pop(ctx);
+                        _onEyeReadingPressed(ayahIndex, arabic);
+                      },
+                      icon: const Icon(Icons.remove_red_eye_rounded, size: 18),
+                      label: Text(
+                        isEn ? 'Use Silent Reading (Recommended)' : 'Gunakan Baca Dalam Hati (Disarankan)',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Secondary Button: Tetap Pakai Suara
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colorScheme.onSurface,
+                        side: BorderSide(
+                          color: colorScheme.outlineVariant,
+                          width: 1,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () {
+                        if (doNotShowAgain) {
+                          _suppressLongAyahVoiceWarningForSurah = true;
+                        }
+                        Navigator.pop(ctx);
+                        _startListeningForAyah(ayahIndex, arabic);
+                      },
+                      icon: const Icon(Icons.mic_rounded, size: 18),
+                      label: Text(
+                        isEn ? 'Continue with Voice' : 'Tetap Pakai Suara',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  static String _getLastReadLabel(String lang) {
+    switch (lang) {
+      case 'en':
+        return 'Last Read';
+      case 'ar':
+        return 'آخر قراءة';
+      case 'af':
+        return 'Laas Gelees';
+      case 'sw':
+        return 'Mwisho Kusomwa';
+      case 'ms':
+      case 'id':
+      default:
+        return 'Terakhir Dibaca';
+    }
+  }
+
+  static String _getReadWithLabel(String lang) {
+    switch (lang) {
+      case 'en':
+        return 'Read with:';
+      case 'ar':
+        return 'اقرأ بـ:';
+      case 'af':
+        return 'Lees met:';
+      case 'sw':
+        return 'Soma kwa:';
+      case 'ms':
+      case 'id':
+      default:
+        return 'Baca dengan:';
+    }
+  }
+
+  static String _getMicPreparingText(String lang) {
+    switch (lang) {
+      case 'en':
+        return 'Microphone is preparing, please wait...';
+      case 'ar':
+        return 'الميكروفون قيد الإعداد، يرجى الانتظار...';
+      case 'af':
+        return 'Mikrofoon berei voor, wag asseblief...';
+      case 'sw':
+        return 'Kipaza sauti kinaandaliwa, tafadhali subiri...';
+      case 'ms':
+        return 'Mikrofon sedang disiapkan, sila tunggu...';
+      case 'id':
+      default:
+        return 'Mikrofon sedang menyiapkan, mohon tunggu...';
+    }
+  }
+
+  static String _getListeningPromptText(String lang) {
+    switch (lang) {
+      case 'en':
+        return 'Listening... (Please recite now)';
+      case 'ar':
+        return 'جارٍ الاستماع... (يرجى البدء بالقراءة)';
+      case 'af':
+        return 'Luister... (Begin asseblief lees)';
+      case 'sw':
+        return 'Inasikiliza... (Tafadhali anza kusoma)';
+      case 'ms':
+        return 'Mendengar... (Sila mula membaca)';
+      case 'id':
+      default:
+        return 'Mendengarkan... (Silakan mulai membaca)';
+    }
+  }
+
+  static String _getVerifyingText(String lang) {
+    switch (lang) {
+      case 'en':
+        return 'Verifying recitation...';
+      case 'ar':
+        return 'جارٍ التحقق من التلاوة...';
+      case 'af':
+        return 'Verifieer resitasie...';
+      case 'sw':
+        return 'Inathibitisha usomaji...';
+      case 'ms':
+        return 'Mengesahkan bacaan...';
+      case 'id':
+      default:
+        return 'Memverifikasi bacaan...';
+    }
+  }
+
+  static String _getEyeTrackingText(String lang, {required bool isFocused}) {
+    if (isFocused) {
+      switch (lang) {
+        case 'en':
+          return 'Eye Detected: Reading...';
+        case 'ar':
+          return 'تم رصد العين: جارٍ القراءة...';
+        case 'af':
+          return 'Oog Bespeur: Lees...';
+        case 'sw':
+          return 'Macho Yametambuliwa: Inasoma...';
+        case 'ms':
+          return 'Mata Dikesan: Membaca...';
+        case 'id':
+        default:
+          return 'Mata Terdeteksi: Membaca...';
+      }
+    } else {
+      switch (lang) {
+        case 'en':
+          return 'NOT FOCUSED: Look at Ayah to read';
+        case 'ar':
+          return 'غير مركز: انظر إلى الآية للقراءة';
+        case 'af':
+          return 'NIE GEFOKUS: Kyk na Vers om te lees';
+        case 'sw':
+          return 'HAIJALENGA: Tazama Aya ili kusoma';
+        case 'ms':
+          return 'TIDAK FOKUS: Pandang Ayat untuk Membaca';
+        case 'id':
+        default:
+          return 'TIDAK FOKUS: Tatap Ayat untuk Membaca';
+      }
+    }
+  }
+
+  Widget _buildListeningInfoContent(
+    BuildContext context,
+    String lang, {
+    bool isCompact = false,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(isCompact ? 10 : 12),
+      decoration: BoxDecoration(
+        color: !_isMicReady
+            ? Colors.amber.shade50
+            : Colors.teal.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: !_isMicReady
+              ? Colors.amber.shade300
+              : Colors.teal.shade200,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                !_isMicReady
+                    ? Icons.hourglass_top_rounded
+                    : (_recognizedText.isEmpty
+                        ? Icons.mic_rounded
+                        : Icons.hearing_rounded),
+                size: isCompact ? 16 : 18,
+                color: !_isMicReady
+                    ? Colors.amber.shade800
+                    : Colors.teal,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  !_isMicReady
+                      ? _getMicPreparingText(lang)
+                      : (_recognizedText.isEmpty
+                          ? _getListeningPromptText(lang)
+                          : _recognizedText),
+                  style: TextStyle(
+                    fontSize: isCompact ? 12 : 13,
+                    color: !_isMicReady
+                        ? Colors.amber.shade900
+                        : Colors.teal.shade800,
+                    fontWeight: FontWeight.bold,
+                    fontStyle: (!_isMicReady || _recognizedText.isEmpty)
+                        ? FontStyle.italic
+                        : FontStyle.normal,
+                  ),
+                  textDirection: (_isMicReady && _recognizedText.isNotEmpty)
+                      ? TextDirection.rtl
+                      : (lang == 'ar' ? TextDirection.rtl : TextDirection.ltr),
+                  maxLines: isCompact ? 2 : null,
+                  overflow: isCompact ? TextOverflow.ellipsis : null,
+                ),
+              ),
+            ],
+          ),
+          if (_isMicReady && _recognizedText.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  "...",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: Colors.teal.shade700,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    _getVerifyingText(lang),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.teal.shade700,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEyeTrackingInfoContent(
+    BuildContext context,
+    String lang, {
+    bool isCompact = false,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: isCompact ? 6 : 8,
+      ),
+      decoration: BoxDecoration(
+        color: _isEyeFocused
+            ? Colors.green.withValues(alpha: 0.1)
+            : Colors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: _isEyeFocused
+              ? Colors.green.withValues(alpha: 0.3)
+              : Colors.red.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            _isEyeFocused ? Icons.visibility : Icons.visibility_off,
+            size: 14,
+            color: _isEyeFocused ? Colors.green.shade800 : Colors.red.shade700,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              _getEyeTrackingText(lang, isFocused: _isEyeFocused),
+              style: TextStyle(
+                fontSize: 10,
+                color: _isEyeFocused
+                    ? Colors.green.shade800
+                    : Colors.red.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStickyAyahHeader({
+    required BuildContext context,
+    required int ayahIndex,
+    required List<dynamic> ayahs,
+    required String lang,
+  }) {
+    if (ayahIndex < 0 || ayahIndex >= ayahs.length) {
+      return const SizedBox.shrink();
+    }
+
+    final ayah = ayahs[ayahIndex];
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final isRecording = _recordingAyahIdx == ayahIndex;
+    final isEyeReading = _eyeReadingAyahIdx == ayahIndex;
+
+    return SafeArea(
+      top: false,
+      bottom: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+        decoration: BoxDecoration(
+          color: isDark
+              ? colorScheme.surfaceContainerHigh
+              : colorScheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isRecording
+                ? Colors.teal
+                : (isEyeReading
+                    ? Colors.indigo
+                    : colorScheme.outlineVariant.withValues(alpha: 0.6)),
+            width: (isRecording || isEyeReading) ? 1.8 : 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+            final effectiveWidth = constraints.maxWidth / (textScale > 0 ? textScale : 1.0);
+            final isVeryNarrow = effectiveWidth < 250;
+            final ayahLabel = Translations.get(lang, 'ayah');
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Ayah badge (Clean, proportional, and overflow-protected)
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.bookmark_outline_rounded,
+                                size: 13,
+                                color: Colors.teal,
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  '$ayahLabel ${ayahIndex + 1}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSecondaryContainer,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Action buttons
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _MicButton(
+                            lang: lang,
+                            isRecording: isRecording,
+                            isInitializing: isRecording && !_isMicReady,
+                            isCompact: true,
+                            hideLabel: isVeryNarrow,
+                            onPressed: () => _onAyahMicPressed(
+                              ayahIndex,
+                              ayah['arabic'],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          _EyeButton(
+                            lang: lang,
+                            isActive: isEyeReading,
+                            isFocused: _isEyeFocused,
+                            isCompact: true,
+                            hideLabel: isVeryNarrow,
+                            onPressed: () => _onEyeReadingPressed(
+                              ayahIndex,
+                              ayah['arabic'],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // If listening / recording:
+                if (isRecording)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                    child: _buildListeningInfoContent(context, lang, isCompact: true),
+                  ),
+                // If eye tracking:
+                if (isEyeReading)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                    child: _buildEyeTrackingInfoContent(context, lang, isCompact: true),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 }
 
 class _MicButton extends StatelessWidget {
   final String lang;
   final bool isRecording;
+  final bool isInitializing;
+  final bool isCompact;
+  final bool hideLabel;
   final VoidCallback onPressed;
 
   const _MicButton({
     required this.lang,
     required this.isRecording,
+    this.isInitializing = false,
+    this.isCompact = false,
+    this.hideLabel = false,
     required this.onPressed,
   });
 
+  static String _getVoiceLabel(
+    String lang, {
+    required bool isCompact,
+    required bool isPreparing,
+  }) {
+    if (isPreparing) {
+      if (isCompact) {
+        switch (lang) {
+          case 'en':
+            return 'Wait...';
+          case 'ar':
+            return 'انتظر...';
+          case 'af':
+            return 'Wag...';
+          case 'sw':
+            return 'Subiri...';
+          case 'ms':
+          case 'id':
+          default:
+            return 'Tunggu...';
+        }
+      } else {
+        switch (lang) {
+          case 'en':
+            return 'Preparing...';
+          case 'ar':
+            return 'جارٍ الإعداد...';
+          case 'af':
+            return 'Berei voor...';
+          case 'sw':
+            return 'Inaandaa...';
+          case 'ms':
+          case 'id':
+          default:
+            return 'Menyiapkan...';
+        }
+      }
+    }
+
+    if (isCompact) {
+      switch (lang) {
+        case 'en':
+          return 'Voice';
+        case 'ar':
+          return 'صوت';
+        case 'af':
+          return 'Stem';
+        case 'sw':
+          return 'Sauti';
+        case 'ms':
+        case 'id':
+        default:
+          return 'Suara';
+      }
+    } else {
+      return Translations.get(lang, 'voice');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool isPreparing = isRecording && isInitializing;
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? (hideLabel ? 7 : 8) : 12,
+          vertical: 6,
+        ),
         decoration: BoxDecoration(
-          color: isRecording ? Colors.red : Colors.teal.shade100,
+          color: isPreparing
+              ? Colors.amber.shade700
+              : (isRecording ? Colors.red : Colors.teal.shade100),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              isRecording ? Icons.mic : Icons.mic_none,
-              color: isRecording ? Colors.white : Colors.teal.shade800,
-              size: 16,
+              isPreparing
+                  ? Icons.hourglass_top_rounded
+                  : (isRecording ? Icons.mic : Icons.mic_none),
+              color: (isRecording || isPreparing)
+                  ? Colors.white
+                  : Colors.teal.shade800,
+              size: isCompact ? 14 : 16,
             ),
-            const SizedBox(width: 4),
-            Text(
-              Translations.get(lang, 'voice'),
-              style: TextStyle(
-                color: isRecording ? Colors.white : Colors.teal.shade800,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
+            if (!hideLabel) ...[
+              const SizedBox(width: 4),
+              Text(
+                _getVoiceLabel(
+                  lang,
+                  isCompact: isCompact,
+                  isPreparing: isPreparing,
+                ),
+                style: TextStyle(
+                  color: (isRecording || isPreparing)
+                      ? Colors.white
+                      : Colors.teal.shade800,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -1171,21 +2419,62 @@ class _EyeButton extends StatelessWidget {
   final String lang;
   final bool isActive;
   final bool isFocused;
+  final bool isCompact;
+  final bool hideLabel;
   final VoidCallback onPressed;
 
   const _EyeButton({
     required this.lang,
     required this.isActive,
     required this.isFocused,
+    this.isCompact = false,
+    this.hideLabel = false,
     required this.onPressed,
   });
+
+  static String _getSilentLabel(String lang, {required bool isCompact}) {
+    if (isCompact) {
+      switch (lang) {
+        case 'en':
+          return 'Silent';
+        case 'ar':
+          return 'قلب';
+        case 'af':
+          return 'Stil';
+        case 'sw':
+          return 'Moyoni';
+        case 'ms':
+        case 'id':
+        default:
+          return 'Hati';
+      }
+    } else {
+      switch (lang) {
+        case 'en':
+          return 'Silent';
+        case 'ar':
+          return 'في القلب';
+        case 'af':
+          return 'Stil Lees';
+        case 'sw':
+          return 'Moyoni';
+        case 'ms':
+        case 'id':
+        default:
+          return 'Dalam Hati';
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? (hideLabel ? 7 : 8) : 12,
+          vertical: 6,
+        ),
         decoration: BoxDecoration(
           color: isActive
               ? (isFocused ? Colors.green : Colors.orange)
@@ -1200,15 +2489,549 @@ class _EyeButton extends StatelessWidget {
                   ? (isFocused ? Icons.visibility : Icons.visibility_off)
                   : Icons.remove_red_eye_rounded,
               color: isActive ? Colors.white : Colors.teal.shade800,
-              size: 16,
+              size: isCompact ? 14 : 16,
             ),
+            if (!hideLabel) ...[
+              const SizedBox(width: 4),
+              Text(
+                _getSilentLabel(lang, isCompact: isCompact),
+                style: TextStyle(
+                  color: isActive ? Colors.white : Colors.teal.shade800,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AyahNavFloatingPill extends StatelessWidget {
+  final int currentAyah;
+  final int totalAyahs;
+  final VoidCallback onTap;
+
+  const _AyahNavFloatingPill({
+    required this.currentAyah,
+    required this.totalAyahs,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      elevation: 6,
+      borderRadius: BorderRadius.circular(24),
+      shadowColor: Colors.black38,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.teal.shade900 : Colors.teal.shade700,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.25),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.menu_book_rounded,
+                color: Colors.white,
+                size: 15,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Ayat $currentAyah / $totalAyahs',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.unfold_more_rounded,
+                color: Colors.white70,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AyahNavigatorBottomSheet extends StatefulWidget {
+  final String surahName;
+  final int surahNumber;
+  final int totalAyahs;
+  final int currentVisibleAyah;
+  final int? lastReadAyahNumber;
+  final int? nextUnreadAyahNumber;
+  final List<Map<String, int>> juzInSurah;
+  final String lang;
+  final ValueChanged<int> onAyahSelected;
+
+  const _AyahNavigatorBottomSheet({
+    required this.surahName,
+    required this.surahNumber,
+    required this.totalAyahs,
+    required this.currentVisibleAyah,
+    this.lastReadAyahNumber,
+    this.nextUnreadAyahNumber,
+    required this.juzInSurah,
+    required this.lang,
+    required this.onAyahSelected,
+  });
+
+  @override
+  State<_AyahNavigatorBottomSheet> createState() =>
+      _AyahNavigatorBottomSheetState();
+}
+
+class _AyahNavigatorBottomSheetState extends State<_AyahNavigatorBottomSheet> {
+  String _enteredNumber = '';
+  String? _errorMessage;
+
+  void _onDigitPressed(int digit) {
+    HapticFeedback.selectionClick();
+    if (_enteredNumber.isEmpty && digit == 0) return;
+    final candidate = '$_enteredNumber$digit';
+    final parsed = int.tryParse(candidate);
+    if (parsed != null && parsed > widget.totalAyahs) {
+      setState(() {
+        _errorMessage = widget.lang == 'en'
+            ? 'Max ayah is ${widget.totalAyahs}'
+            : 'Maksimal ayat ${widget.totalAyahs}';
+      });
+      return;
+    }
+    setState(() {
+      _enteredNumber = candidate;
+      _errorMessage = null;
+    });
+  }
+
+  void _onBackspacePressed() {
+    HapticFeedback.selectionClick();
+    if (_enteredNumber.isNotEmpty) {
+      setState(() {
+        _enteredNumber = _enteredNumber.substring(0, _enteredNumber.length - 1);
+        _errorMessage = null;
+      });
+    }
+  }
+
+  void _onClearPressed() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _enteredNumber = '';
+      _errorMessage = null;
+    });
+  }
+
+  void _onJumpPressed() {
+    if (_enteredNumber.isEmpty) return;
+    final parsed = int.tryParse(_enteredNumber);
+    if (parsed == null || parsed < 1 || parsed > widget.totalAyahs) {
+      setState(() {
+        _errorMessage = widget.lang == 'en'
+            ? 'Enter 1 - ${widget.totalAyahs}'
+            : 'Pilih ayat 1 - ${widget.totalAyahs}';
+      });
+      return;
+    }
+    HapticFeedback.mediumImpact();
+    widget.onAyahSelected(parsed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final isEn = widget.lang == 'en';
+
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+          // Drag handle
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.teal.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.near_me_rounded,
+                  color: Colors.teal,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isEn ? 'Jump to Ayah' : 'Lompat ke Ayat',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '${widget.surahName} (Ayat 1 - ${widget.totalAyahs})',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withValues(alpha: 0.65),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => Navigator.pop(context),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Number Display Field
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey.shade900 : Colors.teal.shade50,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _errorMessage != null
+                    ? Colors.red
+                    : Colors.teal.withValues(alpha: 0.3),
+                width: _errorMessage != null ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  isEn ? 'Ayah: ' : 'Ayat: ',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface.withValues(alpha: 0.65),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    _enteredNumber.isEmpty ? '-' : _enteredNumber,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                      color: _enteredNumber.isEmpty
+                          ? colorScheme.onSurface.withValues(alpha: 0.3)
+                          : Colors.teal,
+                    ),
+                  ),
+                ),
+                Text(
+                  '1 - ${widget.totalAyahs}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurface.withValues(alpha: 0.45),
+                  ),
+                ),
+                if (_enteredNumber.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: _onClearPressed,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.cancel_rounded,
+                        size: 20,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+
+          // Quick Shortcuts
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildQuickChip(
+                  label: isEn ? 'Ayah 1 (Start)' : 'Ayat 1 (Awal)',
+                  icon: Icons.first_page_rounded,
+                  onTap: () => widget.onAyahSelected(1),
+                ),
+                if (widget.lastReadAyahNumber != null &&
+                    widget.lastReadAyahNumber != widget.currentVisibleAyah) ...[
+                  const SizedBox(width: 8),
+                  _buildQuickChip(
+                    label: isEn
+                        ? 'Last Read (${widget.lastReadAyahNumber})'
+                        : 'Terakhir Dibaca (${widget.lastReadAyahNumber})',
+                    icon: Icons.bookmark_added_rounded,
+                    color: Colors.teal,
+                    onTap: () => widget.onAyahSelected(widget.lastReadAyahNumber!),
+                  ),
+                ],
+                if (widget.nextUnreadAyahNumber != null &&
+                    widget.nextUnreadAyahNumber! <= widget.totalAyahs) ...[
+                  const SizedBox(width: 8),
+                  _buildQuickChip(
+                    label: isEn
+                        ? 'Target (${widget.nextUnreadAyahNumber})'
+                        : 'Target Lanjut (${widget.nextUnreadAyahNumber})',
+                    icon: Icons.track_changes_rounded,
+                    color: Colors.orange.shade700,
+                    onTap: () => widget.onAyahSelected(widget.nextUnreadAyahNumber!),
+                  ),
+                ],
+                for (final juz in widget.juzInSurah) ...[
+                  const SizedBox(width: 8),
+                  _buildQuickChip(
+                    label: 'Awal Juz ${juz['juz']} (Ayat ${juz['ayah']})',
+                    icon: Icons.auto_stories_rounded,
+                    color: Colors.indigo,
+                    onTap: () => widget.onAyahSelected(juz['ayah']!),
+                  ),
+                ],
+                const SizedBox(width: 8),
+                _buildQuickChip(
+                  label: isEn
+                      ? 'Ayah ${widget.totalAyahs} (End)'
+                      : 'Ayat ${widget.totalAyahs} (Akhir)',
+                  icon: Icons.last_page_rounded,
+                  onTap: () => widget.onAyahSelected(widget.totalAyahs),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // In-App Numeric Keypad
+          _buildKeypadRow([1, 2, 3], isDark, colorScheme),
+          _buildKeypadRow([4, 5, 6], isDark, colorScheme),
+          _buildKeypadRow([7, 8, 9], isDark, colorScheme),
+          Row(
+            children: [
+              _buildKeyButton(
+                child: Text(
+                  'C',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red.shade400,
+                  ),
+                ),
+                onTap: _onClearPressed,
+                isDark: isDark,
+                colorScheme: colorScheme,
+              ),
+              _buildKeyButton(
+                child: Text(
+                  '0',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                onTap: () => _onDigitPressed(0),
+                isDark: isDark,
+                colorScheme: colorScheme,
+              ),
+              _buildKeyButton(
+                child: Icon(
+                  Icons.backspace_outlined,
+                  size: 20,
+                  color: colorScheme.onSurface,
+                ),
+                onTap: _onBackspacePressed,
+                isDark: isDark,
+                colorScheme: colorScheme,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Big Jump Action Button
+          SizedBox(
+            height: 46,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor:
+                    isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                disabledForegroundColor:
+                    isDark ? Colors.grey.shade600 : Colors.grey.shade500,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: _enteredNumber.isNotEmpty ? _onJumpPressed : null,
+              icon: const Icon(Icons.near_me_rounded, size: 18),
+              label: Text(
+                _enteredNumber.isNotEmpty
+                    ? (isEn
+                        ? 'Jump to Ayah $_enteredNumber'
+                        : 'Lompat ke Ayat $_enteredNumber')
+                    : (isEn ? 'Enter Ayah Number' : 'Ketik Nomor Ayat'),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+);
+  }
+
+  Widget _buildKeypadRow(
+    List<int> digits,
+    bool isDark,
+    ColorScheme colorScheme,
+  ) {
+    return Row(
+      children: digits.map((d) {
+        return _buildKeyButton(
+          child: Text(
+            '$d',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          onTap: () => _onDigitPressed(d),
+          isDark: isDark,
+          colorScheme: colorScheme,
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildKeyButton({
+    required Widget child,
+    required VoidCallback onTap,
+    required bool isDark,
+    required ColorScheme colorScheme,
+  }) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+        child: Material(
+          color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              height: 44,
+              alignment: Alignment.center,
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickChip({
+    required String label,
+    required IconData icon,
+    Color? color,
+    required VoidCallback onTap,
+  }) {
+    final chipColor = color ?? Colors.teal;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: chipColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: chipColor.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: chipColor),
             const SizedBox(width: 4),
             Text(
-              lang == 'en' ? "Silent" : "Dalam Hati",
+              label,
               style: TextStyle(
-                color: isActive ? Colors.white : Colors.teal.shade800,
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
+                color: chipColor,
               ),
             ),
           ],

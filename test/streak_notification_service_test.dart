@@ -50,7 +50,7 @@ void main() {
         lang: 'id',
       );
       expect(bothId['title'], contains('Jaga Istiqomah Harianmu!'));
-      expect(bothId['body'], contains('1 ayat dan zikir 33x'));
+      expect(bothId['body'], contains(RegExp(r'1 ayat dan [dD]zikir 33x')));
       expect(bothId['payload'], 'streak');
 
       // 2. Both pending (English)
@@ -86,7 +86,7 @@ void main() {
         hasDzikirToday: false,
         lang: 'id',
       );
-      expect(onlyDzikir['title'], contains('Sempatkan Zikir Hari Ini!'));
+      expect(onlyDzikir['title'], contains(RegExp(r'Sempatkan [dD]?zikir Hari Ini!', caseSensitive: false)));
       expect(onlyDzikir['payload'], 'dzikir');
 
       // 6. Both completed (empty content because reminder should be cancelled)

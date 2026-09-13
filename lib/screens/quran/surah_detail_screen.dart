@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +16,8 @@ import '../../services/analytics_service.dart';
 import '../../utils/quran_progress_helper.dart';
 import '../../utils/sunnah_mission_helper.dart';
 
+enum EyeReadingPhase { arabic, translation }
+
 class SurahDetailScreen extends StatefulWidget {
   final Map<String, dynamic> surah;
   final int? initialAyahIndex;
@@ -24,6 +27,19 @@ class SurahDetailScreen extends StatefulWidget {
     required this.surah,
     this.initialAyahIndex,
   });
+
+  static String getEyeTrackingText(
+    String lang, {
+    required bool isFocused,
+    EyeReadingPhase phase = EyeReadingPhase.arabic,
+    int dotCount = 1,
+  }) =>
+      _SurahDetailScreenState.getEyeTrackingText(
+        lang,
+        isFocused: isFocused,
+        phase: phase,
+        dotCount: dotCount,
+      );
 
   @override
   State<SurahDetailScreen> createState() => _SurahDetailScreenState();
@@ -54,6 +70,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   int? _eyeReadingAyahIdx;
   double _eyeReadingProgress = 0.0;
   bool _isEyeFocused = false;
+  EyeReadingPhase _eyeReadingPhase = EyeReadingPhase.arabic;
+  int _eyeDotCount = 1;
+  int _eyeDotTicks = 0;
+  double _targetArabicSeconds = 0.0;
+  double _targetTranslationSeconds = 0.0;
+  double _elapsedFocusedSeconds = 0.0;
+  bool _hasTriggeredPhaseTransitionHaptic = false;
   Timer? _eyeTimer;
   Timer? _vibrationTimer;
   StreamSubscription? _eyeFocusSubscription;
@@ -592,7 +615,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     _speech.stop();
   }
 
-  void _onEyeReadingPressed(int index, String arabic) async {
+  void _onEyeReadingPressed(
+    int index,
+    String arabic, {
+    String? translation,
+  }) async {
     // If clicking the same one, just stop
     if (_eyeReadingAyahIdx == index) {
       _stopEyeReading();
@@ -625,12 +652,35 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       return;
     }
 
+    final cleanArabic = arabic.replaceAll(RegExp(r'\[[a-zA-Z0-9:]*\[|\]'), '');
+    final arabicWords = cleanArabic
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .length;
+    _targetArabicSeconds = math.max(3.0, arabicWords * 1.5);
+
+    final cleanTranslation = translation ?? '';
+    final translationWords = cleanTranslation
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .length;
+    _targetTranslationSeconds = translationWords > 0
+        ? math.max(2.5, translationWords * 0.35)
+        : 0.0;
+
     _readingStartTime = DateTime.now();
     setState(() {
       _isInitializing = true;
       _eyeReadingAyahIdx = index;
       _eyeReadingProgress = 0.0;
       _isEyeFocused = false;
+      _eyeReadingPhase = EyeReadingPhase.arabic;
+      _eyeDotCount = 1;
+      _eyeDotTicks = 0;
+      _elapsedFocusedSeconds = 0.0;
+      _hasTriggeredPhaseTransitionHaptic = false;
     });
 
     try {
@@ -661,9 +711,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       _vibrationTimer = null;
 
       if (_eyeReadingAyahIdx != null) {
-        // Calculate target duration: 1.2s per word (roughly)
-        final wordCount = arabic.split(RegExp(r'\s+')).length;
-        final targetSeconds = wordCount * 2.0;
+        final totalSeconds = _targetArabicSeconds + _targetTranslationSeconds;
 
         _eyeTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
           if (!mounted) {
@@ -671,7 +719,28 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
             return;
           }
           setState(() {
-            _eyeReadingProgress += 0.1 / targetSeconds;
+            _eyeDotTicks++;
+            if (_eyeDotTicks % 3 == 0) {
+              _eyeDotCount = (_eyeDotCount % 3) + 1;
+            }
+
+            _elapsedFocusedSeconds += 0.1;
+
+            if (_elapsedFocusedSeconds < _targetArabicSeconds ||
+                _targetTranslationSeconds == 0.0) {
+              _eyeReadingPhase = EyeReadingPhase.arabic;
+            } else {
+              if (!_hasTriggeredPhaseTransitionHaptic) {
+                _hasTriggeredPhaseTransitionHaptic = true;
+                HapticFeedback.lightImpact();
+              }
+              _eyeReadingPhase = EyeReadingPhase.translation;
+            }
+
+            _eyeReadingProgress = (totalSeconds > 0)
+                ? (_elapsedFocusedSeconds / totalSeconds).clamp(0.0, 1.0)
+                : 1.0;
+
             if (_eyeReadingProgress >= 1.0) {
               _eyeReadingProgress = 1.0;
               _eyeTimer?.cancel();
@@ -686,7 +755,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       if (_eyeReadingAyahIdx != null && _vibrationTimer == null) {
         // Initial vibration
         HapticFeedback.vibrate();
-        // Repeat every 1.2 seconds
+        // Repeat every 1.0 second
         _vibrationTimer = Timer.periodic(const Duration(milliseconds: 1000), (
           timer,
         ) {
@@ -711,6 +780,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         _eyeReadingAyahIdx = null;
         _eyeReadingProgress = 0.0;
         _isEyeFocused = false;
+        _eyeReadingPhase = EyeReadingPhase.arabic;
+        _eyeDotCount = 1;
+        _eyeDotTicks = 0;
+        _elapsedFocusedSeconds = 0.0;
+        _hasTriggeredPhaseTransitionHaptic = false;
       });
     }
   }
@@ -1407,11 +1481,17 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                               isFocused: _isEyeFocused,
                                               isCompact: isCompact,
                                               hideLabel: hideActionLabels,
-                                              onPressed: () =>
-                                                  _onEyeReadingPressed(
-                                                    index,
-                                                    ayah['arabic'],
-                                                  ),
+                                              onPressed: () {
+                                                final translationText =
+                                                    (lang == 'id' || lang == 'ms')
+                                                        ? (ayah['translation_id'] ?? '')
+                                                        : (ayah['translation_en'] ?? '');
+                                                _onEyeReadingPressed(
+                                                  index,
+                                                  ayah['arabic'],
+                                                  translation: translationText,
+                                                );
+                                              },
                                             ),
                                           ],
                                         ),
@@ -1457,21 +1537,42 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    TajweedText(
-                                      text: ayah['arabic'],
-                                      textAlign: TextAlign.right,
-                                      style: TextStyle(
-                                        fontSize: 26,
-                                        fontWeight: isAyahReadDisplay
-                                            ? FontWeight.bold
-                                            : FontWeight.w500,
-                                        height: 2.2,
-                                        fontFamily: 'Amiri',
-                                        color: isAyahReadDisplay
-                                            ? Colors.teal.shade900
-                                            : Colors.black,
+                                    AnimatedContainer(
+                                      duration: const Duration(milliseconds: 250),
+                                      padding: (_eyeReadingAyahIdx == index &&
+                                              _eyeReadingPhase == EyeReadingPhase.arabic)
+                                          ? const EdgeInsets.symmetric(horizontal: 10, vertical: 8)
+                                          : EdgeInsets.zero,
+                                      decoration: BoxDecoration(
+                                        color: (_eyeReadingAyahIdx == index &&
+                                                _eyeReadingPhase == EyeReadingPhase.arabic)
+                                            ? Colors.teal.withValues(alpha: 0.08)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: (_eyeReadingAyahIdx == index &&
+                                                _eyeReadingPhase == EyeReadingPhase.arabic)
+                                            ? Border.all(
+                                                color: Colors.teal.withValues(alpha: 0.35),
+                                                width: 1.2,
+                                              )
+                                            : null,
                                       ),
-                                      textDirection: TextDirection.rtl,
+                                      child: TajweedText(
+                                        text: ayah['arabic'],
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: isAyahReadDisplay
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
+                                          height: 2.2,
+                                          fontFamily: 'Amiri',
+                                          color: isAyahReadDisplay
+                                              ? Colors.teal.shade900
+                                              : Colors.black,
+                                        ),
+                                        textDirection: TextDirection.rtl,
+                                      ),
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
@@ -1486,19 +1587,47 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                       ),
                                     ),
                                     const SizedBox(height: 8),
-                                    Text(
-                                      (lang == 'id' || lang == 'ms')
-                                          ? (ayah['translation_id'] ?? '')
-                                          : (ayah['translation_en'] ?? ''),
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: isAyahReadDisplay
-                                            ? Colors.teal.shade800
-                                            : (isFuture && !isAlwaysActive)
-                                            ? Colors.grey.shade500
-                                            : Colors.grey.shade700,
-                                        fontStyle: FontStyle.italic,
-                                        height: 1.5,
+                                    AnimatedContainer(
+                                      duration: const Duration(milliseconds: 250),
+                                      padding: (_eyeReadingAyahIdx == index &&
+                                              _eyeReadingPhase == EyeReadingPhase.translation)
+                                          ? const EdgeInsets.symmetric(horizontal: 10, vertical: 8)
+                                          : EdgeInsets.zero,
+                                      decoration: BoxDecoration(
+                                        color: (_eyeReadingAyahIdx == index &&
+                                                _eyeReadingPhase == EyeReadingPhase.translation)
+                                            ? Colors.amber.withValues(alpha: 0.12)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: (_eyeReadingAyahIdx == index &&
+                                                _eyeReadingPhase == EyeReadingPhase.translation)
+                                            ? Border.all(
+                                                color: Colors.amber.withValues(alpha: 0.45),
+                                                width: 1.2,
+                                              )
+                                            : null,
+                                      ),
+                                      child: Text(
+                                        (lang == 'id' || lang == 'ms')
+                                            ? (ayah['translation_id'] ?? '')
+                                            : (ayah['translation_en'] ?? ''),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: (_eyeReadingAyahIdx == index &&
+                                                  _eyeReadingPhase == EyeReadingPhase.translation)
+                                              ? Colors.teal.shade900
+                                              : (isAyahReadDisplay
+                                                  ? Colors.teal.shade800
+                                                  : (isFuture && !isAlwaysActive)
+                                                  ? Colors.grey.shade500
+                                                  : Colors.grey.shade700),
+                                          fontWeight: (_eyeReadingAyahIdx == index &&
+                                                  _eyeReadingPhase == EyeReadingPhase.translation)
+                                              ? FontWeight.w600
+                                              : FontWeight.normal,
+                                          fontStyle: FontStyle.italic,
+                                          height: 1.5,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -2054,7 +2183,18 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                           _suppressLongAyahVoiceWarningForSurah = true;
                         }
                         Navigator.pop(ctx);
-                        _onEyeReadingPressed(ayahIndex, arabic);
+                        final ayahs = widget.surah['ayahs'] as List<dynamic>?;
+                        String? translationText;
+                        if (ayahs != null && ayahIndex < ayahs.length) {
+                          translationText = (lang == 'id' || lang == 'ms')
+                              ? (ayahs[ayahIndex]['translation_id'] ?? '')
+                              : (ayahs[ayahIndex]['translation_en'] ?? '');
+                        }
+                        _onEyeReadingPressed(
+                          ayahIndex,
+                          arabic,
+                          translation: translationText,
+                        );
                       },
                       icon: const Icon(Icons.remove_red_eye_rounded, size: 18),
                       label: Text(
@@ -2230,24 +2370,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     }
   }
 
-  static String _getEyeTrackingText(String lang, {required bool isFocused}) {
-    if (isFocused) {
-      switch (lang) {
-        case 'en':
-          return 'Eye Detected: Reading...';
-        case 'ar':
-          return 'تم رصد العين: جارٍ القراءة...';
-        case 'af':
-          return 'Oog Bespeur: Lees...';
-        case 'sw':
-          return 'Macho Yametambuliwa: Inasoma...';
-        case 'ms':
-          return 'Mata Dikesan: Membaca...';
-        case 'id':
-        default:
-          return 'Mata Terdeteksi: Membaca...';
-      }
-    } else {
+  static String getEyeTrackingText(
+    String lang, {
+    required bool isFocused,
+    EyeReadingPhase phase = EyeReadingPhase.arabic,
+    int dotCount = 1,
+  }) {
+    if (!isFocused) {
       switch (lang) {
         case 'en':
           return 'NOT FOCUSED: Look at Ayah to read';
@@ -2264,6 +2393,55 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
           return 'TIDAK FOKUS: Tatap Ayat untuk Membaca';
       }
     }
+
+    final dots = '.' * dotCount.clamp(1, 3);
+    if (phase == EyeReadingPhase.arabic) {
+      switch (lang) {
+        case 'en':
+          return 'Reading Arabic$dots';
+        case 'ar':
+          return 'قراءة النص العربي$dots';
+        case 'af':
+          return 'Lees Arabiese Teks$dots';
+        case 'sw':
+          return 'Kusoma Maandishi ya Kiarabu$dots';
+        case 'ms':
+          return 'Membaca Teks Arab$dots';
+        case 'id':
+        default:
+          return 'Membaca Arab$dots';
+      }
+    } else {
+      switch (lang) {
+        case 'en':
+          return 'Reading Meaning$dots';
+        case 'ar':
+          return 'قراءة المعنى$dots';
+        case 'af':
+          return 'Lees Betekenis$dots';
+        case 'sw':
+          return 'Kusoma Maana$dots';
+        case 'ms':
+          return 'Membaca Terjemahan$dots';
+        case 'id':
+        default:
+          return 'Membaca Arti$dots';
+      }
+    }
+  }
+
+  static String _getEyeTrackingText(
+    String lang, {
+    required bool isFocused,
+    EyeReadingPhase phase = EyeReadingPhase.arabic,
+    int dotCount = 1,
+  }) {
+    return getEyeTrackingText(
+      lang,
+      isFocused: isFocused,
+      phase: phase,
+      dotCount: dotCount,
+    );
   }
 
   Widget _buildListeningInfoContent(
@@ -2363,39 +2541,54 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
     String lang, {
     bool isCompact = false,
   }) {
+    final isArabicPhase = _eyeReadingPhase == EyeReadingPhase.arabic;
+    final primaryColor = _isEyeFocused
+        ? (isArabicPhase ? Colors.green.shade800 : Colors.amber.shade900)
+        : Colors.red.shade700;
+    final bgColor = _isEyeFocused
+        ? (isArabicPhase
+            ? Colors.green.withValues(alpha: 0.1)
+            : Colors.amber.withValues(alpha: 0.12))
+        : Colors.red.withValues(alpha: 0.1);
+    final borderColor = _isEyeFocused
+        ? (isArabicPhase
+            ? Colors.green.withValues(alpha: 0.3)
+            : Colors.amber.withValues(alpha: 0.45))
+        : Colors.red.withValues(alpha: 0.3);
+    final iconData = _isEyeFocused
+        ? (isArabicPhase ? Icons.visibility_rounded : Icons.auto_stories_rounded)
+        : Icons.visibility_off_rounded;
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: 10,
         vertical: isCompact ? 6 : 8,
       ),
       decoration: BoxDecoration(
-        color: _isEyeFocused
-            ? Colors.green.withValues(alpha: 0.1)
-            : Colors.red.withValues(alpha: 0.1),
+        color: bgColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: _isEyeFocused
-              ? Colors.green.withValues(alpha: 0.3)
-              : Colors.red.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            _isEyeFocused ? Icons.visibility : Icons.visibility_off,
+            iconData,
             size: 14,
-            color: _isEyeFocused ? Colors.green.shade800 : Colors.red.shade700,
+            color: primaryColor,
           ),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
-              _getEyeTrackingText(lang, isFocused: _isEyeFocused),
+              _getEyeTrackingText(
+                lang,
+                isFocused: _isEyeFocused,
+                phase: _eyeReadingPhase,
+                dotCount: _eyeDotCount,
+              ),
               style: TextStyle(
                 fontSize: 10,
-                color: _isEyeFocused
-                    ? Colors.green.shade800
-                    : Colors.red.shade700,
+                color: primaryColor,
                 fontWeight: FontWeight.bold,
               ),
               maxLines: 1,
@@ -2528,8 +2721,17 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                             isFocused: _isEyeFocused,
                             isCompact: true,
                             hideLabel: isVeryNarrow,
-                            onPressed: () =>
-                                _onEyeReadingPressed(ayahIndex, ayah['arabic']),
+                            onPressed: () {
+                              final translationText =
+                                  (lang == 'id' || lang == 'ms')
+                                      ? (ayah['translation_id'] ?? '')
+                                      : (ayah['translation_en'] ?? '');
+                              _onEyeReadingPressed(
+                                ayahIndex,
+                                ayah['arabic'],
+                                translation: translationText,
+                              );
+                            },
                           ),
                         ],
                       ),

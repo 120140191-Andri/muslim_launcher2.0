@@ -437,6 +437,7 @@ class AppBlockService : AccessibilityService() {
                    clean == "com.google.android.packageinstaller" ||
                    clean == "com.android.packageinstaller" ||
                    clean.contains("packageinstaller") ||
+                   clean.contains("permissioncontroller") ||
                    clean == "com.miui.securitycenter" ||
                    clean == "com.miui.cleanmaster" ||
                    clean == "com.coloros.safecenter" ||
@@ -519,7 +520,7 @@ class AppBlockService : AccessibilityService() {
 
             // App details (Uninstall, Clear Data, Storage) in Settings or Play Store:
             val isPlayStore = packageName == "com.android.vending"
-            if (isAppDetailsScreenTargetingUs(rootNode, eventText, isPlayStore)) {
+            if (isAppDetailsScreenTargetingUs(rootNode, eventText, isPlayStore, className)) {
                 return "app_details"
             }
 
@@ -529,50 +530,80 @@ class AppBlockService : AccessibilityService() {
         private fun isAppDetailsScreenTargetingUs(
             rootNode: android.view.accessibility.AccessibilityNodeInfo?,
             eventText: String,
-            isPlayStore: Boolean = false
+            isPlayStore: Boolean = false,
+            className: String = ""
         ): Boolean {
+            val cleanClass = className.lowercase()
             val textMatches = eventText.contains("muslim launcher") || eventText.contains("com.kraftech.muslim_launcher_2")
+            var nodeMatches = false
 
             if (rootNode != null) {
                 try {
                     val matchesPkg = rootNode.findAccessibilityNodeInfosByText("com.kraftech.muslim_launcher_2")
                     val matchesName = rootNode.findAccessibilityNodeInfosByText("Muslim Launcher")
-                    val isOurApp = !matchesPkg.isNullOrEmpty() || !matchesName.isNullOrEmpty() || textMatches
-
-                    if (isOurApp) {
-                        if (isPlayStore) {
-                            // On Play Store, only trigger if on the actual app details page (has uninstall, open, about app, rating, or reviews)
-                            val playKeywords = listOf(
-                                "uninstal", "uninstall", "copot", "copot pemasangan",
-                                "buka", "open", "tentang aplikasi",
-                                "about this app", "beri rating", "rate this app", "ulasan", "reviews"
-                            )
-                            for (kw in playKeywords) {
-                                val found = rootNode.findAccessibilityNodeInfosByText(kw)
-                                if (!found.isNullOrEmpty()) return true
-                            }
-                            return false
-                        } else {
-                            // On Settings, only trigger if real app management action buttons exist (Uninstall, Clear Data, Force Stop)
-                            // This prevents triggering on Accessibility settings or permission grant pages!
-                            return hasAppDetailActionButtons(rootNode)
-                        }
-                    }
+                    nodeMatches = !matchesPkg.isNullOrEmpty() || !matchesName.isNullOrEmpty()
                 } catch (_: Exception) {}
             }
-            return false
+
+            val isOurApp = textMatches || nodeMatches
+            if (!isOurApp) return false
+
+            if (isPlayStore) {
+                // On Play Store, trigger on the actual app details page
+                val playKeywords = listOf(
+                    "uninstal", "uninstall", "copot", "copot pemasangan",
+                    "buka", "open", "update", "perbarui", "tentang aplikasi",
+                    "about this app", "beri rating", "rate this app", "ulasan", "reviews"
+                )
+                for (kw in playKeywords) {
+                    if (eventText.contains(kw)) return true
+                    if (rootNode != null) {
+                        try {
+                            val found = rootNode.findAccessibilityNodeInfosByText(kw)
+                            if (!found.isNullOrEmpty()) return true
+                        } catch (_: Exception) {}
+                    }
+                }
+                return false
+            } else {
+                // On Settings / App Managers / Installers:
+                // 1. If activity class explicitly represents App Info / Details or Uninstaller, trigger immediately!
+                val isExplicitAppDetailsClass = cleanClass.contains("installedappdetails") ||
+                        cleanClass.contains("appinfodashboardactivity") ||
+                        cleanClass.contains("appdetail") ||
+                        cleanClass.contains("applicationdetail") ||
+                        cleanClass.contains("appinfo") ||
+                        cleanClass.contains("uninstalleractivity") ||
+                        cleanClass.contains("uninstallalertactivity") ||
+                        cleanClass.contains("uninstallconfirmation")
+
+                if (isExplicitAppDetailsClass) {
+                    return true
+                }
+
+                // 2. Check for action buttons in both rootNode and eventText (covers Samsung, Xiaomi, Oppo, Vivo, Pixel)
+                return hasAppDetailAction(rootNode, eventText)
+            }
         }
 
-        private fun hasAppDetailActionButtons(rootNode: android.view.accessibility.AccessibilityNodeInfo): Boolean {
+        private fun hasAppDetailAction(
+            rootNode: android.view.accessibility.AccessibilityNodeInfo?,
+            eventText: String
+        ): Boolean {
             val keywords = listOf(
-                "uninstall", "uninstal", "copot", "copot pemasangan",
-                "hapus data", "clear data",
-                "clear storage", "hapus penyimpanan", "force stop",
-                "paksa berhenti", "storage", "penyimpanan"
+                "uninstall", "uninstal", "copot", "copot pemasangan", "hapus instalan", "bongkar",
+                "hapus data", "clear data", "clear storage", "hapus penyimpanan",
+                "force stop", "paksa berhenti", "paksa henti",
+                "storage", "penyimpanan"
             )
             for (kw in keywords) {
-                val found = rootNode.findAccessibilityNodeInfosByText(kw)
-                if (!found.isNullOrEmpty()) return true
+                if (eventText.contains(kw)) return true
+                if (rootNode != null) {
+                    try {
+                        val found = rootNode.findAccessibilityNodeInfosByText(kw)
+                        if (!found.isNullOrEmpty()) return true
+                    } catch (_: Exception) {}
+                }
             }
             return false
         }
@@ -816,11 +847,13 @@ class AppBlockService : AccessibilityService() {
             }
 
             // 0.0 PRIORITAS 0.0: ANTI-TAMPER SHIELD (STRICT MODE PROTECTION)
+            val activeNode = rootInActiveWindow ?: event.source
+
             if (isStrictActive()) {
                 val isSettingsOrInstaller = isSettingsOrInstallerApp(packageName)
                 val isPlayStore = packageName == "com.android.vending"
                 if (isSettingsOrInstaller || isPlayStore) {
-                    val shieldReason = detectStrictShieldViolation(packageName, className, rootInActiveWindow, event)
+                    val shieldReason = detectStrictShieldViolation(packageName, className, activeNode, event)
                     if (shieldReason != null) {
                         Log.d("AppBlockService", "STRICT SHIELD TRIGGERED: reason=$shieldReason in pkg=$packageName cls=$className")
                         lastTriggeredPackage = packageName
@@ -839,18 +872,31 @@ class AppBlockService : AccessibilityService() {
                     val cleanClass = className.lowercase()
                     val eventText = event.text.joinToString(" ").lowercase()
 
-                    // Exclude permission setup & accessibility screens so onboarding/setup is NEVER interrupted
-                    val isSetupOrPermissionScreen = cleanClass.contains("accessibility") ||
-                            packageName.contains("accessibility") ||
-                            cleanClass.contains("notification") ||
-                            cleanClass.contains("usage") ||
-                            cleanClass.contains("deviceadmin") ||
-                            cleanClass.contains("permission") ||
-                            eventText.contains("aksesibilitas") ||
-                            eventText.contains("accessibility")
+                    // Exclude only real onboarding & permission setup screens so onboarding is NEVER interrupted
+                    val isAccessibilitySetup = cleanClass.contains("accessibilitysettings") ||
+                            cleanClass.contains("accessibilityservice") ||
+                            eventText.contains("gunakan layanan") ||
+                            eventText.contains("use service") ||
+                            eventText.contains("layanan terinstal") ||
+                            eventText.contains("layanan yang didownload") ||
+                            eventText.contains("downloaded services") ||
+                            eventText.contains("pintasan muslim launcher")
 
-                    if (!isSetupOrPermissionScreen) {
-                        val targetsUs = isAppDetailsScreenTargetingUs(rootInActiveWindow, eventText, isPlayStore)
+                    val isSpecialPermissionSetup = cleanClass.contains("notificationaccess") ||
+                            cleanClass.contains("usageaccess") ||
+                            cleanClass.contains("deviceadminadd") ||
+                            eventText.contains("akses notifikasi") ||
+                            eventText.contains("notification access") ||
+                            eventText.contains("akses data penggunaan") ||
+                            eventText.contains("akses penggunaan") ||
+                            eventText.contains("usage access") ||
+                            eventText.contains("aktifkan aplikasi admin") ||
+                            eventText.contains("activate device admin")
+
+                    val isSetupScreen = isAccessibilitySetup || isSpecialPermissionSetup
+
+                    if (!isSetupScreen) {
+                        val targetsUs = isAppDetailsScreenTargetingUs(activeNode, eventText, isPlayStore, className)
                         if (targetsUs) {
                             Log.d("AppBlockService", "STANDARD REFLECTION TRIGGERED in pkg=$packageName cls=$className (isPlayStore=$isPlayStore)")
                             lastTriggeredPackage = packageName

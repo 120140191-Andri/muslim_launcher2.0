@@ -59,6 +59,9 @@ class AppBlockService : AccessibilityService() {
         @Volatile
         private var standardModeBypassExpiry: Long = 0L
 
+        @Volatile
+        var lastStandardReflectionSource: String = "settings"
+
         fun allowStandardSettingsTemporarily(durationMillis: Long) {
             val expiry = System.currentTimeMillis() + durationMillis
             standardModeBypassExpiry = expiry
@@ -528,18 +531,20 @@ class AppBlockService : AccessibilityService() {
             eventText: String,
             isPlayStore: Boolean = false
         ): Boolean {
+            val textMatches = eventText.contains("muslim launcher") || eventText.contains("com.kraftech.muslim_launcher_2")
+
             if (rootNode != null) {
                 try {
                     val matchesPkg = rootNode.findAccessibilityNodeInfosByText("com.kraftech.muslim_launcher_2")
                     val matchesName = rootNode.findAccessibilityNodeInfosByText("Muslim Launcher")
-                    val isOurApp = !matchesPkg.isNullOrEmpty() || !matchesName.isNullOrEmpty()
+                    val isOurApp = !matchesPkg.isNullOrEmpty() || !matchesName.isNullOrEmpty() || textMatches
 
                     if (isOurApp) {
                         if (isPlayStore) {
-                            // On Play Store, only trigger if on the actual app details page (has uninstall, about app, rating, or reviews)
-                            // This ensures general search results do NOT trigger prematurely
+                            // On Play Store, only trigger if on the actual app details page (has uninstall, open, about app, rating, or reviews)
                             val playKeywords = listOf(
-                                "uninstal", "uninstall", "copot", "tentang aplikasi",
+                                "uninstal", "uninstall", "copot", "copot pemasangan",
+                                "buka", "open", "tentang aplikasi",
                                 "about this app", "beri rating", "rate this app", "ulasan", "reviews"
                             )
                             for (kw in playKeywords) {
@@ -611,7 +616,6 @@ class AppBlockService : AccessibilityService() {
                    clean.contains("swiftkey") ||
                    clean.contains("fleksy") ||
                    clean == "com.google.android.gms" ||
-                   clean == "com.android.vending" ||
                    clean == "com.android.intentresolver"
         }
 
@@ -772,11 +776,21 @@ class AppBlockService : AccessibilityService() {
         if (event == null) return
 
         try {
-            // Only process window state changes (app switches)
-            if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+            val type = event.eventType
+            val isWindowState = type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+            val isWindowContent = type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+
+            if (!isWindowState && !isWindowContent) return
 
             val packageName = event.packageName?.toString()?.trim()?.lowercase() ?: return
             val className = event.className?.toString()?.lowercase() ?: ""
+
+            // Optimization: If it's a content change (scrolling/typing/layout updates),
+            // ONLY process if it's Settings or Play Store so there's zero overhead for all normal apps!
+            if (isWindowContent) {
+                val isTargetApp = isSettingsOrInstallerApp(packageName) || packageName == "com.android.vending"
+                if (!isTargetApp) return
+            }
 
             // Skip transient overlays, keyboards (IMEs), and system dialogs so they don't corrupt foreground state
             if (isKeyboardOrTransientOverlay(packageName)) {
@@ -838,9 +852,10 @@ class AppBlockService : AccessibilityService() {
                     if (!isSetupOrPermissionScreen) {
                         val targetsUs = isAppDetailsScreenTargetingUs(rootInActiveWindow, eventText, isPlayStore)
                         if (targetsUs) {
-                            Log.d("AppBlockService", "STANDARD REFLECTION TRIGGERED in pkg=$packageName cls=$className")
+                            Log.d("AppBlockService", "STANDARD REFLECTION TRIGGERED in pkg=$packageName cls=$className (isPlayStore=$isPlayStore)")
                             lastTriggeredPackage = packageName
                             lastTriggeredTime = now
+                            lastStandardReflectionSource = if (isPlayStore) "playstore" else "settings"
                             MainActivity.notifyStandardReflectionTriggered()
                             bringLauncherToFront("standardReflection", "true", "triggerStandardReflectionScreen")
                             return
@@ -1034,10 +1049,14 @@ class AppBlockService : AccessibilityService() {
         val cleanPkg = packageNameValue.trim().lowercase()
 
         // LAYER 1: performGlobalAction(HOME) — Immediately minimizes the blocked app
-        try {
-            performGlobalAction(GLOBAL_ACTION_HOME)
-        } catch (e: Exception) {
-            Log.w("AppBlockService", "performGlobalAction(HOME) failed: ${e.message}")
+        // For Standard Mode Reflection, do NOT press HOME so the underlying Settings/PlayStore task
+        // is preserved and not minimized, eliminating lag and allowing smooth continuation!
+        if (triggerKey != "triggerStandardReflectionScreen") {
+            try {
+                performGlobalAction(GLOBAL_ACTION_HOME)
+            } catch (e: Exception) {
+                Log.w("AppBlockService", "performGlobalAction(HOME) failed: ${e.message}")
+            }
         }
 
         // LAYER 2: Explicit Intent to MainActivity with custom action to prevent HOME categorization

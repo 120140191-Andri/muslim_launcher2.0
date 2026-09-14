@@ -381,6 +381,27 @@ class MainActivity : FlutterActivity() {
                         else -> 180000L
                     }
                     AppBlockService.allowStandardSettingsTemporarily(duration)
+
+                    // Automatically return to Settings or Play Store as requested by "Lanjutkan"
+                    val source = AppBlockService.lastStandardReflectionSource
+                    try {
+                        if (source == "playstore") {
+                            val playIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")).apply {
+                                setPackage("com.android.vending")
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            startActivity(playIntent)
+                        } else {
+                            val settingsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", packageName, null)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            startActivity(settingsIntent)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Failed to navigate to target: ${e.message}")
+                    }
+
                     result.success(true)
                 }
                 "getPendingInitialBlock" -> {

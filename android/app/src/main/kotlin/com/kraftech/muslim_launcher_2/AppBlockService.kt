@@ -570,6 +570,8 @@ class AppBlockService : AccessibilityService() {
                 // 1. If activity class explicitly represents App Info / Details or Uninstaller, trigger immediately!
                 val isExplicitAppDetailsClass = cleanClass.contains("installedappdetails") ||
                         cleanClass.contains("appinfodashboardactivity") ||
+                        cleanClass.contains("applicationsdetailsactivity") ||
+                        cleanClass.contains("appmanager") ||
                         cleanClass.contains("appdetail") ||
                         cleanClass.contains("applicationdetail") ||
                         cleanClass.contains("appinfo") ||
@@ -1051,6 +1053,20 @@ class AppBlockService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
+
+        try {
+            val info = serviceInfo ?: android.accessibilityservice.AccessibilityServiceInfo()
+            info.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+            info.feedbackType = android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_GENERIC
+            info.flags = info.flags or
+                android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
+                android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
+                android.accessibilityservice.AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+            serviceInfo = info
+        } catch (e: Exception) {
+            Log.w("AppBlockService", "Failed to update serviceInfo: ${e.message}")
+        }
+
         loadBlockedPackages()
         
         // Register receiver for instant unlock & session signals

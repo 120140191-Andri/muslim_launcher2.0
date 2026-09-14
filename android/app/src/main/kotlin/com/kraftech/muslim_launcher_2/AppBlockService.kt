@@ -416,7 +416,6 @@ class AppBlockService : AccessibilityService() {
                    clean == "com.google.android.packageinstaller" ||
                    clean == "com.android.packageinstaller" ||
                    clean.contains("packageinstaller") ||
-                   clean == "com.android.vending" ||
                    clean == "com.miui.securitycenter" ||
                    clean == "com.coloros.safecenter" ||
                    clean == "com.oppo.safe" ||

@@ -95,5 +95,21 @@ void main() {
       expect(find.text('Lanjutkan tanpa perlindungan'), findsNothing);
       expect(find.text('Continue without protection'), findsNothing);
     });
+
+    test('Standard Mode reflection state defaults to false and reacts to dismiss and clear', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final state = AppState(prefs);
+
+      expect(state.isStandardReflectionActive, isFalse);
+      expect(state.hasActiveOverlay, isFalse);
+
+      // Dismiss and skip
+      await state.dismissStandardReflectionAndSkip(durationMillis: 60000);
+      expect(state.isStandardReflectionActive, isFalse);
+
+      state.clearStandardReflection();
+      expect(state.isStandardReflectionActive, isFalse);
+    });
   });
 }

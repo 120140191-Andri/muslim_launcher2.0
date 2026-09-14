@@ -119,12 +119,14 @@ class AppState extends ChangeNotifier {
   int _strictModeUntilMs = 0;
   bool _isDeviceAdminActive = false;
   String? _lastAttemptedStrictShieldReason;
+  bool _isStandardReflectionActive = false;
 
   bool get isStrictMode => _isStrictMode;
   int get strictModeDays => _strictModeDays;
   int get strictModeUntilMs => _strictModeUntilMs;
   bool get isDeviceAdminActive => _isDeviceAdminActive;
   String? get lastAttemptedStrictShieldReason => _lastAttemptedStrictShieldReason;
+  bool get isStandardReflectionActive => _isStandardReflectionActive;
 
   bool get isStrictActiveNow {
     if (!_isStrictMode) return false;
@@ -693,6 +695,10 @@ class AppState extends ChangeNotifier {
         _lastAttemptedStrictShieldReason = reason;
         notifyListeners();
       },
+      onStandardReflectionTriggered: () {
+        _isStandardReflectionActive = true;
+        notifyListeners();
+      },
     );
     _appBlockService.setBlockedApps(_blockedApps.toList());
     syncGhadhulBasharPackages();
@@ -743,6 +749,10 @@ class AppState extends ChangeNotifier {
           _lastAttemptedGhadhulBasharPackage = pendingGhadhul.toLowerCase();
           _lastAttemptedProhibitedPackage = null;
           _lastAttemptedBlockedPackage = null;
+        }
+        final pendingReflection = initialData['standardReflection'];
+        if (pendingReflection == true) {
+          _isStandardReflectionActive = true;
         }
       }
     } catch (_) {}
@@ -827,6 +837,11 @@ class AppState extends ChangeNotifier {
         final pendingStrict = data['strictShield'] as String?;
         if (pendingStrict != null && pendingStrict.isNotEmpty) {
           _lastAttemptedStrictShieldReason = pendingStrict;
+          changed = true;
+        }
+        final pendingReflection = data['standardReflection'];
+        if (pendingReflection == true) {
+          _isStandardReflectionActive = true;
           changed = true;
         }
         if (changed) notifyListeners();
@@ -3155,7 +3170,8 @@ class AppState extends ChangeNotifier {
       (_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
       (_lastAttemptedBlockedPackage?.isNotEmpty ?? false) ||
       (_lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false) ||
-      (_lastAttemptedStrictShieldReason?.isNotEmpty ?? false);
+      (_lastAttemptedStrictShieldReason?.isNotEmpty ?? false) ||
+      _isStandardReflectionActive;
 
   void clearAllOverlays() {
     bool changed = false;
@@ -3179,7 +3195,24 @@ class AppState extends ChangeNotifier {
       _lastAttemptedStrictShieldReason = null;
       changed = true;
     }
+    if (_isStandardReflectionActive) {
+      _isStandardReflectionActive = false;
+      changed = true;
+    }
     if (changed) {
+      notifyListeners();
+    }
+  }
+
+  Future<void> dismissStandardReflectionAndSkip({int durationMillis = 180000}) async {
+    _isStandardReflectionActive = false;
+    await _appBlockService.allowStandardSettingsTemporarily(durationMillis: durationMillis);
+    notifyListeners();
+  }
+
+  void clearStandardReflection() {
+    if (_isStandardReflectionActive) {
+      _isStandardReflectionActive = false;
       notifyListeners();
     }
   }

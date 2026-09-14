@@ -11,17 +11,20 @@ class AppBlockService {
   Function(String)? _onGhadhulBasharTriggered;
   Function(String)? _onProhibitedAppTriggered;
   Function(String)? _onStrictShieldTriggered;
+  VoidCallback? _onStandardReflectionTriggered;
 
   void init({
     required Function(String) onAppBlocked,
     Function(String)? onGhadhulBasharTriggered,
     Function(String)? onProhibitedAppTriggered,
     Function(String)? onStrictShieldTriggered,
+    VoidCallback? onStandardReflectionTriggered,
   }) {
     _onAppBlocked = onAppBlocked;
     _onGhadhulBasharTriggered = onGhadhulBasharTriggered;
     _onProhibitedAppTriggered = onProhibitedAppTriggered;
     _onStrictShieldTriggered = onStrictShieldTriggered;
+    _onStandardReflectionTriggered = onStandardReflectionTriggered;
     _channel.setMethodCallHandler(_handleMethod);
   }
 
@@ -49,6 +52,11 @@ class AppBlockService {
         final String? reason = call.arguments?['reason'];
         if (reason != null && _onStrictShieldTriggered != null) {
           _onStrictShieldTriggered!(reason);
+        }
+        break;
+      case 'onStandardReflectionTriggered':
+        if (_onStandardReflectionTriggered != null) {
+          _onStandardReflectionTriggered!();
         }
         break;
       default:
@@ -186,6 +194,16 @@ class AppBlockService {
       return {};
     } on PlatformException catch (_) {
       return {};
+    }
+  }
+
+  Future<void> allowStandardSettingsTemporarily({int durationMillis = 180000}) async {
+    try {
+      await _channel.invokeMethod('allowStandardSettingsTemporarily', {
+        'durationMillis': durationMillis,
+      });
+    } on PlatformException catch (_) {
+      // Failed to invoke
     }
   }
 }

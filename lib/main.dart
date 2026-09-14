@@ -13,6 +13,7 @@ import 'screens/home/ghadhul_bashar_overlay.dart';
 import 'screens/home/prohibited_app_overlay.dart';
 import 'screens/home/permission_blocked_overlay.dart';
 import 'widgets/strict_shield_dialog.dart';
+import 'widgets/standard_reflection_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -178,6 +179,8 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
                       StrictShieldOverlay(
                         reason: appState.lastAttemptedStrictShieldReason!,
                       )
+                    else if (appState.isStandardReflectionActive)
+                      const StandardReflectionOverlay()
                     else if (appState.lastAttemptedProhibitedPackage?.isNotEmpty ?? false)
                       ProhibitedAppOverlay(
                         packageName: appState.lastAttemptedProhibitedPackage!,

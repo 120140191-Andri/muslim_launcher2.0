@@ -119,6 +119,21 @@ class MainActivity : FlutterActivity() {
                 blockChannel?.invokeMethod("onStrictShieldTriggered", mapOf("reason" to reason))
             }
         }
+
+        var pendingStandardReflection: Boolean = false
+        private var lastNotifiedReflectionTime: Long = 0L
+
+        fun notifyStandardReflectionTriggered() {
+            val now = System.currentTimeMillis()
+            if ((now - lastNotifiedReflectionTime) < 2000L) {
+                return
+            }
+            lastNotifiedReflectionTime = now
+            pendingStandardReflection = true
+            uiHandler.post {
+                blockChannel?.invokeMethod("onStandardReflectionTriggered", null)
+            }
+        }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -359,17 +374,28 @@ class MainActivity : FlutterActivity() {
                     val status = AppBlockService.getStrictModeStatus(this)
                     result.success(status)
                 }
+                "allowStandardSettingsTemporarily" -> {
+                    val durationRaw = call.argument<Any>("durationMillis")
+                    val duration = when (durationRaw) {
+                        is Number -> durationRaw.toLong()
+                        else -> 180000L
+                    }
+                    AppBlockService.allowStandardSettingsTemporarily(duration)
+                    result.success(true)
+                }
                 "getPendingInitialBlock" -> {
                     val resultData = mapOf(
                         "blocked" to pendingBlockedPackage,
                         "ghadhul" to pendingGhadhulBasharPackage,
                         "prohibited" to pendingProhibitedPackage,
-                        "strictShield" to pendingStrictShieldReason
+                        "strictShield" to pendingStrictShieldReason,
+                        "standardReflection" to pendingStandardReflection
                     )
                     pendingBlockedPackage = null
                     pendingGhadhulBasharPackage = null
                     pendingProhibitedPackage = null
                     pendingStrictShieldReason = null
+                    pendingStandardReflection = false
                     result.success(resultData)
                 }
                 else -> result.notImplemented()
@@ -387,7 +413,8 @@ class MainActivity : FlutterActivity() {
         val isOverlayIntent = intent.getBooleanExtra("triggerBlockScreen", false) ||
             intent.getBooleanExtra("triggerProhibitedScreen", false) ||
             intent.getBooleanExtra("triggerGhadhulBasharScreen", false) ||
-            intent.getBooleanExtra("triggerStrictShieldScreen", false)
+            intent.getBooleanExtra("triggerStrictShieldScreen", false) ||
+            intent.getBooleanExtra("triggerStandardReflectionScreen", false)
 
         handleIntent(intent)
 
@@ -395,7 +422,8 @@ class MainActivity : FlutterActivity() {
             val hasPendingBlock = !pendingBlockedPackage.isNullOrEmpty() ||
                 !pendingProhibitedPackage.isNullOrEmpty() ||
                 !pendingGhadhulBasharPackage.isNullOrEmpty() ||
-                !pendingStrictShieldReason.isNullOrEmpty()
+                !pendingStrictShieldReason.isNullOrEmpty() ||
+                pendingStandardReflection
             if (!hasPendingBlock) {
                 appsChannel?.invokeMethod("onHomePressed", null)
             }
@@ -447,6 +475,12 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+        if (pendingStandardReflection) {
+            lastNotifiedReflectionTime = 0L
+            uiHandler.post {
+                bc.invokeMethod("onStandardReflectionTriggered", null)
+            }
+        }
     }
 
     private fun handleIntent(intent: Intent?) {
@@ -490,6 +524,11 @@ class MainActivity : FlutterActivity() {
             intent.removeExtra("strictShieldReason")
             lastNotifiedStrictShieldTime = 0L
             notifyStrictShieldTriggered(reason)
+        }
+        if (intent.getBooleanExtra("triggerStandardReflectionScreen", false)) {
+            intent.removeExtra("triggerStandardReflectionScreen")
+            lastNotifiedReflectionTime = 0L
+            notifyStandardReflectionTriggered()
         }
     }
 

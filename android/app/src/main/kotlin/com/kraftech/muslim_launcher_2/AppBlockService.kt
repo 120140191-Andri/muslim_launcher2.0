@@ -55,6 +55,16 @@ class AppBlockService : AccessibilityService() {
         @Volatile
         private var bypassSupportDeveloperUntil: Long = 0L
 
+        // Standard Mode temporary bypass for accessing settings / play store after clicking "Lewati"
+        @Volatile
+        private var standardModeBypassExpiry: Long = 0L
+
+        fun allowStandardSettingsTemporarily(durationMillis: Long) {
+            val expiry = System.currentTimeMillis() + durationMillis
+            standardModeBypassExpiry = expiry
+            Log.d("AppBlockService", "STANDARD MODE SETTINGS BYPASS GRANTED until $expiry")
+        }
+
         fun prepareSupportDeveloperBypass() {
             bypassSupportDeveloperUntil = System.currentTimeMillis() + 10000L
             Log.d("AppBlockService", "SUPPORT DEVELOPER BYPASS ARMED (10s window)")
@@ -485,7 +495,8 @@ class AppBlockService : AccessibilityService() {
             }
 
             // 2. Check if screen specifically targets Muslim Launcher 2
-            val hasOurIdentifier = isNodeOrTextTargetingUs(rootNode, eventText)
+            val isPlayStore = packageName == "com.android.vending"
+            val hasOurIdentifier = isNodeOrTextTargetingUs(rootNode, eventText, isPlayStore)
 
             if (!hasOurIdentifier) {
                 // Other apps (WhatsApp, YouTube, etc.) are 100% UNTOUCHED!
@@ -506,10 +517,11 @@ class AppBlockService : AccessibilityService() {
 
         private fun isNodeOrTextTargetingUs(
             rootNode: android.view.accessibility.AccessibilityNodeInfo?,
-            eventText: String
+            eventText: String,
+            isPlayStore: Boolean = false
         ): Boolean {
             if (eventText.contains("muslim launcher") || eventText.contains("com.kraftech.muslim_launcher_2")) {
-                return true
+                if (!isPlayStore) return true
             }
 
             if (rootNode != null) {
@@ -519,9 +531,23 @@ class AppBlockService : AccessibilityService() {
 
                     val matchesName = rootNode.findAccessibilityNodeInfosByText("Muslim Launcher")
                     if (!matchesName.isNullOrEmpty()) {
-                        val hasActionButtons = hasAppDetailActionButtons(rootNode)
-                        if (hasActionButtons) {
-                            return true
+                        if (isPlayStore) {
+                            // On Play Store, only trigger if on the actual app details page (has uninstall, about app, rating, or reviews)
+                            // This ensures general search results do NOT trigger prematurely
+                            val playKeywords = listOf(
+                                "uninstal", "uninstall", "copot", "tentang aplikasi",
+                                "about this app", "beri rating", "rate this app", "ulasan", "reviews"
+                            )
+                            for (kw in playKeywords) {
+                                val found = rootNode.findAccessibilityNodeInfosByText(kw)
+                                if (!found.isNullOrEmpty()) return true
+                            }
+                            return false
+                        } else {
+                            val hasActionButtons = hasAppDetailActionButtons(rootNode)
+                            if (hasActionButtons) {
+                                return true
+                            }
                         }
                     }
                 } catch (_: Exception) {}
@@ -531,7 +557,8 @@ class AppBlockService : AccessibilityService() {
 
         private fun hasAppDetailActionButtons(rootNode: android.view.accessibility.AccessibilityNodeInfo): Boolean {
             val keywords = listOf(
-                "uninstall", "copot", "hapus data", "clear data",
+                "uninstall", "uninstal", "copot", "copot pemasangan",
+                "hapus data", "clear data",
                 "clear storage", "hapus penyimpanan", "force stop",
                 "paksa berhenti", "storage", "penyimpanan",
                 "deactivate", "nonaktifkan", "turn off", "matikan",
@@ -777,7 +804,8 @@ class AppBlockService : AccessibilityService() {
             // 0.0 PRIORITAS 0.0: ANTI-TAMPER SHIELD (STRICT MODE PROTECTION)
             if (isStrictActive()) {
                 val isSettingsOrInstaller = isSettingsOrInstallerApp(packageName)
-                if (isSettingsOrInstaller) {
+                val isPlayStore = packageName == "com.android.vending"
+                if (isSettingsOrInstaller || isPlayStore) {
                     val shieldReason = detectStrictShieldViolation(packageName, className, rootInActiveWindow, event)
                     if (shieldReason != null) {
                         Log.d("AppBlockService", "STRICT SHIELD TRIGGERED: reason=$shieldReason in pkg=$packageName cls=$className")
@@ -785,6 +813,23 @@ class AppBlockService : AccessibilityService() {
                         lastTriggeredTime = now
                         MainActivity.notifyStrictShieldTriggered(shieldReason)
                         bringLauncherToFront("strictShieldReason", shieldReason, "triggerStrictShieldScreen")
+                        return
+                    }
+                }
+            } else {
+                // 0.0B PRIORITAS 0.0B: STANDARD MODE REFLECTION OVERLAY
+                // When user accesses Muslim Launcher 2 in Settings or Play Store, prompt with spiritual reflection
+                val isSettingsOrInstaller = isSettingsOrInstallerApp(packageName)
+                val isPlayStore = packageName == "com.android.vending"
+                if ((isSettingsOrInstaller || isPlayStore) && now > standardModeBypassExpiry) {
+                    val eventText = event.text.joinToString(" ").lowercase()
+                    val targetsUs = isNodeOrTextTargetingUs(rootInActiveWindow, eventText, isPlayStore)
+                    if (targetsUs) {
+                        Log.d("AppBlockService", "STANDARD REFLECTION TRIGGERED in pkg=$packageName cls=$className")
+                        lastTriggeredPackage = packageName
+                        lastTriggeredTime = now
+                        MainActivity.notifyStandardReflectionTriggered()
+                        bringLauncherToFront("standardReflection", "true", "triggerStandardReflectionScreen")
                         return
                     }
                 }

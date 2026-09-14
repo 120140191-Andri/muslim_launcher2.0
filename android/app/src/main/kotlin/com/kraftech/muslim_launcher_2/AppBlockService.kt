@@ -36,6 +36,16 @@ class AppBlockService : AccessibilityService() {
         // Prohibited bypass browsers (Permanently blocked in restricted regions)
         private var prohibitedPackages = Collections.synchronizedSet(mutableSetOf<String>())
 
+        // Strict Mode state tracking
+        @Volatile
+        private var isStrictModeEnabled: Boolean = false
+        @Volatile
+        private var strictModeUntil: Long = 0L
+        @Volatile
+        private var strictModeDays: Int = 30
+        @Volatile
+        private var lastKnownTimestamp: Long = 0L
+
         // Transition Shield: Prevent loop during the first 10 seconds of unlock
         private var lastBypassPackage: String? = null
         private var lastBypassTime: Long = 0
@@ -353,6 +363,145 @@ class AppBlockService : AccessibilityService() {
             prefs.edit().putStringSet("prohibited_packages", prohibitedPackages.toSet()).commit()
         }
 
+        fun updateStrictModeConfig(context: Context, enabled: Boolean, days: Int, untilMs: Long) {
+            isStrictModeEnabled = enabled
+            strictModeDays = days
+            strictModeUntil = untilMs
+            val now = System.currentTimeMillis()
+            lastKnownTimestamp = now
+            val prefs = context.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
+            prefs.edit()
+                .putBoolean("strict_mode_enabled", enabled)
+                .putInt("strict_mode_days", days)
+                .putLong("strict_mode_until", untilMs)
+                .putLong("last_known_timestamp", now)
+                .commit()
+            Log.d("AppBlockService", "STRICT MODE CONFIG: enabled=$enabled, days=$days, until=$untilMs")
+        }
+
+        fun getStrictModeStatus(context: Context): Map<String, Any> {
+            val prefs = context.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
+            val enabled = prefs.getBoolean("strict_mode_enabled", false)
+            val untilMs = prefs.getLong("strict_mode_until", 0L)
+            val days = prefs.getInt("strict_mode_days", 30)
+            val now = System.currentTimeMillis()
+            val isActive = enabled && (now < untilMs)
+            val remainingMs = if (isActive) (untilMs - now).coerceAtLeast(0L) else 0L
+            return mapOf(
+                "enabled" to enabled,
+                "isActive" to isActive,
+                "days" to days,
+                "untilMs" to untilMs,
+                "remainingMs" to remainingMs
+            )
+        }
+
+        fun isStrictActive(): Boolean {
+            if (!isStrictModeEnabled) return false
+            val now = System.currentTimeMillis()
+            if (lastKnownTimestamp > 0 && now < (lastKnownTimestamp - 300000L)) {
+                return true
+            }
+            if (now > lastKnownTimestamp) {
+                lastKnownTimestamp = now
+            }
+            return now < strictModeUntil
+        }
+
+        fun isSettingsOrInstallerApp(pkg: String): Boolean {
+            val clean = pkg.trim().lowercase()
+            return clean == "com.android.settings" ||
+                   clean == "com.google.android.settings" ||
+                   clean.contains("settings") ||
+                   clean == "com.google.android.packageinstaller" ||
+                   clean == "com.android.packageinstaller" ||
+                   clean.contains("packageinstaller") ||
+                   clean == "com.miui.securitycenter" ||
+                   clean == "com.coloros.safecenter" ||
+                   clean == "com.oppo.safe" ||
+                   clean == "com.vivo.permissionmanager" ||
+                   clean == "com.iqoo.secure" ||
+                   clean == "com.huawei.systemmanager" ||
+                   clean == "com.transsion.phonemanager" ||
+                   clean == "com.samsung.android.sm"
+        }
+
+        fun detectStrictShieldViolation(
+            packageName: String,
+            className: String,
+            rootNode: android.view.accessibility.AccessibilityNodeInfo?,
+            event: AccessibilityEvent
+        ): String? {
+            val cleanClass = className.lowercase()
+
+            // 1. Date & Time Settings (anti-tamper time lock)
+            if (cleanClass.contains("datetime") ||
+                cleanClass.contains("dateandtime") ||
+                cleanClass.contains("zonepicker") ||
+                cleanClass.contains("timezonesettings")) {
+                return "date_time"
+            }
+
+            // 2. Check if screen specifically targets Muslim Launcher 2
+            val eventText = event.text.joinToString(" ").lowercase()
+            val hasOurIdentifier = isNodeOrTextTargetingUs(rootNode, eventText)
+
+            if (!hasOurIdentifier) {
+                // Other apps (WhatsApp, YouTube, etc.) are 100% UNTOUCHED!
+                return null
+            }
+
+            // If targeting Muslim Launcher 2:
+            if (cleanClass.contains("deviceadmin") || cleanClass.contains("device_admin")) {
+                return "device_admin"
+            }
+
+            if (cleanClass.contains("accessibility") || packageName.contains("accessibility")) {
+                return "accessibility"
+            }
+
+            return "app_details"
+        }
+
+        private fun isNodeOrTextTargetingUs(
+            rootNode: android.view.accessibility.AccessibilityNodeInfo?,
+            eventText: String
+        ): Boolean {
+            if (eventText.contains("muslim launcher") || eventText.contains("com.kraftech.muslim_launcher_2")) {
+                return true
+            }
+
+            if (rootNode != null) {
+                try {
+                    val matchesPkg = rootNode.findAccessibilityNodeInfosByText("com.kraftech.muslim_launcher_2")
+                    if (!matchesPkg.isNullOrEmpty()) return true
+
+                    val matchesName = rootNode.findAccessibilityNodeInfosByText("Muslim Launcher")
+                    if (!matchesName.isNullOrEmpty()) {
+                        val hasActionButtons = hasAppDetailActionButtons(rootNode)
+                        if (hasActionButtons) {
+                            return true
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+            return false
+        }
+
+        private fun hasAppDetailActionButtons(rootNode: android.view.accessibility.AccessibilityNodeInfo): Boolean {
+            val keywords = listOf(
+                "uninstall", "copot", "hapus data", "clear data",
+                "clear storage", "hapus penyimpanan", "force stop",
+                "paksa berhenti", "storage", "penyimpanan",
+                "deactivate", "nonaktifkan", "turn off", "matikan"
+            )
+            for (kw in keywords) {
+                val found = rootNode.findAccessibilityNodeInfosByText(kw)
+                if (!found.isNullOrEmpty()) return true
+            }
+            return false
+        }
+
         private var facebookBrowserSessionActive = ConcurrentHashMap<String, Boolean>()
 
         fun allowGhadhulBasharSession(packageName: String) {
@@ -492,6 +641,10 @@ class AppBlockService : AccessibilityService() {
                 prohibitedPackages.add(pkg.trim().lowercase())
             }
         }
+        isStrictModeEnabled = prefs.getBoolean("strict_mode_enabled", false)
+        strictModeDays = prefs.getInt("strict_mode_days", 30)
+        strictModeUntil = prefs.getLong("strict_mode_until", 0L)
+        lastKnownTimestamp = prefs.getLong("last_known_timestamp", 0L)
         loadTemporaryAllowed()
     }
 
@@ -576,6 +729,22 @@ class AppBlockService : AccessibilityService() {
             if (temporaryAllowedPackages.isNotEmpty()) {
                 checkCountdownVibrations()
                 checkAllExpiredUnlocks()
+            }
+
+            // 0.0 PRIORITAS 0.0: ANTI-TAMPER SHIELD (STRICT MODE PROTECTION)
+            if (isStrictActive()) {
+                val isSettingsOrInstaller = isSettingsOrInstallerApp(packageName)
+                if (isSettingsOrInstaller) {
+                    val shieldReason = detectStrictShieldViolation(packageName, className, rootInActiveWindow, event)
+                    if (shieldReason != null) {
+                        Log.d("AppBlockService", "STRICT SHIELD TRIGGERED: reason=$shieldReason in pkg=$packageName cls=$className")
+                        lastTriggeredPackage = packageName
+                        lastTriggeredTime = now
+                        MainActivity.notifyStrictShieldTriggered(shieldReason)
+                        bringLauncherToFront("strictShieldReason", shieldReason, "triggerStrictShieldScreen")
+                        return
+                    }
+                }
             }
 
             // 0. PRIORITAS 0: PROHIBITED BROWSER CHECK (Dilarang Total - Tanpa Poin/Waktu)

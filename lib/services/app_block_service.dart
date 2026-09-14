@@ -10,15 +10,18 @@ class AppBlockService {
   Function(String)? _onAppBlocked;
   Function(String)? _onGhadhulBasharTriggered;
   Function(String)? _onProhibitedAppTriggered;
+  Function(String)? _onStrictShieldTriggered;
 
   void init({
     required Function(String) onAppBlocked,
     Function(String)? onGhadhulBasharTriggered,
     Function(String)? onProhibitedAppTriggered,
+    Function(String)? onStrictShieldTriggered,
   }) {
     _onAppBlocked = onAppBlocked;
     _onGhadhulBasharTriggered = onGhadhulBasharTriggered;
     _onProhibitedAppTriggered = onProhibitedAppTriggered;
+    _onStrictShieldTriggered = onStrictShieldTriggered;
     _channel.setMethodCallHandler(_handleMethod);
   }
 
@@ -40,6 +43,12 @@ class AppBlockService {
         final String? packageName = call.arguments['packageName'];
         if (packageName != null && _onProhibitedAppTriggered != null) {
           _onProhibitedAppTriggered!(packageName);
+        }
+        break;
+      case 'onStrictShieldTriggered':
+        final String? reason = call.arguments?['reason'];
+        if (reason != null && _onStrictShieldTriggered != null) {
+          _onStrictShieldTriggered!(reason);
         }
         break;
       default:
@@ -132,6 +141,51 @@ class AppBlockService {
       await _channel.invokeMethod('setProhibitedPackages', {'packages': packages});
     } on PlatformException catch (_) {
       // Failed to sync
+    }
+  }
+
+  Future<bool> isDeviceAdminActive() async {
+    try {
+      final bool? active = await _channel.invokeMethod('isDeviceAdminActive');
+      return active ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> requestDeviceAdmin() async {
+    try {
+      await _channel.invokeMethod('requestDeviceAdmin');
+    } on PlatformException catch (_) {
+      // Failed to request
+    }
+  }
+
+  Future<void> setStrictModeConfig({
+    required bool enabled,
+    required int days,
+    required int untilMs,
+  }) async {
+    try {
+      await _channel.invokeMethod('setStrictModeConfig', {
+        'enabled': enabled,
+        'days': days,
+        'untilMs': untilMs,
+      });
+    } on PlatformException catch (_) {
+      // Failed to configure
+    }
+  }
+
+  Future<Map<String, dynamic>> getStrictModeStatus() async {
+    try {
+      final res = await _channel.invokeMethod('getStrictModeStatus');
+      if (res is Map) {
+        return Map<String, dynamic>.from(res);
+      }
+      return {};
+    } on PlatformException catch (_) {
+      return {};
     }
   }
 }

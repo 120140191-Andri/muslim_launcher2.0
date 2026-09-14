@@ -112,6 +112,31 @@ class AppState extends ChangeNotifier {
   bool _ignorePermissionGuard = false;
   final AppBlockService _appBlockService = AppBlockService();
   Timer? _statusTimer;
+
+  // Strict Mode & Device Admin Fields
+  bool _isStrictMode = true;
+  int _strictModeDays = 30;
+  int _strictModeUntilMs = 0;
+  bool _isDeviceAdminActive = false;
+  String? _lastAttemptedStrictShieldReason;
+
+  bool get isStrictMode => _isStrictMode;
+  int get strictModeDays => _strictModeDays;
+  int get strictModeUntilMs => _strictModeUntilMs;
+  bool get isDeviceAdminActive => _isDeviceAdminActive;
+  String? get lastAttemptedStrictShieldReason => _lastAttemptedStrictShieldReason;
+
+  bool get isStrictActiveNow {
+    if (!_isStrictMode) return false;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return _strictModeUntilMs > 0 && now < _strictModeUntilMs;
+  }
+
+  Duration get remainingStrictDuration {
+    if (!isStrictActiveNow) return Duration.zero;
+    final diff = _strictModeUntilMs - DateTime.now().millisecondsSinceEpoch;
+    return diff > 0 ? Duration(milliseconds: diff) : Duration.zero;
+  }
   
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -466,6 +491,9 @@ class AppState extends ChangeNotifier {
     _hasSeenAccessibilitySetup = prefs.getBool('hasSeenAccessibilitySetup') ?? false;
     _hasRequestedNotificationPermission = prefs.getBool('hasRequestedNotificationPermission') ?? false;
     _hasAcknowledgedAutostart = prefs.getBool('hasAcknowledgedAutostart') ?? false;
+    _isStrictMode = prefs.getBool('is_strict_mode') ?? true;
+    _strictModeDays = prefs.getInt('strict_mode_days') ?? 30;
+    _strictModeUntilMs = prefs.getInt('strict_mode_until_ms') ?? 0;
     
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
@@ -661,6 +689,10 @@ class AppState extends ChangeNotifier {
           notifyListeners();
         }
       },
+      onStrictShieldTriggered: (reason) {
+        _lastAttemptedStrictShieldReason = reason;
+        notifyListeners();
+      },
     );
     _appBlockService.setBlockedApps(_blockedApps.toList());
     syncGhadhulBasharPackages();
@@ -735,6 +767,14 @@ class AppState extends ChangeNotifier {
       _isAccessibilityEnabled = await _appBlockService.isAccessibilityEnabled();
       final defRes = await appsChannel.invokeMethod('isDefaultLauncher');
       _isDefaultLauncher = defRes is bool ? defRes : false;
+      _isDeviceAdminActive = await _appBlockService.isDeviceAdminActive();
+
+      // Sync strict mode state to native service on startup
+      await _appBlockService.setStrictModeConfig(
+        enabled: _isStrictMode && isStrictActiveNow,
+        days: _strictModeDays,
+        untilMs: _strictModeUntilMs,
+      );
     } catch (_) {}
 
     _isInitialized = true;
@@ -784,6 +824,11 @@ class AppState extends ChangeNotifier {
           _lastAttemptedBlockedPackage = null;
           changed = true;
         }
+        final pendingStrict = data['strictShield'] as String?;
+        if (pendingStrict != null && pendingStrict.isNotEmpty) {
+          _lastAttemptedStrictShieldReason = pendingStrict;
+          changed = true;
+        }
         if (changed) notifyListeners();
       }
     } catch (_) {}
@@ -810,6 +855,15 @@ class AppState extends ChangeNotifier {
           await appsChannel.invokeMethod('isDefaultLauncher');
       if (defEnabled != _isDefaultLauncher) {
         _isDefaultLauncher = defEnabled;
+        changed = true;
+      }
+    } catch (_) {}
+
+    // 3. Device Admin Check
+    try {
+      final adminActive = await _appBlockService.isDeviceAdminActive();
+      if (adminActive != _isDeviceAdminActive) {
+        _isDeviceAdminActive = adminActive;
         changed = true;
       }
     } catch (_) {}
@@ -3100,7 +3154,8 @@ class AppState extends ChangeNotifier {
   bool get hasActiveOverlay =>
       (_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
       (_lastAttemptedBlockedPackage?.isNotEmpty ?? false) ||
-      (_lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false);
+      (_lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false) ||
+      (_lastAttemptedStrictShieldReason?.isNotEmpty ?? false);
 
   void clearAllOverlays() {
     bool changed = false;
@@ -3120,7 +3175,62 @@ class AppState extends ChangeNotifier {
       _lastAttemptedGhadhulBasharPackage = null;
       changed = true;
     }
+    if (_lastAttemptedStrictShieldReason != null) {
+      _lastAttemptedStrictShieldReason = null;
+      changed = true;
+    }
     if (changed) {
+      notifyListeners();
+    }
+  }
+
+  Future<void> enableStrictMode(int days) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final untilMs = now + (days * 24 * 60 * 60 * 1000);
+    _isStrictMode = true;
+    _strictModeDays = days;
+    _strictModeUntilMs = untilMs;
+    await prefs.setBool('is_strict_mode', true);
+    await prefs.setInt('strict_mode_days', days);
+    await prefs.setInt('strict_mode_until_ms', untilMs);
+    await _appBlockService.setStrictModeConfig(
+      enabled: true,
+      days: days,
+      untilMs: untilMs,
+    );
+    notifyListeners();
+  }
+
+  Future<void> enableStandardMode() async {
+    _isStrictMode = false;
+    _strictModeUntilMs = 0;
+    await prefs.setBool('is_strict_mode', false);
+    await prefs.setInt('strict_mode_until_ms', 0);
+    await _appBlockService.setStrictModeConfig(
+      enabled: false,
+      days: _strictModeDays,
+      untilMs: 0,
+    );
+    notifyListeners();
+  }
+
+  Future<void> refreshDeviceAdminStatus() async {
+    try {
+      final active = await _appBlockService.isDeviceAdminActive();
+      if (active != _isDeviceAdminActive) {
+        _isDeviceAdminActive = active;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> requestDeviceAdmin() async {
+    await _appBlockService.requestDeviceAdmin();
+  }
+
+  void clearStrictShieldReason() {
+    if (_lastAttemptedStrictShieldReason != null) {
+      _lastAttemptedStrictShieldReason = null;
       notifyListeners();
     }
   }

@@ -12,6 +12,7 @@ import 'screens/home/blocked_app_screen.dart';
 import 'screens/home/ghadhul_bashar_overlay.dart';
 import 'screens/home/prohibited_app_overlay.dart';
 import 'screens/home/permission_blocked_overlay.dart';
+import 'widgets/strict_shield_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -173,7 +174,11 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
                 child: Stack(
                   children: [
                     rootWidget,
-                    if (appState.lastAttemptedProhibitedPackage?.isNotEmpty ?? false)
+                    if (appState.lastAttemptedStrictShieldReason?.isNotEmpty ?? false)
+                      StrictShieldOverlay(
+                        reason: appState.lastAttemptedStrictShieldReason!,
+                      )
+                    else if (appState.lastAttemptedProhibitedPackage?.isNotEmpty ?? false)
                       ProhibitedAppOverlay(
                         packageName: appState.lastAttemptedProhibitedPackage!,
                       )

@@ -4,12 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:android_intent_plus/android_intent.dart';
 
 import '../../providers/app_state.dart';
-import '../home/home_screen.dart';
-import '../home/app_list_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 import '../../utils/device_instructions.dart';
 import '../../widgets/language_selection_dialog.dart';
+import 'mode_selection_screen.dart';
 
 class SetupHubScreen extends StatefulWidget {
   final bool isOnboarding;
@@ -138,95 +137,11 @@ class _SetupHubScreenState extends State<SetupHubScreen>
 
   void _finishSetup() {
     final appState = Provider.of<AppState>(context, listen: false);
-    final lang = appState.languageCode;
-
-    // Show a sleek loading dialog while ensuring app icons are loaded
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => PopScope(
-        canPop: false,
-        child: Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF0F5E3B),
-                  Color(0xFF083C25),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3.5,
-                    color: Color(0xFF34D399),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  Translations.get(lang, 'setup_preparing_home'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  Translations.get(lang, 'setup_loading_apps'),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 12,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
+    appState.navigatorKey.currentState?.push(
+      AppPageRoute(
+        child: ModeSelectionScreen(isOnboarding: widget.isOnboarding),
       ),
     );
-
-    // Await preload completion with a safe timeout
-    AppListScreen.preload(
-      onRawAppsFetched: (raw) {
-        appState.syncAppsWithCategories(raw);
-      },
-    ).timeout(
-      const Duration(milliseconds: 3500),
-      onTimeout: () {},
-    ).whenComplete(() {
-      if (mounted) {
-        appState.completeOnboarding();
-        appState.navigatorKey.currentState?.pushAndRemoveUntil(
-          AppPageRoute(child: const HomeScreen()),
-          (route) => false,
-        );
-      }
-    });
   }
 
   // ── UI Builder ──────────────────────────────────────────────────────────────
@@ -771,7 +686,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                           fit: BoxFit.scaleDown,
                           child: Text(
                             (isDefault && isAccess)
-                                ? (isEn ? 'START USING MUSLIM LAUNCHER 2' : 'MULAI GUNAKAN MUSLIM LAUNCHER 2')
+                                ? Translations.get(lang, 'next_select_mode')
                                 : (isEn ? 'COMPLETE SETTINGS (STEP 2 & 3)' : 'SELESAIKAN PENGATURAN UTAMA (LANGKAH 2 & 3)'),
                             style: TextStyle(
                               fontSize: 13.5,

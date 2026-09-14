@@ -1,5 +1,6 @@
 package com.kraftech.muslim_launcher_2
 
+import android.app.admin.DevicePolicyManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.ContentValues
@@ -101,6 +102,21 @@ class MainActivity : FlutterActivity() {
             pendingProhibitedPackage = cleanPkg
             uiHandler.post {
                 blockChannel?.invokeMethod("onProhibitedAppTriggered", mapOf("packageName" to cleanPkg))
+            }
+        }
+
+        var pendingStrictShieldReason: String? = null
+        private var lastNotifiedStrictShieldTime: Long = 0L
+
+        fun notifyStrictShieldTriggered(reason: String) {
+            val now = System.currentTimeMillis()
+            if ((now - lastNotifiedStrictShieldTime) < 2000L) {
+                return
+            }
+            lastNotifiedStrictShieldTime = now
+            pendingStrictShieldReason = reason
+            uiHandler.post {
+                blockChannel?.invokeMethod("onStrictShieldTriggered", mapOf("reason" to reason))
             }
         }
     }
@@ -322,15 +338,38 @@ class MainActivity : FlutterActivity() {
                     AppBlockService.updateProhibitedPackages(this, apps)
                     result.success(true)
                 }
+                "isDeviceAdminActive" -> {
+                    result.success(isDeviceAdminActive())
+                }
+                "requestDeviceAdmin" -> {
+                    requestDeviceAdmin()
+                    result.success(true)
+                }
+                "setStrictModeConfig" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: false
+                    val days = call.argument<Int>("days") ?: 30
+                    val untilMs = when (val raw = call.argument<Any>("untilMs")) {
+                        is Number -> raw.toLong()
+                        else -> 0L
+                    }
+                    AppBlockService.updateStrictModeConfig(this, enabled, days, untilMs)
+                    result.success(true)
+                }
+                "getStrictModeStatus" -> {
+                    val status = AppBlockService.getStrictModeStatus(this)
+                    result.success(status)
+                }
                 "getPendingInitialBlock" -> {
                     val resultData = mapOf(
                         "blocked" to pendingBlockedPackage,
                         "ghadhul" to pendingGhadhulBasharPackage,
-                        "prohibited" to pendingProhibitedPackage
+                        "prohibited" to pendingProhibitedPackage,
+                        "strictShield" to pendingStrictShieldReason
                     )
                     pendingBlockedPackage = null
                     pendingGhadhulBasharPackage = null
                     pendingProhibitedPackage = null
+                    pendingStrictShieldReason = null
                     result.success(resultData)
                 }
                 else -> result.notImplemented()
@@ -347,14 +386,16 @@ class MainActivity : FlutterActivity() {
         
         val isOverlayIntent = intent.getBooleanExtra("triggerBlockScreen", false) ||
             intent.getBooleanExtra("triggerProhibitedScreen", false) ||
-            intent.getBooleanExtra("triggerGhadhulBasharScreen", false)
+            intent.getBooleanExtra("triggerGhadhulBasharScreen", false) ||
+            intent.getBooleanExtra("triggerStrictShieldScreen", false)
 
         handleIntent(intent)
 
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME) && !isOverlayIntent) {
             val hasPendingBlock = !pendingBlockedPackage.isNullOrEmpty() ||
                 !pendingProhibitedPackage.isNullOrEmpty() ||
-                !pendingGhadhulBasharPackage.isNullOrEmpty()
+                !pendingGhadhulBasharPackage.isNullOrEmpty() ||
+                !pendingStrictShieldReason.isNullOrEmpty()
             if (!hasPendingBlock) {
                 appsChannel?.invokeMethod("onHomePressed", null)
             }
@@ -398,6 +439,14 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+        pendingStrictShieldReason?.let { reason ->
+            if (reason.isNotEmpty()) {
+                lastNotifiedStrictShieldTime = 0L
+                uiHandler.post {
+                    bc.invokeMethod("onStrictShieldTriggered", mapOf("reason" to reason))
+                }
+            }
+        }
     }
 
     private fun handleIntent(intent: Intent?) {
@@ -434,6 +483,13 @@ class MainActivity : FlutterActivity() {
                 lastNotifiedProhibitedTime = 0L
                 notifyAppProhibited(prohibitedPackage)
             }
+        }
+        if (intent.getBooleanExtra("triggerStrictShieldScreen", false)) {
+            val reason = intent.getStringExtra("strictShieldReason") ?: "app_details"
+            intent.removeExtra("triggerStrictShieldScreen")
+            intent.removeExtra("strictShieldReason")
+            lastNotifiedStrictShieldTime = 0L
+            notifyStrictShieldTriggered(reason)
         }
     }
 
@@ -628,6 +684,33 @@ class MainActivity : FlutterActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
+    }
+
+    private fun isDeviceAdminActive(): Boolean {
+        return try {
+            val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager
+            val component = ComponentName(this, MuslimDeviceAdminReceiver::class.java)
+            dpm?.isAdminActive(component) == true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun requestDeviceAdmin() {
+        try {
+            val component = ComponentName(this, MuslimDeviceAdminReceiver::class.java)
+            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
+                putExtra(
+                    DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                    "Mengaktifkan Administrator Perangkat untuk mencegah pencopotan aplikasi selama Mode Ketat (Komitmen Istiqomah) berjalan."
+                )
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e("MainActivity", "requestDeviceAdmin failed: ${e.message}")
+        }
     }
 
 

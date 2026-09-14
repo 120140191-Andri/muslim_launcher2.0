@@ -400,10 +400,18 @@ class AppBlockService : AccessibilityService() {
             if (!isStrictModeEnabled) return false
             val now = System.currentTimeMillis()
             if (lastKnownTimestamp > 0 && now < (lastKnownTimestamp - 300000L)) {
+                // Time set backwards detected -> keep strict mode securely locked
                 return true
             }
             if (now > lastKnownTimestamp) {
+                val shouldPersist = (now - lastKnownTimestamp) > 1800000L // every 30 minutes
                 lastKnownTimestamp = now
+                if (shouldPersist) {
+                    instance?.let { ctx ->
+                        ctx.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
+                            .edit().putLong("last_known_timestamp", now).apply()
+                    }
+                }
             }
             return now < strictModeUntil
         }
@@ -417,13 +425,19 @@ class AppBlockService : AccessibilityService() {
                    clean == "com.android.packageinstaller" ||
                    clean.contains("packageinstaller") ||
                    clean == "com.miui.securitycenter" ||
+                   clean == "com.miui.cleanmaster" ||
                    clean == "com.coloros.safecenter" ||
                    clean == "com.oppo.safe" ||
+                   clean == "com.oplus.safecenter" ||
+                   clean == "com.oplus.securitypermission" ||
                    clean == "com.vivo.permissionmanager" ||
+                   clean == "com.vivo.safecenter" ||
                    clean == "com.iqoo.secure" ||
                    clean == "com.huawei.systemmanager" ||
+                   clean == "com.hihonor.systemmanager" ||
                    clean == "com.transsion.phonemanager" ||
-                   clean == "com.samsung.android.sm"
+                   clean == "com.samsung.android.sm" ||
+                   clean == "com.samsung.android.lool"
         }
 
         fun detectStrictShieldViolation(
@@ -433,17 +447,44 @@ class AppBlockService : AccessibilityService() {
             event: AccessibilityEvent
         ): String? {
             val cleanClass = className.lowercase()
+            val eventText = event.text.joinToString(" ").lowercase()
 
-            // 1. Date & Time Settings (anti-tamper time lock)
-            if (cleanClass.contains("datetime") ||
+            // 1. Date & Time Settings (anti-tamper time lock across all OEMs & languages)
+            val isDateTimeByClass = cleanClass.contains("datetime") ||
                 cleanClass.contains("dateandtime") ||
                 cleanClass.contains("zonepicker") ||
-                cleanClass.contains("timezonesettings")) {
+                cleanClass.contains("timezonesettings") ||
+                cleanClass.contains("timepicker") ||
+                cleanClass.contains("datepicker")
+
+            val isDateTimeByText = eventText.contains("date & time") ||
+                eventText.contains("date and time") ||
+                eventText.contains("tanggal & waktu") ||
+                eventText.contains("tanggal dan waktu") ||
+                (eventText.contains("tanggal") && (eventText.contains("waktu") || eventText.contains("jam"))) ||
+                (eventText.contains("date") && (eventText.contains("time") || eventText.contains("clock"))) ||
+                eventText.contains("atur waktu") ||
+                eventText.contains("set time")
+
+            if (isDateTimeByClass || isDateTimeByText) {
                 return "date_time"
             }
 
+            // Also check rootNode for Date & Time toggles if class is generic SubSettings
+            if (rootNode != null && (cleanClass.contains("subsettings") || cleanClass.contains("settingsactivity"))) {
+                try {
+                    val autoTime1 = rootNode.findAccessibilityNodeInfosByText("Automatic date & time")
+                    val autoTime2 = rootNode.findAccessibilityNodeInfosByText("Gunakan waktu jaringan")
+                    val autoTime3 = rootNode.findAccessibilityNodeInfosByText("Atur waktu secara otomatis")
+                    val autoTime4 = rootNode.findAccessibilityNodeInfosByText("Set time automatically")
+                    if (!autoTime1.isNullOrEmpty() || !autoTime2.isNullOrEmpty() ||
+                        !autoTime3.isNullOrEmpty() || !autoTime4.isNullOrEmpty()) {
+                        return "date_time"
+                    }
+                } catch (_: Exception) {}
+            }
+
             // 2. Check if screen specifically targets Muslim Launcher 2
-            val eventText = event.text.joinToString(" ").lowercase()
             val hasOurIdentifier = isNodeOrTextTargetingUs(rootNode, eventText)
 
             if (!hasOurIdentifier) {
@@ -493,7 +534,9 @@ class AppBlockService : AccessibilityService() {
                 "uninstall", "copot", "hapus data", "clear data",
                 "clear storage", "hapus penyimpanan", "force stop",
                 "paksa berhenti", "storage", "penyimpanan",
-                "deactivate", "nonaktifkan", "turn off", "matikan"
+                "deactivate", "nonaktifkan", "turn off", "matikan",
+                "use service", "gunakan layanan", "service", "layanan",
+                "hapus", "delete"
             )
             for (kw in keywords) {
                 val found = rootNode.findAccessibilityNodeInfosByText(kw)

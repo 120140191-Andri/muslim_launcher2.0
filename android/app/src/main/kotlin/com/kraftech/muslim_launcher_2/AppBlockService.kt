@@ -1048,15 +1048,12 @@ class AppBlockService : AccessibilityService() {
     private fun bringLauncherToFront(packageNameKey: String, packageNameValue: String, triggerKey: String) {
         val cleanPkg = packageNameValue.trim().lowercase()
 
-        // LAYER 1: performGlobalAction(HOME) — Immediately minimizes the blocked app
-        // For Standard Mode Reflection, do NOT press HOME so the underlying Settings/PlayStore task
-        // is preserved and not minimized, eliminating lag and allowing smooth continuation!
-        if (triggerKey != "triggerStandardReflectionScreen") {
-            try {
-                performGlobalAction(GLOBAL_ACTION_HOME)
-            } catch (e: Exception) {
-                Log.w("AppBlockService", "performGlobalAction(HOME) failed: ${e.message}")
-            }
+        // LAYER 1: performGlobalAction(HOME) — Immediately minimizes the foreground app
+        // and bypasses Android 10+ background activity launch (BAL) restrictions across all devices
+        try {
+            performGlobalAction(GLOBAL_ACTION_HOME)
+        } catch (e: Exception) {
+            Log.w("AppBlockService", "performGlobalAction(HOME) failed: ${e.message}")
         }
 
         // LAYER 2: Explicit Intent to MainActivity with custom action to prevent HOME categorization

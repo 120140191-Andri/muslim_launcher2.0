@@ -168,22 +168,23 @@ class StreakNotificationService {
   }) async {
     if (!_isInitialized) return;
     try {
-      // Jika keduanya sudah selesai hari ini, batalkan notifikasi hari ini
-      if (hasQuranToday && hasDzikirToday) {
-        await cancelReminder();
-        debugPrint('[StreakNotificationService] All streaks completed today. Reminder cancelled.');
-        return;
-      }
+      final bool allCompletedToday = hasQuranToday && hasDzikirToday;
 
+      // Jika keduanya sudah selesai hari ini, jadwalkan pengingat default untuk besok
+      // agar streak tidak terputus bila besok pengguna belum sempat membuka aplikasi
       final content = getReminderContent(
-        hasQuranToday: hasQuranToday,
-        hasDzikirToday: hasDzikirToday,
+        hasQuranToday: allCompletedToday ? false : hasQuranToday,
+        hasDzikirToday: allCompletedToday ? false : hasDzikirToday,
         lang: lang,
       );
 
       if (content['title']!.isEmpty) return;
 
-      final scheduledTime = _nextInstanceOfTime(hour, minute);
+      final scheduledTime = _nextInstanceOfTime(
+        hour,
+        minute,
+        forceTomorrow: allCompletedToday,
+      );
 
       const androidDetails = AndroidNotificationDetails(
         channelId,
@@ -227,7 +228,11 @@ class StreakNotificationService {
   }
 
   /// Menghitung jadwal waktu berikutnya
-  static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+  static tz.TZDateTime _nextInstanceOfTime(
+    int hour,
+    int minute, {
+    bool forceTomorrow = false,
+  }) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduledDate = tz.TZDateTime(
       tz.local,
@@ -238,8 +243,8 @@ class StreakNotificationService {
       minute,
     );
 
-    // Jika waktu hari ini sudah lewat, jadwalkan untuk besok
-    if (scheduledDate.isBefore(now)) {
+    // Jika waktu hari ini sudah lewat atau dipaksa untuk besok, jadwalkan untuk besok
+    if (forceTomorrow || scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
     return scheduledDate;

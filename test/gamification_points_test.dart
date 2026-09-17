@@ -202,6 +202,30 @@ void main() {
       expect(appState.completedSurahsThisCycle.contains(1), true);
     });
 
+    test('Reading Surah 114 alone awards Tier bonus but does NOT trigger premature Khatam 30 Juz', () async {
+      final appState = AppState(prefs);
+
+      expect(appState.khatmCount, 0);
+      expect(appState.completedSurahsThisCycle.length, 0);
+
+      // Complete only Surah 114 (An-Nas) without completing the other 113 surahs
+      final res = await appState.completeSurahMilestone(
+        surahNumber: 114,
+        surahName: 'An-Nas',
+        totalAyahs: 6,
+      );
+
+      // It should be a milestone with normal tier bonus (+10 pts at Level 1)
+      expect(res['isNewMilestone'], true);
+      expect(res['isKhatam'], false);
+      expect(res['bonusPoints'], 10);
+
+      // Crucial: Khatm count must stay 0, completed surahs must contain 114 (length 1), not reset!
+      expect(appState.khatmCount, 0);
+      expect(appState.completedSurahsThisCycle.length, 1);
+      expect(appState.completedSurahsThisCycle.contains(114), true);
+    });
+
     test('Maqam Boost Multipliers and Percentages for all 5 levels', () {
       // Level 1: 0 Khatam
       expect(QuranProgressHelper.getMaqamLevel(0), 1);

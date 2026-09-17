@@ -245,7 +245,7 @@ class AppState extends ChangeNotifier {
     final now = DateTime.now();
     final today = now.toIso8601String().split('T')[0];
     if (_lastQuranReadDate == today) return _quranDailyStreak;
-    final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+    final yesterday = DateTime(now.year, now.month, now.day - 1).toIso8601String().split('T')[0];
     if (_lastQuranReadDate == yesterday) return _quranDailyStreak;
     return 0;
   }
@@ -258,7 +258,7 @@ class AppState extends ChangeNotifier {
     final now = DateTime.now();
     final today = now.toIso8601String().split('T')[0];
     if (_lastDzikirDate == today) return _dzikirDailyStreak;
-    final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+    final yesterday = DateTime(now.year, now.month, now.day - 1).toIso8601String().split('T')[0];
     if (_lastDzikirDate == yesterday) return _dzikirDailyStreak;
     return 0;
   }
@@ -3480,19 +3480,23 @@ class AppState extends ChangeNotifier {
     final expiry = DateTime.now().millisecondsSinceEpoch + (durationMinutes * 60 * 1000);
     
     _unlockedExpirations[pkg] = expiry;
-    bool success = true;
     
     try {
-      await _appBlockService.allowAppTemporarily(pkg, durationMinutes: durationMinutes);
+      final nativeOk = await _appBlockService.allowAppTemporarily(pkg, durationMinutes: durationMinutes);
+      if (!nativeOk) {
+        _unlockedExpirations.remove(pkg); // Rollback locally if native fails
+        notifyListeners();
+        return false;
+      }
       await prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
       _startStatusTimer();
+      notifyListeners();
+      return true;
     } catch (e) {
       _unlockedExpirations.remove(pkg); // Rollback locally if native fails
-      success = false;
+      notifyListeners();
+      return false;
     }
-    
-    notifyListeners();
-    return success;
   }
 
   bool isAppUnlocked(String packageName) {
@@ -3597,7 +3601,7 @@ class AppState extends ChangeNotifier {
       return; // Already recorded today
     }
 
-    final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+    final yesterday = DateTime(now.year, now.month, now.day - 1).toIso8601String().split('T')[0];
 
     if (_lastQuranReadDate == yesterday) {
       _quranDailyStreak += 1;
@@ -3635,7 +3639,7 @@ class AppState extends ChangeNotifier {
       return; // Already recorded today
     }
 
-    final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+    final yesterday = DateTime(now.year, now.month, now.day - 1).toIso8601String().split('T')[0];
 
     if (_lastDzikirDate == yesterday) {
       _dzikirDailyStreak += 1;
@@ -3705,7 +3709,7 @@ class AppState extends ChangeNotifier {
     }
 
     // New day has arrived:
-    final yesterday = now.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+    final yesterday = DateTime(now.year, now.month, now.day - 1).toIso8601String().split('T')[0];
 
     if (_dailyPointsSpentDate == yesterday) {
       // Yesterday finished! Check if yesterday was successful (<= 50 points spent)
@@ -4021,7 +4025,7 @@ class AppState extends ChangeNotifier {
     await prefs.setInt('points', _points);
 
     bool isKhatam = false;
-    if (_completedSurahsThisCycle.length >= 114 || surahNumber == 114) {
+    if (_completedSurahsThisCycle.length >= 114) {
       isKhatam = true;
       _khatmCount++;
       await prefs.setInt('khatmCount', _khatmCount);
@@ -4241,6 +4245,7 @@ class AppState extends ChangeNotifier {
       _dailyDzikirCount = 0;
       _dailyDzikirPresetRounds = {};
       _dailyDzikirDate = today;
+      await prefs.setString('dailyDzikirPresetRounds', '{}');
     }
     _dailyDzikirCount += count;
     await prefs.setInt('dailyDzikirCount', _dailyDzikirCount);

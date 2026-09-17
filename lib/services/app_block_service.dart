@@ -80,14 +80,17 @@ class AppBlockService {
     }
   }
 
-  Future<void> allowAppTemporarily(String packageName, {int durationMinutes = 60}) async {
+  Future<bool> allowAppTemporarily(String packageName, {int durationMinutes = 60}) async {
     try {
-      await _channel.invokeMethod('allowAppTemporarily', {
+      final res = await _channel.invokeMethod<bool>('allowAppTemporarily', {
         'packageName': packageName,
         'durationMillis': durationMinutes * 60 * 1000,
       });
+      return res ?? true;
     } on PlatformException catch (_) {
-      // Failed to allow app
+      return false;
+    } catch (_) {
+      return false;
     }
   }
 

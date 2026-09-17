@@ -177,24 +177,26 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
                 child: Stack(
                   children: [
                     rootWidget,
-                    if (appState.lastAttemptedStrictShieldReason?.isNotEmpty ?? false)
-                      StrictShieldOverlay(
-                        reason: appState.lastAttemptedStrictShieldReason!,
-                      )
-                    else if (appState.isStandardReflectionActive)
-                      const StandardReflectionOverlay()
-                    else if (appState.lastAttemptedProhibitedPackage?.isNotEmpty ?? false)
-                      ProhibitedAppOverlay(
-                        packageName: appState.lastAttemptedProhibitedPackage!,
-                      )
-                    else if (appState.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
-                      BlockedAppScreen(
-                        packageName: appState.lastAttemptedBlockedPackage!,
-                      )
-                    else if (appState.lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false)
-                      GhadhulBasharOverlay(
-                        packageName: appState.lastAttemptedGhadhulBasharPackage!,
-                      ),
+                    if (!appState.isPassiveMode) ...[
+                      if (appState.lastAttemptedStrictShieldReason?.isNotEmpty ?? false)
+                        StrictShieldOverlay(
+                          reason: appState.lastAttemptedStrictShieldReason!,
+                        )
+                      else if (appState.isStandardReflectionActive)
+                        const StandardReflectionOverlay()
+                      else if (appState.lastAttemptedProhibitedPackage?.isNotEmpty ?? false)
+                        ProhibitedAppOverlay(
+                          packageName: appState.lastAttemptedProhibitedPackage!,
+                        )
+                      else if (appState.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
+                        BlockedAppScreen(
+                          packageName: appState.lastAttemptedBlockedPackage!,
+                        )
+                      else if (appState.lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false)
+                        GhadhulBasharOverlay(
+                          packageName: appState.lastAttemptedGhadhulBasharPackage!,
+                        ),
+                    ],
                   ],
                 ),
               );

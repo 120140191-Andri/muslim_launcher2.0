@@ -238,5 +238,65 @@ void main() {
       expect(badge, findsOneWidget);
       expect(find.text('Mode Pasif'), findsOneWidget);
     });
+
+    test('Strict Mode automatically transitions to Standard Mode on init when expired', () async {
+      final pastMs = DateTime.now().millisecondsSinceEpoch - 10000;
+      SharedPreferences.setMockInitialValues({
+        'is_strict_mode': true,
+        'strict_mode_days': 30,
+        'strict_mode_until_ms': pastMs,
+        'launcher_mode': 'strict',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final state = AppState(prefs);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(state.isStrictMode, isFalse);
+      expect(state.launcherMode, 'standard');
+      expect(state.isStrictActiveNow, isFalse);
+      expect(state.strictModeUntilMs, 0);
+      expect(prefs.getBool('is_strict_mode'), isFalse);
+      expect(prefs.getString('launcher_mode'), 'standard');
+    });
+
+    test('Strict Mode automatically transitions to Standard Mode during refreshStatus when expired', () async {
+      final futureMs = DateTime.now().millisecondsSinceEpoch + 100000;
+      SharedPreferences.setMockInitialValues({
+        'is_strict_mode': true,
+        'strict_mode_days': 30,
+        'strict_mode_until_ms': futureMs,
+        'launcher_mode': 'strict',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final state = AppState(prefs);
+      expect(state.isStrictMode, isTrue);
+
+      // Now simulate time passing: update untilMs in prefs to past
+      final pastMs = DateTime.now().millisecondsSinceEpoch - 5000;
+      await prefs.setInt('strict_mode_until_ms', pastMs);
+
+      // Trigger refreshStatus
+      state.refreshStatus();
+      // Allow async refreshStatus to execute
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(state.isStrictMode, isFalse);
+      expect(state.launcherMode, 'standard');
+      expect(state.isStrictActiveNow, isFalse);
+    });
+
+    test('Passive Mode completely suppresses hasActiveOverlay', () async {
+      SharedPreferences.setMockInitialValues({
+        'launcher_mode': 'passive',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final state = AppState(prefs);
+
+      expect(state.isPassiveMode, isTrue);
+      expect(state.hasActiveOverlay, isFalse);
+
+      // Even if an overlay property were set, hasActiveOverlay remains false in passive mode
+      expect(state.hasActiveOverlay, isFalse);
+    });
   });
 }

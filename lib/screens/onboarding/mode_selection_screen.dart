@@ -10,7 +10,7 @@ import 'setup_launcher_screen.dart';
 
 class ModeSelectionScreen extends StatefulWidget {
   final bool isOnboarding;
-  const ModeSelectionScreen({super.key, this.isOnboarding = true});
+  const ModeSelectionScreen({super.key, this.isOnboarding = false});
 
   @override
   State<ModeSelectionScreen> createState() => _ModeSelectionScreenState();

@@ -268,7 +268,7 @@ class StandardReflectionOverlay extends StatelessWidget {
                                 appState.clearStandardReflection();
                                 Navigator.of(context).push(
                                   AppPageRoute(
-                                    child: const ModeSelectionScreen(),
+                                    child: const ModeSelectionScreen(isOnboarding: false),
                                   ),
                                 );
                               },

@@ -505,6 +505,17 @@ class AppState extends ChangeNotifier {
     _strictModeUntilMs = prefs.getInt('strict_mode_until_ms') ?? 0;
     _launcherMode = prefs.getString('launcher_mode') ?? (_isStrictMode ? 'strict' : 'standard');
     _hasSelectedMode = prefs.getBool('has_selected_mode') ?? _hasCompletedOnboarding;
+
+    // Auto-transition to Standard Mode if Strict Mode duration has expired
+    final nowInit = DateTime.now().millisecondsSinceEpoch;
+    if (_isStrictMode && _strictModeUntilMs > 0 && nowInit >= _strictModeUntilMs) {
+      _isStrictMode = false;
+      _launcherMode = 'standard';
+      _strictModeUntilMs = 0;
+      await prefs.setBool('is_strict_mode', false);
+      await prefs.setString('launcher_mode', 'standard');
+      await prefs.setInt('strict_mode_until_ms', 0);
+    }
     
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
@@ -640,6 +651,7 @@ class AppState extends ChangeNotifier {
     // Initialize App Block Service immediately so no platform signals are dropped
     _appBlockService.init(
       onAppBlocked: (pkg) {
+        if (isPassiveMode) return;
         final cleanPkg = pkg.trim().toLowerCase();
         if (cleanPkg.isNotEmpty) {
           final now = DateTime.now().millisecondsSinceEpoch;
@@ -664,6 +676,7 @@ class AppState extends ChangeNotifier {
         }
       },
       onGhadhulBasharTriggered: (pkg) {
+        if (isPassiveMode) return;
         final cleanPkg = pkg.trim().toLowerCase();
         if (cleanPkg.isNotEmpty) {
           final now = DateTime.now().millisecondsSinceEpoch;
@@ -682,6 +695,7 @@ class AppState extends ChangeNotifier {
         }
       },
       onProhibitedAppTriggered: (pkg) {
+        if (isPassiveMode) return;
         final cleanPkg = pkg.trim().toLowerCase();
         if (cleanPkg.isNotEmpty) {
           final now = DateTime.now().millisecondsSinceEpoch;
@@ -701,11 +715,13 @@ class AppState extends ChangeNotifier {
         }
       },
       onStrictShieldTriggered: (reason) {
+        if (isPassiveMode) return;
         _lastStrictShieldEventTime = DateTime.now().millisecondsSinceEpoch;
         _lastAttemptedStrictShieldReason = reason;
         notifyListeners();
       },
       onStandardReflectionTriggered: () {
+        if (isPassiveMode) return;
         _lastStandardReflectionEventTime = DateTime.now().millisecondsSinceEpoch;
         _isStandardReflectionActive = true;
         notifyListeners();
@@ -818,6 +834,7 @@ class AppState extends ChangeNotifier {
   /// This is the last safety net: even if MethodChannel, handleIntent, and debounce all fail,
   /// this will pick up the pending event.
   Future<void> checkPendingNativeBlocks() async {
+    if (isPassiveMode) return;
     try {
       const blockChannel = MethodChannel('com.muslimlauncher/block');
       final data = await blockChannel.invokeMethod('getPendingInitialBlock');
@@ -866,6 +883,25 @@ class AppState extends ChangeNotifier {
 
   void refreshStatus() async {
     bool changed = false;
+
+    // Check if strict mode duration expired during app session
+    final storedUntil = prefs.getInt('strict_mode_until_ms') ?? _strictModeUntilMs;
+    _strictModeUntilMs = storedUntil;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (_isStrictMode && _strictModeUntilMs > 0 && now >= _strictModeUntilMs) {
+      _isStrictMode = false;
+      _launcherMode = 'standard';
+      _strictModeUntilMs = 0;
+      await prefs.setBool('is_strict_mode', false);
+      await prefs.setString('launcher_mode', 'standard');
+      await prefs.setInt('strict_mode_until_ms', 0);
+      await _appBlockService.setStrictModeConfig(
+        enabled: false,
+        days: _strictModeDays,
+        untilMs: 0,
+      );
+      changed = true;
+    }
 
     // 1. Accessibility Check
     try {
@@ -3284,11 +3320,12 @@ class AppState extends ChangeNotifier {
   }
 
   bool get hasActiveOverlay =>
-      (_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
-      (_lastAttemptedBlockedPackage?.isNotEmpty ?? false) ||
-      (_lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false) ||
-      (_lastAttemptedStrictShieldReason?.isNotEmpty ?? false) ||
-      _isStandardReflectionActive;
+      !isPassiveMode &&
+      ((_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
+          (_lastAttemptedBlockedPackage?.isNotEmpty ?? false) ||
+          (_lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false) ||
+          (_lastAttemptedStrictShieldReason?.isNotEmpty ?? false) ||
+          _isStandardReflectionActive);
 
   void clearAllOverlays() {
     bool changed = false;
@@ -3379,6 +3416,7 @@ class AppState extends ChangeNotifier {
     _isStrictMode = false;
     _strictModeUntilMs = 0;
     _hasSelectedMode = true;
+    clearAllOverlays();
     await prefs.setString('launcher_mode', 'passive');
     await prefs.setBool('is_strict_mode', false);
     await prefs.setInt('strict_mode_until_ms', 0);

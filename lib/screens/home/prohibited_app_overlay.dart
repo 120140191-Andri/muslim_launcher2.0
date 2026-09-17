@@ -164,12 +164,16 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                               color: Color(0xFFFB7185),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              displayTag,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                            Flexible(
+                              child: Text(
+                                displayTag,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -330,8 +334,8 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
 
                       // Action Buttons
                       if (isAdultApp || isGamblingApp) ...[
-                        // Uninstall App Button for installed Adult Content & Gambling Apps
-                        if (appName.isNotEmpty || (!widget.packageName.startsWith('Judi') && !widget.packageName.startsWith('Dewasa') && !widget.packageName.contains('://') && !widget.packageName.contains(' '))) ...[
+                        // Uninstall App Button only for real installed Android APK packages
+                        if (appName.isNotEmpty || (widget.packageName.contains('.') && !widget.packageName.contains('://') && !widget.packageName.contains('/') && !widget.packageName.contains(' ') && !widget.packageName.contains(':'))) ...[
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(

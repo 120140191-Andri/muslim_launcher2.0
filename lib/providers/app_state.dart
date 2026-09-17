@@ -2036,12 +2036,17 @@ class AppState extends ChangeNotifier {
         'david',
         'individual',
         'provider',
+        'provide',
         'evidence',
         'covid',
         'divisi',
+        'division',
         'video',
+        'vide',
         'video editor',
         'video player',
+        'nvidia',
+        'vivid',
       ];
       bool isWhitelisted = false;
       for (final white in vidWhitelist) {

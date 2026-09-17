@@ -1204,10 +1204,15 @@ class AppBlockService : AccessibilityService() {
             "david",
             "individual",
             "provider",
+            "provide",
             "evidence",
             "covid",
             "divisi",
-            "video"
+            "division",
+            "video",
+            "vide",
+            "nvidia",
+            "vivid"
         )
 
         private val ADULT_KEYWORDS = listOf(
@@ -1304,11 +1309,10 @@ class AppBlockService : AccessibilityService() {
                 }
             }
 
-            // 3. Flexible "vid" matching with Whitelist
-            if (combined.contains("vid")) {
-                val vidSnippet = gatheredTexts.find { it.contains("vid") } ?: ""
-                if (vidSnippet.isNotEmpty() && !isWhitelisted(vidSnippet)) {
-                    return Pair(BrowserViolation.ADULT, vidSnippet)
+            // 3. Flexible "vid" matching with Whitelist across all gathered texts
+            for (text in gatheredTexts) {
+                if (text.contains("vid") && !isWhitelisted(text)) {
+                    return Pair(BrowserViolation.ADULT, text)
                 }
             }
 

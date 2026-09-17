@@ -55,28 +55,30 @@ class DeviceAdminRequestActivity : Activity() {
             return
         }
 
-        // 3. Launch system Device Admin activation screen
-        val component = ComponentName(this, MuslimDeviceAdminReceiver::class.java)
-        val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-            putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
-            putExtra(
-                DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                "Mengaktifkan Administrator Perangkat untuk mencegah pencopotan aplikasi selama Mode Ketat (Komitmen Istiqomah) berjalan."
-            )
-        }
-
-        try {
-            startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN)
-        } catch (e: Exception) {
-            Log.e(TAG, "startActivityForResult failed: ${e.message}, falling back to admin/security settings")
-            try {
-                startActivity(Intent("android.app.action.DEVICE_ADMIN_SETTINGS"))
-            } catch (_: Exception) {
-                try {
-                    startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
-                } catch (_: Exception) {}
+        // 3. Launch system Device Admin activation screen (only on initial creation)
+        if (savedInstanceState == null) {
+            val component = ComponentName(this, MuslimDeviceAdminReceiver::class.java)
+            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
+                putExtra(
+                    DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                    "Mengaktifkan Administrator Perangkat untuk mencegah pencopotan aplikasi selama Mode Ketat (Komitmen Istiqomah) berjalan."
+                )
             }
-            finish()
+
+            try {
+                startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN)
+            } catch (e: Exception) {
+                Log.e(TAG, "startActivityForResult failed: ${e.message}, falling back to admin/security settings")
+                try {
+                    startActivity(Intent("android.app.action.DEVICE_ADMIN_SETTINGS"))
+                } catch (_: Exception) {
+                    try {
+                        startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
+                    } catch (_: Exception) {}
+                }
+                finish()
+            }
         }
     }
 

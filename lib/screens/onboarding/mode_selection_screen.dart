@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/app_state.dart';
@@ -7,6 +8,12 @@ import '../home/home_screen.dart';
 import '../home/app_list_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
+
+class _PledgeTile {
+  final int id;
+  final String char;
+  const _PledgeTile(this.id, this.char);
+}
 
 class ModeSelectionScreen extends StatefulWidget {
   final bool isOnboarding;
@@ -211,6 +218,56 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
     );
   }
 
+  Widget _buildPledgeTileButton({
+    required _PledgeTile tile,
+    required bool isUsed,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3.5),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: isUsed ? null : onTap,
+            borderRadius: BorderRadius.circular(10),
+            splashColor: const Color(0xFF0D5C3A).withValues(alpha: 0.15),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              height: 46,
+              decoration: BoxDecoration(
+                color: isUsed ? const Color(0xFFF1F5F9) : Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isUsed ? const Color(0xFFE2E8F0) : const Color(0xFFCBD5E1),
+                  width: 1.5,
+                ),
+                boxShadow: isUsed
+                    ? null
+                    : const [
+                        BoxShadow(
+                          color: Color(0xFFCBD5E1),
+                          offset: Offset(0, 3.2),
+                          blurRadius: 0,
+                        ),
+                      ],
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                tile.char,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: isUsed ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<bool?> _showCommitmentPledgeModal(
       BuildContext context, String lang, int days) {
     final isEn = lang == 'en';
@@ -226,19 +283,33 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
       builder: (ctx) {
         bool check1 = false;
         bool check2 = false;
-        final textController = TextEditingController();
-        bool isKeywordMatched = false;
         const targetKeyword = 'BISMILLAH';
+
+        // Candidate pool tiles (scrambled order for gamified Duolingo-style tapping)
+        const candidatePool = [
+          _PledgeTile(0, 'M'),
+          _PledgeTile(1, 'B'),
+          _PledgeTile(2, 'I'),
+          _PledgeTile(3, 'S'),
+          _PledgeTile(4, 'L'),
+          _PledgeTile(5, 'A'),
+          _PledgeTile(6, 'H'),
+          _PledgeTile(7, 'L'),
+          _PledgeTile(8, 'I'),
+        ];
+        final List<_PledgeTile> selectedTiles = [];
 
         return StatefulBuilder(
           builder: (context, setModalState) {
             final mediaQuery = MediaQuery.of(context);
-            final viewInsetsBottom = mediaQuery.viewInsets.bottom;
             final systemNavBottom = math.max(
               mediaQuery.padding.bottom,
               mediaQuery.viewPadding.bottom,
             );
-            final isKeyboardOpen = viewInsetsBottom > 0;
+            final currentSpelling = selectedTiles.map((t) => t.char).join();
+            final isKeywordMatched = currentSpelling == targetKeyword;
+            final isPoolFull = selectedTiles.length == targetKeyword.length;
+            final isWrongSpelling = isPoolFull && !isKeywordMatched;
             final canConfirm = check1 && check2 && isKeywordMatched;
 
             return Container(
@@ -397,66 +468,244 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                           const SizedBox(height: 16),
 
                           // Verification header
-                          Text(
-                            Translations.get(lang, 'type_to_confirm', {'keyword': targetKeyword}),
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0D5C3A),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Styled OTP/keyword confirmation box
-                          TextField(
-                            controller: textController,
-                            textCapitalization: TextCapitalization.characters,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 3.5,
-                              color: Color(0xFF0D5C3A),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: targetKeyword,
-                              hintStyle: TextStyle(
-                                color: Colors.grey.shade400,
-                                letterSpacing: 3.5,
-                                fontWeight: FontWeight.normal,
-                              ),
-                              filled: true,
-                              fillColor: isKeywordMatched
-                                  ? const Color(0xFF0D5C3A).withValues(alpha: 0.06)
-                                  : Colors.grey.shade50,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                              suffixIcon: isKeywordMatched
-                                  ? const Icon(Icons.check_circle_rounded, color: Color(0xFF0D5C3A), size: 22)
-                                  : null,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(
-                                  color: isKeywordMatched
-                                      ? const Color(0xFF0D5C3A)
-                                      : Colors.grey.shade300,
-                                  width: isKeywordMatched ? 1.8 : 1.0,
+                          // Verification header
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  Translations.get(lang, 'type_to_confirm', {'keyword': targetKeyword}),
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0D5C3A),
+                                  ),
                                 ),
                               ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: Color(0xFF0D5C3A), width: 2.0),
+                              if (isKeywordMatched)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0D5C3A).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF0D5C3A)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        Translations.get(lang, 'pledge_verified_badge'),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF0D5C3A),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Answer Tray (Duolingo Style Slots)
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(targetKeyword.length, (index) {
+                                final isFilled = index < selectedTiles.length;
+                                final char = isFilled ? selectedTiles[index].char : '';
+                                final isTargetMatch = isFilled && char == targetKeyword[index];
+
+                                return GestureDetector(
+                                  onTap: isFilled
+                                      ? () {
+                                          HapticFeedback.selectionClick();
+                                          setModalState(() {
+                                            selectedTiles.removeAt(index);
+                                          });
+                                        }
+                                      : null,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 160),
+                                    margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                                    width: 29,
+                                    height: 39,
+                                    decoration: BoxDecoration(
+                                      color: isKeywordMatched
+                                          ? const Color(0xFF0D5C3A)
+                                          : (isFilled
+                                              ? (isTargetMatch
+                                                  ? const Color(0xFF0D5C3A).withValues(alpha: 0.08)
+                                                  : const Color(0xFFEF4444).withValues(alpha: 0.08))
+                                              : const Color(0xFFF8FAFC)),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isKeywordMatched
+                                            ? const Color(0xFF083C25)
+                                            : (isFilled
+                                                ? (isTargetMatch
+                                                    ? const Color(0xFF0D5C3A)
+                                                    : const Color(0xFFEF4444))
+                                                : const Color(0xFFCBD5E1)),
+                                        width: isFilled || isKeywordMatched ? 1.6 : 1.0,
+                                      ),
+                                      boxShadow: isFilled
+                                          ? [
+                                              BoxShadow(
+                                                color: isKeywordMatched
+                                                    ? const Color(0xFF083C25)
+                                                    : (isTargetMatch
+                                                        ? const Color(0xFF0D5C3A).withValues(alpha: 0.25)
+                                                        : const Color(0xFFEF4444).withValues(alpha: 0.25)),
+                                                offset: const Offset(0, 2.5),
+                                                blurRadius: 0,
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      isFilled ? char : targetKeyword[index],
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: isKeywordMatched
+                                            ? Colors.white
+                                            : (isFilled
+                                                ? (isTargetMatch
+                                                    ? const Color(0xFF0D5C3A)
+                                                    : const Color(0xFFDC2626))
+                                                : const Color(0xFF94A3B8).withValues(alpha: 0.35)),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+
+                          if (isWrongSpelling) ...[
+                            const SizedBox(height: 6),
+                            Center(
+                              child: Text(
+                                Translations.get(lang, 'tiles_incorrect_order'),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFFDC2626),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                            onChanged: (val) {
-                              final matches = val.trim().toUpperCase() == targetKeyword;
-                              if (matches != isKeywordMatched) {
-                                setModalState(() => isKeywordMatched = matches);
-                              }
-                            },
+                          ],
+
+                          const SizedBox(height: 12),
+
+                          // Candidate Tiles (Bank Huruf - Duolingo 3D Button Style)
+                          Column(
+                            children: [
+                              // Row 1 (5 tiles)
+                              Row(
+                                children: candidatePool.sublist(0, 5).map((tile) {
+                                  final isUsed = selectedTiles.any((t) => t.id == tile.id);
+                                  return _buildPledgeTileButton(
+                                    tile: tile,
+                                    isUsed: isUsed,
+                                    onTap: () {
+                                      if (selectedTiles.length < targetKeyword.length) {
+                                        HapticFeedback.lightImpact();
+                                        setModalState(() {
+                                          selectedTiles.add(tile);
+                                        });
+                                        if (selectedTiles.length == targetKeyword.length &&
+                                            selectedTiles.map((t) => t.char).join() == targetKeyword) {
+                                          HapticFeedback.mediumImpact();
+                                        }
+                                      }
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 4),
+
+                              // Row 2 (4 tiles + 1 Reset button)
+                              Row(
+                                children: [
+                                  ...candidatePool.sublist(5, 9).map((tile) {
+                                    final isUsed = selectedTiles.any((t) => t.id == tile.id);
+                                    return _buildPledgeTileButton(
+                                      tile: tile,
+                                      isUsed: isUsed,
+                                      onTap: () {
+                                        if (selectedTiles.length < targetKeyword.length) {
+                                          HapticFeedback.lightImpact();
+                                          setModalState(() {
+                                            selectedTiles.add(tile);
+                                          });
+                                          if (selectedTiles.length == targetKeyword.length &&
+                                              selectedTiles.map((t) => t.char).join() == targetKeyword) {
+                                            HapticFeedback.mediumImpact();
+                                          }
+                                        }
+                                      },
+                                    );
+                                  }),
+                                  // Reset Button
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3.5),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: selectedTiles.isNotEmpty
+                                              ? () {
+                                                  HapticFeedback.selectionClick();
+                                                  setModalState(() {
+                                                    selectedTiles.clear();
+                                                  });
+                                                }
+                                              : null,
+                                          borderRadius: BorderRadius.circular(10),
+                                          child: Container(
+                                            height: 46,
+                                            decoration: BoxDecoration(
+                                              color: selectedTiles.isNotEmpty
+                                                  ? const Color(0xFFF1F5F9)
+                                                  : const Color(0xFFF8FAFC),
+                                              borderRadius: BorderRadius.circular(10),
+                                              border: Border.all(
+                                                color: selectedTiles.isNotEmpty
+                                                    ? const Color(0xFFCBD5E1)
+                                                    : const Color(0xFFE2E8F0),
+                                                width: 1.5,
+                                              ),
+                                              boxShadow: selectedTiles.isNotEmpty
+                                                  ? const [
+                                                      BoxShadow(
+                                                        color: Color(0xFFCBD5E1),
+                                                        offset: Offset(0, 3.2),
+                                                        blurRadius: 0,
+                                                      ),
+                                                    ]
+                                                  : null,
+                                            ),
+                                            child: Icon(
+                                              Icons.replay_rounded,
+                                              size: 20,
+                                              color: selectedTiles.isNotEmpty
+                                                  ? const Color(0xFF475569)
+                                                  : Colors.grey.shade300,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 14),
                         ],
@@ -470,9 +719,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                       22,
                       12,
                       22,
-                      isKeyboardOpen
-                          ? (viewInsetsBottom + 12)
-                          : (math.max(systemNavBottom, 14.0) + 14.0),
+                      math.max(systemNavBottom, 14.0) + 14.0,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white,

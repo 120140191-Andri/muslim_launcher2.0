@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -150,8 +151,74 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
     await _finishAndGoHome(appState);
   }
 
+  Widget _buildPledgeCheckboxCard({
+    required String title,
+    required bool isChecked,
+    required VoidCallback onToggle,
+  }) {
+    return InkWell(
+      onTap: onToggle,
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: isChecked
+              ? const Color(0xFF0D5C3A).withValues(alpha: 0.06)
+              : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isChecked
+                ? const Color(0xFF0D5C3A).withValues(alpha: 0.45)
+                : Colors.grey.shade200,
+            width: isChecked ? 1.4 : 1.0,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: isChecked ? const Color(0xFF0D5C3A) : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: isChecked ? const Color(0xFF0D5C3A) : Colors.grey.shade400,
+                  width: 1.6,
+                ),
+              ),
+              child: isChecked
+                  ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: isChecked ? FontWeight.w600 : FontWeight.w500,
+                  color: isChecked ? const Color(0xFF1E293B) : const Color(0xFF475569),
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<bool?> _showCommitmentPledgeModal(
       BuildContext context, String lang, int days) {
+    final isEn = lang == 'en';
+    final tierSubtitleKey = days == 30
+        ? 'duration_30_subtitle'
+        : (days == 60 ? 'duration_60_subtitle' : 'duration_90_subtitle');
+    final tierName = Translations.get(lang, tierSubtitleKey);
+
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -165,199 +232,324 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
 
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+            final mediaQuery = MediaQuery.of(context);
+            final viewInsetsBottom = mediaQuery.viewInsets.bottom;
+            final systemNavBottom = math.max(
+              mediaQuery.padding.bottom,
+              mediaQuery.viewPadding.bottom,
+            );
+            final isKeyboardOpen = viewInsetsBottom > 0;
             final canConfirm = check1 && check2 && isKeywordMatched;
 
             return Container(
-              padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomPadding),
+              constraints: BoxConstraints(
+                maxHeight: mediaQuery.size.height * 0.90,
+              ),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(28),
                   topRight: Radius.circular(28),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 20,
+                    offset: Offset(0, -6),
+                  ),
+                ],
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 44,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle bar
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            shape: BoxShape.circle,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Scrollable content
+                  Flexible(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 22),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header badge & title
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF0F5E3B), Color(0xFF083C25)],
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF0D5C3A).withValues(alpha: 0.25),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.verified_user_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      Translations.get(lang, 'confirm_commitment_title'),
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1E293B),
+                                        letterSpacing: -0.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0D5C3A).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '$days ${isEn ? "Days" : "Hari"} • ${isEn ? "Tier" : "Tingkat"} $tierName',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF0D5C3A),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          child: Icon(
-                            Icons.lock_clock_rounded,
-                            color: Colors.red.shade800,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            Translations.get(lang, 'confirm_commitment_title'),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E293B),
+                          const SizedBox(height: 14),
+
+                          // Solemn description
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade50.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.amber.shade300.withValues(alpha: 0.8),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 18,
+                                  color: Colors.amber.shade900,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    Translations.get(lang, 'confirm_commitment_desc', {'days': days.toString()}),
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: Colors.brown.shade900,
+                                      height: 1.42,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          const SizedBox(height: 14),
+
+                          // Card Checkbox 1
+                          _buildPledgeCheckboxCard(
+                            title: Translations.get(lang, 'confirm_check_1'),
+                            isChecked: check1,
+                            onToggle: () => setModalState(() => check1 = !check1),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Card Checkbox 2
+                          _buildPledgeCheckboxCard(
+                            title: Translations.get(lang, 'confirm_check_2'),
+                            isChecked: check2,
+                            onToggle: () => setModalState(() => check2 = !check2),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Verification header
+                          Text(
+                            Translations.get(lang, 'type_to_confirm', {'keyword': targetKeyword}),
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0D5C3A),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Styled OTP/keyword confirmation box
+                          TextField(
+                            controller: textController,
+                            textCapitalization: TextCapitalization.characters,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 3.5,
+                              color: Color(0xFF0D5C3A),
+                            ),
+                            decoration: InputDecoration(
+                              hintText: targetKeyword,
+                              hintStyle: TextStyle(
+                                color: Colors.grey.shade400,
+                                letterSpacing: 3.5,
+                                fontWeight: FontWeight.normal,
+                              ),
+                              filled: true,
+                              fillColor: isKeywordMatched
+                                  ? const Color(0xFF0D5C3A).withValues(alpha: 0.06)
+                                  : Colors.grey.shade50,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                              suffixIcon: isKeywordMatched
+                                  ? const Icon(Icons.check_circle_rounded, color: Color(0xFF0D5C3A), size: 22)
+                                  : null,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: isKeywordMatched
+                                      ? const Color(0xFF0D5C3A)
+                                      : Colors.grey.shade300,
+                                  width: isKeywordMatched ? 1.8 : 1.0,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(color: Color(0xFF0D5C3A), width: 2.0),
+                              ),
+                            ),
+                            onChanged: (val) {
+                              final matches = val.trim().toUpperCase() == targetKeyword;
+                              if (matches != isKeywordMatched) {
+                                setModalState(() => isKeywordMatched = matches);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Fixed Bottom Action Bar with GUARANTEED Navbar Clearance
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      22,
+                      12,
+                      22,
+                      isKeyboardOpen
+                          ? (viewInsetsBottom + 12)
+                          : (math.max(systemNavBottom, 14.0) + 14.0),
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.grey.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, -3),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
-                    Text(
-                      Translations.get(lang, 'confirm_commitment_desc',
-                          {'days': days.toString()}),
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        color: Colors.grey.shade700,
-                        height: 1.45,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Checkbox 1
-                    InkWell(
-                      onTap: () {
-                        setModalState(() => check1 = !check1);
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Checkbox(
-                              value: check1,
-                              activeColor: const Color(0xFF0D5C3A),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4)),
-                              onChanged: (val) {
-                                setModalState(() => check1 = val ?? false);
-                              },
-                            ),
-                            Expanded(
-                              child: Text(
-                                Translations.get(lang, 'confirm_check_1'),
-                                style: const TextStyle(
-                                    fontSize: 12.5, fontWeight: FontWeight.w500),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Checkbox 2
-                    InkWell(
-                      onTap: () {
-                        setModalState(() => check2 = !check2);
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Checkbox(
-                              value: check2,
-                              activeColor: const Color(0xFF0D5C3A),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4)),
-                              onChanged: (val) {
-                                setModalState(() => check2 = val ?? false);
-                              },
-                            ),
-                            Expanded(
-                              child: Text(
-                                Translations.get(lang, 'confirm_check_2'),
-                                style: const TextStyle(
-                                    fontSize: 12.5, fontWeight: FontWeight.w500),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      Translations.get(lang, 'type_to_confirm',
-                          {'keyword': targetKeyword}),
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0D5C3A),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: textController,
-                      textCapitalization: TextCapitalization.characters,
-                      decoration: InputDecoration(
-                        hintText: targetKeyword,
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide:
-                              const BorderSide(color: Color(0xFF0D5C3A), width: 1.6),
-                        ),
-                      ),
-                      onChanged: (val) {
-                        final matches =
-                            val.trim().toUpperCase() == targetKeyword;
-                        if (matches != isKeywordMatched) {
-                          setModalState(() => isKeywordMatched = matches);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
+                    child: SizedBox(
                       width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: canConfirm
-                            ? () => Navigator.pop(ctx, true)
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0D5C3A),
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.grey.shade300,
-                          disabledForegroundColor: Colors.grey.shade500,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                      height: 52,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: canConfirm
+                              ? const LinearGradient(
+                                  colors: [Color(0xFF0F5E3B), Color(0xFF083C25)],
+                                )
+                              : null,
+                          color: canConfirm ? null : Colors.grey.shade200,
+                          boxShadow: canConfirm
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF0D5C3A).withValues(alpha: 0.28),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : null,
                         ),
-                        child: Text(
-                          Translations.get(lang, 'start_strict_mode'),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13.5,
-                            letterSpacing: 0.5,
+                        child: ElevatedButton(
+                          onPressed: canConfirm ? () => Navigator.pop(ctx, true) : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.transparent,
+                            disabledForegroundColor: Colors.grey.shade500,
+                            shadowColor: Colors.transparent,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                canConfirm ? Icons.lock_outline_rounded : Icons.lock_clock_rounded,
+                                size: 19,
+                                color: canConfirm ? Colors.white : Colors.grey.shade500,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                Translations.get(lang, 'start_strict_mode'),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13.5,
+                                  letterSpacing: 0.5,
+                                  color: canConfirm ? Colors.white : Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           },
@@ -732,7 +924,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
               20,
               14,
               20,
-              14 + MediaQuery.of(context).padding.bottom,
+              14 + math.max(MediaQuery.of(context).padding.bottom, MediaQuery.of(context).viewPadding.bottom),
             ),
             decoration: BoxDecoration(
               color: Colors.white,

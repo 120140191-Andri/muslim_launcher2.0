@@ -401,49 +401,15 @@ class MainActivity : FlutterActivity() {
                     try {
                         Log.d("MainActivity", "allowStandardSettingsTemporarily: source=$source")
                         if (source == "device_admin") {
-                            var launched = false
-                            val component = ComponentName(this@MainActivity, MuslimDeviceAdminReceiver::class.java)
-
-                            // 1. Direct to Device Admin for Muslim Launcher 2
-                            // On HyperOS, Samsung, and all Android versions, ACTION_ADD_DEVICE_ADMIN opens
-                            // the device admin activation screen (if not active yet) or management screen (if active).
                             try {
-                                val adminIntent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-                                    putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
-                                    putExtra(
-                                        DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                                        "Mengaktifkan Administrator Perangkat untuk mencegah pencopotan aplikasi selama Mode Ketat (Komitmen Istiqomah) berjalan."
-                                    )
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                                }
-                                startActivity(adminIntent)
-                                launched = true
-                                Log.d("MainActivity", "Launched ACTION_ADD_DEVICE_ADMIN successfully")
+                                DeviceAdminRequestActivity.start(this@MainActivity)
                             } catch (e: Exception) {
-                                Log.e("MainActivity", "ACTION_ADD_DEVICE_ADMIN failed: ${e.message}")
-                            }
-
-                            // 2. Fallback: try standard Device Admin list settings
-                            if (!launched) {
-                                val adminListIntents = listOf(
-                                    Intent("android.settings.ACTION_DEVICE_ADMIN_SETTINGS"),
-                                    Intent().setComponent(ComponentName("com.android.settings", "com.android.settings.DeviceAdminSettings")),
-                                    Intent().setComponent(ComponentName("com.android.settings", "com.android.settings.Settings\$DeviceAdminSettingsActivity")),
-                                    Intent(Settings.ACTION_SECURITY_SETTINGS)
-                                )
-                                for (adminIntent in adminListIntents) {
-                                    try {
-                                        adminIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        startActivity(adminIntent)
-                                        launched = true
-                                        Log.d("MainActivity", "Launched fallback admin list intent successfully")
-                                        break
-                                    } catch (_: Exception) {}
-                                }
-                            }
-
-                            if (!launched) {
-                                moveTaskToBack(true)
+                                Log.e("MainActivity", "DeviceAdminRequestActivity.start failed: ${e.message}")
+                                try {
+                                    startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    })
+                                } catch (_: Exception) {}
                             }
                         } else if (source == "accessibility") {
                             val a11yIntent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
@@ -812,29 +778,19 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun isDeviceAdminActive(): Boolean {
-        return try {
-            val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager
-            val component = ComponentName(this, MuslimDeviceAdminReceiver::class.java)
-            dpm?.isAdminActive(component) == true
-        } catch (_: Exception) {
-            false
-        }
+        return AppBlockService.isDeviceAdminActive(this)
     }
 
     private fun requestDeviceAdmin() {
         try {
-            val component = ComponentName(this, MuslimDeviceAdminReceiver::class.java)
-            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-                putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
-                putExtra(
-                    DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "Mengaktifkan Administrator Perangkat untuk mencegah pencopotan aplikasi selama Mode Ketat (Komitmen Istiqomah) berjalan."
-                )
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(intent)
+            DeviceAdminRequestActivity.start(this)
         } catch (e: Exception) {
             Log.e("MainActivity", "requestDeviceAdmin failed: ${e.message}")
+            try {
+                startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+            } catch (_: Exception) {}
         }
     }
 

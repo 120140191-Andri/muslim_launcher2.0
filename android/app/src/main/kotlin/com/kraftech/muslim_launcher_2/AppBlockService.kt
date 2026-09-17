@@ -122,6 +122,25 @@ class AppBlockService : AccessibilityService() {
             Log.d("AppBlockService", "STANDARD SETTINGS BYPASS & DEBOUNCE RESET (session ended, force=$force)")
         }
 
+        @Volatile
+        var deviceAdminActivationBypassUntil: Long = 0L
+
+        fun allowDeviceAdminActivationTemporarily() {
+            deviceAdminActivationBypassUntil = System.currentTimeMillis() + 90000L
+            Log.d("AppBlockService", "DEVICE ADMIN ACTIVATION BYPASS GRANTED (90s window)")
+        }
+
+        fun isDeviceAdminActive(context: Context?): Boolean {
+            if (context == null) return false
+            return try {
+                val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as? android.app.admin.DevicePolicyManager
+                val component = ComponentName(context, MuslimDeviceAdminReceiver::class.java)
+                dpm?.isAdminActive(component) == true
+            } catch (_: Exception) {
+                false
+            }
+        }
+
         fun prepareSupportDeveloperBypass() {
             bypassSupportDeveloperUntil = System.currentTimeMillis() + 10000L
             Log.d("AppBlockService", "SUPPORT DEVELOPER BYPASS ARMED (10s window)")
@@ -571,9 +590,13 @@ class AppBlockService : AccessibilityService() {
                 return null
             }
 
-            // Device Admin deactivation attempt:
-            if (isDeviceAdminScreenTargetingUs(rootNode, eventText, className, packageName)) {
-                return "device_admin"
+            // Device Admin deactivation attempt (ONLY if Muslim Launcher is ALREADY an active Device Admin and NOT during user activation bypass):
+            val isActivationBypass = System.currentTimeMillis() < deviceAdminActivationBypassUntil
+            val isAdminActive = isDeviceAdminActive(instance ?: this)
+            if (!isActivationBypass && isAdminActive) {
+                if (isDeviceAdminScreenTargetingUs(rootNode, eventText, className, packageName)) {
+                    return "device_admin"
+                }
             }
 
             // Accessibility disable attempt:
@@ -582,7 +605,7 @@ class AppBlockService : AccessibilityService() {
             }
 
             // App details (Uninstall, Clear Data, Storage) in Settings or Installers:
-            if (isAppDetailsScreenTargetingUs(rootNode, eventText, className)) {
+            if (isAppDetailsScreenTargetingUs(rootNode, eventText, className, packageName)) {
                 return "app_details"
             }
 
@@ -619,9 +642,11 @@ class AppBlockService : AccessibilityService() {
         fun isAppDetailsScreenTargetingUs(
             rootNode: android.view.accessibility.AccessibilityNodeInfo?,
             eventText: String,
-            className: String = ""
+            className: String = "",
+            packageName: String = ""
         ): Boolean {
             val cleanClass = className.lowercase()
+            val cleanPkg = packageName.lowercase()
 
             // Resolve true root of the window tree to cover child node events across all OEMs
             val searchNode = getTopmostNode(rootNode)
@@ -660,13 +685,17 @@ class AppBlockService : AccessibilityService() {
                     eventText.contains("battery saver")
             if (isAutostartOrBattery) return false
 
-            val isDeviceAdmin = cleanClass.contains("deviceadmin") ||
+            val isDeviceAdmin = isDeviceAdminScreenTargetingUs(searchNode, eventText, className, packageName) ||
+                    cleanClass.contains("deviceadmin") ||
                     cleanClass.contains("device_admin") ||
                     cleanClass.contains("adminsettings") ||
                     cleanClass.contains("specialaccess") ||
-                    eventText.contains("admin") ||
-                    eventText.contains("pengurus") ||
-                    eventText.contains("pentadbir")
+                    cleanPkg.contains("admin") ||
+                    eventText.contains("admin perangkat") ||
+                    eventText.contains("aplikasi admin") ||
+                    eventText.contains("pengurus perangkat") ||
+                    eventText.contains("device admin") ||
+                    eventText.contains("device administrator")
             if (isDeviceAdmin) return false
 
             val isAccessibility = cleanClass.contains("accessibility") ||
@@ -718,15 +747,11 @@ class AppBlockService : AccessibilityService() {
                 "com.android.settings:id/force_stop_button",
                 "com.android.settings:id/btn_uninstall",
                 "com.android.settings:id/btn_force_stop",
-                "android:id/button1",
-                "android:id/button2",
                 // Samsung One UI
                 "com.android.settings:id/button_uninstall",
                 "com.android.settings:id/button_force_stop",
                 "com.android.settings:id/bottom_btn_uninstall",
                 "com.android.settings:id/bottom_btn_force_stop",
-                "com.samsung.android.settings:id/button1",
-                "com.samsung.android.settings:id/button2",
                 "com.samsung.android.sm:id/uninstall",
                 "com.samsung.android.sm:id/force_stop",
                 // Xiaomi MIUI / HyperOS
@@ -812,7 +837,7 @@ class AppBlockService : AccessibilityService() {
             val searchNode = getTopmostNode(rootNode)
 
             // CRITICAL: If screen is specifically App Details / Info, it is 100% App Info, NOT Accessibility!
-            if (isAppDetailsScreenTargetingUs(searchNode, eventText, className)) {
+            if (isAppDetailsScreenTargetingUs(searchNode, eventText, className, packageName)) {
                 return false
             }
 
@@ -1246,6 +1271,9 @@ class AppBlockService : AccessibilityService() {
                 "com.muslimlauncher.BYPASS_SUPPORT_DEV" -> {
                     prepareSupportDeveloperBypass()
                 }
+                "com.muslimlauncher.BYPASS_DEVICE_ADMIN_ACTIVATION" -> {
+                    allowDeviceAdminActivationTemporarily()
+                }
             }
         }
     }
@@ -1300,6 +1328,36 @@ class AppBlockService : AccessibilityService() {
 
             // 0.0 PRIORITAS 0.0: ANTI-TAMPER SHIELD (STRICT MODE PROTECTION)
             val activeNode = rootInActiveWindow ?: getTopmostNode(event.source) ?: event.source
+
+            // 0.00 BYPASS: If user explicitly requested Device Admin activation in our app, allow full interaction on Settings / Admin screens
+            val isDeviceAdminActivationBypass = now < deviceAdminActivationBypassUntil
+            if (isDeviceAdminActivationBypass) {
+                if (isDeviceAdminActive(this)) {
+                    deviceAdminActivationBypassUntil = 0L
+                    Log.d("AppBlockService", "Device Admin is now ACTIVE, activation bypass completed successfully.")
+                } else {
+                    val cleanPkg = packageName.lowercase()
+                    val cleanCls = className.lowercase()
+                    val isSettingsOrAdminOrSecurity = isSettingsOrInstallerApp(packageName) ||
+                            cleanPkg.contains("settings") ||
+                            cleanPkg.contains("admin") ||
+                            cleanPkg.contains("security") ||
+                            cleanPkg.contains("permission") ||
+                            cleanCls.contains("admin") ||
+                            cleanCls.contains("deviceadmin") ||
+                            cleanCls.contains("specialaccess")
+
+                    if (isSettingsOrAdminOrSecurity) {
+                        val isExplicitUninstall = cleanCls.contains("uninstalleractivity") ||
+                                cleanCls.contains("uninstallalertactivity") ||
+                                cleanCls.contains("uninstallconfirmation")
+                        if (!isExplicitUninstall) {
+                            Log.d("AppBlockService", "Allowing Device Admin activation screen during active activation bypass window: pkg=$packageName cls=$className")
+                            return
+                        }
+                    }
+                }
+            }
 
             if (isStrictActive()) {
                 val isSettingsOrInstaller = isSettingsOrInstallerApp(packageName)
@@ -1357,7 +1415,7 @@ class AppBlockService : AccessibilityService() {
                     }
 
                     // 1. Check App Details first (Settings -> Apps -> Muslim Launcher 2)
-                    val targetsAppDetails = isAppDetailsScreenTargetingUs(activeNode, eventText, className)
+                    val targetsAppDetails = isAppDetailsScreenTargetingUs(activeNode, eventText, className, packageName)
 
                     // 2. Check Accessibility screen second (Settings -> Accessibility -> Muslim Launcher 2)
                     val targetsAccessibility = !targetsAppDetails && isAccessibilityScreenTargetingUs(activeNode, eventText, className, packageName)
@@ -1412,7 +1470,7 @@ class AppBlockService : AccessibilityService() {
                                 if (curPkg?.equals(capturedPkg, ignoreCase = true) == true) {
                                     val active = rootInActiveWindow ?: getTopmostNode(null)
                                     if (active != null) {
-                                        val isAppInfo = isAppDetailsScreenTargetingUs(active, "", capturedCls)
+                                        val isAppInfo = isAppDetailsScreenTargetingUs(active, "", capturedCls, capturedPkg)
                                         val isA11y = !isAppInfo && isAccessibilityScreenTargetingUs(active, "", capturedCls, capturedPkg)
                                         if (isA11y || isAppInfo) {
                                             val curNow = System.currentTimeMillis()

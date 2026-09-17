@@ -1220,7 +1220,7 @@ class AppBlockService : AccessibilityService() {
             "xnxx", "xvideos", "xhamster", "redtube", "youporn", "spankbang", "brazzers", "beeg", "eporner", "tube8",
             "onlyfans", "fansly", "fancentro", "stripchat", "chaturbate", "bongacams", "cam4", "livejasmin",
             "sange", "lendir", "colmek", "crot", "pemersatubangsa", ".xxx", ".porn", ".adult",
-            "cd.slikdrive.com", "slikdrive.com", "slikdrive"
+            "cd.slikdrive.com", "slikdrive.com", "slikdrive", "tinyurl.com", "1024terabox.com", "viadey", "viodey", "vldeyco.id"
         )
 
         private val GAMBLING_KEYWORDS = listOf(

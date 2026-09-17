@@ -222,10 +222,14 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
     required _PledgeTile tile,
     required bool isUsed,
     required VoidCallback onTap,
+    double height = 44,
+    double fontSize = 17,
+    int flex = 1,
   }) {
     return Expanded(
+      flex: flex,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3.5),
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -234,7 +238,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
             splashColor: const Color(0xFF0D5C3A).withValues(alpha: 0.15),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 140),
-              height: 46,
+              height: height,
               decoration: BoxDecoration(
                 color: isUsed ? const Color(0xFFF1F5F9) : Colors.white,
                 borderRadius: BorderRadius.circular(10),
@@ -256,7 +260,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
               child: Text(
                 tile.char,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: fontSize,
                   fontWeight: FontWeight.w800,
                   color: isUsed ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
                 ),
@@ -271,10 +275,23 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
   Future<bool?> _showCommitmentPledgeModal(
       BuildContext context, String lang, int days) {
     final isEn = lang == 'en';
+    final isAr = lang == 'ar';
     final tierSubtitleKey = days == 30
         ? 'duration_30_subtitle'
         : (days == 60 ? 'duration_60_subtitle' : 'duration_90_subtitle');
     final tierName = Translations.get(lang, tierSubtitleKey);
+
+    // Localized duration & tier label
+    final String durationTierLabel;
+    if (isAr) {
+      durationTierLabel = '$days يوماً • رتبة $tierName';
+    } else if (isEn) {
+      durationTierLabel = '$days Days • Tier $tierName';
+    } else if (lang == 'ms') {
+      durationTierLabel = '$days Hari • Peringkat $tierName';
+    } else {
+      durationTierLabel = '$days Hari • Tingkat $tierName';
+    }
 
     return showModalBottomSheet<bool>(
       context: context,
@@ -283,20 +300,29 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
       builder: (ctx) {
         bool check1 = false;
         bool check2 = false;
-        const targetKeyword = 'BISMILLAH';
 
-        // Candidate pool tiles (scrambled order for gamified Duolingo-style tapping)
-        const candidatePool = [
-          _PledgeTile(0, 'M'),
-          _PledgeTile(1, 'B'),
-          _PledgeTile(2, 'I'),
-          _PledgeTile(3, 'S'),
-          _PledgeTile(4, 'L'),
-          _PledgeTile(5, 'A'),
-          _PledgeTile(6, 'H'),
-          _PledgeTile(7, 'L'),
-          _PledgeTile(8, 'I'),
-        ];
+        // Multi-language target setup (Arabic uses 2 word blocks, others use 9 letters)
+        final targetKeyword = isAr ? 'بِسْمِ اللَّهِ' : 'BISMILLAH';
+        final List<String> targetSegments =
+            isAr ? const ['بِسْمِ', 'اللَّهِ'] : 'BISMILLAH'.split('');
+
+        // Scrambled candidate pool
+        final List<_PledgeTile> candidatePool = isAr
+            ? const [
+                _PledgeTile(0, 'اللَّهِ'),
+                _PledgeTile(1, 'بِسْمِ'),
+              ]
+            : const [
+                _PledgeTile(0, 'M'),
+                _PledgeTile(1, 'B'),
+                _PledgeTile(2, 'I'),
+                _PledgeTile(3, 'S'),
+                _PledgeTile(4, 'L'),
+                _PledgeTile(5, 'A'),
+                _PledgeTile(6, 'H'),
+                _PledgeTile(7, 'L'),
+                _PledgeTile(8, 'I'),
+              ];
         final List<_PledgeTile> selectedTiles = [];
 
         return StatefulBuilder(
@@ -306,9 +332,11 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
               mediaQuery.padding.bottom,
               mediaQuery.viewPadding.bottom,
             );
-            final currentSpelling = selectedTiles.map((t) => t.char).join();
+            final currentSpelling = isAr
+                ? selectedTiles.map((t) => t.char).join(' ')
+                : selectedTiles.map((t) => t.char).join();
             final isKeywordMatched = currentSpelling == targetKeyword;
-            final isPoolFull = selectedTiles.length == targetKeyword.length;
+            final isPoolFull = selectedTiles.length == targetSegments.length;
             final isWrongSpelling = isPoolFull && !isKeywordMatched;
             final canConfirm = check1 && check2 && isKeywordMatched;
 
@@ -402,7 +430,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        '$days ${isEn ? "Days" : "Hari"} • ${isEn ? "Tier" : "Tingkat"} $tierName',
+                                        durationTierLabel,
                                         style: const TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w700,
@@ -467,245 +495,349 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                           ),
                           const SizedBox(height: 16),
 
-                          // Verification header
-                          // Verification header
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  Translations.get(lang, 'type_to_confirm', {'keyword': targetKeyword}),
-                                  style: const TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0D5C3A),
-                                  ),
-                                ),
+                          // Interactive Pledge Verification Stage Card
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                            decoration: BoxDecoration(
+                              color: isKeywordMatched
+                                  ? const Color(0xFF0D5C3A).withValues(alpha: 0.05)
+                                  : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isKeywordMatched
+                                    ? const Color(0xFF0D5C3A).withValues(alpha: 0.35)
+                                    : Colors.grey.shade200,
+                                width: 1.2,
                               ),
-                              if (isKeywordMatched)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF0D5C3A).withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF0D5C3A)),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        Translations.get(lang, 'pledge_verified_badge'),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Header inside verification card
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        Translations.get(lang, 'type_to_confirm', {'keyword': targetKeyword}),
                                         style: const TextStyle(
-                                          fontSize: 11,
+                                          fontSize: 12.5,
                                           fontWeight: FontWeight.bold,
                                           color: Color(0xFF0D5C3A),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-
-                          // Answer Tray (Duolingo Style Slots)
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(targetKeyword.length, (index) {
-                                final isFilled = index < selectedTiles.length;
-                                final char = isFilled ? selectedTiles[index].char : '';
-                                final isTargetMatch = isFilled && char == targetKeyword[index];
-
-                                return GestureDetector(
-                                  onTap: isFilled
-                                      ? () {
-                                          HapticFeedback.selectionClick();
-                                          setModalState(() {
-                                            selectedTiles.removeAt(index);
-                                          });
-                                        }
-                                      : null,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 160),
-                                    margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                                    width: 29,
-                                    height: 39,
-                                    decoration: BoxDecoration(
-                                      color: isKeywordMatched
-                                          ? const Color(0xFF0D5C3A)
-                                          : (isFilled
-                                              ? (isTargetMatch
-                                                  ? const Color(0xFF0D5C3A).withValues(alpha: 0.08)
-                                                  : const Color(0xFFEF4444).withValues(alpha: 0.08))
-                                              : const Color(0xFFF8FAFC)),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: isKeywordMatched
-                                            ? const Color(0xFF083C25)
-                                            : (isFilled
-                                                ? (isTargetMatch
-                                                    ? const Color(0xFF0D5C3A)
-                                                    : const Color(0xFFEF4444))
-                                                : const Color(0xFFCBD5E1)),
-                                        width: isFilled || isKeywordMatched ? 1.6 : 1.0,
-                                      ),
-                                      boxShadow: isFilled
-                                          ? [
-                                              BoxShadow(
-                                                color: isKeywordMatched
-                                                    ? const Color(0xFF083C25)
-                                                    : (isTargetMatch
-                                                        ? const Color(0xFF0D5C3A).withValues(alpha: 0.25)
-                                                        : const Color(0xFFEF4444).withValues(alpha: 0.25)),
-                                                offset: const Offset(0, 2.5),
-                                                blurRadius: 0,
+                                    ),
+                                    if (isKeywordMatched)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF0D5C3A).withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF0D5C3A)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              Translations.get(lang, 'pledge_verified_badge'),
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF0D5C3A),
                                               ),
-                                            ]
-                                          : null,
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      isFilled ? char : targetKeyword[index],
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                        color: isKeywordMatched
-                                            ? Colors.white
-                                            : (isFilled
-                                                ? (isTargetMatch
-                                                    ? const Color(0xFF0D5C3A)
-                                                    : const Color(0xFFDC2626))
-                                                : const Color(0xFF94A3B8).withValues(alpha: 0.35)),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                          ),
-
-                          if (isWrongSpelling) ...[
-                            const SizedBox(height: 6),
-                            Center(
-                              child: Text(
-                                Translations.get(lang, 'tiles_incorrect_order'),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFFDC2626),
-                                  fontWeight: FontWeight.w600,
+                                  ],
                                 ),
-                              ),
-                            ),
-                          ],
+                                const SizedBox(height: 12),
 
-                          const SizedBox(height: 12),
+                                // Answer Tray (Slots)
+                                Directionality(
+                                  textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: List.generate(targetSegments.length, (index) {
+                                        final isFilled = index < selectedTiles.length;
+                                        final char = isFilled ? selectedTiles[index].char : '';
+                                        final isTargetMatch = isFilled && char == targetSegments[index];
 
-                          // Candidate Tiles (Bank Huruf - Duolingo 3D Button Style)
-                          Column(
-                            children: [
-                              // Row 1 (5 tiles)
-                              Row(
-                                children: candidatePool.sublist(0, 5).map((tile) {
-                                  final isUsed = selectedTiles.any((t) => t.id == tile.id);
-                                  return _buildPledgeTileButton(
-                                    tile: tile,
-                                    isUsed: isUsed,
-                                    onTap: () {
-                                      if (selectedTiles.length < targetKeyword.length) {
-                                        HapticFeedback.lightImpact();
-                                        setModalState(() {
-                                          selectedTiles.add(tile);
-                                        });
-                                        if (selectedTiles.length == targetKeyword.length &&
-                                            selectedTiles.map((t) => t.char).join() == targetKeyword) {
-                                          HapticFeedback.mediumImpact();
-                                        }
-                                      }
-                                    },
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 4),
-
-                              // Row 2 (4 tiles + 1 Reset button)
-                              Row(
-                                children: [
-                                  ...candidatePool.sublist(5, 9).map((tile) {
-                                    final isUsed = selectedTiles.any((t) => t.id == tile.id);
-                                    return _buildPledgeTileButton(
-                                      tile: tile,
-                                      isUsed: isUsed,
-                                      onTap: () {
-                                        if (selectedTiles.length < targetKeyword.length) {
-                                          HapticFeedback.lightImpact();
-                                          setModalState(() {
-                                            selectedTiles.add(tile);
-                                          });
-                                          if (selectedTiles.length == targetKeyword.length &&
-                                              selectedTiles.map((t) => t.char).join() == targetKeyword) {
-                                            HapticFeedback.mediumImpact();
-                                          }
-                                        }
-                                      },
-                                    );
-                                  }),
-                                  // Reset Button
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3.5),
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        child: InkWell(
-                                          onTap: selectedTiles.isNotEmpty
+                                        return GestureDetector(
+                                          onTap: isFilled
                                               ? () {
                                                   HapticFeedback.selectionClick();
                                                   setModalState(() {
-                                                    selectedTiles.clear();
+                                                    selectedTiles.removeAt(index);
                                                   });
                                                 }
                                               : null,
-                                          borderRadius: BorderRadius.circular(10),
-                                          child: Container(
-                                            height: 46,
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 160),
+                                            margin: EdgeInsets.symmetric(
+                                              horizontal: isAr ? 6.0 : 2.5,
+                                            ),
+                                            width: isAr ? 120 : 29,
+                                            height: isAr ? 46 : 39,
                                             decoration: BoxDecoration(
-                                              color: selectedTiles.isNotEmpty
-                                                  ? const Color(0xFFF1F5F9)
-                                                  : const Color(0xFFF8FAFC),
-                                              borderRadius: BorderRadius.circular(10),
+                                              color: isKeywordMatched
+                                                  ? const Color(0xFF0D5C3A)
+                                                  : (isFilled
+                                                      ? (isTargetMatch
+                                                          ? const Color(0xFF0D5C3A).withValues(alpha: 0.08)
+                                                          : const Color(0xFFEF4444).withValues(alpha: 0.08))
+                                                      : Colors.white),
+                                              borderRadius: BorderRadius.circular(isAr ? 10 : 8),
                                               border: Border.all(
-                                                color: selectedTiles.isNotEmpty
-                                                    ? const Color(0xFFCBD5E1)
-                                                    : const Color(0xFFE2E8F0),
-                                                width: 1.5,
+                                                color: isKeywordMatched
+                                                    ? const Color(0xFF083C25)
+                                                    : (isFilled
+                                                        ? (isTargetMatch
+                                                            ? const Color(0xFF0D5C3A)
+                                                            : const Color(0xFFEF4444))
+                                                        : const Color(0xFFCBD5E1)),
+                                                width: isFilled || isKeywordMatched ? 1.6 : 1.0,
                                               ),
-                                              boxShadow: selectedTiles.isNotEmpty
-                                                  ? const [
+                                              boxShadow: isFilled
+                                                  ? [
                                                       BoxShadow(
-                                                        color: Color(0xFFCBD5E1),
-                                                        offset: Offset(0, 3.2),
+                                                        color: isKeywordMatched
+                                                            ? const Color(0xFF083C25)
+                                                            : (isTargetMatch
+                                                                ? const Color(0xFF0D5C3A).withValues(alpha: 0.25)
+                                                                : const Color(0xFFEF4444).withValues(alpha: 0.25)),
+                                                        offset: const Offset(0, 2.5),
                                                         blurRadius: 0,
                                                       ),
                                                     ]
                                                   : null,
                                             ),
-                                            child: Icon(
-                                              Icons.replay_rounded,
-                                              size: 20,
-                                              color: selectedTiles.isNotEmpty
-                                                  ? const Color(0xFF475569)
-                                                  : Colors.grey.shade300,
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              isFilled ? char : targetSegments[index],
+                                              style: TextStyle(
+                                                fontSize: isAr ? 18 : 16,
+                                                fontWeight: FontWeight.w800,
+                                                color: isKeywordMatched
+                                                    ? Colors.white
+                                                    : (isFilled
+                                                        ? (isTargetMatch
+                                                            ? const Color(0xFF0D5C3A)
+                                                            : const Color(0xFFDC2626))
+                                                        : const Color(0xFF94A3B8).withValues(alpha: 0.35)),
+                                              ),
                                             ),
                                           ),
-                                        ),
+                                        );
+                                      }),
+                                    ),
+                                  ),
+                                ),
+
+                                if (isWrongSpelling) ...[
+                                  const SizedBox(height: 6),
+                                  Center(
+                                    child: Text(
+                                      Translations.get(lang, 'tiles_incorrect_order'),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFFDC2626),
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
                                 ],
-                              ),
-                            ],
+
+                                const SizedBox(height: 12),
+
+                                // Candidate Tiles (Bank Huruf / Kata)
+                                Directionality(
+                                  textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+                                  child: isAr
+                                      ? Row(
+                                          children: [
+                                            ...candidatePool.map((tile) {
+                                              final isUsed = selectedTiles.any((t) => t.id == tile.id);
+                                              return _buildPledgeTileButton(
+                                                tile: tile,
+                                                isUsed: isUsed,
+                                                height: 48,
+                                                fontSize: 19,
+                                                onTap: () {
+                                                  if (selectedTiles.length < targetSegments.length) {
+                                                    HapticFeedback.lightImpact();
+                                                    setModalState(() {
+                                                      selectedTiles.add(tile);
+                                                    });
+                                                    if (selectedTiles.length == targetSegments.length &&
+                                                        selectedTiles.map((t) => t.char).join(' ') == targetKeyword) {
+                                                      HapticFeedback.mediumImpact();
+                                                    }
+                                                  }
+                                                },
+                                              );
+                                            }),
+                                            // Reset Button in Arabic row
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  onTap: selectedTiles.isNotEmpty
+                                                      ? () {
+                                                          HapticFeedback.selectionClick();
+                                                          setModalState(() {
+                                                            selectedTiles.clear();
+                                                          });
+                                                        }
+                                                      : null,
+                                                  borderRadius: BorderRadius.circular(10),
+                                                  child: Container(
+                                                    width: 48,
+                                                    height: 48,
+                                                    decoration: BoxDecoration(
+                                                      color: selectedTiles.isNotEmpty
+                                                          ? const Color(0xFFF1F5F9)
+                                                          : const Color(0xFFF8FAFC),
+                                                      borderRadius: BorderRadius.circular(10),
+                                                      border: Border.all(
+                                                        color: selectedTiles.isNotEmpty
+                                                            ? const Color(0xFFCBD5E1)
+                                                            : const Color(0xFFE2E8F0),
+                                                        width: 1.5,
+                                                      ),
+                                                      boxShadow: selectedTiles.isNotEmpty
+                                                          ? const [
+                                                              BoxShadow(
+                                                                color: Color(0xFFCBD5E1),
+                                                                offset: Offset(0, 3.2),
+                                                                blurRadius: 0,
+                                                              ),
+                                                            ]
+                                                          : null,
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.replay_rounded,
+                                                      size: 20,
+                                                      color: selectedTiles.isNotEmpty
+                                                          ? const Color(0xFF475569)
+                                                          : Colors.grey.shade300,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Column(
+                                          children: [
+                                            // Row 1 (5 tiles)
+                                            Row(
+                                              children: candidatePool.sublist(0, 5).map((tile) {
+                                                final isUsed = selectedTiles.any((t) => t.id == tile.id);
+                                                return _buildPledgeTileButton(
+                                                  tile: tile,
+                                                  isUsed: isUsed,
+                                                  onTap: () {
+                                                    if (selectedTiles.length < targetSegments.length) {
+                                                      HapticFeedback.lightImpact();
+                                                      setModalState(() {
+                                                        selectedTiles.add(tile);
+                                                      });
+                                                      if (selectedTiles.length == targetSegments.length &&
+                                                          selectedTiles.map((t) => t.char).join() == targetKeyword) {
+                                                        HapticFeedback.mediumImpact();
+                                                      }
+                                                    }
+                                                  },
+                                                );
+                                              }).toList(),
+                                            ),
+                                            const SizedBox(height: 4),
+
+                                            // Row 2 (4 tiles + 1 Reset button)
+                                            Row(
+                                              children: [
+                                                ...candidatePool.sublist(5, 9).map((tile) {
+                                                  final isUsed = selectedTiles.any((t) => t.id == tile.id);
+                                                  return _buildPledgeTileButton(
+                                                    tile: tile,
+                                                    isUsed: isUsed,
+                                                    onTap: () {
+                                                      if (selectedTiles.length < targetSegments.length) {
+                                                        HapticFeedback.lightImpact();
+                                                        setModalState(() {
+                                                          selectedTiles.add(tile);
+                                                        });
+                                                        if (selectedTiles.length == targetSegments.length &&
+                                                            selectedTiles.map((t) => t.char).join() == targetKeyword) {
+                                                          HapticFeedback.mediumImpact();
+                                                        }
+                                                      }
+                                                    },
+                                                  );
+                                                }),
+                                                // Reset Button
+                                                Expanded(
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3.5),
+                                                    child: Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        onTap: selectedTiles.isNotEmpty
+                                                            ? () {
+                                                                HapticFeedback.selectionClick();
+                                                                setModalState(() {
+                                                                  selectedTiles.clear();
+                                                                });
+                                                              }
+                                                            : null,
+                                                        borderRadius: BorderRadius.circular(10),
+                                                        child: Container(
+                                                          height: 44,
+                                                          decoration: BoxDecoration(
+                                                            color: selectedTiles.isNotEmpty
+                                                                ? const Color(0xFFF1F5F9)
+                                                                : const Color(0xFFF8FAFC),
+                                                            borderRadius: BorderRadius.circular(10),
+                                                            border: Border.all(
+                                                              color: selectedTiles.isNotEmpty
+                                                                  ? const Color(0xFFCBD5E1)
+                                                                  : const Color(0xFFE2E8F0),
+                                                              width: 1.5,
+                                                            ),
+                                                            boxShadow: selectedTiles.isNotEmpty
+                                                                ? const [
+                                                                    BoxShadow(
+                                                                      color: Color(0xFFCBD5E1),
+                                                                      offset: Offset(0, 3.2),
+                                                                      blurRadius: 0,
+                                                                    ),
+                                                                  ]
+                                                                : null,
+                                                          ),
+                                                          child: Icon(
+                                                            Icons.replay_rounded,
+                                                            size: 20,
+                                                            color: selectedTiles.isNotEmpty
+                                                                ? const Color(0xFF475569)
+                                                                : Colors.grey.shade300,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 14),
                         ],

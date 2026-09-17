@@ -28,6 +28,12 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final appState = Provider.of<AppState>(context, listen: false);
       appState.refreshDeviceAdminStatus();
+      if (appState.isStrictActiveNow) {
+        setState(() {
+          _isStrictModeSelected = true;
+          _selectedDays = appState.strictModeDays;
+        });
+      }
     });
   }
 
@@ -103,6 +109,39 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
       setState(() => _isProcessing = true);
       await appState.enableStrictMode(_selectedDays);
     } else {
+      if (appState.isStrictActiveNow) {
+        final days = appState.remainingStrictDuration.inDays;
+        final daysStr = days > 0 ? '$days' : '<1';
+        final msg = lang == 'id'
+            ? 'Komitmen Mode Ketat sedang berjalan ($daysStr hari tersisa). Anda tidak dapat beralih ke Mode Standar hingga periode selesai.'
+            : 'Strict Mode commitment is active ($daysStr days remaining). You cannot switch to Standard Mode until the period expires.';
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Icon(Icons.lock_rounded, color: Colors.red.shade700),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    lang == 'id' ? 'Komitmen Terkunci' : 'Commitment Locked',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(msg, style: const TextStyle(fontSize: 14, height: 1.4)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
       setState(() => _isProcessing = true);
       await appState.enableStandardMode();
     }
@@ -621,10 +660,29 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                 _buildModeCard(
                   isSelected: !_isStrictModeSelected,
                   title: Translations.get(lang, 'standard_mode_title'),
-                  badgeText: isEn ? 'FLEXIBLE' : 'FLEKSIBEL',
+                  badgeText: appState.isStrictActiveNow
+                      ? (isEn ? 'LOCKED' : 'TERKUNCI')
+                      : (isEn ? 'FLEXIBLE' : 'FLEKSIBEL'),
                   isRecommended: false,
-                  icon: Icons.touch_app_rounded,
-                  onTap: () => setState(() => _isStrictModeSelected = false),
+                  icon: appState.isStrictActiveNow ? Icons.lock_outline_rounded : Icons.touch_app_rounded,
+                  onTap: () {
+                    if (appState.isStrictActiveNow) {
+                      final days = appState.remainingStrictDuration.inDays;
+                      final daysStr = days > 0 ? '$days' : '<1';
+                      final msg = lang == 'id'
+                          ? 'Mode Ketat sedang aktif ($daysStr hari tersisa). Anda tidak dapat mengubah ke Mode Standar hingga periode selesai.'
+                          : 'Strict Mode is currently active ($daysStr days remaining). You cannot switch to Standard Mode until the period expires.';
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(msg),
+                          backgroundColor: Colors.red.shade800,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+                    setState(() => _isStrictModeSelected = false);
+                  },
                   child: Text(
                     Translations.get(lang, 'standard_mode_desc'),
                     style: TextStyle(

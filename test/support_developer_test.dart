@@ -85,7 +85,7 @@ void main() {
       expect(AppState.getSupportUrl('id'), contains('trakteer.id'));
     });
 
-    testWidgets('BlockedAppScreen displays current live point rules (+2-3 Poin/Ayat, +2-5 Poin, +1-4 Poin)', (tester) async {
+    testWidgets('BlockedAppScreen displays current live point rules (+5-7 Poin/Ayat Boost, +2-5 Poin, +1-4 Poin)', (tester) async {
       final appState = AppState(prefs);
       await tester.pumpWidget(
         ChangeNotifierProvider<AppState>.value(
@@ -97,7 +97,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('+2-3 Poin/Ayat'), findsOneWidget);
+      expect(find.text('+5-7 Poin/Ayat (Boost: 10/10)'), findsOneWidget);
       expect(find.text('+2-5 Poin'), findsOneWidget);
       expect(find.text('+1-4 Poin'), findsOneWidget);
     });

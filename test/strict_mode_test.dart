@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:muslim_launcher_2/providers/app_state.dart';
 import 'package:muslim_launcher_2/screens/home/permission_blocked_overlay.dart';
+import 'package:provider/provider.dart';
+import 'package:muslim_launcher_2/screens/onboarding/mode_selection_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -110,6 +112,38 @@ void main() {
 
       state.clearStandardReflection();
       expect(state.isStandardReflectionActive, isFalse);
+    });
+
+    testWidgets('ModeSelectionScreen prevents switching to Standard Mode when Strict Mode is active', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'is_strict_mode': true,
+        'strict_mode_days': 30,
+        'strict_mode_until_ms': DateTime.now().millisecondsSinceEpoch + (30 * 24 * 60 * 60 * 1000),
+        'languageCode': 'id',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: ModeSelectionScreen(isOnboarding: false),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final standardCard = find.text('Mode Standar');
+      await tester.scrollUntilVisible(standardCard, 200);
+      await tester.pumpAndSettle();
+      expect(standardCard, findsOneWidget);
+
+      await tester.tap(standardCard);
+      await tester.pump();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Mode Ketat sedang aktif'), findsOneWidget);
     });
   });
 }

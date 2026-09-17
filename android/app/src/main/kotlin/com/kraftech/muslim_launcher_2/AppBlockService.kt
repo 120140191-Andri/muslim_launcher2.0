@@ -62,6 +62,9 @@ class AppBlockService : AccessibilityService() {
         @Volatile
         var lastStandardReflectionSource: String = "settings"
 
+        @Volatile
+        private var serviceConnectedTime: Long = 0L
+
         fun allowStandardSettingsTemporarily(durationMillis: Long) {
             val expiry = System.currentTimeMillis() + durationMillis
             standardModeBypassExpiry = expiry
@@ -1053,6 +1056,7 @@ class AppBlockService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
+        serviceConnectedTime = System.currentTimeMillis()
 
         try {
             val info = serviceInfo ?: android.accessibilityservice.AccessibilityServiceInfo()

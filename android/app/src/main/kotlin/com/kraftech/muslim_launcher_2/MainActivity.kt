@@ -512,7 +512,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
-        AppBlockService.resetStandardSettingsBypass()
+        AppBlockService.resetStandardSettingsBypass(force = true)
         // Replay any pending block events that arrived while the activity was paused.
         // The accessibility service may have set pendingBlockedPackage etc. while we were
         // in background — now that we're back, deliver them to Flutter.

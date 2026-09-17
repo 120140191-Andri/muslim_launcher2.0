@@ -108,10 +108,10 @@ class AppBlockService : AccessibilityService() {
             Log.d("AppBlockService", "STANDARD MODE SETTINGS BYPASS GRANTED until $standardModeBypassExpiry (visit active)")
         }
 
-        fun resetStandardSettingsBypass() {
+        fun resetStandardSettingsBypass(force: Boolean = false) {
             val now = System.currentTimeMillis()
             // 3.5s grace period immediately after clicking "Lewati" to protect screen launch transition
-            if ((now - lastBypassGrantTime) < 3500L) {
+            if (!force && (now - lastBypassGrantTime) < 3500L) {
                 return
             }
             standardModeBypassExpiry = 0L
@@ -119,7 +119,7 @@ class AppBlockService : AccessibilityService() {
             lastTriggeredPackage = null
             lastTriggeredTime = 0L
             MainActivity.resetReflectionDebounce()
-            Log.d("AppBlockService", "STANDARD SETTINGS BYPASS & DEBOUNCE RESET (session ended)")
+            Log.d("AppBlockService", "STANDARD SETTINGS BYPASS & DEBOUNCE RESET (session ended, force=$force)")
         }
 
         fun prepareSupportDeveloperBypass() {
@@ -701,6 +701,16 @@ class AppBlockService : AccessibilityService() {
             return false
         }
 
+        private fun getTopmostNode(node: android.view.accessibility.AccessibilityNodeInfo?): android.view.accessibility.AccessibilityNodeInfo? {
+            var curr = node ?: return null
+            try {
+                while (curr.parent != null) {
+                    curr = curr.parent
+                }
+            } catch (_: Exception) {}
+            return curr
+        }
+
         fun isAccessibilityScreenTargetingUs(
             rootNode: android.view.accessibility.AccessibilityNodeInfo?,
             eventText: String,
@@ -709,25 +719,77 @@ class AppBlockService : AccessibilityService() {
         ): Boolean {
             val cleanClass = className.lowercase()
             val cleanPkg = packageName.lowercase()
-            val isAccessibilityContext = cleanClass.contains("accessibility") ||
-                    cleanPkg.contains("accessibility") ||
-                    eventText.contains("aksesibilitas") ||
-                    eventText.contains("accessibility") ||
-                    cleanClass.contains("subsettings") ||
-                    cleanClass.contains("settingsactivity") ||
-                    cleanClass.contains("settings$") ||
-                    cleanClass.contains("preference")
 
-            if (!isAccessibilityContext) return false
+            // Resolve true root of the window (traversing upwards if rootNode is a child node)
+            val searchNode = run {
+                var curr = rootNode
+                try {
+                    while (curr?.parent != null) {
+                        curr = curr.parent
+                    }
+                } catch (_: Exception) {}
+                curr
+            }
 
+            // CRITICAL: If screen is specifically App Details / Info (InstalledAppDetails, Uninstall/Force Stop buttons):
+            // It is 100% App Info, NOT Accessibility!
+            val isExplicitAppDetailsClass = cleanClass.contains("installedappdetails") ||
+                    cleanClass.contains("appinfodashboardactivity") ||
+                    cleanClass.contains("applicationsdetailsactivity") ||
+                    cleanClass.contains("appdetail") ||
+                    cleanClass.contains("applicationdetail") ||
+                    cleanClass.contains("appinfo") ||
+                    cleanClass.contains("uninstalleractivity") ||
+                    cleanClass.contains("uninstallalertactivity") ||
+                    cleanClass.contains("uninstallconfirmation") ||
+                    cleanClass.contains("secappinfo")
+
+            if (isExplicitAppDetailsClass || hasAppDetailAction(searchNode, eventText)) {
+                return false
+            }
+
+            // 1. DEFINITIVE PROOF: Accessibility Service Description from strings.xml
+            // Android Settings renders this description ONLY on the accessibility service toggle screen!
+            if (searchNode != null) {
+                try {
+                    val desc1 = searchNode.findAccessibilityNodeInfosByText("Membantu Anda tetap fokus")
+                    val desc2 = searchNode.findAccessibilityNodeInfosByText("App Blocker")
+                    val desc3 = searchNode.findAccessibilityNodeInfosByText("belajar Quran")
+                    val desc4 = searchNode.findAccessibilityNodeInfosByText("waktu ibadah")
+                    val desc5 = searchNode.findAccessibilityNodeInfosByText("membatasi penggunaan aplikasi")
+                    if (!desc1.isNullOrEmpty() || !desc2.isNullOrEmpty() || !desc3.isNullOrEmpty() || !desc4.isNullOrEmpty() || !desc5.isNullOrEmpty()) {
+                        Log.d("AppBlockService", "Accessibility target confirmed via unique service description")
+                        return true
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // 2. DEFINITIVE SERVICE TOGGLE LABELS (matches AOSP, Samsung, Xiaomi HyperOS/MIUI, Oppo, Vivo, Transsion)
+            if (searchNode != null) {
+                try {
+                    val use1 = searchNode.findAccessibilityNodeInfosByText("Gunakan Muslim Launcher")
+                    val use2 = searchNode.findAccessibilityNodeInfosByText("Use Muslim Launcher")
+                    val use3 = searchNode.findAccessibilityNodeInfosByText("Pintasan Muslim Launcher")
+                    val use4 = searchNode.findAccessibilityNodeInfosByText("Muslim Launcher shortcut")
+                    val use5 = searchNode.findAccessibilityNodeInfosByText("Izinkan Muslim Launcher")
+                    val use6 = searchNode.findAccessibilityNodeInfosByText("Allow Muslim Launcher")
+                    if (!use1.isNullOrEmpty() || !use2.isNullOrEmpty() || !use3.isNullOrEmpty() ||
+                        !use4.isNullOrEmpty() || !use5.isNullOrEmpty() || !use6.isNullOrEmpty()) {
+                        Log.d("AppBlockService", "Accessibility target confirmed via specific service toggle title")
+                        return true
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // 3. Check if our app is mentioned in eventText or searchNode
             val textMatches = eventText.contains("muslim launcher") ||
                     eventText.contains("com.kraftech.muslim_launcher_2")
             var nodeMatches = false
-            if (rootNode != null) {
+            if (searchNode != null) {
                 try {
-                    val matchesPkg = rootNode.findAccessibilityNodeInfosByText("com.kraftech.muslim_launcher_2")
-                    val matchesName1 = rootNode.findAccessibilityNodeInfosByText("Muslim Launcher")
-                    val matchesName2 = rootNode.findAccessibilityNodeInfosByText("muslim launcher")
+                    val matchesPkg = searchNode.findAccessibilityNodeInfosByText("com.kraftech.muslim_launcher_2")
+                    val matchesName1 = searchNode.findAccessibilityNodeInfosByText("Muslim Launcher")
+                    val matchesName2 = searchNode.findAccessibilityNodeInfosByText("muslim launcher")
                     nodeMatches = !matchesPkg.isNullOrEmpty() || !matchesName1.isNullOrEmpty() || !matchesName2.isNullOrEmpty()
                 } catch (_: Exception) {}
             }
@@ -735,34 +797,7 @@ class AppBlockService : AccessibilityService() {
             val mentionsOurApp = textMatches || nodeMatches
             if (!mentionsOurApp) return false
 
-            // 1. Explicit accessibility service toggle class across OEMs (AOSP, Samsung, Xiaomi, Oppo, Vivo, etc.)
-            if (cleanClass.contains("toggleaccessibilityservice") ||
-                cleanClass.contains("accessibilityservicesettings") ||
-                cleanClass.contains("accessibilityservicepreference") ||
-                cleanClass.contains("togglefeaturepreference") ||
-                cleanClass.contains("secaccessibilityservice") ||
-                cleanClass.contains("miuiaccessibilityservicedetails") ||
-                cleanClass.contains("accessibilitydetail")) {
-                return true
-            }
-
-            // 2. Known Switch/Toggle View IDs on accessibility service screen
-            val knownSwitchIds = listOf(
-                "android:id/switch_widget",
-                "com.android.settings:id/switch_widget",
-                "com.android.settings:id/switch_bar",
-                "com.android.settings:id/main_switch_bar",
-                "com.android.settings:id/action_bar_switch",
-                "com.android.settings:id/switch_text"
-            )
-            for (swId in knownSwitchIds) {
-                try {
-                    val swNode = rootNode?.findAccessibilityNodeInfosByViewId(swId)
-                    if (!swNode.isNullOrEmpty()) return true
-                } catch (_: Exception) {}
-            }
-
-            // 3. Specific service toggle / action / confirmation keywords
+            // 4. Confirmation dialog / action keywords on screen (e.g. when turning off or configuring)
             val a11yActionKeywords = listOf(
                 "gunakan layanan", "use service",
                 "gunakan muslim launcher", "use muslim launcher",
@@ -773,37 +808,76 @@ class AppBlockService : AccessibilityService() {
                 "matikan muslim launcher", "turn off muslim launcher",
                 "kontrol penuh atas perangkat", "full control of your device",
                 "observasi tindakan anda", "observe your actions",
-                "lihat dan kontrol layar", "view and control screen"
+                "lihat dan kontrol layar", "view and control screen",
+                "peringatan", "warning", "bahaya", "danger",
+                "hentikan layanan", "stop service",
+                "nonaktifkan", "disable"
             )
             for (kw in a11yActionKeywords) {
-                if (eventText.contains(kw)) return true
-                if (rootNode != null) {
+                if (eventText.contains(kw)) {
+                    Log.d("AppBlockService", "Accessibility target confirmed via keyword in eventText: $kw")
+                    return true
+                }
+                if (searchNode != null) {
                     try {
-                        val found = rootNode.findAccessibilityNodeInfosByText(kw)
-                        if (!found.isNullOrEmpty()) return true
+                        val found = searchNode.findAccessibilityNodeInfosByText(kw)
+                        if (!found.isNullOrEmpty()) {
+                            Log.d("AppBlockService", "Accessibility target confirmed via keyword in node: $kw")
+                            return true
+                        }
                     } catch (_: Exception) {}
                 }
             }
 
-            // 4. If eventText explicitly has "muslim launcher" and service action/status words
-            if (textMatches) {
-                val hasServiceAction = eventText.contains("layanan") ||
-                        eventText.contains("service") ||
-                        eventText.contains("pintasan") ||
-                        eventText.contains("shortcut") ||
-                        eventText.contains("aktif") ||
-                        eventText.contains("nonaktif") ||
-                        eventText.contains("hidup") ||
-                        eventText.contains("mati") ||
-                        eventText.contains("on") ||
-                        eventText.contains("off")
-                if (hasServiceAction) return true
+            // 5. Explicit accessibility toggle activity / fragment class across OEMs
+            if (cleanClass.contains("toggleaccessibilityservice") ||
+                cleanClass.contains("accessibilityservicesettings") ||
+                cleanClass.contains("accessibilityservicepreference") ||
+                cleanClass.contains("togglefeaturepreference") ||
+                cleanClass.contains("secaccessibilityservice") ||
+                cleanClass.contains("miuiaccessibilityservicedetails") ||
+                cleanClass.contains("accessibilitydetail") ||
+                cleanClass.contains("accessibilityservicewarning")) {
+                Log.d("AppBlockService", "Accessibility target confirmed via cleanClass: $cleanClass")
+                return true
             }
 
-            // 5. SubSettings / generic settings containing a switch and targeting our app
-            if (rootNode != null && mentionsOurApp) {
-                val hasSwitch = hasSwitchNode(rootNode)
+            // 6. Known Switch/Toggle View IDs across OEMs (AOSP, Samsung, Xiaomi MIUI/HyperOS, Oppo, Vivo)
+            val knownSwitchIds = listOf(
+                "android:id/switch_widget",
+                "com.android.settings:id/switch_widget",
+                "com.android.settings:id/switch_bar",
+                "com.android.settings:id/main_switch_bar",
+                "com.android.settings:id/action_bar_switch",
+                "com.android.settings:id/switch_text",
+                "com.android.settings:id/sliding_button",
+                "com.android.settings:id/checkbox",
+                "android:id/checkbox",
+                "com.android.settings:id/switch_button",
+                "miuix:id/sliding_button"
+            )
+            for (swId in knownSwitchIds) {
+                try {
+                    val swNode = searchNode?.findAccessibilityNodeInfosByViewId(swId)
+                    if (!swNode.isNullOrEmpty()) {
+                        Log.d("AppBlockService", "Accessibility target confirmed via switch ID: $swId")
+                        return true
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // 7. Check if screen contains an active switch or checkable widget in accessibility context (deep scan up to 300 nodes)
+            val isA11yContext = cleanClass.contains("accessibility") ||
+                    cleanPkg.contains("accessibility") ||
+                    eventText.contains("aksesibilitas") ||
+                    eventText.contains("accessibility") ||
+                    cleanClass.contains("subsettings") ||
+                    cleanClass.contains("settingsactivity") ||
+                    cleanClass.contains("settings$")
+            if (isA11yContext && searchNode != null && mentionsOurApp) {
+                val hasSwitch = hasSwitchNode(searchNode)
                 if (hasSwitch) {
+                    Log.d("AppBlockService", "Accessibility target confirmed via switch node in a11y context")
                     return true
                 }
             }
@@ -816,12 +890,15 @@ class AppBlockService : AccessibilityService() {
             val queue = ArrayDeque<android.view.accessibility.AccessibilityNodeInfo>()
             queue.add(node)
             var count = 0
-            while (queue.isNotEmpty() && count < 80) {
+            while (queue.isNotEmpty() && count < 300) {
                 val current = queue.removeFirst()
                 count++
                 val cls = current.className?.toString() ?: ""
                 if (cls.contains("Switch", ignoreCase = true) ||
                     cls.contains("ToggleButton", ignoreCase = true) ||
+                    cls.contains("Sliding", ignoreCase = true) ||
+                    cls.contains("CompoundButton", ignoreCase = true) ||
+                    cls.contains("CheckBox", ignoreCase = true) ||
                     current.isCheckable) {
                     return true
                 }
@@ -849,10 +926,6 @@ class AppBlockService : AccessibilityService() {
                     cleanClass.contains("adminsettings") ||
                     cleanClass.contains("specialaccess") ||
                     cleanPkg.contains("admin") ||
-                    cleanClass.contains("subsettings") ||
-                    cleanClass.contains("settingsactivity") ||
-                    cleanClass.contains("settings$") ||
-                    cleanClass.contains("preference") ||
                     eventText.contains("admin perangkat") ||
                     eventText.contains("aplikasi admin") ||
                     eventText.contains("pengurus perangkat") ||
@@ -1110,7 +1183,7 @@ class AppBlockService : AccessibilityService() {
             // Skip our own app
             if (packageName == this.packageName) {
                 if (hasEnteredBypassedScreen) {
-                    resetStandardSettingsBypass()
+                    resetStandardSettingsBypass(force = true)
                 }
                 return
             }
@@ -1131,7 +1204,7 @@ class AppBlockService : AccessibilityService() {
             }
 
             // 0.0 PRIORITAS 0.0: ANTI-TAMPER SHIELD (STRICT MODE PROTECTION)
-            val activeNode = rootInActiveWindow ?: event.source
+            val activeNode = rootInActiveWindow ?: getTopmostNode(event.source) ?: event.source
 
             if (isStrictActive()) {
                 val isSettingsOrInstaller = isSettingsOrInstallerApp(packageName)
@@ -1162,16 +1235,6 @@ class AppBlockService : AccessibilityService() {
                     val cleanClass = className.lowercase()
                     val eventText = event.text.joinToString(" ").lowercase()
 
-                    // Exclude Device Admin completely from Standard Mode overlay
-                    val isDeviceAdmin = isDeviceAdminScreenTargetingUs(activeNode, eventText, className, packageName) ||
-                            cleanClass.contains("deviceadmin") ||
-                            cleanClass.contains("device_admin") ||
-                            cleanClass.contains("adminsettings") ||
-                            cleanClass.contains("specialaccess")
-                    if (isDeviceAdmin) {
-                        return
-                    }
-
                     // Exclude Autostart & Battery Optimization completely from Standard Mode overlay
                     val isAutostartOrBattery = cleanClass.contains("autostart") ||
                             cleanClass.contains("powerkeeper") ||
@@ -1199,6 +1262,19 @@ class AppBlockService : AccessibilityService() {
                     }
 
                     val targetsAccessibility = isAccessibilityScreenTargetingUs(activeNode, eventText, className, packageName)
+
+                    // Exclude Device Admin completely from Standard Mode overlay (only if NOT an accessibility screen)
+                    if (!targetsAccessibility) {
+                        val isDeviceAdmin = isDeviceAdminScreenTargetingUs(activeNode, eventText, className, packageName) ||
+                                cleanClass.contains("deviceadmin") ||
+                                cleanClass.contains("device_admin") ||
+                                cleanClass.contains("adminsettings") ||
+                                cleanClass.contains("specialaccess")
+                        if (isDeviceAdmin) {
+                            return
+                        }
+                    }
+
                     val targetsAppDetails = !targetsAccessibility && isAppDetailsScreenTargetingUs(activeNode, eventText, className)
 
                     val isTargetingUs = targetsAppDetails || targetsAccessibility
@@ -1221,15 +1297,46 @@ class AppBlockService : AccessibilityService() {
                             hasEnteredBypassedScreen = true
                         }
                     } else {
-                        // In Settings / Accessibility, but NOT on Muslim Launcher screen (e.g. back on the list or other menu)
+                        // User was on Muslim Launcher screen, but backed out to the list / another settings menu
                         if (hasEnteredBypassedScreen) {
-                            resetStandardSettingsBypass()
+                            Log.d("AppBlockService", "User exited Muslim Launcher screen in Settings -> resetting bypass")
+                            resetStandardSettingsBypass(force = true)
                         }
+                    }
+
+                    // Fallback delayed check for activity resume from background (when views take 150-250ms to attach)
+                    if (isWindowState && !isTargetingUs) {
+                        val capturedPkg = packageName
+                        val capturedCls = className
+                        handler.postDelayed({
+                            try {
+                                val curPkg = currentForegroundPackage
+                                if (curPkg?.equals(capturedPkg, ignoreCase = true) == true) {
+                                    val active = rootInActiveWindow ?: getTopmostNode(null)
+                                    if (active != null) {
+                                        val isA11y = isAccessibilityScreenTargetingUs(active, "", capturedCls, capturedPkg)
+                                        val isAppInfo = !isA11y && isAppDetailsScreenTargetingUs(active, "", capturedCls)
+                                        if (isA11y || isAppInfo) {
+                                            val curNow = System.currentTimeMillis()
+                                            if (curNow > standardModeBypassExpiry) {
+                                                val src = if (isA11y) "accessibility" else "settings"
+                                                Log.d("AppBlockService", "STANDARD REFLECTION TRIGGERED (delayed resume check): source=$src")
+                                                lastTriggeredPackage = capturedPkg
+                                                lastTriggeredTime = curNow
+                                                lastStandardReflectionSource = src
+                                                MainActivity.notifyStandardReflectionTriggered()
+                                                bringLauncherToFront("standardReflection", "true", "triggerStandardReflectionScreen", src)
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (_: Exception) {}
+                        }, 250L)
                     }
                 } else {
                     // Navigated away to an app other than Settings / Accessibility
                     if (hasEnteredBypassedScreen) {
-                        resetStandardSettingsBypass()
+                        resetStandardSettingsBypass(force = true)
                     }
                 }
             }

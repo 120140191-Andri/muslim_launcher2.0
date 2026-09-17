@@ -1047,21 +1047,49 @@ class AppBlockService : AccessibilityService() {
                     cleanClass.contains("adminsettings") ||
                     cleanClass.contains("specialaccess") ||
                     cleanPkg.contains("admin") ||
+                    cleanPkg.contains("safecenter") ||
+                    cleanPkg.contains("systemmanager") ||
+                    cleanPkg.contains("phonemanager") ||
+                    cleanPkg.contains("permcenter") ||
+                    cleanPkg.contains("permissionmanager") ||
+                    cleanPkg.contains("securitycenter") ||
+                    cleanPkg.contains("knox") ||
+                    cleanPkg.contains("securitylogagent") ||
                     eventText.contains("admin perangkat") ||
                     eventText.contains("aplikasi admin") ||
                     eventText.contains("pengurus perangkat") ||
+                    eventText.contains("pengelola perangkat") ||
                     eventText.contains("device admin") ||
                     eventText.contains("device administrator") ||
                     eventText.contains("device administrators") ||
                     eventText.contains("device management") ||
+                    eventText.contains("manage device") ||
                     eventText.contains("pentadbir peranti") ||
+                    eventText.contains("toesteladministrateur") ||
+                    eventText.contains("apparaatbeheerder") ||
+                    eventText.contains("cihaz yöneticisi") ||
+                    eventText.contains("cihaz yönetimi") ||
+                    eventText.contains("administrador de dispositivos") ||
+                    eventText.contains("administrador del dispositivo") ||
+                    eventText.contains("administrador do dispositivo") ||
+                    eventText.contains("administrateur de l'appareil") ||
+                    eventText.contains("geräteadministrator") ||
+                    eventText.contains("geräte-administrator") ||
+                    eventText.contains("администратор устройства") ||
+                    eventText.contains("设备管理器") ||
+                    eventText.contains("设备管理") ||
+                    eventText.contains("端末管理者") ||
+                    eventText.contains("デバイス管理者") ||
+                    eventText.contains("مشرف الجهاز") ||
                     eventText.contains("مشرف")
 
             if (!isDeviceAdminContext) return false
 
             val textMatches = eventText.contains("muslim launcher") ||
                     eventText.contains("com.kraftech.muslim_launcher_2") ||
-                    eventText.contains("muslimdeviceadminreceiver")
+                    eventText.contains("muslimdeviceadminreceiver") ||
+                    eventText.contains("melindungi muslim launcher") ||
+                    eventText.contains("komitmen istiqomah")
             var nodeMatches = false
             if (rootNode != null) {
                 try {
@@ -1069,11 +1097,12 @@ class AppBlockService : AccessibilityService() {
                     val matchesName1 = rootNode.findAccessibilityNodeInfosByText("Muslim Launcher")
                     val matchesName2 = rootNode.findAccessibilityNodeInfosByText("muslim launcher")
                     val matchesReceiver = rootNode.findAccessibilityNodeInfosByText("MuslimDeviceAdminReceiver")
-                    nodeMatches = !matchesPkg.isNullOrEmpty() || !matchesName1.isNullOrEmpty() || !matchesName2.isNullOrEmpty() || !matchesReceiver.isNullOrEmpty()
+                    val matchesDesc = rootNode.findAccessibilityNodeInfosByText("Melindungi Muslim Launcher")
+                    nodeMatches = !matchesPkg.isNullOrEmpty() || !matchesName1.isNullOrEmpty() || !matchesName2.isNullOrEmpty() || !matchesReceiver.isNullOrEmpty() || !matchesDesc.isNullOrEmpty()
                 } catch (_: Exception) {}
             }
 
-            val mentionsOurApp = textMatches || nodeMatches || cleanClass.contains("deviceadminadd")
+            val mentionsOurApp = textMatches || nodeMatches || cleanClass.contains("deviceadminadd") || eventText.contains("melindungi muslim launcher")
             if (!mentionsOurApp) return false
 
             // Screen is in a Device Admin context and mentions Muslim Launcher
@@ -1470,29 +1499,29 @@ class AppBlockService : AccessibilityService() {
             // 0.00 BYPASS: If user explicitly requested Device Admin activation in our app, allow full interaction on Settings / Admin screens
             val isDeviceAdminActivationBypass = now < deviceAdminActivationBypassUntil
             if (isDeviceAdminActivationBypass) {
-                if (isDeviceAdminActive(this)) {
-                    deviceAdminActivationBypassUntil = 0L
-                    Log.d("AppBlockService", "Device Admin is now ACTIVE, activation bypass completed successfully.")
-                } else {
-                    val cleanPkg = packageName.lowercase()
-                    val cleanCls = className.lowercase()
-                    val isSettingsOrAdminOrSecurity = isSettingsOrInstallerApp(packageName) ||
-                            cleanPkg.contains("settings") ||
-                            cleanPkg.contains("admin") ||
-                            cleanPkg.contains("security") ||
-                            cleanPkg.contains("permission") ||
-                            cleanCls.contains("admin") ||
-                            cleanCls.contains("deviceadmin") ||
-                            cleanCls.contains("specialaccess")
+                val cleanPkg = packageName.lowercase()
+                val cleanCls = className.lowercase()
+                val isSettingsOrAdminOrSecurity = isSettingsOrInstallerApp(packageName) ||
+                        cleanPkg.contains("settings") ||
+                        cleanPkg.contains("admin") ||
+                        cleanPkg.contains("security") ||
+                        cleanPkg.contains("permission") ||
+                        cleanPkg.contains("safecenter") ||
+                        cleanPkg.contains("systemmanager") ||
+                        cleanPkg.contains("phonemanager") ||
+                        cleanPkg.contains("permcenter") ||
+                        cleanPkg.contains("securitycenter") ||
+                        cleanCls.contains("admin") ||
+                        cleanCls.contains("deviceadmin") ||
+                        cleanCls.contains("specialaccess")
 
-                    if (isSettingsOrAdminOrSecurity) {
-                        val isExplicitUninstall = cleanCls.contains("uninstalleractivity") ||
-                                cleanCls.contains("uninstallalertactivity") ||
-                                cleanCls.contains("uninstallconfirmation")
-                        if (!isExplicitUninstall) {
-                            Log.d("AppBlockService", "Allowing Device Admin activation screen during active activation bypass window: pkg=$packageName cls=$className")
-                            return
-                        }
+                if (isSettingsOrAdminOrSecurity) {
+                    val isExplicitUninstall = cleanCls.contains("uninstalleractivity") ||
+                            cleanCls.contains("uninstallalertactivity") ||
+                            cleanCls.contains("uninstallconfirmation")
+                    if (!isExplicitUninstall) {
+                        Log.d("AppBlockService", "Allowing Device Admin activation screen during active activation bypass window: pkg=$packageName cls=$className")
+                        return
                     }
                 }
             }
@@ -1500,7 +1529,14 @@ class AppBlockService : AccessibilityService() {
             if (isStrictActive()) {
                 val isSettingsOrInstaller = isSettingsOrInstallerApp(packageName)
                 val isA11yContext = packageName.contains("accessibility") || className.lowercase().contains("accessibility")
-                val isDeviceAdminContext = packageName.contains("admin") ||
+                val cleanPkg = packageName.lowercase()
+                val isDeviceAdminContext = cleanPkg.contains("admin") ||
+                        cleanPkg.contains("safecenter") ||
+                        cleanPkg.contains("securitycenter") ||
+                        cleanPkg.contains("systemmanager") ||
+                        cleanPkg.contains("phonemanager") ||
+                        cleanPkg.contains("permcenter") ||
+                        cleanPkg.contains("knox") ||
                         className.lowercase().contains("deviceadmin") ||
                         className.lowercase().contains("device_admin") ||
                         className.lowercase().contains("adminsettings") ||

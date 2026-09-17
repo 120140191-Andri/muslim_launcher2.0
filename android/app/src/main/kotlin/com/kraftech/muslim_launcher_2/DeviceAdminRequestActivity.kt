@@ -68,10 +68,14 @@ class DeviceAdminRequestActivity : Activity() {
         try {
             startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN)
         } catch (e: Exception) {
-            Log.e(TAG, "startActivityForResult failed: ${e.message}, falling back to security settings")
+            Log.e(TAG, "startActivityForResult failed: ${e.message}, falling back to admin/security settings")
             try {
-                startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
-            } catch (_: Exception) {}
+                startActivity(Intent("android.app.action.DEVICE_ADMIN_SETTINGS"))
+            } catch (_: Exception) {
+                try {
+                    startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
+                } catch (_: Exception) {}
+            }
             finish()
         }
     }
@@ -81,9 +85,9 @@ class DeviceAdminRequestActivity : Activity() {
         if (requestCode == REQUEST_CODE_ENABLE_ADMIN) {
             val isActive = AppBlockService.isDeviceAdminActive(this)
             Log.d(TAG, "onActivityResult: resultCode=$resultCode, isActive=$isActive")
-            if (isActive) {
-                AppBlockService.deviceAdminActivationBypassUntil = 0L
-            }
+            // Keep activation bypass active for a brief buffer while OEM window
+            // closing animation finishes and returns safely to MainActivity
+            AppBlockService.deviceAdminActivationBypassUntil = System.currentTimeMillis() + if (isActive) 5000L else 3000L
         }
         finish()
     }

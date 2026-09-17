@@ -1956,11 +1956,13 @@ class AppState extends ChangeNotifier {
       return true;
     }
 
-    // 6. Adult Leaked Content & Storage Hubs (TeraBox)
+    // 6. Adult Leaked Content & Storage Hubs (TeraBox, SlikDrive)
     if (pkg.contains('terabox') ||
         name.contains('terabox') ||
         pkg.contains('dubox') ||
-        name.contains('dubox')) {
+        name.contains('dubox') ||
+        pkg.contains('slikdrive') ||
+        name.contains('slikdrive')) {
       return true;
     }
 
@@ -2009,6 +2011,9 @@ class AppState extends ChangeNotifier {
       '.xxx',
       '.porn',
       '.adult',
+      'cd.slikdrive.com',
+      'slikdrive.com',
+      'slikdrive',
     ];
     for (final kw in adultCoreKeywords) {
       if (pkg.contains(kw) || name.contains(kw)) return true;

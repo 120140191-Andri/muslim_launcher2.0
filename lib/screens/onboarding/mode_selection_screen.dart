@@ -587,6 +587,36 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                           _buildDurationChip(90, 'duration_90_days', 'duration_90_subtitle', lang),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D5C3A).withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF0D5C3A).withValues(alpha: 0.12),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.workspace_premium_rounded, size: 15, color: Color(0xFF0D5C3A)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                Translations.get(lang, 'duration_${_selectedDays}_desc'),
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade800,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 16),
 
                       // Device Admin Status
@@ -961,14 +991,25 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                   color: isSelected ? Colors.white : const Color(0xFF1E293B),
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                days == 30 ? 'Default' : (days == 60 ? 'Level 2' : 'Reboot'),
-                style: TextStyle(
-                  fontSize: 10,
+              const SizedBox(height: 3),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withValues(alpha: 0.8)
-                      : Colors.grey.shade600,
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : const Color(0xFF0D5C3A).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  Translations.get(lang, subKey),
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                    color: isSelected
+                        ? Colors.white
+                        : const Color(0xFF0D5C3A),
+                  ),
                 ),
               ),
             ],

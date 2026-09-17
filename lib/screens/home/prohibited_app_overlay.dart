@@ -31,16 +31,25 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
     final isAdultApp = AppState.isExplicitAdultApp(widget.packageName, appName);
     final isGamblingApp = AppState.isGamblingApp(widget.packageName, appName);
 
+    final bool isWebTarget = widget.packageName.toLowerCase().contains('konten dewasa') ||
+        widget.packageName.toLowerCase().contains('judi online') ||
+        widget.packageName.toLowerCase().startsWith('judi') ||
+        widget.packageName.toLowerCase().startsWith('dewasa') ||
+        widget.packageName.contains('://') ||
+        widget.packageName.contains('/') ||
+        widget.packageName.contains(':') ||
+        widget.packageName.contains(' ');
+
     // Sanitized display tag: NEVER expose raw domain names to the user
     final String displayTag;
     if (appName.isNotEmpty) {
       displayTag = appName;
+    } else if (isWebTarget) {
+      displayTag = Translations.get(lang, 'prohibited_site_tag_generic');
     } else if (isGamblingApp) {
       displayTag = Translations.get(lang, 'prohibited_site_tag_gambling');
     } else if (isAdultApp) {
       displayTag = Translations.get(lang, 'prohibited_site_tag_adult');
-    } else if (widget.packageName.contains('.') || widget.packageName.contains('://') || widget.packageName.contains('/')) {
-      displayTag = Translations.get(lang, 'prohibited_site_tag_generic');
     } else {
       displayTag = widget.packageName;
     }
@@ -129,9 +138,15 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
 
                       // Title
                       Text(
-                        isGamblingApp
-                            ? Translations.get(lang, 'prohibited_gambling_title')
-                            : Translations.get(lang, 'prohibited_app_title'),
+                        isWebTarget
+                            ? (isGamblingApp
+                                ? Translations.get(lang, 'prohibited_site_tag_gambling')
+                                : (isAdultApp
+                                    ? Translations.get(lang, 'prohibited_site_tag_adult')
+                                    : Translations.get(lang, 'prohibited_site_tag_generic')))
+                            : (isGamblingApp
+                                ? Translations.get(lang, 'prohibited_gambling_title')
+                                : Translations.get(lang, 'prohibited_app_title')),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -183,11 +198,17 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
 
                       // Description
                       Text(
-                        isGamblingApp
-                            ? Translations.get(lang, 'prohibited_gambling_desc')
-                            : (isAdultApp
-                                ? Translations.get(lang, 'prohibited_adult_desc')
-                                : Translations.get(lang, 'prohibited_app_desc')),
+                        isWebTarget
+                            ? (isGamblingApp
+                                ? Translations.get(lang, 'prohibited_site_gambling_desc')
+                                : (isAdultApp
+                                    ? Translations.get(lang, 'prohibited_site_adult_desc')
+                                    : Translations.get(lang, 'prohibited_site_desc')))
+                            : (isGamblingApp
+                                ? Translations.get(lang, 'prohibited_gambling_desc')
+                                : (isAdultApp
+                                    ? Translations.get(lang, 'prohibited_adult_desc')
+                                    : Translations.get(lang, 'prohibited_app_desc'))),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 14,
@@ -313,11 +334,13 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    isGamblingApp
-                                        ? Translations.get(lang, 'prohibited_gambling_suggestion_desc')
-                                        : (isAdultApp
-                                            ? Translations.get(lang, 'prohibited_adult_suggestion_desc')
-                                            : Translations.get(lang, 'prohibited_suggestion_desc')),
+                                    isWebTarget
+                                        ? Translations.get(lang, 'prohibited_site_advice_desc')
+                                        : (isGamblingApp
+                                            ? Translations.get(lang, 'prohibited_gambling_suggestion_desc')
+                                            : (isAdultApp
+                                                ? Translations.get(lang, 'prohibited_adult_suggestion_desc')
+                                                : Translations.get(lang, 'prohibited_suggestion_desc'))),
                                     style: TextStyle(
                                       color: Colors.white.withValues(alpha: 0.85),
                                       fontSize: 12.5,
@@ -335,7 +358,7 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                       // Action Buttons
                       if (isAdultApp || isGamblingApp) ...[
                         // Uninstall App Button only for real installed Android APK packages
-                        if (appName.isNotEmpty || (widget.packageName.contains('.') && !widget.packageName.contains('://') && !widget.packageName.contains('/') && !widget.packageName.contains(' ') && !widget.packageName.contains(':'))) ...[
+                        if (!isWebTarget && (appName.isNotEmpty || (widget.packageName.contains('.') && !widget.packageName.contains('://') && !widget.packageName.contains('/') && !widget.packageName.contains(' ') && !widget.packageName.contains(':')))) ...[
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(

@@ -27,6 +27,14 @@ class Translations {
           'Aplikasi konten dewasa ini dilarang dan diblokir secara total demi menjaga kesucian diri dan menjauhi perbuatan keji yang diharamkan Allah SWT.',
       'prohibited_gambling_desc':
           'Aplikasi judi, slot, dan taruhan ini dilarang dan diblokir secara total demi menjaga kesucian jiwa, harta, dan ketaatan kepada syariat Allah SWT.',
+      'prohibited_site_adult_desc':
+          'Situs atau tautan konten dewasa ini dilarang dan diblokir secara total demi menjaga kesucian diri dan menjauhi perbuatan keji yang diharamkan Allah SWT.',
+      'prohibited_site_gambling_desc':
+          'Situs atau tautan judi, slot, dan taruhan ini dilarang dan diblokir secara total demi menjaga kesucian jiwa, harta, dan ketaatan kepada syariat Allah SWT.',
+      'prohibited_site_desc':
+          'Situs atau tautan ini diblokir secara total demi menjaga kesucian diri dan melindungi pandangan dari kemungkaran.',
+      'prohibited_site_advice_desc':
+          'Tinggalkanlah kemaksiatan semata-mata karena Allah SWT. Hindari membuka tautan mencurigakan demi menjaga kesucian diri dan pandangan.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"Dan janganlah kamu mendekati perbuatan-perbuatan yang keji, baik yang nampak di antaranya maupun yang tersembunyi." (QS. Al-An\'am: 151)',
       'prohibited_gambling_verse':
@@ -401,6 +409,14 @@ class Translations {
           'This adult content application is strictly prohibited and blocked completely to preserve moral purity and avoid forbidden acts.',
       'prohibited_gambling_desc':
           'This gambling, slot, and betting application is strictly prohibited to protect your wealth, family, and obedience to Allah SWT.',
+      'prohibited_site_adult_desc':
+          'This adult content site or link is strictly prohibited and permanently blocked to preserve moral purity and avoid forbidden acts.',
+      'prohibited_site_gambling_desc':
+          'This gambling or betting site is strictly prohibited and permanently blocked to protect your wealth, family, and obedience to Allah SWT.',
+      'prohibited_site_desc':
+          'This site or link is permanently blocked to safeguard purity and protect your gaze from unlawful content.',
+      'prohibited_site_advice_desc':
+          'Abandon sin solely for the sake of Allah SWT. Avoid clicking suspicious links to preserve your purity and gaze.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"And do not approach immoralities - what is apparent of them and what is concealed." (Surah Al-An\'am: 151)',
       'prohibited_gambling_verse':
@@ -767,6 +783,14 @@ class Translations {
           'Aplikasi kandungan dewasa ini dilarang dan disekat sepenuhnya demi memelihara kesucian diri dan menjauhi perbuatan keji yang diharamkan Allah SWT.',
       'prohibited_gambling_desc':
           'Aplikasi judi, slot, dan pertaruhan ini dilarang dan disekat secara total demi menjaga kesucian jiwa, harta, dan ketaatan kepada syariat Allah SWT.',
+      'prohibited_site_adult_desc':
+          'Laman atau pautan kandungan dewasa ini dilarang dan disekat sepenuhnya demi memelihara kesucian diri dan menjauhi perbuatan keji yang diharamkan Allah SWT.',
+      'prohibited_site_gambling_desc':
+          'Laman atau pautan judi, slot, dan pertaruhan ini dilarang dan disekat secara total demi menjaga kesucian jiwa, harta, dan ketaatan kepada syariat Allah SWT.',
+      'prohibited_site_desc':
+          'Laman atau pautan ini disekat sepenuhnya demi memelihara kesucian diri dan melindungi pandangan daripada kemungkaran.',
+      'prohibited_site_advice_desc':
+          'Tinggalkanlah kemungkaran semata-mata kerana Allah SWT. Elakkan membuka pautan yang mencurigakan demi memelihara kesucian diri dan pandangan.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"Dan janganlah kamu mendekati perbuatan-perbuatan yang keji, sama ada yang nyata daripadanya mahupun yang tersembunyi." (Surah Al-An\'am: 151)',
       'prohibited_gambling_verse':
@@ -1125,6 +1149,14 @@ class Translations {
           'هذا التطبيق للمحتوى الإباحي محظور تماماً لحفظ طهارة النفس والابتعاد عن الفواحش التي حرمها الله تعالى.',
       'prohibited_gambling_desc':
           'هذا التطبيق للميسر والمقامرة والرهانات محظور تماماً لحفظ المال والنفس وطاعة لأمر الله تعالى.',
+      'prohibited_site_adult_desc':
+          'هذا الموقع أو الرابط للمحتوى الإباحي محظور تماماً لحفظ طهارة النفس والابتعاد عن الفواحش التي حرمها الله تعالى.',
+      'prohibited_site_gambling_desc':
+          'هذا الموقع أو الرابط للميسر والمقامرة محظور تماماً لحفظ المال والنفس وطاعة لأمر الله تعالى.',
+      'prohibited_site_desc':
+          'تم حظر هذا الموقع أو الرابط تماماً حفاظاً على الطهارة وغض البصر عن المعاصي.',
+      'prohibited_site_advice_desc':
+          'اتق الله ودع المعاصي لوجه الله تعالى. تجنب فتح الروابط المشبوهة لحفظ طهارة قلبك وبصرك.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n(سورة الأنعام: 151)',
       'prohibited_gambling_verse':
@@ -1469,6 +1501,14 @@ class Translations {
           'Hierdie volwasse inhoud toepassing is streng verbode en geblokkeer om sedelike reinheid te bewaar.',
       'prohibited_gambling_desc':
           'Hierdie dobbel-, gleuf- en weddenskaptoepassing is streng verbode om jou rykdom, familie en gehoorsaamheid aan Allah SWT te beskerm.',
+      'prohibited_site_adult_desc':
+          'Hierdie volwasse inhoud werf of skakel is streng verbode en geblokkeer om sedelike reinheid te bewaar.',
+      'prohibited_site_gambling_desc':
+          'Hierdie dobbelwerf of skakel is streng verbode om jou rykdom, familie en gehoorsaamheid aan Allah SWT te beskerm.',
+      'prohibited_site_desc':
+          'Hierdie werf of skakel is heeltemal geblokkeer om kuisheid te bewaar en jou oë teen onwettige inhoud te beskerm.',
+      'prohibited_site_advice_desc':
+          'Laat vaar sonde ter wille van Allah SWT. Vermy die oopmaak van verdagte skakels om kuisheid te bewaar.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"En moenie onsedelikhede nader nie - hetsy openlik of verborge." (Soera Al-An\'am: 151)',
       'prohibited_gambling_verse':
@@ -1780,6 +1820,14 @@ class Translations {
           'Programu hii ya maudhui ya watu wazima imepigwa marufuku kabisa ili kulinda usafi wa moyo na kuepuka maovu yaliyoharamishwa na Mwenyezi Mungu.',
       'prohibited_gambling_desc':
           'Programu hii ya kamari, kamari ya mashine na kucheza kamari imepigwa marufuku kabisa ili kulinda mali, familia na utiifu kwa Mwenyezi Mungu.',
+      'prohibited_site_adult_desc':
+          'Tovuti au kiungo hiki cha maudhui ya watu wazima kimepigwa marufuku kabisa ili kulinda usafi wa moyo na kuepuka maovu yaliyoharamishwa na Mwenyezi Mungu.',
+      'prohibited_site_gambling_desc':
+          'Tovuti au kiungo hiki cha kamari kimepigwa marufuku kabisa ili kulinda mali, familia na utiifu kwa Mwenyezi Mungu.',
+      'prohibited_site_desc':
+          'Tovuti au kiungo hiki kimezuiwa kabisa ili kulinda usafi wa moyo na kuzuia macho kutokana na yaliyoharamishwa.',
+      'prohibited_site_advice_desc':
+          'Acha maasi kwa ajili ya Mwenyezi Mungu. Epuka kufungua viungo vyenye shaka ili kulinda usafi wa nafsi na macho yako.',
       'prohibited_app_verse':
           'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ\n"Wala msikaribie mambo maovu - yaliyo dhahiri na yaliyofichika." (Surah Al-An\'am: 151)',
       'prohibited_gambling_verse':

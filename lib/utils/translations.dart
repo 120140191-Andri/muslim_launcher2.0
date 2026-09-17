@@ -331,6 +331,12 @@ class Translations {
       'strict_mode_desc': 'Komitmen penuh. Aplikasi tidak dapat dicopot, aksesibilitas terkunci, dan data aman selama durasi komitmen.',
       'standard_mode_title': 'Mode Standar',
       'standard_mode_desc': 'Mode fleksibel. Pemblokir tetap aktif, namun proteksi uninstal dan pengaturan dapat diubah sewaktu-waktu.',
+      'passive_mode_title': 'Mode Pasif',
+      'passive_mode_badge': 'SANGAT TIDAK DIREKOMENDASIKAN',
+      'passive_mode_desc':
+          'Mode ini menonaktifkan seluruh sistem perlindungan. Tanpa aksesibilitas, fitur pemblokir aplikasi, penjaga pandangan (Ghadhul Bashar), serta filter konten dewasa dan judi TIDAK AKAN BERFUNGSI. Perangkat sepenuhnya rentan terhadap godaan dan distraksi digital.',
+      'start_passive_mode': 'LANJUTKAN DENGAN MODE PASIF',
+      'start_strict_mode_confirm': 'Ya, Aktifkan',
       'duration_30_days': '30 Hari',
       'duration_30_subtitle': 'Mujahid',
       'duration_30_desc': 'Tingkat Mujahid: Melatih disiplin diri dan menaklukkan godaan distraksi digital.',
@@ -705,6 +711,12 @@ class Translations {
       'strict_mode_desc': 'Full commitment. App cannot be uninstalled, accessibility is locked, and data is protected during commitment duration.',
       'standard_mode_title': 'Standard Mode',
       'standard_mode_desc': 'Flexible mode. Blocker remains active, but you can change settings or uninstall the app at any time.',
+      'passive_mode_title': 'Passive Mode',
+      'passive_mode_badge': 'STRONGLY NOT RECOMMENDED',
+      'passive_mode_desc':
+          'This mode disables the entire protection system. Without accessibility, app blocking, gaze protection (Ghadhul Bashar), and adult/gambling filters WILL NOT WORK. Your device is completely vulnerable to digital temptations and distractions.',
+      'start_passive_mode': 'CONTINUE WITH PASSIVE MODE',
+      'start_strict_mode_confirm': 'Yes, Activate',
       'duration_30_days': '30 Days',
       'duration_30_subtitle': 'Mujahid',
       'duration_30_desc': 'Mujahid Tier: Train self-discipline and conquer digital distraction addiction.',
@@ -1095,6 +1107,12 @@ class Translations {
       'strict_mode_desc': 'Komitmen penuh. Aplikasi tidak boleh dinyahpasang, kebolehcapaian dikunci, dan data selamat sepanjang tempoh komitmen.',
       'standard_mode_title': 'Mod Standard',
       'standard_mode_desc': 'Mod fleksibel. Penyekat kekal aktif, namun perlindungan nyahpasang dan tetapan boleh diubah pada bila-bila masa.',
+      'passive_mode_title': 'Mod Pasif',
+      'passive_mode_badge': 'SANGAT TIDAK DISYORKAN',
+      'passive_mode_desc':
+          'Mod ini menyahaktifkan seluruh sistem perlindungan. Tanpa kebolehcapaian, pembebas aplikasi, pelindung pandangan (Ghadhul Bashar), serta penapis kandungan dewasa dan judi TIDAK BERFUNGSI. Peranti terdedah sepenuhnya kepada godaan digital.',
+      'start_passive_mode': 'TERUSKAN DENGAN MOD PASIF',
+      'start_strict_mode_confirm': 'Ya, Aktifkan',
       'strict_protection_uninstaller': 'Aplikasi tidak boleh dinyahpasang',
       'strict_protection_accessibility': 'Kebolehcapaian tidak boleh dimatikan',
       'strict_protection_clear_data': 'Data & tetapan aplikasi dilindungi',
@@ -1446,6 +1464,12 @@ class Translations {
       'strict_mode_desc': 'التزام كامل. لا يمكن إلغاء تثبيت التطبيق، وتُقفل إمكانية الوصول وتُحمى البيانات طوال فترة الالتزام.',
       'standard_mode_title': 'الوضع القياسي',
       'standard_mode_desc': 'وضع مرن. تظل ميزة حظر الملهيات نشطة، ولكن يمكن تعديل حماية إلغاء التثبيت والإعدادات في أي وقت.',
+      'passive_mode_title': 'الوضع الخامل',
+      'passive_mode_badge': 'لا يُنصح به بشدة',
+      'passive_mode_desc':
+          'يعطل هذا الوضع نظام الحماية بالكامل. بدون إمكانية الوصول، لن تعمل ميزات حظر التطبيقات وغض البصر وفلاتر المواد الإباحية والقمار. جهازك عرضة تماماً للإغراءات والمشتتات الرقمية.',
+      'start_passive_mode': 'المتابعة مع الوضع الخامل',
+      'start_strict_mode_confirm': 'نعم، تفعيل',
       'strict_protection_uninstaller': 'لا يمكن إلغاء تثبيت التطبيق',
       'strict_protection_accessibility': 'لا يمكن تعطيل إمكانية الوصول',
       'strict_protection_clear_data': 'بيانات التطبيق وإعداداته محمية',
@@ -1792,6 +1816,12 @@ class Translations {
       'sunnah_last_read': 'Laas Gelees',
       'continue_reading_ayah': 'Gaan voort Vers {ayah}',
       'progress_ayah_count': '{read} van {total} Verse',
+      'passive_mode_title': 'Passiewe Modus',
+      'passive_mode_badge': 'STERK ONRAADSAAM',
+      'passive_mode_desc':
+          'Hierdie modus skakel die hele beskermingstelsel af. Sonder toeganklikheid sal programblokkering, blikbeskerming en volwasse/dobbel-filters NIE WERK NIE. Jou toestel is heeltemal kwesbaar vir digitale versoekings.',
+      'start_passive_mode': 'GAAN VOORT MET PASSIEWE MODUS',
+      'start_strict_mode_confirm': 'Ja, Aktiveer',
     },
     'sw': {
       'language_selection': 'Chagua Lugha',
@@ -2113,6 +2143,12 @@ class Translations {
       'sunnah_last_read': 'Mwisho Kusomwa',
       'continue_reading_ayah': 'Endelea Aya {ayah}',
       'progress_ayah_count': '{read} kati ya {total} Aya',
+      'passive_mode_title': 'Hali Tuli',
+      'passive_mode_badge': 'HAIJAPENDEKEZWA KABISA',
+      'passive_mode_desc':
+          'Hali hii huzima mfumo mzima wa ulinzi. Bila huduma za ufikiaji, uzuiaji wa programu, ulinzi wa macho (Ghadhul Bashar), na vichujio vya watu wazima/kamari HAVITAFANYA KAZI. Kifaa chako kiko hatarini kabisa kwa vishawishi vya kidijitali.',
+      'start_passive_mode': 'ENDELEA NA HALI TULI',
+      'start_strict_mode_confirm': 'Ndiyo, Washa',
     },
   };
 

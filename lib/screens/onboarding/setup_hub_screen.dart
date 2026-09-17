@@ -8,7 +8,7 @@ import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 import '../../utils/device_instructions.dart';
 import '../../widgets/language_selection_dialog.dart';
-import 'mode_selection_screen.dart';
+import '../home/home_screen.dart';
 
 class SetupHubScreen extends StatefulWidget {
   final bool isOnboarding;
@@ -137,11 +137,15 @@ class _SetupHubScreenState extends State<SetupHubScreen>
 
   void _finishSetup() {
     final appState = Provider.of<AppState>(context, listen: false);
-    appState.navigatorKey.currentState?.push(
-      AppPageRoute(
-        child: ModeSelectionScreen(isOnboarding: widget.isOnboarding),
-      ),
-    );
+    if (widget.isOnboarding) {
+      appState.completeOnboarding();
+      appState.navigatorKey.currentState?.pushAndRemoveUntil(
+        AppPageRoute(child: const HomeScreen()),
+        (route) => false,
+      );
+    } else {
+      Navigator.maybePop(context);
+    }
   }
 
   // ── UI Builder ──────────────────────────────────────────────────────────────

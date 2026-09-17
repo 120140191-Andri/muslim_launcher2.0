@@ -1,19 +1,12 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/app_state.dart';
-import '../home/home_screen.dart';
-import '../home/app_list_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
-
-class _PledgeTile {
-  final int id;
-  final String char;
-  const _PledgeTile(this.id, this.char);
-}
+import 'setup_hub_screen.dart';
+import 'setup_launcher_screen.dart';
 
 class ModeSelectionScreen extends StatefulWidget {
   final bool isOnboarding;
@@ -25,7 +18,7 @@ class ModeSelectionScreen extends StatefulWidget {
 
 class _ModeSelectionScreenState extends State<ModeSelectionScreen>
     with WidgetsBindingObserver {
-  bool _isStrictModeSelected = true;
+  String _selectedMode = 'strict'; // 'strict', 'standard', 'passive'
   int _selectedDays = 30;
   bool _isProcessing = false;
 
@@ -38,8 +31,16 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
       appState.refreshDeviceAdminStatus();
       if (appState.isStrictActiveNow) {
         setState(() {
-          _isStrictModeSelected = true;
+          _selectedMode = 'strict';
           _selectedDays = appState.strictModeDays;
+        });
+      } else if (appState.isPassiveMode) {
+        setState(() {
+          _selectedMode = 'passive';
+        });
+      } else if (appState.hasSelectedMode) {
+        setState(() {
+          _selectedMode = 'standard';
         });
       }
     });
@@ -63,7 +64,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
     final appState = Provider.of<AppState>(context, listen: false);
     final lang = appState.languageCode;
 
-    if (_isStrictModeSelected) {
+    if (_selectedMode == 'strict') {
       // If Device Admin is not active, prompt user to activate it first
       if (!appState.isDeviceAdminActive) {
         final shouldOpen = await showDialog<bool>(
@@ -110,907 +111,173 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
         return;
       }
 
-      // Show strict commitment pledge confirmation dialog
-      final confirmed = await _showCommitmentPledgeModal(context, lang, _selectedDays);
-      if (confirmed != true) return;
-
-      setState(() => _isProcessing = true);
-      await appState.enableStrictMode(_selectedDays);
-    } else {
-      if (appState.isStrictActiveNow) {
-        final days = appState.remainingStrictDuration.inDays;
-        final daysStr = days > 0 ? '$days' : '<1';
-        final msg = lang == 'id'
-            ? 'Komitmen Mode Ketat sedang berjalan ($daysStr hari tersisa). Anda tidak dapat beralih ke Mode Standar hingga periode selesai.'
-            : 'Strict Mode commitment is active ($daysStr days remaining). You cannot switch to Standard Mode until the period expires.';
-        await showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(
-              children: [
-                Icon(Icons.lock_rounded, color: Colors.red.shade700),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    lang == 'id' ? 'Komitmen Terkunci' : 'Commitment Locked',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+      // Show clean strict commitment confirmation dialog
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D5C3A).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
                 ),
-              ],
-            ),
-            content: Text(msg, style: const TextStyle(fontSize: 14, height: 1.4)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('OK'),
+                child: const Icon(Icons.shield_rounded, color: Color(0xFF0D5C3A), size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  Translations.get(lang, 'confirm_commitment_title'),
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
-        );
-        return;
-      }
-      setState(() => _isProcessing = true);
-      await appState.enableStandardMode();
-    }
-
-    // Complete setup & transition to HomeScreen
-    await _finishAndGoHome(appState);
-  }
-
-  Widget _buildPledgeCheckboxCard({
-    required String title,
-    required bool isChecked,
-    required VoidCallback onToggle,
-  }) {
-    return InkWell(
-      onTap: onToggle,
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-        decoration: BoxDecoration(
-          color: isChecked
-              ? const Color(0xFF0D5C3A).withValues(alpha: 0.06)
-              : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isChecked
-                ? const Color(0xFF0D5C3A).withValues(alpha: 0.45)
-                : Colors.grey.shade200,
-            width: isChecked ? 1.4 : 1.0,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                color: isChecked ? const Color(0xFF0D5C3A) : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: isChecked ? const Color(0xFF0D5C3A) : Colors.grey.shade400,
-                  width: 1.6,
-                ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                Translations.get(lang, 'confirm_commitment_desc')
+                    .replaceAll('{days}', '$_selectedDays'),
+                style: const TextStyle(fontSize: 13.5, height: 1.45, color: Color(0xFF334155)),
               ),
-              child: isChecked
-                  ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
+              const SizedBox(height: 16),
+              _buildDialogPoint(
+                icon: Icons.check_circle_rounded,
+                text: Translations.get(lang, 'confirm_check_1'),
+              ),
+              const SizedBox(height: 8),
+              _buildDialogPoint(
+                icon: Icons.check_circle_rounded,
+                text: Translations.get(lang, 'confirm_check_2'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
               child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: isChecked ? FontWeight.w600 : FontWeight.w500,
-                  color: isChecked ? const Color(0xFF1E293B) : const Color(0xFF475569),
-                  height: 1.35,
-                ),
+                Translations.get(lang, 'cancel'),
+                style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D5C3A),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              ),
+              child: Text(
+                Translations.get(lang, 'start_strict_mode_confirm'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
+      );
 
-  Widget _buildPledgeTileButton({
-    required _PledgeTile tile,
-    required bool isUsed,
-    required VoidCallback onTap,
-    double height = 44,
-    double fontSize = 17,
-    int flex = 1,
-  }) {
-    return Expanded(
-      flex: flex,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: isUsed ? null : onTap,
-            borderRadius: BorderRadius.circular(10),
-            splashColor: const Color(0xFF0D5C3A).withValues(alpha: 0.15),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 140),
-              height: height,
-              decoration: BoxDecoration(
-                color: isUsed ? const Color(0xFFF1F5F9) : Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isUsed ? const Color(0xFFE2E8F0) : const Color(0xFFCBD5E1),
-                  width: 1.5,
-                ),
-                boxShadow: isUsed
-                    ? null
-                    : const [
-                        BoxShadow(
-                          color: Color(0xFFCBD5E1),
-                          offset: Offset(0, 3.2),
-                          blurRadius: 0,
-                        ),
-                      ],
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                tile.char,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w800,
-                  color: isUsed ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+      if (confirmed != true) return;
 
-  Future<bool?> _showCommitmentPledgeModal(
-      BuildContext context, String lang, int days) {
-    final isEn = lang == 'en';
-    final isAr = lang == 'ar';
-    final tierSubtitleKey = days == 30
-        ? 'duration_30_subtitle'
-        : (days == 60 ? 'duration_60_subtitle' : 'duration_90_subtitle');
-    final tierName = Translations.get(lang, tierSubtitleKey);
+      setState(() => _isProcessing = true);
+      await appState.enableStrictMode(_selectedDays);
 
-    // Localized duration & tier label
-    final String durationTierLabel;
-    if (isAr) {
-      durationTierLabel = '$days يوماً • رتبة $tierName';
-    } else if (isEn) {
-      durationTierLabel = '$days Days • Tier $tierName';
-    } else if (lang == 'ms') {
-      durationTierLabel = '$days Hari • Peringkat $tierName';
-    } else {
-      durationTierLabel = '$days Hari • Tingkat $tierName';
-    }
-
-    return showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        bool check1 = false;
-        bool check2 = false;
-
-        // Multi-language target setup (Arabic uses 2 word blocks, others use 9 letters)
-        final targetKeyword = isAr ? 'بِسْمِ اللَّهِ' : 'BISMILLAH';
-        final List<String> targetSegments =
-            isAr ? const ['بِسْمِ', 'اللَّهِ'] : 'BISMILLAH'.split('');
-
-        // Scrambled candidate pool
-        final List<_PledgeTile> candidatePool = isAr
-            ? const [
-                _PledgeTile(0, 'اللَّهِ'),
-                _PledgeTile(1, 'بِسْمِ'),
-              ]
-            : const [
-                _PledgeTile(0, 'M'),
-                _PledgeTile(1, 'B'),
-                _PledgeTile(2, 'I'),
-                _PledgeTile(3, 'S'),
-                _PledgeTile(4, 'L'),
-                _PledgeTile(5, 'A'),
-                _PledgeTile(6, 'H'),
-                _PledgeTile(7, 'L'),
-                _PledgeTile(8, 'I'),
-              ];
-        final List<_PledgeTile> selectedTiles = [];
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final mediaQuery = MediaQuery.of(context);
-            final systemNavBottom = math.max(
-              mediaQuery.padding.bottom,
-              mediaQuery.viewPadding.bottom,
-            );
-            final currentSpelling = isAr
-                ? selectedTiles.map((t) => t.char).join(' ')
-                : selectedTiles.map((t) => t.char).join();
-            final isKeywordMatched = currentSpelling == targetKeyword;
-            final isPoolFull = selectedTiles.length == targetSegments.length;
-            final isWrongSpelling = isPoolFull && !isKeywordMatched;
-            final canConfirm = check1 && check2 && isKeywordMatched;
-
-            return Container(
-              constraints: BoxConstraints(
-                maxHeight: mediaQuery.size.height * 0.90,
-              ),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(28),
-                  topRight: Radius.circular(28),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 20,
-                    offset: Offset(0, -6),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Handle bar
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4.5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Scrollable content
-                  Flexible(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 22),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header badge & title
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF0F5E3B), Color(0xFF083C25)],
-                                  ),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF0D5C3A).withValues(alpha: 0.25),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.verified_user_rounded,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      Translations.get(lang, 'confirm_commitment_title'),
-                                      style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF1E293B),
-                                        letterSpacing: -0.2,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF0D5C3A).withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        durationTierLabel,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: Color(0xFF0D5C3A),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Solemn description
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.shade50.withValues(alpha: 0.6),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: Colors.amber.shade300.withValues(alpha: 0.8),
-                              ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.info_outline_rounded,
-                                  size: 18,
-                                  color: Colors.amber.shade900,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    Translations.get(lang, 'confirm_commitment_desc', {'days': days.toString()}),
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      color: Colors.brown.shade900,
-                                      height: 1.42,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Card Checkbox 1
-                          _buildPledgeCheckboxCard(
-                            title: Translations.get(lang, 'confirm_check_1'),
-                            isChecked: check1,
-                            onToggle: () => setModalState(() => check1 = !check1),
-                          ),
-                          const SizedBox(height: 10),
-
-                          // Card Checkbox 2
-                          _buildPledgeCheckboxCard(
-                            title: Translations.get(lang, 'confirm_check_2'),
-                            isChecked: check2,
-                            onToggle: () => setModalState(() => check2 = !check2),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Interactive Pledge Verification Stage Card
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                            decoration: BoxDecoration(
-                              color: isKeywordMatched
-                                  ? const Color(0xFF0D5C3A).withValues(alpha: 0.05)
-                                  : const Color(0xFFF8FAFC),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isKeywordMatched
-                                    ? const Color(0xFF0D5C3A).withValues(alpha: 0.35)
-                                    : Colors.grey.shade200,
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Header inside verification card
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        Translations.get(lang, 'type_to_confirm', {'keyword': targetKeyword}),
-                                        style: const TextStyle(
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF0D5C3A),
-                                        ),
-                                      ),
-                                    ),
-                                    if (isKeywordMatched)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF0D5C3A).withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF0D5C3A)),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              Translations.get(lang, 'pledge_verified_badge'),
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF0D5C3A),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Answer Tray (Slots)
-                                Directionality(
-                                  textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: List.generate(targetSegments.length, (index) {
-                                        final isFilled = index < selectedTiles.length;
-                                        final char = isFilled ? selectedTiles[index].char : '';
-                                        final isTargetMatch = isFilled && char == targetSegments[index];
-
-                                        return GestureDetector(
-                                          onTap: isFilled
-                                              ? () {
-                                                  HapticFeedback.selectionClick();
-                                                  setModalState(() {
-                                                    selectedTiles.removeAt(index);
-                                                  });
-                                                }
-                                              : null,
-                                          child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 160),
-                                            margin: EdgeInsets.symmetric(
-                                              horizontal: isAr ? 6.0 : 2.5,
-                                            ),
-                                            width: isAr ? 120 : 29,
-                                            height: isAr ? 46 : 39,
-                                            decoration: BoxDecoration(
-                                              color: isKeywordMatched
-                                                  ? const Color(0xFF0D5C3A)
-                                                  : (isFilled
-                                                      ? (isTargetMatch
-                                                          ? const Color(0xFF0D5C3A).withValues(alpha: 0.08)
-                                                          : const Color(0xFFEF4444).withValues(alpha: 0.08))
-                                                      : Colors.white),
-                                              borderRadius: BorderRadius.circular(isAr ? 10 : 8),
-                                              border: Border.all(
-                                                color: isKeywordMatched
-                                                    ? const Color(0xFF083C25)
-                                                    : (isFilled
-                                                        ? (isTargetMatch
-                                                            ? const Color(0xFF0D5C3A)
-                                                            : const Color(0xFFEF4444))
-                                                        : const Color(0xFFCBD5E1)),
-                                                width: isFilled || isKeywordMatched ? 1.6 : 1.0,
-                                              ),
-                                              boxShadow: isFilled
-                                                  ? [
-                                                      BoxShadow(
-                                                        color: isKeywordMatched
-                                                            ? const Color(0xFF083C25)
-                                                            : (isTargetMatch
-                                                                ? const Color(0xFF0D5C3A).withValues(alpha: 0.25)
-                                                                : const Color(0xFFEF4444).withValues(alpha: 0.25)),
-                                                        offset: const Offset(0, 2.5),
-                                                        blurRadius: 0,
-                                                      ),
-                                                    ]
-                                                  : null,
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Text(
-                                              isFilled ? char : targetSegments[index],
-                                              style: TextStyle(
-                                                fontSize: isAr ? 18 : 16,
-                                                fontWeight: FontWeight.w800,
-                                                color: isKeywordMatched
-                                                    ? Colors.white
-                                                    : (isFilled
-                                                        ? (isTargetMatch
-                                                            ? const Color(0xFF0D5C3A)
-                                                            : const Color(0xFFDC2626))
-                                                        : const Color(0xFF94A3B8).withValues(alpha: 0.35)),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }),
-                                    ),
-                                  ),
-                                ),
-
-                                if (isWrongSpelling) ...[
-                                  const SizedBox(height: 6),
-                                  Center(
-                                    child: Text(
-                                      Translations.get(lang, 'tiles_incorrect_order'),
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFFDC2626),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-
-                                const SizedBox(height: 12),
-
-                                // Candidate Tiles (Bank Huruf / Kata)
-                                Directionality(
-                                  textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-                                  child: isAr
-                                      ? Row(
-                                          children: [
-                                            ...candidatePool.map((tile) {
-                                              final isUsed = selectedTiles.any((t) => t.id == tile.id);
-                                              return _buildPledgeTileButton(
-                                                tile: tile,
-                                                isUsed: isUsed,
-                                                height: 48,
-                                                fontSize: 19,
-                                                onTap: () {
-                                                  if (selectedTiles.length < targetSegments.length) {
-                                                    HapticFeedback.lightImpact();
-                                                    setModalState(() {
-                                                      selectedTiles.add(tile);
-                                                    });
-                                                    if (selectedTiles.length == targetSegments.length &&
-                                                        selectedTiles.map((t) => t.char).join(' ') == targetKeyword) {
-                                                      HapticFeedback.mediumImpact();
-                                                    }
-                                                  }
-                                                },
-                                              );
-                                            }),
-                                            // Reset Button in Arabic row
-                                            Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
-                                              child: Material(
-                                                color: Colors.transparent,
-                                                child: InkWell(
-                                                  onTap: selectedTiles.isNotEmpty
-                                                      ? () {
-                                                          HapticFeedback.selectionClick();
-                                                          setModalState(() {
-                                                            selectedTiles.clear();
-                                                          });
-                                                        }
-                                                      : null,
-                                                  borderRadius: BorderRadius.circular(10),
-                                                  child: Container(
-                                                    width: 48,
-                                                    height: 48,
-                                                    decoration: BoxDecoration(
-                                                      color: selectedTiles.isNotEmpty
-                                                          ? const Color(0xFFF1F5F9)
-                                                          : const Color(0xFFF8FAFC),
-                                                      borderRadius: BorderRadius.circular(10),
-                                                      border: Border.all(
-                                                        color: selectedTiles.isNotEmpty
-                                                            ? const Color(0xFFCBD5E1)
-                                                            : const Color(0xFFE2E8F0),
-                                                        width: 1.5,
-                                                      ),
-                                                      boxShadow: selectedTiles.isNotEmpty
-                                                          ? const [
-                                                              BoxShadow(
-                                                                color: Color(0xFFCBD5E1),
-                                                                offset: Offset(0, 3.2),
-                                                                blurRadius: 0,
-                                                              ),
-                                                            ]
-                                                          : null,
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.replay_rounded,
-                                                      size: 20,
-                                                      color: selectedTiles.isNotEmpty
-                                                          ? const Color(0xFF475569)
-                                                          : Colors.grey.shade300,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : Column(
-                                          children: [
-                                            // Row 1 (5 tiles)
-                                            Row(
-                                              children: candidatePool.sublist(0, 5).map((tile) {
-                                                final isUsed = selectedTiles.any((t) => t.id == tile.id);
-                                                return _buildPledgeTileButton(
-                                                  tile: tile,
-                                                  isUsed: isUsed,
-                                                  onTap: () {
-                                                    if (selectedTiles.length < targetSegments.length) {
-                                                      HapticFeedback.lightImpact();
-                                                      setModalState(() {
-                                                        selectedTiles.add(tile);
-                                                      });
-                                                      if (selectedTiles.length == targetSegments.length &&
-                                                          selectedTiles.map((t) => t.char).join() == targetKeyword) {
-                                                        HapticFeedback.mediumImpact();
-                                                      }
-                                                    }
-                                                  },
-                                                );
-                                              }).toList(),
-                                            ),
-                                            const SizedBox(height: 4),
-
-                                            // Row 2 (4 tiles + 1 Reset button)
-                                            Row(
-                                              children: [
-                                                ...candidatePool.sublist(5, 9).map((tile) {
-                                                  final isUsed = selectedTiles.any((t) => t.id == tile.id);
-                                                  return _buildPledgeTileButton(
-                                                    tile: tile,
-                                                    isUsed: isUsed,
-                                                    onTap: () {
-                                                      if (selectedTiles.length < targetSegments.length) {
-                                                        HapticFeedback.lightImpact();
-                                                        setModalState(() {
-                                                          selectedTiles.add(tile);
-                                                        });
-                                                        if (selectedTiles.length == targetSegments.length &&
-                                                            selectedTiles.map((t) => t.char).join() == targetKeyword) {
-                                                          HapticFeedback.mediumImpact();
-                                                        }
-                                                      }
-                                                    },
-                                                  );
-                                                }),
-                                                // Reset Button
-                                                Expanded(
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3.5),
-                                                    child: Material(
-                                                      color: Colors.transparent,
-                                                      child: InkWell(
-                                                        onTap: selectedTiles.isNotEmpty
-                                                            ? () {
-                                                                HapticFeedback.selectionClick();
-                                                                setModalState(() {
-                                                                  selectedTiles.clear();
-                                                                });
-                                                              }
-                                                            : null,
-                                                        borderRadius: BorderRadius.circular(10),
-                                                        child: Container(
-                                                          height: 44,
-                                                          decoration: BoxDecoration(
-                                                            color: selectedTiles.isNotEmpty
-                                                                ? const Color(0xFFF1F5F9)
-                                                                : const Color(0xFFF8FAFC),
-                                                            borderRadius: BorderRadius.circular(10),
-                                                            border: Border.all(
-                                                              color: selectedTiles.isNotEmpty
-                                                                  ? const Color(0xFFCBD5E1)
-                                                                  : const Color(0xFFE2E8F0),
-                                                              width: 1.5,
-                                                            ),
-                                                            boxShadow: selectedTiles.isNotEmpty
-                                                                ? const [
-                                                                    BoxShadow(
-                                                                      color: Color(0xFFCBD5E1),
-                                                                      offset: Offset(0, 3.2),
-                                                                      blurRadius: 0,
-                                                                    ),
-                                                                  ]
-                                                                : null,
-                                                          ),
-                                                          child: Icon(
-                                                            Icons.replay_rounded,
-                                                            size: 20,
-                                                            color: selectedTiles.isNotEmpty
-                                                                ? const Color(0xFF475569)
-                                                                : Colors.grey.shade300,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Fixed Bottom Action Bar with GUARANTEED Navbar Clearance
-                  Container(
-                    padding: EdgeInsets.fromLTRB(
-                      22,
-                      12,
-                      22,
-                      math.max(systemNavBottom, 14.0) + 14.0,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                        top: BorderSide(
-                          color: Colors.grey.shade200,
-                          width: 1,
-                        ),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, -3),
-                        ),
-                      ],
-                    ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: canConfirm
-                              ? const LinearGradient(
-                                  colors: [Color(0xFF0F5E3B), Color(0xFF083C25)],
-                                )
-                              : null,
-                          color: canConfirm ? null : Colors.grey.shade200,
-                          boxShadow: canConfirm
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(0xFF0D5C3A).withValues(alpha: 0.28),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: ElevatedButton(
-                          onPressed: canConfirm ? () => Navigator.pop(ctx, true) : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.transparent,
-                            disabledForegroundColor: Colors.grey.shade500,
-                            shadowColor: Colors.transparent,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                canConfirm ? Icons.lock_outline_rounded : Icons.lock_clock_rounded,
-                                size: 19,
-                                color: canConfirm ? Colors.white : Colors.grey.shade500,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                Translations.get(lang, 'start_strict_mode'),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13.5,
-                                  letterSpacing: 0.5,
-                                  color: canConfirm ? Colors.white : Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+      if (!mounted) return;
+      if (widget.isOnboarding) {
+        appState.navigatorKey.currentState?.pushReplacement(
+          AppPageRoute(child: const SetupHubScreen(isOnboarding: true)),
         );
-      },
-    );
+      } else {
+        Navigator.maybePop(context);
+      }
+    } else if (_selectedMode == 'standard') {
+      if (appState.isStrictActiveNow) {
+        _showStrictLockedDialog(appState, lang);
+        return;
+      }
+      setState(() => _isProcessing = true);
+      await appState.enableStandardMode();
+
+      if (!mounted) return;
+      if (widget.isOnboarding) {
+        appState.navigatorKey.currentState?.pushReplacement(
+          AppPageRoute(child: const SetupHubScreen(isOnboarding: true)),
+        );
+      } else {
+        Navigator.maybePop(context);
+      }
+    } else {
+      // Mode Pasif
+      if (appState.isStrictActiveNow) {
+        _showStrictLockedDialog(appState, lang);
+        return;
+      }
+      setState(() => _isProcessing = true);
+      await appState.enablePassiveMode();
+
+      if (!mounted) return;
+      if (widget.isOnboarding) {
+        appState.navigatorKey.currentState?.pushReplacement(
+          AppPageRoute(child: const SetupLauncherScreen(isSingleStep: true)),
+        );
+      } else {
+        Navigator.maybePop(context);
+      }
+    }
   }
 
-  Future<void> _finishAndGoHome(AppState appState) async {
-    final lang = appState.languageCode;
-
+  void _showStrictLockedDialog(AppState appState, String lang) {
+    final days = appState.remainingStrictDuration.inDays;
+    final daysStr = days > 0 ? '$days' : '<1';
+    final msg = lang == 'id'
+        ? 'Komitmen Mode Ketat sedang berjalan ($daysStr hari tersisa). Anda tidak dapat beralih ke mode lain hingga periode selesai.'
+        : 'Strict Mode commitment is active ($daysStr days remaining). You cannot switch modes until the period expires.';
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => PopScope(
-        canPop: false,
-        child: Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF0F5E3B), Color(0xFF083C25)],
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.lock_rounded, color: Colors.red.shade700),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                lang == 'id' ? 'Komitmen Terkunci' : 'Commitment Locked',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                ),
-              ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3.5,
-                    color: Color(0xFF34D399),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  Translations.get(lang, 'setup_preparing_home'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+          ],
         ),
+        content: Text(msg, style: const TextStyle(fontSize: 14, height: 1.4)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
+  }
 
-    await AppListScreen.preload(
-      onRawAppsFetched: (raw) => appState.syncAppsWithCategories(raw),
-    ).timeout(
-      const Duration(milliseconds: 3500),
-      onTimeout: () {},
-    ).whenComplete(() {
-      if (mounted) {
-        appState.completeOnboarding();
-        appState.navigatorKey.currentState?.pushAndRemoveUntil(
-          AppPageRoute(child: const HomeScreen()),
-          (route) => false,
-        );
-      }
-    });
+  Widget _buildDialogPoint({required IconData icon, required String text}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFF0D5C3A)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 12.5, height: 1.35, color: Color(0xFF475569)),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -1053,14 +320,17 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                   children: [
                     Row(
                       children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          onPressed: () => Navigator.maybePop(context),
-                        ),
+                        if (!widget.isOnboarding)
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            onPressed: () => Navigator.maybePop(context),
+                          )
+                        else
+                          const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             Translations.get(lang, 'mode_selection_title'),
@@ -1073,7 +343,10 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(width: 48),
+                        if (!widget.isOnboarding)
+                          const SizedBox(width: 48)
+                        else
+                          const SizedBox(width: 4),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -1099,12 +372,12 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
               children: [
                 // 1. MODE KETAT CARD (DEFAULT)
                 _buildModeCard(
-                  isSelected: _isStrictModeSelected,
+                  isSelected: _selectedMode == 'strict',
                   title: Translations.get(lang, 'strict_mode_title'),
                   badgeText: Translations.get(lang, 'strict_mode_badge'),
                   isRecommended: true,
                   icon: Icons.shield_rounded,
-                  onTap: () => setState(() => _isStrictModeSelected = true),
+                  onTap: () => setState(() => _selectedMode = 'strict'),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1259,7 +532,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
 
                 // 2. MODE STANDAR CARD
                 _buildModeCard(
-                  isSelected: !_isStrictModeSelected,
+                  isSelected: _selectedMode == 'standard',
                   title: Translations.get(lang, 'standard_mode_title'),
                   badgeText: appState.isStrictActiveNow
                       ? (isEn ? 'LOCKED' : 'TERKUNCI')
@@ -1282,7 +555,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                       );
                       return;
                     }
-                    setState(() => _isStrictModeSelected = false);
+                    setState(() => _selectedMode = 'standard');
                   },
                   child: Text(
                     Translations.get(lang, 'standard_mode_desc'),
@@ -1291,6 +564,78 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                       color: Colors.grey.shade700,
                       height: 1.45,
                     ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // 3. MODE PASIF CARD (SANGAT TIDAK DIREKOMENDASIKAN)
+                _buildModeCard(
+                  isSelected: _selectedMode == 'passive',
+                  title: Translations.get(lang, 'passive_mode_title'),
+                  badgeText: Translations.get(lang, 'passive_mode_badge'),
+                  isRecommended: false,
+                  isDanger: true,
+                  icon: Icons.gpp_maybe_rounded,
+                  onTap: () {
+                    if (appState.isStrictActiveNow) {
+                      final days = appState.remainingStrictDuration.inDays;
+                      final daysStr = days > 0 ? '$days' : '<1';
+                      final msg = lang == 'id'
+                          ? 'Mode Ketat sedang aktif ($daysStr hari tersisa). Anda tidak dapat mengubah ke Mode Pasif hingga periode selesai.'
+                          : 'Strict Mode is currently active ($daysStr days remaining). You cannot switch to Passive Mode until the period expires.';
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(msg),
+                          backgroundColor: Colors.red.shade800,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+                    setState(() => _selectedMode = 'passive');
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        Translations.get(lang, 'passive_mode_desc'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade700,
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.red.shade200),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.warning_amber_rounded, size: 18, color: Colors.red.shade800),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                isEn
+                                    ? 'App blocking & adult/gambling filters are DISABLED.'
+                                    : 'Pemblokir aplikasi & filter konten dewasa/judi NONAKTIF.',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red.shade900,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1327,12 +672,18 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0F5E3B), Color(0xFF094027)],
-                  ),
+                  gradient: _selectedMode == 'passive'
+                      ? const LinearGradient(
+                          colors: [Color(0xFFB91C1C), Color(0xFF7F1D1D)],
+                        )
+                      : const LinearGradient(
+                          colors: [Color(0xFF0F5E3B), Color(0xFF094027)],
+                        ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF0D5C3A).withValues(alpha: 0.28),
+                      color: _selectedMode == 'passive'
+                          ? Colors.red.shade900.withValues(alpha: 0.28)
+                          : const Color(0xFF0D5C3A).withValues(alpha: 0.28),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -1353,9 +704,11 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        _isStrictModeSelected
+                        _selectedMode == 'strict'
                             ? Translations.get(lang, 'start_strict_mode')
-                            : Translations.get(lang, 'start_standard_mode'),
+                            : (_selectedMode == 'standard'
+                                ? Translations.get(lang, 'start_standard_mode')
+                                : Translations.get(lang, 'start_passive_mode')),
                         style: const TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.bold,
@@ -1383,7 +736,10 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
     required IconData icon,
     required VoidCallback onTap,
     required Widget child,
+    bool isDanger = false,
   }) {
+    final activeColor = isDanger ? Colors.red.shade700 : const Color(0xFF0D5C3A);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
@@ -1392,14 +748,14 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: isSelected
-              ? const Color(0xFF0D5C3A)
-              : Colors.black.withValues(alpha: 0.08),
+              ? activeColor
+              : (isDanger ? Colors.red.shade200 : Colors.black.withValues(alpha: 0.08)),
           width: isSelected ? 2.2 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: isSelected
-                ? const Color(0xFF0D5C3A).withValues(alpha: 0.12)
+                ? activeColor.withValues(alpha: 0.12)
                 : Colors.black.withValues(alpha: 0.03),
             blurRadius: 14,
             offset: const Offset(0, 4),
@@ -1422,13 +778,15 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF0D5C3A)
-                            : Colors.grey.shade100,
+                            ? activeColor
+                            : (isDanger ? Colors.red.shade50 : Colors.grey.shade100),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         icon,
-                        color: isSelected ? Colors.white : Colors.grey.shade600,
+                        color: isSelected
+                            ? Colors.white
+                            : (isDanger ? Colors.red.shade700 : Colors.grey.shade600),
                         size: 20,
                       ),
                     ),
@@ -1445,28 +803,39 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: isSelected
-                                      ? const Color(0xFF0D5C3A)
+                                      ? activeColor
                                       : const Color(0xFF1E293B),
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: isRecommended
-                                      ? const Color(0xFF0D5C3A).withValues(alpha: 0.1)
-                                      : Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  badgeText,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: isRecommended
-                                        ? const Color(0xFF0D5C3A)
-                                        : Colors.grey.shade700,
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: isDanger
+                                        ? Colors.red.shade50
+                                        : (isRecommended
+                                            ? const Color(0xFF0D5C3A).withValues(alpha: 0.1)
+                                            : Colors.grey.shade200),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: isDanger
+                                        ? Border.all(color: Colors.red.shade200, width: 0.8)
+                                        : null,
+                                  ),
+                                  child: Text(
+                                    badgeText,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDanger
+                                          ? Colors.red.shade900
+                                          : (isRecommended
+                                              ? const Color(0xFF0D5C3A)
+                                              : Colors.grey.shade700),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1482,8 +851,8 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFF0D5C3A)
-                              : Colors.grey.shade400,
+                              ? activeColor
+                              : (isDanger ? Colors.red.shade300 : Colors.grey.shade400),
                           width: 2,
                         ),
                       ),
@@ -1492,9 +861,9 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen>
                               child: Container(
                                 width: 12,
                                 height: 12,
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Color(0xFF0D5C3A),
+                                  color: activeColor,
                                 ),
                               ),
                             )

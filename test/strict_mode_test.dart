@@ -145,5 +145,98 @@ void main() {
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.textContaining('Mode Ketat sedang aktif'), findsOneWidget);
     });
+
+    test('enablePassiveMode deactivates strict mode, sets launcherMode to passive and isAccessibilityRequired to false', () async {
+      SharedPreferences.setMockInitialValues({'is_strict_mode': true});
+      final prefs = await SharedPreferences.getInstance();
+      final state = AppState(prefs);
+
+      await state.enablePassiveMode();
+      expect(state.isStrictMode, isFalse);
+      expect(state.isPassiveMode, isTrue);
+      expect(state.launcherMode, 'passive');
+      expect(state.isAccessibilityRequired, isFalse);
+      expect(state.hasSelectedMode, isTrue);
+      expect(prefs.getString('launcher_mode'), 'passive');
+    });
+
+    testWidgets('PermissionBlockedOverlay bypasses blocking completely in Passive Mode', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'launcher_mode': 'passive',
+        'has_completed_onboarding': true,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PermissionBlockedOverlay(
+            appState: appState,
+            child: const Text('Normal HomeScreen Content'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Normal HomeScreen Content'), findsOneWidget);
+      expect(find.text('Tindakan Diperlukan'), findsNothing);
+      expect(find.byType(ElevatedButton), findsNothing);
+    });
+
+    testWidgets('ModeSelectionScreen prevents switching to Passive Mode when Strict Mode is active', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'is_strict_mode': true,
+        'strict_mode_days': 30,
+        'strict_mode_until_ms': DateTime.now().millisecondsSinceEpoch + (30 * 24 * 60 * 60 * 1000),
+        'languageCode': 'id',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: ModeSelectionScreen(isOnboarding: false),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final passiveCard = find.text('Mode Pasif');
+      await tester.scrollUntilVisible(passiveCard, 200);
+      await tester.pumpAndSettle();
+      expect(passiveCard, findsOneWidget);
+
+      await tester.tap(passiveCard);
+      await tester.pump();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Mode Ketat sedang aktif'), findsOneWidget);
+    });
+
+    testWidgets('ModeSelectionScreen renders Mode Pasif card with SANGAT TIDAK DIREKOMENDASIKAN badge', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'languageCode': 'id',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: ModeSelectionScreen(isOnboarding: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final badge = find.text('SANGAT TIDAK DIREKOMENDASIKAN');
+      await tester.scrollUntilVisible(badge, 200);
+      await tester.pumpAndSettle();
+      expect(badge, findsOneWidget);
+      expect(find.text('Mode Pasif'), findsOneWidget);
+    });
   });
 }

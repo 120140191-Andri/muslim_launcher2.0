@@ -115,6 +115,8 @@ class AppState extends ChangeNotifier {
 
   // Strict Mode & Device Admin Fields
   bool _isStrictMode = true;
+  String _launcherMode = 'strict'; // 'strict', 'standard', 'passive'
+  bool _hasSelectedMode = false;
   int _strictModeDays = 30;
   int _strictModeUntilMs = 0;
   bool _isDeviceAdminActive = false;
@@ -122,6 +124,10 @@ class AppState extends ChangeNotifier {
   bool _isStandardReflectionActive = false;
 
   bool get isStrictMode => _isStrictMode;
+  String get launcherMode => _launcherMode;
+  bool get hasSelectedMode => _hasSelectedMode;
+  bool get isPassiveMode => _launcherMode == 'passive';
+  bool get isAccessibilityRequired => !isPassiveMode;
   int get strictModeDays => _strictModeDays;
   int get strictModeUntilMs => _strictModeUntilMs;
   bool get isDeviceAdminActive => _isDeviceAdminActive;
@@ -497,6 +503,8 @@ class AppState extends ChangeNotifier {
     _isStrictMode = prefs.getBool('is_strict_mode') ?? true;
     _strictModeDays = prefs.getInt('strict_mode_days') ?? 30;
     _strictModeUntilMs = prefs.getInt('strict_mode_until_ms') ?? 0;
+    _launcherMode = prefs.getString('launcher_mode') ?? (_isStrictMode ? 'strict' : 'standard');
+    _hasSelectedMode = prefs.getBool('has_selected_mode') ?? _hasCompletedOnboarding;
     
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
@@ -3331,12 +3339,16 @@ class AppState extends ChangeNotifier {
   Future<void> enableStrictMode(int days) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     final untilMs = now + (days * 24 * 60 * 60 * 1000);
+    _launcherMode = 'strict';
     _isStrictMode = true;
     _strictModeDays = days;
     _strictModeUntilMs = untilMs;
+    _hasSelectedMode = true;
+    await prefs.setString('launcher_mode', 'strict');
     await prefs.setBool('is_strict_mode', true);
     await prefs.setInt('strict_mode_days', days);
     await prefs.setInt('strict_mode_until_ms', untilMs);
+    await prefs.setBool('has_selected_mode', true);
     await _appBlockService.setStrictModeConfig(
       enabled: true,
       days: days,
@@ -3346,13 +3358,34 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> enableStandardMode() async {
+    _launcherMode = 'standard';
     _isStrictMode = false;
     _strictModeUntilMs = 0;
+    _hasSelectedMode = true;
+    await prefs.setString('launcher_mode', 'standard');
     await prefs.setBool('is_strict_mode', false);
     await prefs.setInt('strict_mode_until_ms', 0);
+    await prefs.setBool('has_selected_mode', true);
     await _appBlockService.setStrictModeConfig(
       enabled: false,
       days: _strictModeDays,
+      untilMs: 0,
+    );
+    notifyListeners();
+  }
+
+  Future<void> enablePassiveMode() async {
+    _launcherMode = 'passive';
+    _isStrictMode = false;
+    _strictModeUntilMs = 0;
+    _hasSelectedMode = true;
+    await prefs.setString('launcher_mode', 'passive');
+    await prefs.setBool('is_strict_mode', false);
+    await prefs.setInt('strict_mode_until_ms', 0);
+    await prefs.setBool('has_selected_mode', true);
+    await _appBlockService.setStrictModeConfig(
+      enabled: false,
+      days: 0,
       untilMs: 0,
     );
     notifyListeners();

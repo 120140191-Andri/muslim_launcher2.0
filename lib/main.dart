@@ -7,7 +7,9 @@ import 'services/analytics_service.dart';
 import 'services/streak_notification_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/language_screen.dart';
+import 'screens/onboarding/mode_selection_screen.dart';
 import 'screens/onboarding/setup_hub_screen.dart';
+import 'screens/onboarding/setup_launcher_screen.dart';
 import 'screens/home/blocked_app_screen.dart';
 import 'screens/home/ghadhul_bashar_overlay.dart';
 import 'screens/home/prohibited_app_overlay.dart';
@@ -209,11 +211,13 @@ class _HomeScreenSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<AppState, ({bool isReady, bool hasCompletedOnboarding, bool hasSelectedLanguage})>(
+    return Selector<AppState, ({bool isReady, bool hasCompletedOnboarding, bool hasSelectedLanguage, bool hasSelectedMode, bool isPassiveMode})>(
       selector: (context, state) => (
         isReady: state.isReady,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
         hasSelectedLanguage: state.hasSelectedLanguage,
+        hasSelectedMode: state.hasSelectedMode,
+        isPassiveMode: state.isPassiveMode,
       ),
       builder: (context, status, _) {
         if (!status.isReady) {
@@ -232,8 +236,10 @@ class _HomeScreenSwitcher extends StatelessWidget {
           );
         }
         if (status.hasCompletedOnboarding) return const HomeScreen();
-        if (status.hasSelectedLanguage) return const SetupHubScreen();
-        return const LanguageScreen();
+        if (!status.hasSelectedLanguage) return const LanguageScreen();
+        if (!status.hasSelectedMode) return const ModeSelectionScreen(isOnboarding: true);
+        if (status.isPassiveMode) return const SetupLauncherScreen(isSingleStep: true);
+        return const SetupHubScreen(isOnboarding: true);
       },
     );
   }

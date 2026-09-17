@@ -1110,6 +1110,7 @@ class AppBlockService : AccessibilityService() {
         }
 
         private var facebookBrowserSessionActive = ConcurrentHashMap<String, Boolean>()
+        private var isFbBrowserActive = ConcurrentHashMap<String, Boolean>()
 
         fun allowGhadhulBasharSession(packageName: String) {
             val pkg = packageName.trim().lowercase()
@@ -1128,6 +1129,7 @@ class AppBlockService : AccessibilityService() {
             activeGhadhulSessions.remove(pkg)
             lastActiveGhadhulTimes.remove(pkg)
             facebookBrowserSessionActive.remove(pkg)
+            isFbBrowserActive.remove(pkg)
             Log.d("AppBlockService", "GHADHUL SESSION RESET: $pkg")
         }
 
@@ -1135,6 +1137,7 @@ class AppBlockService : AccessibilityService() {
             activeGhadhulSessions.clear()
             lastActiveGhadhulTimes.clear()
             facebookBrowserSessionActive.clear()
+            isFbBrowserActive.clear()
             Log.d("AppBlockService", "ALL GHADHUL SESSIONS CLEARED")
         }
 
@@ -1164,18 +1167,25 @@ class AppBlockService : AccessibilityService() {
                    clean == "com.cloudmosa.puffinfree"
         }
 
+        fun isFacebookPackage(pkg: String?): Boolean {
+            if (pkg == null) return false
+            val clean = pkg.trim().lowercase()
+            return clean == "com.facebook.katana" ||
+                   clean == "com.facebook.lite" ||
+                   clean == "com.facebook.orca" ||
+                   clean == "com.facebook.mlite"
+        }
+
         fun isFacebookInAppBrowser(packageName: String, className: String): Boolean {
-            val isFb = packageName == "com.facebook.katana" ||
-                       packageName == "com.facebook.lite" ||
-                       packageName == "com.facebook.orca"
-            if (!isFb) return false
+            if (!isFacebookPackage(packageName)) return false
 
             val lowerClass = className.lowercase()
             return lowerClass.contains("browserlite") ||
                    lowerClass.contains("browser.lite") ||
                    lowerClass.contains("inappbrowser") ||
                    lowerClass.contains("browseractivity") ||
-                   lowerClass.contains("browserproxy")
+                   lowerClass.contains("browserproxy") ||
+                   (lowerClass.contains("browser") && (lowerClass.contains("activity") || lowerClass.contains("chrome")))
         }
 
         enum class BrowserViolation {
@@ -1183,6 +1193,12 @@ class AppBlockService : AccessibilityService() {
             GAMBLING,
             ADULT
         }
+
+        data class FacebookScanResult(
+            val violation: BrowserViolation,
+            val targetInfo: String,
+            val hasContent: Boolean
+        )
 
         private val VID_WHITELIST = listOf(
             "vidio.com",
@@ -1237,24 +1253,26 @@ class AppBlockService : AccessibilityService() {
         )
 
         fun detectFacebookBrowserViolation(
-            event: AccessibilityEvent,
+            event: AccessibilityEvent?,
             rootNode: android.view.accessibility.AccessibilityNodeInfo?
-        ): Pair<BrowserViolation, String> {
+        ): FacebookScanResult {
             val gatheredTexts = mutableListOf<String>()
 
-            // 1. Gather text from the accessibility event
-            for (charSeq in event.text) {
-                val str = charSeq?.toString()?.trim()?.lowercase() ?: continue
-                if (str.isNotEmpty()) gatheredTexts.add(str)
-            }
-            event.contentDescription?.toString()?.trim()?.lowercase()?.let {
-                if (it.isNotEmpty()) gatheredTexts.add(it)
+            // 1. Gather text from the accessibility event (if available)
+            if (event != null) {
+                for (charSeq in event.text) {
+                    val str = charSeq?.toString()?.trim()?.lowercase() ?: continue
+                    if (str.isNotEmpty()) gatheredTexts.add(str)
+                }
+                event.contentDescription?.toString()?.trim()?.lowercase()?.let {
+                    if (it.isNotEmpty()) gatheredTexts.add(it)
+                }
             }
 
-            // 2. Perform a shallow search on the toolbar (max depth 3, max 25 nodes)
-            // to extract header / domain / subtitle text without traversing the heavy WebView HTML DOM
+            // 2. Perform a deep search on native toolbar and header views (max depth 12, max 150 nodes)
+            // Traverses native views without descending into heavy WebView HTML DOM
             fun scanShallow(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int, count: IntArray) {
-                if (node == null || depth > 3 || count[0] >= 25) return
+                if (node == null || depth > 12 || count[0] >= 150) return
                 count[0]++
 
                 node.text?.toString()?.trim()?.lowercase()?.let {
@@ -1275,14 +1293,15 @@ class AppBlockService : AccessibilityService() {
                 }
             }
 
-            val startNode = event.source ?: rootNode
+            // ALWAYS prefer the true window root so toolbar is accessible even if event.source was a child
+            val startNode = rootNode ?: (if (event != null) getTopmostNode(event.source) ?: event.source else null)
             if (startNode != null) {
                 val count = intArrayOf(0)
                 scanShallow(startNode, 0, count)
             }
 
             if (gatheredTexts.isEmpty()) {
-                return Pair(BrowserViolation.NONE, "")
+                return FacebookScanResult(BrowserViolation.NONE, "", false)
             }
 
             val combined = gatheredTexts.joinToString(" ")
@@ -1298,7 +1317,7 @@ class AppBlockService : AccessibilityService() {
             for (kw in GAMBLING_KEYWORDS) {
                 if (combined.contains(kw)) {
                     val matchedSnippet = gatheredTexts.find { it.contains(kw) } ?: kw
-                    return Pair(BrowserViolation.GAMBLING, matchedSnippet)
+                    return FacebookScanResult(BrowserViolation.GAMBLING, matchedSnippet, true)
                 }
             }
 
@@ -1306,18 +1325,19 @@ class AppBlockService : AccessibilityService() {
             for (kw in ADULT_KEYWORDS) {
                 if (combined.contains(kw)) {
                     val matchedSnippet = gatheredTexts.find { it.contains(kw) } ?: kw
-                    return Pair(BrowserViolation.ADULT, matchedSnippet)
+                    return FacebookScanResult(BrowserViolation.ADULT, matchedSnippet, true)
                 }
             }
 
             // 3. Flexible "vid" matching with Whitelist across all gathered texts
             for (text in gatheredTexts) {
                 if (text.contains("vid") && !isWhitelisted(text)) {
-                    return Pair(BrowserViolation.ADULT, text)
+                    return FacebookScanResult(BrowserViolation.ADULT, text, true)
                 }
             }
 
-            return Pair(BrowserViolation.NONE, "")
+            val hasMeaningfulContent = gatheredTexts.any { it.length >= 3 && (it.contains(".") || it.contains("http") || it.contains("://")) }
+            return FacebookScanResult(BrowserViolation.NONE, "", hasMeaningfulContent)
         }
     }
 
@@ -1463,10 +1483,24 @@ class AppBlockService : AccessibilityService() {
             val packageName = event.packageName?.toString()?.trim()?.lowercase() ?: return
             val className = event.className?.toString()?.lowercase() ?: ""
 
+            // Track Facebook in-app browser activity state
+            if (isFacebookPackage(packageName)) {
+                if (isWindowState) {
+                    if (isFacebookInAppBrowser(packageName, className)) {
+                        isFbBrowserActive[packageName] = true
+                    } else if (className.isNotEmpty()) {
+                        isFbBrowserActive[packageName] = false
+                        facebookBrowserSessionActive[packageName] = false
+                    }
+                }
+            }
+
             // Optimization: If it's a content change (scrolling/typing/layout updates),
-            // ONLY process if it's Settings so there's zero overhead for all normal apps!
+            // ONLY process if it's Settings or Facebook in-app browser!
             if (isWindowContent) {
-                val isTargetApp = isSettingsOrInstallerApp(packageName)
+                val isFbBrowser = isFacebookPackage(packageName) &&
+                        (isFbBrowserActive[packageName] == true || isFacebookInAppBrowser(packageName, className))
+                val isTargetApp = isSettingsOrInstallerApp(packageName) || isFbBrowser
                 if (!isTargetApp) return
             }
 
@@ -1686,6 +1720,28 @@ class AppBlockService : AccessibilityService() {
                 return // DILARANG TOTAL SAMA SEKALI!
             }
 
+            // 0.1 PRIORITAS 0.1: PROHIBITED FACEBOOK IN-APP BROWSER URL CHECK (Haram Mutlak - Tanpa Bypass)
+            if (isFacebookPackage(packageName)) {
+                val isFbBrowser = isFacebookInAppBrowser(packageName, className) || (isFbBrowserActive[packageName] == true)
+                if (isFbBrowser) {
+                    val (violation, targetInfo) = detectFacebookBrowserViolation(event, activeNode)
+                    if (violation == BrowserViolation.GAMBLING || violation == BrowserViolation.ADULT) {
+                        val targetLabel = if (violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
+                        Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION ($targetLabel): $targetInfo")
+                        isFbBrowserActive[packageName] = false
+                        facebookBrowserSessionActive[packageName] = false
+                        lastTriggeredPackage = packageName
+                        lastTriggeredTime = now
+                        try {
+                            performGlobalAction(GLOBAL_ACTION_BACK)
+                        } catch (_: Exception) {}
+                        MainActivity.notifyAppProhibited(targetLabel)
+                        bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+                        return // DILARANG TOTAL SAMA SEKALI!
+                    }
+                }
+            }
+
             // Khusus: Bypass Ghadhul Bashar jika dibuka via tombol "Dukung Developer" (Trakteer / Ko-fi)
             val isSupportDevBypass = (now < bypassSupportDeveloperUntil) &&
                     (isKnownBrowser(packageName) || ghadhulBasharPackages.contains(packageName))
@@ -1731,44 +1787,18 @@ class AppBlockService : AccessibilityService() {
                 if (isIdleExpired) {
                     activeGhadhulSessions.remove(packageName)
                     facebookBrowserSessionActive.remove(packageName)
+                    isFbBrowserActive.remove(packageName)
                 }
 
                 val hasActiveSession = activeGhadhulSessions.contains(packageName)
                 val isBrowser = isKnownBrowser(packageName)
-                val isFbBrowser = isFacebookInAppBrowser(packageName, className)
+                val isFbBrowser = isFacebookInAppBrowser(packageName, className) || (isFbBrowserActive[packageName] == true)
 
                 // Track status sesi Facebook in-app browser
                 if (!isFbBrowser) {
                     // Berada di feed / aktivitas biasa Facebook (bukan in-app browser)
                     facebookBrowserSessionActive[packageName] = false
-                } else {
-                    // One-shot scan: Check toolbar/header for Gambling or Adult content violations (with flexible 'vid' + whitelist)
-                    val (violation, targetInfo) = detectFacebookBrowserViolation(event, rootInActiveWindow)
-                    if (violation == BrowserViolation.GAMBLING) {
-                        Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION (GAMBLING): $targetInfo")
-                        facebookBrowserSessionActive[packageName] = false
-                        lastTriggeredPackage = packageName
-                        lastTriggeredTime = now
-                        try {
-                            performGlobalAction(GLOBAL_ACTION_BACK)
-                        } catch (_: Exception) {}
-                        val targetLabel = "Judi Online"
-                        MainActivity.notifyAppProhibited(targetLabel)
-                        bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
-                        return
-                    } else if (violation == BrowserViolation.ADULT) {
-                        Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION (ADULT): $targetInfo")
-                        facebookBrowserSessionActive[packageName] = false
-                        lastTriggeredPackage = packageName
-                        lastTriggeredTime = now
-                        try {
-                            performGlobalAction(GLOBAL_ACTION_BACK)
-                        } catch (_: Exception) {}
-                        val targetLabel = "Konten Dewasa"
-                        MainActivity.notifyAppProhibited(targetLabel)
-                        bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
-                        return
-                    }
+                    isFbBrowserActive[packageName] = false
                 }
 
                 if (hasActiveSession) {
@@ -1782,7 +1812,59 @@ class AppBlockService : AccessibilityService() {
                             lastActiveGhadhulTimes[packageName] = now
                             return
                         } else {
-                            // Link baru saja diklik di dalam Facebook! Tampilkan pengingat Ghadhul Bashar
+                            // Link baru saja diklik di dalam Facebook!
+                            // Cek apakah konten URL / domain sudah termuat di toolbar
+                            val scanRes = detectFacebookBrowserViolation(event, activeNode)
+                            if (scanRes.violation == BrowserViolation.GAMBLING || scanRes.violation == BrowserViolation.ADULT) {
+                                val targetLabel = if (scanRes.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
+                                Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION ($targetLabel): ${scanRes.targetInfo}")
+                                isFbBrowserActive[packageName] = false
+                                facebookBrowserSessionActive[packageName] = false
+                                lastTriggeredPackage = packageName
+                                lastTriggeredTime = now
+                                try {
+                                    performGlobalAction(GLOBAL_ACTION_BACK)
+                                } catch (_: Exception) {}
+                                MainActivity.notifyAppProhibited(targetLabel)
+                                bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+                                return
+                            }
+
+                            if (!scanRes.hasContent) {
+                                // Toolbar masih kosong / sedang memuat URL dari Intent.
+                                // Tunda pengecekan 250ms agar URL termuat sempurna dan tidak salah menampilkan Ghadhul Bashar untuk URL terlarang!
+                                val capturedPkg = packageName
+                                handler.postDelayed({
+                                    val active = rootInActiveWindow ?: getTopmostNode(null)
+                                    if (active != null && isFbBrowserActive[capturedPkg] == true) {
+                                        val delayedRes = detectFacebookBrowserViolation(null, active)
+                                        if (delayedRes.violation == BrowserViolation.GAMBLING || delayedRes.violation == BrowserViolation.ADULT) {
+                                            val targetLabel = if (delayedRes.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
+                                            Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION (delayed check, $targetLabel): ${delayedRes.targetInfo}")
+                                            isFbBrowserActive[capturedPkg] = false
+                                            facebookBrowserSessionActive[capturedPkg] = false
+                                            lastTriggeredPackage = capturedPkg
+                                            lastTriggeredTime = System.currentTimeMillis()
+                                            try {
+                                                performGlobalAction(GLOBAL_ACTION_BACK)
+                                            } catch (_: Exception) {}
+                                            MainActivity.notifyAppProhibited(targetLabel)
+                                            bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+                                        } else {
+                                            // Konten URL bersih terkonfirmasi -> tampilkan pengingat Ghadhul Bashar
+                                            Log.d("AppBlockService", "GHADHUL BASHAR: Facebook In-App Browser detected (clean link) for $capturedPkg")
+                                            facebookBrowserSessionActive[capturedPkg] = true
+                                            lastTriggeredPackage = capturedPkg
+                                            lastTriggeredTime = System.currentTimeMillis()
+                                            MainActivity.notifyGhadhulBashar(capturedPkg)
+                                            bringLauncherToFront("ghadhulBasharPackageName", capturedPkg, "triggerGhadhulBasharScreen")
+                                        }
+                                    }
+                                }, 250L)
+                                return
+                            }
+
+                            // Link bersih sudah terkonfirmasi di toolbar! Tampilkan pengingat Ghadhul Bashar
                             Log.d("AppBlockService", "GHADHUL BASHAR: Facebook In-App Browser detected for $packageName ($className)")
                             facebookBrowserSessionActive[packageName] = true
                             lastTriggeredPackage = packageName

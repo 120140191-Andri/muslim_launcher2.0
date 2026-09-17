@@ -779,13 +779,8 @@ class AppBlockService : AccessibilityService() {
                 "com.transsion.phonemanager:id/uninstall",
                 "com.transsion.phonemanager:id/force_stop"
             )
-            for (id in knownButtonIds) {
-                try {
-                    val found = rootNode?.findAccessibilityNodeInfosByViewId(id)
-                    if (!found.isNullOrEmpty()) return true
-                } catch (_: Exception) {}
-            }
-
+            // 1. FAST IN-MEMORY CHECK: If eventText already contains any keyword, return true immediately!
+            // This takes < 1 microsecond and avoids up to 70 cross-process IPC binder queries to system_server!
             val keywords = listOf(
                 // English
                 "uninstall", "force stop", "clear data", "clear storage", "disable", "app info", "storage & cache",
@@ -805,7 +800,19 @@ class AppBlockService : AccessibilityService() {
             )
             for (kw in keywords) {
                 if (eventText.contains(kw)) return true
-                if (rootNode != null) {
+            }
+
+            // 2. Check known Android & OEM button view IDs via IPC only if eventText didn't match
+            for (id in knownButtonIds) {
+                try {
+                    val found = rootNode?.findAccessibilityNodeInfosByViewId(id)
+                    if (!found.isNullOrEmpty()) return true
+                } catch (_: Exception) {}
+            }
+
+            // 3. Fallback: Search rootNode for keywords via IPC
+            if (rootNode != null) {
+                for (kw in keywords) {
                     try {
                         val found = rootNode.findAccessibilityNodeInfosByText(kw)
                         if (!found.isNullOrEmpty()) return true
@@ -1011,7 +1018,7 @@ class AppBlockService : AccessibilityService() {
             val queue = ArrayDeque<android.view.accessibility.AccessibilityNodeInfo>()
             queue.add(node)
             var count = 0
-            while (queue.isNotEmpty() && count < 300) {
+            while (queue.isNotEmpty() && count < 150) {
                 val current = queue.removeFirst()
                 count++
                 val cls = current.className?.toString() ?: ""
@@ -1483,25 +1490,27 @@ class AppBlockService : AccessibilityService() {
             val packageName = event.packageName?.toString()?.trim()?.lowercase() ?: return
             val className = event.className?.toString()?.lowercase() ?: ""
 
-            // Track Facebook in-app browser activity state
-            if (isFacebookPackage(packageName)) {
-                if (isWindowState) {
-                    if (isFacebookInAppBrowser(packageName, className)) {
-                        isFbBrowserActive[packageName] = true
-                    } else if (className.isNotEmpty()) {
-                        isFbBrowserActive[packageName] = false
-                        facebookBrowserSessionActive[packageName] = false
-                    }
+            // FAST EARLY-EXIT: If it's a content change (scrolling/typing/layout updates),
+            // ONLY process if it's Settings/Installer or Facebook in-app browser!
+            // For 99% of normal app actions (typing WhatsApp, scrolling TikTok/IG), bail out in < 1 microsecond!
+            if (isWindowContent) {
+                val isFb = isFacebookPackage(packageName)
+                if (!isFb && !isSettingsOrInstallerApp(packageName)) {
+                    return
+                }
+                if (isFb && !(isFbBrowserActive[packageName] == true || isFacebookInAppBrowser(packageName, className))) {
+                    return
                 }
             }
 
-            // Optimization: If it's a content change (scrolling/typing/layout updates),
-            // ONLY process if it's Settings or Facebook in-app browser!
-            if (isWindowContent) {
-                val isFbBrowser = isFacebookPackage(packageName) &&
-                        (isFbBrowserActive[packageName] == true || isFacebookInAppBrowser(packageName, className))
-                val isTargetApp = isSettingsOrInstallerApp(packageName) || isFbBrowser
-                if (!isTargetApp) return
+            // Track Facebook in-app browser activity state (only on window state changes)
+            if (isFacebookPackage(packageName) && isWindowState) {
+                if (isFacebookInAppBrowser(packageName, className)) {
+                    isFbBrowserActive[packageName] = true
+                } else if (className.isNotEmpty()) {
+                    isFbBrowserActive[packageName] = false
+                    facebookBrowserSessionActive[packageName] = false
+                }
             }
 
             // Skip transient overlays, keyboards (IMEs), and system dialogs so they don't corrupt foreground state
@@ -1533,7 +1542,16 @@ class AppBlockService : AccessibilityService() {
             }
 
             // 0.0 PRIORITAS 0.0: ANTI-TAMPER SHIELD (STRICT MODE PROTECTION)
-            val activeNode = rootInActiveWindow ?: getTopmostNode(event.source) ?: event.source
+            // Lazy resolution of activeNode: only query window tree via IPC if and when an inspector actually needs it!
+            var cachedActiveNode: android.view.accessibility.AccessibilityNodeInfo? = null
+            var hasFetchedActiveNode = false
+            fun getActiveNode(): android.view.accessibility.AccessibilityNodeInfo? {
+                if (!hasFetchedActiveNode) {
+                    hasFetchedActiveNode = true
+                    cachedActiveNode = rootInActiveWindow ?: getTopmostNode(event.source) ?: event.source
+                }
+                return cachedActiveNode
+            }
 
             // 0.00 BYPASS: If user explicitly requested Device Admin activation in our app, allow full interaction on Settings / Admin screens
             val isDeviceAdminActivationBypass = now < deviceAdminActivationBypassUntil
@@ -1582,7 +1600,7 @@ class AppBlockService : AccessibilityService() {
                         className.lowercase().contains("specialaccess") ||
                         event.text.joinToString(" ").lowercase().contains("admin")
                 if (isSettingsOrInstaller || isA11yContext || isDeviceAdminContext) {
-                    val shieldReason = detectStrictShieldViolation(packageName, className, activeNode, event)
+                    val shieldReason = detectStrictShieldViolation(packageName, className, getActiveNode(), event)
                     if (shieldReason != null) {
                         Log.d("AppBlockService", "STRICT SHIELD TRIGGERED: reason=$shieldReason in pkg=$packageName cls=$className")
                         lastTriggeredPackage = packageName
@@ -1628,14 +1646,14 @@ class AppBlockService : AccessibilityService() {
                     }
 
                     // 1. Check App Details first (Settings -> Apps -> Muslim Launcher 2)
-                    val targetsAppDetails = isAppDetailsScreenTargetingUs(activeNode, eventText, className, packageName)
+                    val targetsAppDetails = isAppDetailsScreenTargetingUs(getActiveNode(), eventText, className, packageName)
 
                     // 2. Check Accessibility screen second (Settings -> Accessibility -> Muslim Launcher 2)
-                    val targetsAccessibility = !targetsAppDetails && isAccessibilityScreenTargetingUs(activeNode, eventText, className, packageName)
+                    val targetsAccessibility = !targetsAppDetails && isAccessibilityScreenTargetingUs(getActiveNode(), eventText, className, packageName)
 
                     // Exclude Device Admin completely from Standard Mode overlay
                     if (!targetsAccessibility && !targetsAppDetails) {
-                        val isDeviceAdmin = isDeviceAdminScreenTargetingUs(activeNode, eventText, className, packageName) ||
+                        val isDeviceAdmin = isDeviceAdminScreenTargetingUs(getActiveNode(), eventText, className, packageName) ||
                                 cleanClass.contains("deviceadmin") ||
                                 cleanClass.contains("device_admin") ||
                                 cleanClass.contains("adminsettings") ||
@@ -1724,7 +1742,7 @@ class AppBlockService : AccessibilityService() {
             if (isFacebookPackage(packageName)) {
                 val isFbBrowser = isFacebookInAppBrowser(packageName, className) || (isFbBrowserActive[packageName] == true)
                 if (isFbBrowser) {
-                    val (violation, targetInfo) = detectFacebookBrowserViolation(event, activeNode)
+                    val (violation, targetInfo) = detectFacebookBrowserViolation(event, getActiveNode())
                     if (violation == BrowserViolation.GAMBLING || violation == BrowserViolation.ADULT) {
                         val targetLabel = if (violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
                         Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION ($targetLabel): $targetInfo")
@@ -1814,7 +1832,7 @@ class AppBlockService : AccessibilityService() {
                         } else {
                             // Link baru saja diklik di dalam Facebook!
                             // Cek apakah konten URL / domain sudah termuat di toolbar
-                            val scanRes = detectFacebookBrowserViolation(event, activeNode)
+                            val scanRes = detectFacebookBrowserViolation(event, getActiveNode())
                             if (scanRes.violation == BrowserViolation.GAMBLING || scanRes.violation == BrowserViolation.ADULT) {
                                 val targetLabel = if (scanRes.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
                                 Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION ($targetLabel): ${scanRes.targetInfo}")

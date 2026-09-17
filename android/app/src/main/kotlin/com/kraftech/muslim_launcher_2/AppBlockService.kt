@@ -1148,6 +1148,143 @@ class AppBlockService : AccessibilityService() {
                    lowerClass.contains("browseractivity") ||
                    lowerClass.contains("browserproxy")
         }
+
+        enum class BrowserViolation {
+            NONE,
+            GAMBLING,
+            ADULT
+        }
+
+        private val VID_WHITELIST = listOf(
+            "vidio.com",
+            "vidio",
+            "video.google.com",
+            "video.kompas.com",
+            "video.tribunnews.com",
+            "video.detik.com",
+            "video.tempo.co",
+            "video.liputan6.com",
+            "youtube.com",
+            "youtu.be",
+            "vimeo.com",
+            "dailymotion.com",
+            "twitch.tv",
+            "tiktok.com",
+            "wikipedia",
+            "wikimedia",
+            "david",
+            "individual",
+            "provider",
+            "evidence",
+            "covid",
+            "divisi",
+            "video"
+        )
+
+        private val ADULT_KEYWORDS = listOf(
+            "porn", "porno", "xxx", "bokep", "hentai", "doujin", "nekopoi", "jav", "javhd", "javsub", "dmm",
+            "xnxx", "xvideos", "xhamster", "redtube", "youporn", "spankbang", "brazzers", "beeg", "eporner", "tube8",
+            "onlyfans", "fansly", "fancentro", "stripchat", "chaturbate", "bongacams", "cam4", "livejasmin",
+            "sange", "lendir", "colmek", "crot", "pemersatubangsa", ".xxx", ".porn", ".adult"
+        )
+
+        private val GAMBLING_KEYWORDS = listOf(
+            "slot", "slot88", "slot777", "slotgacor", "gacor", "maxwin", "scatter",
+            "zeus", "kakekzeus", "olympus", "mahjong", "mahjongways", "sweetbonanza",
+            "pragmatic", "pragmaticplay", "pgsoft", "habanero", "spadegaming", "joker123",
+            "judol", "judi", "taruhan", "betting", "agenjudi", "bandar",
+            "linkgacor", "situsslot", "rtpslot", "bocoranslot", "pola-slot",
+            "togel", "totomacau", "totogel", "togelonline", "singaporepools", "hongkongpools",
+            "casino", "baccarat", "roulette", "blackjack", "sicbo",
+            "poker88", "idnpoker", "domino99", "dominoqq", "qiuqiu", "ceme", "capsa",
+            "sbobet", "bet365", "1xbet", "parimatch", "m88", "w88", "fun88", "dafabet",
+            "sabungayam", "sv388", "s128", "cockfight"
+        )
+
+        fun detectFacebookBrowserViolation(
+            event: AccessibilityEvent,
+            rootNode: android.view.accessibility.AccessibilityNodeInfo?
+        ): Pair<BrowserViolation, String> {
+            val gatheredTexts = mutableListOf<String>()
+
+            // 1. Gather text from the accessibility event
+            for (charSeq in event.text) {
+                val str = charSeq?.toString()?.trim()?.lowercase() ?: continue
+                if (str.isNotEmpty()) gatheredTexts.add(str)
+            }
+            event.contentDescription?.toString()?.trim()?.lowercase()?.let {
+                if (it.isNotEmpty()) gatheredTexts.add(it)
+            }
+
+            // 2. Perform a shallow search on the toolbar (max depth 3, max 25 nodes)
+            // to extract header / domain / subtitle text without traversing the heavy WebView HTML DOM
+            fun scanShallow(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int, count: IntArray) {
+                if (node == null || depth > 3 || count[0] >= 25) return
+                count[0]++
+
+                node.text?.toString()?.trim()?.lowercase()?.let {
+                    if (it.isNotEmpty() && !gatheredTexts.contains(it)) gatheredTexts.add(it)
+                }
+                node.contentDescription?.toString()?.trim()?.lowercase()?.let {
+                    if (it.isNotEmpty() && !gatheredTexts.contains(it)) gatheredTexts.add(it)
+                }
+
+                val className = node.className?.toString()?.lowercase() ?: ""
+                if (className.contains("webview")) return
+
+                for (i in 0 until node.childCount) {
+                    try {
+                        val child = node.getChild(i) ?: continue
+                        scanShallow(child, depth + 1, count)
+                    } catch (_: Exception) {}
+                }
+            }
+
+            val startNode = event.source ?: rootNode
+            if (startNode != null) {
+                val count = intArrayOf(0)
+                scanShallow(startNode, 0, count)
+            }
+
+            if (gatheredTexts.isEmpty()) {
+                return Pair(BrowserViolation.NONE, "")
+            }
+
+            val combined = gatheredTexts.joinToString(" ")
+
+            fun isWhitelisted(text: String): Boolean {
+                for (white in VID_WHITELIST) {
+                    if (text.contains(white)) return true
+                }
+                return false
+            }
+
+            // 1. Check Gambling (Maysir - Haram Mutlak, Highest Priority)
+            for (kw in GAMBLING_KEYWORDS) {
+                if (combined.contains(kw)) {
+                    val matchedSnippet = gatheredTexts.find { it.contains(kw) } ?: kw
+                    return Pair(BrowserViolation.GAMBLING, matchedSnippet)
+                }
+            }
+
+            // 2. Check Core Adult Keywords
+            for (kw in ADULT_KEYWORDS) {
+                if (combined.contains(kw)) {
+                    val matchedSnippet = gatheredTexts.find { it.contains(kw) } ?: kw
+                    return Pair(BrowserViolation.ADULT, matchedSnippet)
+                }
+            }
+
+            // 3. Flexible "vid" matching with Whitelist
+            if (combined.contains("vid")) {
+                val vidSnippet = gatheredTexts.find { it.contains("vid") } ?: ""
+                if (vidSnippet.isNotEmpty() && !isWhitelisted(vidSnippet)) {
+                    return Pair(BrowserViolation.ADULT, vidSnippet)
+                }
+            }
+
+            return Pair(BrowserViolation.NONE, "")
+        }
     }
 
     private fun loadTemporaryAllowed() {
@@ -1563,6 +1700,34 @@ class AppBlockService : AccessibilityService() {
                 if (!isFbBrowser) {
                     // Berada di feed / aktivitas biasa Facebook (bukan in-app browser)
                     facebookBrowserSessionActive[packageName] = false
+                } else {
+                    // One-shot scan: Check toolbar/header for Gambling or Adult content violations (with flexible 'vid' + whitelist)
+                    val (violation, targetInfo) = detectFacebookBrowserViolation(event, rootInActiveWindow)
+                    if (violation == BrowserViolation.GAMBLING) {
+                        Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION (GAMBLING): $targetInfo")
+                        facebookBrowserSessionActive[packageName] = false
+                        lastTriggeredPackage = packageName
+                        lastTriggeredTime = now
+                        try {
+                            performGlobalAction(GLOBAL_ACTION_BACK)
+                        } catch (_: Exception) {}
+                        val targetLabel = if (targetInfo.isNotEmpty()) "Judi: $targetInfo" else "Judi Online"
+                        MainActivity.notifyAppProhibited(targetLabel)
+                        bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+                        return
+                    } else if (violation == BrowserViolation.ADULT) {
+                        Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION (ADULT): $targetInfo")
+                        facebookBrowserSessionActive[packageName] = false
+                        lastTriggeredPackage = packageName
+                        lastTriggeredTime = now
+                        try {
+                            performGlobalAction(GLOBAL_ACTION_BACK)
+                        } catch (_: Exception) {}
+                        val targetLabel = if (targetInfo.isNotEmpty()) "Dewasa: $targetInfo" else "Konten Dewasa"
+                        MainActivity.notifyAppProhibited(targetLabel)
+                        bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+                        return
+                    }
                 }
 
                 if (hasActiveSession) {

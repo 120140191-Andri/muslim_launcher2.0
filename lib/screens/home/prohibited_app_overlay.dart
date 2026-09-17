@@ -316,38 +316,40 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
 
                       // Action Buttons
                       if (isAdultApp || isGamblingApp) ...[
-                        // Uninstall App Button for Adult Content & Gambling Apps
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              const channel = MethodChannel('com.muslimlauncher/apps');
-                              try {
-                                await channel.invokeMethod('uninstallApp', {'packageName': widget.packageName});
-                              } catch (_) {}
-                              appState.clearProhibitedPackage();
-                            },
-                            icon: const Icon(Icons.delete_forever_rounded, size: 20),
-                            label: Text(
-                              Translations.get(lang, 'uninstall_prohibited_app'),
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
+                        // Uninstall App Button for installed Adult Content & Gambling Apps
+                        if (appName.isNotEmpty || (!widget.packageName.startsWith('Judi') && !widget.packageName.startsWith('Dewasa') && !widget.packageName.contains('://') && !widget.packageName.contains(' '))) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                const channel = MethodChannel('com.muslimlauncher/apps');
+                                try {
+                                  await channel.invokeMethod('uninstallApp', {'packageName': widget.packageName});
+                                } catch (_) {}
+                                appState.clearProhibitedPackage();
+                              },
+                              icon: const Icon(Icons.delete_forever_rounded, size: 20),
+                              label: Text(
+                                Translations.get(lang, 'uninstall_prohibited_app'),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.3,
+                                ),
                               ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFBE123C),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFBE123C),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 4,
                               ),
-                              elevation: 4,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
+                        ],
                         // Back to Home Button
                         SizedBox(
                           width: double.infinity,

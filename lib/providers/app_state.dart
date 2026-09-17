@@ -1973,8 +1973,86 @@ class AppState extends ChangeNotifier {
         name.contains('video dewasa') ||
         name.contains('film dewasa') ||
         pkg.contains('javhd') ||
-        name.contains('javhd')) {
+        name.contains('javhd') ||
+        pkg.startsWith('dewasa:') ||
+        name.startsWith('dewasa:')) {
       return true;
+    }
+
+    // 7. Core adult video platforms & explicit terms
+    const adultCoreKeywords = [
+      'xvideos',
+      'xvid',
+      'xvids',
+      'xvideo',
+      'xnxx',
+      'xhamster',
+      'pornhub',
+      'redtube',
+      'youporn',
+      'spankbang',
+      'brazzers',
+      'beeg',
+      'eporner',
+      'tube8',
+      'hentai',
+      'doujin',
+      'rule34',
+      'nhentai',
+      'nekopoi',
+      'sange',
+      'lendir',
+      'colmek',
+      'crot',
+      'pemersatubangsa',
+      'konten dewasa',
+      '.xxx',
+      '.porn',
+      '.adult',
+    ];
+    for (final kw in adultCoreKeywords) {
+      if (pkg.contains(kw) || name.contains(kw)) return true;
+    }
+
+    // 8. Flexible 'vid' keyword with whitelist protection
+    if (pkg.contains('vid') || name.contains('vid')) {
+      const vidWhitelist = [
+        'vidio.com',
+        'vidio',
+        'video.google.com',
+        'video.kompas.com',
+        'video.tribunnews.com',
+        'video.detik.com',
+        'video.tempo.co',
+        'video.liputan6.com',
+        'youtube.com',
+        'youtu.be',
+        'vimeo.com',
+        'dailymotion.com',
+        'twitch.tv',
+        'tiktok.com',
+        'wikipedia',
+        'wikimedia',
+        'david',
+        'individual',
+        'provider',
+        'evidence',
+        'covid',
+        'divisi',
+        'video',
+        'video editor',
+        'video player',
+      ];
+      bool isWhitelisted = false;
+      for (final white in vidWhitelist) {
+        if (pkg.contains(white) || name.contains(white)) {
+          isWhitelisted = true;
+          break;
+        }
+      }
+      if (!isWhitelisted) {
+        return true;
+      }
     }
 
     return false;
@@ -2087,6 +2165,7 @@ class AppState extends ChangeNotifier {
       'ceme keliling',
       'capsa susun',
       'judi',
+      'judi online',
       'judol',
       'taruhan',
       'taruhan bola',
@@ -2097,6 +2176,14 @@ class AppState extends ChangeNotifier {
       'sportsbook',
       'bookmaker',
       'betting',
+      'agenjudi',
+      'bandar',
+      'linkgacor',
+      'situsslot',
+      'rtpslot',
+      'bocoranslot',
+      'pola slot',
+      'pola-slot',
       // Indonesian Domino gambling variants
       'higgs domino',
       'domino island',
@@ -2122,7 +2209,7 @@ class AppState extends ChangeNotifier {
 
     for (final kw in gamblingKeywords) {
       if (kw.contains(' ')) {
-        if (name.contains(kw) || pkg.contains(kw.replaceAll(' ', ''))) return true;
+        if (name.contains(kw) || pkg.contains(kw.replaceAll(' ', '')) || pkg.contains(kw)) return true;
       } else {
         if (name.contains(kw) || pkg.contains(kw)) return true;
       }
@@ -2138,7 +2225,9 @@ class AppState extends ChangeNotifier {
         pkg.contains('.gamble') ||
         pkg.contains('.gambling') ||
         pkg.contains('.judol') ||
-        pkg.contains('.togel')) {
+        pkg.contains('.togel') ||
+        pkg.startsWith('judi') ||
+        name.startsWith('judi')) {
       return true;
     }
 

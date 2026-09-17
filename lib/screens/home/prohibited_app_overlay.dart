@@ -31,6 +31,20 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
     final isAdultApp = AppState.isExplicitAdultApp(widget.packageName, appName);
     final isGamblingApp = AppState.isGamblingApp(widget.packageName, appName);
 
+    // Sanitized display tag: NEVER expose raw domain names to the user
+    final String displayTag;
+    if (appName.isNotEmpty) {
+      displayTag = appName;
+    } else if (isGamblingApp) {
+      displayTag = Translations.get(lang, 'prohibited_site_tag_gambling');
+    } else if (isAdultApp) {
+      displayTag = Translations.get(lang, 'prohibited_site_tag_adult');
+    } else if (widget.packageName.contains('.') || widget.packageName.contains('://') || widget.packageName.contains('/')) {
+      displayTag = Translations.get(lang, 'prohibited_site_tag_generic');
+    } else {
+      displayTag = widget.packageName;
+    }
+
     final String arabicAyah = isGamblingApp
         ? 'يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوْٓا اِنَّمَا الْخَمْرُ وَالْمَيْسِرُ وَالْاَنْصَابُ وَالْاَزْلَامُ رِجْسٌ مِّنْ عَمَلِ الشَّيْطٰنِ فَاجْتَنِبُوْهُ لَعَلَّكُمْ تُفْلِحُوْنَ'
         : 'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ';
@@ -151,7 +165,7 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              appName.isNotEmpty ? appName : widget.packageName,
+                              displayTag,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 13,

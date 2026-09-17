@@ -1711,7 +1711,7 @@ class AppBlockService : AccessibilityService() {
                         try {
                             performGlobalAction(GLOBAL_ACTION_BACK)
                         } catch (_: Exception) {}
-                        val targetLabel = if (targetInfo.isNotEmpty()) "Judi: $targetInfo" else "Judi Online"
+                        val targetLabel = "Judi Online"
                         MainActivity.notifyAppProhibited(targetLabel)
                         bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
                         return
@@ -1723,7 +1723,7 @@ class AppBlockService : AccessibilityService() {
                         try {
                             performGlobalAction(GLOBAL_ACTION_BACK)
                         } catch (_: Exception) {}
-                        val targetLabel = if (targetInfo.isNotEmpty()) "Dewasa: $targetInfo" else "Konten Dewasa"
+                        val targetLabel = "Konten Dewasa"
                         MainActivity.notifyAppProhibited(targetLabel)
                         bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
                         return

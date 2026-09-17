@@ -18,6 +18,9 @@ class Translations {
           'Ingatlah Allah dan tundukkan pandangan sebelum melanjutkan.',
       'prohibited_app_title': 'Aplikasi Dilarang Dibuka',
       'prohibited_gambling_title': 'Aplikasi Perjudian Dilarang',
+      'prohibited_site_tag_gambling': 'Situs / Konten Judi Dilarang',
+      'prohibited_site_tag_adult': 'Situs / Konten Dewasa Dilarang',
+      'prohibited_site_tag_generic': 'Situs / Tautan Dilarang',
       'prohibited_app_desc':
           'Peramban anti-blokir / bypass ini diblokir secara total demi menjaga kesucian diri dan melindungi pandangan dari kemungkaran.',
       'prohibited_adult_desc':
@@ -389,6 +392,9 @@ class Translations {
           'Remember Allah and lower your gaze before proceeding.',
       'prohibited_app_title': 'Application Prohibited',
       'prohibited_gambling_title': 'Gambling Application Prohibited',
+      'prohibited_site_tag_gambling': 'Prohibited Gambling Site',
+      'prohibited_site_tag_adult': 'Prohibited Adult Site',
+      'prohibited_site_tag_generic': 'Prohibited Site',
       'prohibited_app_desc':
           'This bypass / anti-censorship browser is permanently blocked to safeguard purity and protect your gaze from unlawful content.',
       'prohibited_adult_desc':
@@ -752,6 +758,9 @@ class Translations {
           'Ingatlah Allah dan tundukkan pandangan sebelum meneruskan.',
       'prohibited_app_title': 'Aplikasi Dilarang Dibuka',
       'prohibited_gambling_title': 'Aplikasi Perjudian Dilarang',
+      'prohibited_site_tag_gambling': 'Laman / Kandungan Judi Dilarang',
+      'prohibited_site_tag_adult': 'Laman / Kandungan Dewasa Dilarang',
+      'prohibited_site_tag_generic': 'Laman / Pautan Dilarang',
       'prohibited_app_desc':
           'Pelayar anti-sekat / pintasan ini disekat sepenuhnya demi memelihara kesucian diri dan melindungi pandangan daripada kemungkaran.',
       'prohibited_adult_desc':
@@ -1107,6 +1116,9 @@ class Translations {
       'ghadhul_bashar_subtitle': 'اذكر الله واغضض بصرك قبل المتابعة.',
       'prohibited_app_title': 'التطبيق محظور تماماً',
       'prohibited_gambling_title': 'تطبيق القمار محظور تماماً',
+      'prohibited_site_tag_gambling': 'موقع قمار محظور',
+      'prohibited_site_tag_adult': 'موقع محتوى للبالغين محظور',
+      'prohibited_site_tag_generic': 'موقع محظور',
       'prohibited_app_desc':
           'تم حظر متصفح تخطي الحجب هذا تماماً حفاظاً على الطهارة وغض البصر عن المعاصي.',
       'prohibited_adult_desc':
@@ -1448,6 +1460,9 @@ class Translations {
           'Onthou Allah en slaan jou oë neer voor jy voortgaan.',
       'prohibited_app_title': 'Toepassing Verbode',
       'prohibited_gambling_title': 'Dobbel-toepassing Verbode',
+      'prohibited_site_tag_gambling': 'Verbode Dobbelwerf',
+      'prohibited_site_tag_adult': 'Verbode Werf vir Volwassenes',
+      'prohibited_site_tag_generic': 'Verbode Werf',
       'prohibited_app_desc':
           'Hierdie blaaier is heeltemal geblokkeer om kuisheid te bewaar en jou oë teen onwettige inhoud te beskerm.',
       'prohibited_adult_desc':
@@ -1756,6 +1771,9 @@ class Translations {
           'Mkumbuke Mwenyezi Mungu na uinamishe macho yako kabla ya kuendelea.',
       'prohibited_app_title': 'Programu Imepigwa Marufuku',
       'prohibited_gambling_title': 'Programu ya Kamari Imepigwa Marufuku',
+      'prohibited_site_tag_gambling': 'Tovuti ya Kamari Iliyopigwa Marufuku',
+      'prohibited_site_tag_adult': 'Tovuti ya Watu Wazima Iliyopigwa Marufuku',
+      'prohibited_site_tag_generic': 'Tovuti Iliyopigwa Marufuku',
       'prohibited_app_desc':
           'Kivinjari hiki kimezuiwa kabisa ili kulinda usafi wa moyo na kuzuia macho kutokana na yaliyoharamishwa.',
       'prohibited_adult_desc':

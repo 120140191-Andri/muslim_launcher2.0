@@ -41,8 +41,15 @@ class StandardReflectionOverlay extends StatelessWidget {
     final String ayahsFormatted =
         NumberFormat.decimalPattern(isEn ? 'en' : 'id').format(totalAyahsRead);
 
-    return Material(
-      color: Colors.black.withValues(alpha: 0.82),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          appState.clearStandardReflection();
+        }
+      },
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.82),
       child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -346,6 +353,7 @@ class StandardReflectionOverlay extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

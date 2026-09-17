@@ -209,4 +209,26 @@ class AppBlockService {
       // Failed to invoke
     }
   }
+
+  Future<void> setOnboardingCompleted(bool completed) async {
+    try {
+      await _channel.invokeMethod('setOnboardingCompleted', {
+        'completed': completed,
+      });
+    } on PlatformException catch (_) {
+      // Ignored
+    } catch (_) {
+      // Ignored
+    }
+  }
+
+  Future<void> resetStandardReflectionDebounce() async {
+    try {
+      await _channel.invokeMethod('resetStandardReflectionDebounce');
+    } on PlatformException catch (_) {
+      // Ignored
+    } catch (_) {
+      // Ignored
+    }
+  }
 }

@@ -471,6 +471,7 @@ class AppState extends ChangeNotifier {
     _languageCode = prefs.getString('languageCode') ?? getDefaultLanguageCode();
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
+    appBlockService.setOnboardingCompleted(_hasCompletedOnboarding);
     _points = prefs.getInt('points') ?? 0;
     if (_points < 0) {
       _points = 0;
@@ -1106,6 +1107,7 @@ class AppState extends ChangeNotifier {
     _hasSelectedLanguage = true; // Safety check
     await prefs.setBool('hasCompletedOnboarding', true);
     await prefs.setBool('hasSelectedLanguage', true); // Consistent state
+    await appBlockService.setOnboardingCompleted(true);
     notifyListeners();
   }
 
@@ -3205,6 +3207,7 @@ class AppState extends ChangeNotifier {
     }
     if (_isStandardReflectionActive) {
       _isStandardReflectionActive = false;
+      appBlockService.resetStandardReflectionDebounce();
       changed = true;
     }
     if (changed) {
@@ -3221,6 +3224,7 @@ class AppState extends ChangeNotifier {
   void clearStandardReflection() {
     if (_isStandardReflectionActive) {
       _isStandardReflectionActive = false;
+      appBlockService.resetStandardReflectionDebounce();
       notifyListeners();
     }
   }

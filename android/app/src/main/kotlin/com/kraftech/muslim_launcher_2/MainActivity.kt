@@ -121,11 +121,16 @@ class MainActivity : FlutterActivity() {
         }
 
         var pendingStandardReflection: Boolean = false
-        private var lastNotifiedReflectionTime: Long = 0L
+        var lastNotifiedReflectionTime: Long = 0L
+
+        fun resetReflectionDebounce() {
+            lastNotifiedReflectionTime = 0L
+            pendingStandardReflection = false
+        }
 
         fun notifyStandardReflectionTriggered() {
             val now = System.currentTimeMillis()
-            if ((now - lastNotifiedReflectionTime) < 2000L) {
+            if ((now - lastNotifiedReflectionTime) < 400L) {
                 return
             }
             lastNotifiedReflectionTime = now
@@ -374,6 +379,15 @@ class MainActivity : FlutterActivity() {
                     val status = AppBlockService.getStrictModeStatus(this)
                     result.success(status)
                 }
+                "setOnboardingCompleted" -> {
+                    val completed = call.argument<Boolean>("completed") ?: false
+                    AppBlockService.setOnboardingCompleted(this, completed)
+                    result.success(true)
+                }
+                "resetStandardReflectionDebounce" -> {
+                    AppBlockService.resetStandardSettingsBypass()
+                    result.success(true)
+                }
                 "allowStandardSettingsTemporarily" -> {
                     val durationRaw = call.argument<Any>("durationMillis")
                     val duration = when (durationRaw) {
@@ -382,15 +396,55 @@ class MainActivity : FlutterActivity() {
                     }
                     AppBlockService.allowStandardSettingsTemporarily(duration)
 
-                    // Automatically return to Settings or Play Store as requested by "Lanjutkan"
+                    // Automatically return to Settings, Accessibility, or Device Admin as requested by "Lanjutkan"
                     val source = AppBlockService.lastStandardReflectionSource
                     try {
-                        if (source == "playstore") {
-                            val playIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")).apply {
-                                setPackage("com.android.vending")
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        Log.d("MainActivity", "allowStandardSettingsTemporarily: source=$source")
+                        if (source == "device_admin") {
+                            var launched = false
+                            val component = ComponentName(this@MainActivity, MuslimDeviceAdminReceiver::class.java)
+
+                            // 1. Direct to Device Admin for Muslim Launcher 2
+                            // On HyperOS, Samsung, and all Android versions, ACTION_ADD_DEVICE_ADMIN opens
+                            // the device admin activation screen (if not active yet) or management screen (if active).
+                            try {
+                                val adminIntent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                                    putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
+                                    putExtra(
+                                        DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                                        "Mengaktifkan Administrator Perangkat untuk mencegah pencopotan aplikasi selama Mode Ketat (Komitmen Istiqomah) berjalan."
+                                    )
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                }
+                                startActivity(adminIntent)
+                                launched = true
+                                Log.d("MainActivity", "Launched ACTION_ADD_DEVICE_ADMIN successfully")
+                            } catch (e: Exception) {
+                                Log.e("MainActivity", "ACTION_ADD_DEVICE_ADMIN failed: ${e.message}")
                             }
-                            startActivity(playIntent)
+
+                            // 2. Fallback: try standard Device Admin list settings
+                            if (!launched) {
+                                val adminListIntents = listOf(
+                                    Intent("android.settings.ACTION_DEVICE_ADMIN_SETTINGS"),
+                                    Intent().setComponent(ComponentName("com.android.settings", "com.android.settings.DeviceAdminSettings")),
+                                    Intent().setComponent(ComponentName("com.android.settings", "com.android.settings.Settings\$DeviceAdminSettingsActivity")),
+                                    Intent(Settings.ACTION_SECURITY_SETTINGS)
+                                )
+                                for (adminIntent in adminListIntents) {
+                                    try {
+                                        adminIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        startActivity(adminIntent)
+                                        launched = true
+                                        Log.d("MainActivity", "Launched fallback admin list intent successfully")
+                                        break
+                                    } catch (_: Exception) {}
+                                }
+                            }
+
+                            if (!launched) {
+                                moveTaskToBack(true)
+                            }
                         } else if (source == "accessibility") {
                             val a11yIntent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -458,6 +512,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
+        AppBlockService.resetStandardSettingsBypass()
         // Replay any pending block events that arrived while the activity was paused.
         // The accessibility service may have set pendingBlockedPackage etc. while we were
         // in background — now that we're back, deliver them to Flutter.
@@ -552,7 +607,12 @@ class MainActivity : FlutterActivity() {
             notifyStrictShieldTriggered(reason)
         }
         if (intent.getBooleanExtra("triggerStandardReflectionScreen", false)) {
+            val src = intent.getStringExtra("standardReflectionSource")
+            if (!src.isNullOrBlank()) {
+                AppBlockService.lastStandardReflectionSource = src
+            }
             intent.removeExtra("triggerStandardReflectionScreen")
+            intent.removeExtra("standardReflectionSource")
             lastNotifiedReflectionTime = 0L
             notifyStandardReflectionTriggered()
         }

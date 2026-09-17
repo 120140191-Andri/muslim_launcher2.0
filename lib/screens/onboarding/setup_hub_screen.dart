@@ -36,8 +36,8 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     // Store reference for safe dispose
     _appStateRef = Provider.of<AppState>(context, listen: false);
     _prevIsDefault = _appStateRef.isDefaultLauncher;
-    _prevIsAccess = _appStateRef.isAccessibilityEnabled;
     _prevIsAutostart = _appStateRef.hasAcknowledgedAutostart;
+    _prevIsAccess = _appStateRef.isAccessibilityEnabled;
 
     // Fast check on enter
     _appStateRef.refreshStatus();
@@ -62,12 +62,12 @@ class _SetupHubScreenState extends State<SetupHubScreen>
       _prevIsDefault = appState.isDefaultLauncher;
       hasChanged = true;
     }
-    if (appState.isAccessibilityEnabled != _prevIsAccess) {
-      _prevIsAccess = appState.isAccessibilityEnabled;
-      hasChanged = true;
-    }
     if (appState.hasAcknowledgedAutostart != _prevIsAutostart) {
       _prevIsAutostart = appState.hasAcknowledgedAutostart;
+      hasChanged = true;
+    }
+    if (appState.isAccessibilityEnabled != _prevIsAccess) {
+      _prevIsAccess = appState.isAccessibilityEnabled;
       hasChanged = true;
     }
 
@@ -83,9 +83,9 @@ class _SetupHubScreenState extends State<SetupHubScreen>
       _expandedStepIndex = 0;
     } else if (!appState.isDefaultLauncher) {
       _expandedStepIndex = 1;
-    } else if (!appState.isAccessibilityEnabled) {
-      _expandedStepIndex = 2;
     } else if (!appState.hasAcknowledgedAutostart) {
+      _expandedStepIndex = 2;
+    } else if (!appState.isAccessibilityEnabled) {
       _expandedStepIndex = 3;
     } else {
       _expandedStepIndex = null; // All done
@@ -412,53 +412,10 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                 ),
                 const SizedBox(height: 14),
 
-                // STEP 3: Accessibility Service
+                // STEP 3: Autostart & Battery
                 _buildStepCard(
                   index: 2,
                   stepNum: 3,
-                  title: isEn ? 'Accessibility Service (Blocker)' : 'Layanan Aksesibilitas (Pemblokir)',
-                  subtitle: isAccess
-                      ? (isEn ? 'App blocker service is running' : 'Sistem pemblokir aktif di latar belakang')
-                      : (isEn ? 'Required for real-time app blocking' : 'Dibutuhkan agar pemblokir berfungsi real-time'),
-                  icon: Icons.security_rounded,
-                  isDone: isAccess,
-                  instructions: DeviceInstructions.getAccessibilityInstructions(manufacturer, lang),
-                  brandDisplay: brandDisplay,
-                  isEn: isEn,
-                  lang: lang,
-                  actionWidget: isAccess
-                      ? OutlinedButton.icon(
-                          onPressed: _openAccessibilitySettings,
-                          icon: const Icon(Icons.verified_rounded, size: 18),
-                          label: Text(isEn ? 'View Accessibility Settings' : 'Lihat Pengaturan Aksesibilitas'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF0D5C3A),
-                            side: BorderSide(color: const Color(0xFF0D5C3A).withValues(alpha: 0.4)),
-                            backgroundColor: const Color(0xFF0D5C3A).withValues(alpha: 0.04),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                        )
-                      : ElevatedButton.icon(
-                          onPressed: _openAccessibilitySettings,
-                          icon: const Icon(Icons.lock_open_rounded, size: 18),
-                          label: Text(isEn ? 'Open Accessibility Settings' : 'Buka Pengaturan Aksesibilitas'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0D5C3A),
-                            foregroundColor: Colors.white,
-                            elevation: 2,
-                            shadowColor: const Color(0xFF0D5C3A).withValues(alpha: 0.3),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 14),
-
-                // STEP 4: Autostart & Battery
-                _buildStepCard(
-                  index: 3,
-                  stepNum: 4,
                   title: isEn ? 'Autostart & Battery Opt.' : 'Mulai Otomatis & Opt. Baterai',
                   subtitle: isAutostart
                       ? (isEn ? 'Autostart configured for $brandDisplay' : 'Autostart sudah disesuaikan untuk $brandDisplay')
@@ -506,6 +463,49 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                       ],
                     ],
                   ),
+                ),
+                const SizedBox(height: 14),
+
+                // STEP 4: Accessibility Service
+                _buildStepCard(
+                  index: 3,
+                  stepNum: 4,
+                  title: isEn ? 'Accessibility Service (Blocker)' : 'Layanan Aksesibilitas (Pemblokir)',
+                  subtitle: isAccess
+                      ? (isEn ? 'App blocker service is running' : 'Sistem pemblokir aktif di latar belakang')
+                      : (isEn ? 'Required for real-time app blocking' : 'Dibutuhkan agar pemblokir berfungsi real-time'),
+                  icon: Icons.security_rounded,
+                  isDone: isAccess,
+                  instructions: DeviceInstructions.getAccessibilityInstructions(manufacturer, lang),
+                  brandDisplay: brandDisplay,
+                  isEn: isEn,
+                  lang: lang,
+                  actionWidget: isAccess
+                      ? OutlinedButton.icon(
+                          onPressed: _openAccessibilitySettings,
+                          icon: const Icon(Icons.verified_rounded, size: 18),
+                          label: Text(isEn ? 'View Accessibility Settings' : 'Lihat Pengaturan Aksesibilitas'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF0D5C3A),
+                            side: BorderSide(color: const Color(0xFF0D5C3A).withValues(alpha: 0.4)),
+                            backgroundColor: const Color(0xFF0D5C3A).withValues(alpha: 0.04),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: _openAccessibilitySettings,
+                          icon: const Icon(Icons.lock_open_rounded, size: 18),
+                          label: Text(isEn ? 'Open Accessibility Settings' : 'Buka Pengaturan Aksesibilitas'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0D5C3A),
+                            foregroundColor: Colors.white,
+                            elevation: 2,
+                            shadowColor: const Color(0xFF0D5C3A).withValues(alpha: 0.3),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 16),
 
@@ -687,7 +687,7 @@ class _SetupHubScreenState extends State<SetupHubScreen>
                           child: Text(
                             (isDefault && isAccess)
                                 ? Translations.get(lang, 'next_select_mode')
-                                : (isEn ? 'COMPLETE SETTINGS (STEP 2 & 3)' : 'SELESAIKAN PENGATURAN UTAMA (LANGKAH 2 & 3)'),
+                                : (isEn ? 'COMPLETE SETTINGS (STEP 2 & 4)' : 'SELESAIKAN PENGATURAN UTAMA (LANGKAH 2 & 4)'),
                             style: TextStyle(
                               fontSize: 13.5,
                               fontWeight: FontWeight.bold,

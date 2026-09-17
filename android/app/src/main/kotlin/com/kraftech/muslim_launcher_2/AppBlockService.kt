@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.app.ActivityOptions
 import android.app.PendingIntent
 import android.content.Context
+import android.content.ComponentName
 import android.content.Intent
 import android.view.accessibility.AccessibilityEvent
 import android.util.Log
@@ -592,7 +593,7 @@ class AppBlockService : AccessibilityService() {
 
             // Device Admin deactivation attempt (ONLY if Muslim Launcher is ALREADY an active Device Admin and NOT during user activation bypass):
             val isActivationBypass = System.currentTimeMillis() < deviceAdminActivationBypassUntil
-            val isAdminActive = isDeviceAdminActive(instance ?: this)
+            val isAdminActive = isDeviceAdminActive(instance)
             if (!isActivationBypass && isAdminActive) {
                 if (isDeviceAdminScreenTargetingUs(rootNode, eventText, className, packageName)) {
                     return "device_admin"

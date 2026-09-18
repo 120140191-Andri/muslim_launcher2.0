@@ -41,6 +41,12 @@ class SurahDetailScreen extends StatefulWidget {
         dotCount: dotCount,
       );
 
+  static double calculateAccurateArabicSeconds(String arabic) =>
+      _SurahDetailScreenState.calculateAccurateArabicSeconds(arabic);
+
+  static double calculateAccurateTranslationSeconds(String? translation) =>
+      _SurahDetailScreenState.calculateAccurateTranslationSeconds(translation);
+
   @override
   State<SurahDetailScreen> createState() => _SurahDetailScreenState();
 }
@@ -652,23 +658,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       return;
     }
 
-    final cleanArabic = arabic.replaceAll(RegExp(r'\[[a-zA-Z0-9:]*\[|\]'), '');
-    final arabicWords = cleanArabic
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((w) => w.isNotEmpty)
-        .length;
-    _targetArabicSeconds = math.max(3.0, arabicWords * 1.5);
-
-    final cleanTranslation = translation ?? '';
-    final translationWords = cleanTranslation
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((w) => w.isNotEmpty)
-        .length;
-    _targetTranslationSeconds = translationWords > 0
-        ? math.max(2.5, translationWords * 0.35)
-        : 0.0;
+    _targetArabicSeconds = calculateAccurateArabicSeconds(arabic);
+    _targetTranslationSeconds = calculateAccurateTranslationSeconds(translation);
 
     _readingStartTime = DateTime.now();
     setState(() {
@@ -1528,10 +1519,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                 ),
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
-                                  20,
-                                  16,
-                                  20,
-                                  20,
+                                  10,
+                                  8,
+                                  10,
+                                  12,
                                 ),
                                 child: Column(
                                   crossAxisAlignment:
@@ -1539,23 +1530,23 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                   children: [
                                     AnimatedContainer(
                                       duration: const Duration(milliseconds: 250),
-                                      padding: (_eyeReadingAyahIdx == index &&
-                                              _eyeReadingPhase == EyeReadingPhase.arabic)
-                                          ? const EdgeInsets.symmetric(horizontal: 10, vertical: 8)
-                                          : EdgeInsets.zero,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 8,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: (_eyeReadingAyahIdx == index &&
                                                 _eyeReadingPhase == EyeReadingPhase.arabic)
                                             ? Colors.teal.withValues(alpha: 0.08)
                                             : Colors.transparent,
                                         borderRadius: BorderRadius.circular(12),
-                                        border: (_eyeReadingAyahIdx == index &&
-                                                _eyeReadingPhase == EyeReadingPhase.arabic)
-                                            ? Border.all(
-                                                color: Colors.teal.withValues(alpha: 0.35),
-                                                width: 1.2,
-                                              )
-                                            : null,
+                                        border: Border.all(
+                                          color: (_eyeReadingAyahIdx == index &&
+                                                  _eyeReadingPhase == EyeReadingPhase.arabic)
+                                              ? Colors.teal.withValues(alpha: 0.35)
+                                              : Colors.transparent,
+                                          width: 1.2,
+                                        ),
                                       ),
                                       child: TajweedText(
                                         text: ayah['arabic'],
@@ -1575,37 +1566,40 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                       ),
                                     ),
                                     const SizedBox(height: 12),
-                                    Text(
-                                      ayah['latin'] ?? '',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: isAyahReadDisplay
-                                            ? Colors.teal.shade800
-                                            : Colors.teal.shade700,
-                                        fontWeight: FontWeight.w600,
-                                        height: 1.5,
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                                      child: Text(
+                                        ayah['latin'] ?? '',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: isAyahReadDisplay
+                                              ? Colors.teal.shade800
+                                              : Colors.teal.shade700,
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.5,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 8),
                                     AnimatedContainer(
                                       duration: const Duration(milliseconds: 250),
-                                      padding: (_eyeReadingAyahIdx == index &&
-                                              _eyeReadingPhase == EyeReadingPhase.translation)
-                                          ? const EdgeInsets.symmetric(horizontal: 10, vertical: 8)
-                                          : EdgeInsets.zero,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 8,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: (_eyeReadingAyahIdx == index &&
                                                 _eyeReadingPhase == EyeReadingPhase.translation)
                                             ? Colors.amber.withValues(alpha: 0.12)
                                             : Colors.transparent,
                                         borderRadius: BorderRadius.circular(10),
-                                        border: (_eyeReadingAyahIdx == index &&
-                                                _eyeReadingPhase == EyeReadingPhase.translation)
-                                            ? Border.all(
-                                                color: Colors.amber.withValues(alpha: 0.45),
-                                                width: 1.2,
-                                              )
-                                            : null,
+                                        border: Border.all(
+                                          color: (_eyeReadingAyahIdx == index &&
+                                                  _eyeReadingPhase == EyeReadingPhase.translation)
+                                              ? Colors.amber.withValues(alpha: 0.45)
+                                              : Colors.transparent,
+                                          width: 1.2,
+                                        ),
                                       ),
                                       child: Text(
                                         (lang == 'id' || lang == 'ms')
@@ -1621,8 +1615,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
                                                   : (isFuture && !isAlwaysActive)
                                                   ? Colors.grey.shade500
                                                   : Colors.grey.shade700),
-                                          fontWeight: (_eyeReadingAyahIdx == index &&
-                                                  _eyeReadingPhase == EyeReadingPhase.translation)
+                                          fontWeight: isAyahReadDisplay
                                               ? FontWeight.w600
                                               : FontWeight.normal,
                                           fontStyle: FontStyle.italic,
@@ -2442,6 +2435,67 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
       phase: phase,
       dotCount: dotCount,
     );
+  }
+
+  /// Calculates accurate reading duration for Arabic text in silent reading (eye tracking) mode.
+  /// Accounts for actual hijaiyah letter count, shaddah (tasydid), long madd (4-6 harakat),
+  /// inter-word transitions, and baseline ayah orientation/waqf pause.
+  static double calculateAccurateArabicSeconds(String arabic) {
+    final clean = arabic
+        .replaceAll(RegExp(r'\[[a-zA-Z0-9:#]*\[|\]'), '')
+        .replaceAll(RegExp(r'[\u0660-\u0669\d\s\u06D6-\u06ED]'), ' ')
+        .trim();
+    if (clean.isEmpty) return 2.5;
+
+    // Count pure hijaiyah letters (excluding harakat)
+    final letterMatches = RegExp(r'[\u0621-\u064A\u0671\u0670]').allMatches(clean);
+    final letterCount = letterMatches.length;
+
+    // Count shaddah (tasydid \u0651) -> doubled letter phonetics
+    final shaddahCount = RegExp(r'\u0651').allMatches(arabic).length;
+
+    // Count long madd signs (maddah \u0653, \u06E4, or alif maddah \u0622) -> 4-6 harakat
+    final longMaddCount = RegExp(r'[\u0653\u06E4\u0622]').allMatches(arabic).length;
+
+    // Word count for inter-word breathing and pauses
+    final words = clean.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+
+    // Base duration: 0.8s (waqf / visual orientation)
+    // + 0.22s per hijaiyah letter (optimal silent reading pace with basic vowels)
+    // + 0.25s per shaddah (emphasis & doubling)
+    // + 0.75s per long madd (4-6 harakat elongation)
+    // + 0.12s per word transition
+    final double rawSeconds = 0.8 +
+        (letterCount * 0.22) +
+        (shaddahCount * 0.25) +
+        (longMaddCount * 0.75) +
+        (words * 0.12);
+
+    return math.max(2.5, double.parse(rawSeconds.toStringAsFixed(1)));
+  }
+
+  /// Calculates accurate reading duration for translation text in silent reading mode.
+  /// Accounts for reading speed (WPM ~210), clauses/commas, sentence ends, and eye transition pause.
+  static double calculateAccurateTranslationSeconds(String? translation) {
+    if (translation == null || translation.trim().isEmpty) return 0.0;
+    final clean = translation.trim();
+
+    final words = clean.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    if (words == 0) return 0.0;
+
+    final commas = RegExp(r'[,;:]').allMatches(clean).length;
+    final periods = RegExp(r'[.!?]').allMatches(clean).length;
+
+    // 0.6s eye repositioning from Arabic to translation
+    // + 0.28s per word (~210 WPM for reflective comprehension)
+    // + 0.25s per comma/semicolon/colon
+    // + 0.40s per period/question/exclamation mark
+    final double rawSeconds = 0.6 +
+        (words * 0.28) +
+        (commas * 0.25) +
+        (periods * 0.40);
+
+    return math.max(1.8, double.parse(rawSeconds.toStringAsFixed(1)));
   }
 
   Widget _buildListeningInfoContent(

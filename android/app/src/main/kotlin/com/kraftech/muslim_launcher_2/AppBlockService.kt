@@ -200,9 +200,14 @@ class AppBlockService : AccessibilityService() {
                 }
 
                 if (blockedPackages.contains(cleanPkg)) {
-                    Log.d("AppBlockService", "EXPIRED: Kicking $cleanPkg (foreground=$currentForegroundPackage)")
-                    MainActivity.notifyAppBlocked(cleanPkg)
-                    s.bringLauncherToFront("blockedPackageName", cleanPkg, "triggerBlockScreen")
+                    val isForeground = currentForegroundPackage?.equals(cleanPkg, ignoreCase = true) == true
+                    if (isForeground) {
+                        Log.d("AppBlockService", "EXPIRED: Kicking $cleanPkg (foreground=$currentForegroundPackage)")
+                        MainActivity.notifyAppBlocked(cleanPkg)
+                        s.bringLauncherToFront("blockedPackageName", cleanPkg, "triggerBlockScreen")
+                    } else {
+                        Log.d("AppBlockService", "EXPIRED: Silently relocked $cleanPkg (not in foreground, foreground=$currentForegroundPackage)")
+                    }
                 }
             }
         }
@@ -648,11 +653,12 @@ class AppBlockService : AccessibilityService() {
         ): Boolean {
             val cleanClass = className.lowercase()
             val cleanPkg = packageName.lowercase()
+            val cleanEventText = eventText.lowercase()
 
             // Resolve true root of the window tree to cover child node events across all OEMs
             val searchNode = getTopmostNode(rootNode)
 
-            val textMatches = eventText.contains("muslim launcher") || eventText.contains("com.kraftech.muslim_launcher_2")
+            val textMatches = cleanEventText.contains("muslim launcher") || cleanEventText.contains("com.kraftech.muslim_launcher_2")
             var nodeMatches = false
 
             if (searchNode != null) {
@@ -678,12 +684,12 @@ class AppBlockService : AccessibilityService() {
                     cleanClass.contains("optimize") ||
                     cleanClass.contains("permcenter") ||
                     cleanClass.contains("permissionmanager") ||
-                    eventText.contains("autostart") ||
-                    eventText.contains("mulai otomatis") ||
-                    eventText.contains("mula automatik") ||
-                    eventText.contains("latar belakang") ||
-                    eventText.contains("penghemat baterai") ||
-                    eventText.contains("battery saver")
+                    cleanEventText.contains("autostart") ||
+                    cleanEventText.contains("mulai otomatis") ||
+                    cleanEventText.contains("mula automatik") ||
+                    cleanEventText.contains("latar belakang") ||
+                    cleanEventText.contains("penghemat baterai") ||
+                    cleanEventText.contains("battery saver")
             if (isAutostartOrBattery) return false
 
             val isDeviceAdmin = isDeviceAdminScreenTargetingUs(searchNode, eventText, className, packageName) ||
@@ -692,45 +698,91 @@ class AppBlockService : AccessibilityService() {
                     cleanClass.contains("adminsettings") ||
                     cleanClass.contains("specialaccess") ||
                     cleanPkg.contains("admin") ||
-                    eventText.contains("admin perangkat") ||
-                    eventText.contains("aplikasi admin") ||
-                    eventText.contains("pengurus perangkat") ||
-                    eventText.contains("device admin") ||
-                    eventText.contains("device administrator")
+                    cleanEventText.contains("admin perangkat") ||
+                    cleanEventText.contains("aplikasi admin") ||
+                    cleanEventText.contains("pengurus perangkat") ||
+                    cleanEventText.contains("device admin") ||
+                    cleanEventText.contains("device administrator")
             if (isDeviceAdmin) return false
 
             val isAccessibility = cleanClass.contains("accessibility") ||
-                    eventText.contains("aksesibilitas") ||
-                    eventText.contains("accessibility") ||
+                    cleanEventText.contains("aksesibilitas") ||
+                    cleanEventText.contains("accessibility") ||
                     isAccessibilityServiceToggleScreen(searchNode)
             if (isAccessibility) return false
 
+            // CRITICAL: Filter out App List / Manage Applications screens!
+            // When user is scrolling the list of all installed apps in Settings, Muslim Launcher
+            // will appear as an item in the list. The user must be allowed to scroll past it
+            // and manage other apps without being blocked across ALL OEMs and phone brands.
+            val isAppListClass = (cleanClass.contains("manageapplications") ||
+                    cleanClass.contains("appmanageractivity") ||
+                    cleanClass.contains("applist") ||
+                    cleanClass.contains("allapps") ||
+                    cleanClass.contains("installedappslist") ||
+                    cleanClass.contains("applicationlist") ||
+                    cleanClass.contains("purviewtabactivity") ||
+                    cleanClass.contains("manageapps") ||
+                    cleanClass.contains("appmanagement") ||
+                    cleanClass.contains("installedapps") ||
+                    cleanClass.contains("applicationscontainer") ||
+                    cleanClass.contains("applicationsettings")) &&
+                    !cleanClass.contains("detail") &&
+                    !cleanClass.contains("dashboard") &&
+                    !cleanClass.contains("secappinfo") &&
+                    !cleanClass.contains("uninstaller")
+
+            if (isAppListClass) {
+                return false
+            }
+
+            // Also check if screen contains the app list search bar (App details screen NEVER has an app list search bar)
+            if (searchNode != null) {
+                try {
+                    val hasAppListSearch = searchNode.findAccessibilityNodeInfosByViewId("com.android.settings:id/search_src_text")?.isNotEmpty() == true ||
+                            searchNode.findAccessibilityNodeInfosByViewId("android:id/search_src_text")?.isNotEmpty() == true ||
+                            searchNode.findAccessibilityNodeInfosByViewId("com.android.settings:id/search_view")?.isNotEmpty() == true ||
+                            searchNode.findAccessibilityNodeInfosByViewId("com.samsung.android.settings:id/search_src_text")?.isNotEmpty() == true ||
+                            searchNode.findAccessibilityNodeInfosByViewId("com.miui.securitycenter:id/search_text")?.isNotEmpty() == true ||
+                            searchNode.findAccessibilityNodeInfosByViewId("com.miui.securitycenter:id/search_view")?.isNotEmpty() == true ||
+                            searchNode.findAccessibilityNodeInfosByViewId("com.coloros.safecenter:id/search_text")?.isNotEmpty() == true ||
+                            searchNode.findAccessibilityNodeInfosByViewId("com.vivo.permissionmanager:id/search_text")?.isNotEmpty() == true ||
+                            searchNode.findAccessibilityNodeInfosByViewId("com.vivo.permissionmanager:id/search_view")?.isNotEmpty() == true ||
+                            searchNode.findAccessibilityNodeInfosByViewId("com.transsion.phonemanager:id/search_text")?.isNotEmpty() == true ||
+                            searchNode.findAccessibilityNodeInfosByViewId("com.huawei.systemmanager:id/search_text")?.isNotEmpty() == true
+                    if (hasAppListSearch) {
+                        return false
+                    }
+                } catch (_: Exception) {}
+            }
+
             // On Settings / App Managers / Installers across all OEMs:
-            // 1. If activity class explicitly represents App Info / Details or Uninstaller, trigger immediately!
+            // 1. If activity class explicitly represents Single App Info / Details or Uninstaller, trigger immediately!
             val isExplicitAppDetailsClass = cleanClass.contains("installedappdetails") ||
                     cleanClass.contains("appinfodashboardactivity") ||
                     cleanClass.contains("applicationsdetailsactivity") ||
-                    cleanClass.contains("appdetail") ||
+                    cleanClass.contains("appdetailactivity") ||
                     cleanClass.contains("applicationdetail") ||
-                    cleanClass.contains("appinfo") ||
                     cleanClass.contains("uninstalleractivity") ||
                     cleanClass.contains("uninstallalertactivity") ||
                     cleanClass.contains("uninstallconfirmation") ||
+                    cleanClass.contains("deletepackage") ||
+                    cleanClass.contains("packageinstalleractivity") ||
+                    cleanClass.contains("secappinfodashboardactivity") ||
                     cleanClass.contains("secappinfo") ||
                     cleanClass.contains("appitemdetailsactivity") ||
-                    cleanClass.contains("secappinfodashboardactivity") ||
                     cleanClass.contains("appinfodetailactivity") ||
                     cleanClass.contains("singleappdetails") ||
-                    cleanClass.contains("appmanageractivity") ||
-                    cleanClass.contains("appdetailactivity") ||
-                    cleanClass.contains("manageappdetailsactivity")
+                    cleanClass.contains("manageappdetailsactivity") ||
+                    cleanClass.contains("softpermissiondetailactivity") ||
+                    cleanClass.contains("softmanagerdetailactivity")
 
             if (isExplicitAppDetailsClass) {
                 return true
             }
 
-            // 2. Check for action buttons in both searchNode and eventText (covers Samsung, Xiaomi, Oppo, Vivo, Pixel, Transsion)
-            return hasAppDetailAction(searchNode, eventText)
+            // 2. Check for action buttons in both searchNode and eventText (covers Samsung, Xiaomi, Oppo, Vivo, Pixel, Transsion, Huawei, Motorola, etc.)
+            return hasAppDetailAction(searchNode, cleanEventText)
         }
 
         private fun hasAppDetailAction(
@@ -739,7 +791,7 @@ class AppBlockService : AccessibilityService() {
         ): Boolean {
             // Check known Android & OEM button view IDs (works across all languages and OEM skins)
             val knownButtonIds = listOf(
-                // AOSP / Google Pixel / Motorola / Sony / Nothing
+                // AOSP / Google Pixel / Motorola / Sony / Nothing / Asus
                 "com.android.settings:id/button1_negative",
                 "com.android.settings:id/button2_positive",
                 "com.android.settings:id/left_button",
@@ -779,24 +831,45 @@ class AppBlockService : AccessibilityService() {
                 "com.transsion.phonemanager:id/uninstall",
                 "com.transsion.phonemanager:id/force_stop"
             )
-            // 1. FAST IN-MEMORY CHECK: If eventText already contains any keyword, return true immediately!
-            // This takes < 1 microsecond and avoids up to 70 cross-process IPC binder queries to system_server!
+            // 1. FAST IN-MEMORY CHECK: If eventText already contains any ACTION keyword, return true immediately!
+            // Notice: Generic title keywords like "app info", "info aplikasi", "maklumat aplikasi", "storage & cache"
+            // are strictly EXCLUDED because they appear in the header of the installed apps list screen!
             val keywords = listOf(
                 // English
-                "uninstall", "force stop", "clear data", "clear storage", "disable", "app info", "storage & cache",
+                "uninstall", "force stop", "clear data", "clear storage", "disable",
                 // Indonesian
                 "copot pemasangan", "copot", "uninstal", "hapus instalan", "bongkar", "paksa berhenti", "paksa henti",
-                "hapus data", "hapus penyimpanan", "kelola ruang", "nonaktifkan", "info aplikasi", "penyimpanan & cache",
+                "hapus data", "hapus penyimpanan", "kelola ruang", "nonaktifkan",
                 // Malay
-                "nyahpasang", "henti paksa", "maklumat aplikasi",
+                "nyahpasang", "henti paksa", "lumpuhkan",
                 // Arabic
-                "إلغاء التثبيت", "إيقاف إجباري", "مسح البيانات", "معلومات التطبيق",
+                "إلغاء التثبيت", "إيقاف إجباري", "مسح البيانات", "تعطيل",
                 // Turkish
-                "kaldır", "zorla durdur", "verileri temizle", "uygulama bilgisi",
+                "kaldır", "zorla durdur", "verileri temizle", "devre dışı bırak",
                 // French
-                "désinstaller", "forcer l'arrêt", "effacer les données", "infos sur l'application",
+                "désinstaller", "forcer l'arrêt", "effacer les données", "désactiver",
                 // Spanish
-                "desinstalar", "forzar detención", "borrar datos", "información de la aplicación"
+                "desinstalar", "forzar detención", "borrar datos", "inhabilitar",
+                // Russian
+                "удалить", "остановить", "принудительно остановить", "очистить данные", "стереть данные",
+                // German
+                "deinstallieren", "beenden erzwingen", "stoppen erzwingen", "daten löschen",
+                // Portuguese
+                "desinstalar", "forçar parada", "forçar interrupção", "limpar dados",
+                // Italian
+                "disinstalla", "interruzione forzata", "termina", "cancella dati",
+                // Chinese (Simplified & Traditional)
+                "卸载", "解除安裝", "强行停止", "強制停止", "清除数据", "清除資料",
+                // Japanese
+                "アンインストール", "強制停止", "データを消去",
+                // Korean
+                "삭제", "설치 삭제", "강제 중지", "데이터 삭제",
+                // Hindi
+                "अनइंस्टॉल", "फ़ोर्स स्टॉप", "डेटा साफ़ करें",
+                // Urdu
+                "ان انسٹال", "زبردستی روکیں",
+                // Vietnamese
+                "gỡ cài đặt", "buộc dừng", "xóa dữ liệu"
             )
             for (kw in keywords) {
                 if (eventText.contains(kw)) return true
@@ -1520,6 +1593,7 @@ class AppBlockService : AccessibilityService() {
 
             // Skip our own app
             if (packageName == this.packageName) {
+                currentForegroundPackage = packageName
                 if (hasEnteredBypassedScreen) {
                     resetStandardSettingsBypass(force = true)
                 }

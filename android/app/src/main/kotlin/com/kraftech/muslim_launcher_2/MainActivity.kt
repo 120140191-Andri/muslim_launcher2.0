@@ -73,7 +73,9 @@ class MainActivity : FlutterActivity() {
             }
         }
 
-        fun notifyGhadhulBashar(packageName: String) {
+        var pendingGhadhulBasharExtra: String = ""
+
+        fun notifyGhadhulBashar(packageName: String, extraInfo: String? = null) {
             val now = System.currentTimeMillis()
             val cleanPkg = packageName.trim().lowercase()
             if (cleanPkg.isEmpty()) return
@@ -84,8 +86,13 @@ class MainActivity : FlutterActivity() {
             lastNotifiedGhadhulPkg = cleanPkg
             lastNotifiedGhadhulTime = now
             pendingGhadhulBasharPackage = cleanPkg
+            val cleanExtra = extraInfo ?: ""
+            pendingGhadhulBasharExtra = cleanExtra
             uiHandler.post {
-                blockChannel?.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to cleanPkg))
+                blockChannel?.invokeMethod("onGhadhulBasharTriggered", mapOf(
+                    "packageName" to cleanPkg,
+                    "extraInfo" to cleanExtra
+                ))
             }
         }
 
@@ -433,12 +440,14 @@ class MainActivity : FlutterActivity() {
                     val resultData = mapOf(
                         "blocked" to pendingBlockedPackage,
                         "ghadhul" to pendingGhadhulBasharPackage,
+                        "ghadhulExtra" to pendingGhadhulBasharExtra,
                         "prohibited" to pendingProhibitedPackage,
                         "strictShield" to pendingStrictShieldReason,
                         "standardReflection" to pendingStandardReflection
                     )
                     pendingBlockedPackage = null
                     pendingGhadhulBasharPackage = null
+                    pendingGhadhulBasharExtra = ""
                     pendingProhibitedPackage = null
                     pendingStrictShieldReason = null
                     pendingStandardReflection = false
@@ -509,8 +518,9 @@ class MainActivity : FlutterActivity() {
             if (pkg.isNotEmpty() && pendingProhibitedPackage.isNullOrEmpty() && pendingBlockedPackage.isNullOrEmpty()) {
                 lastNotifiedGhadhulPkg = null
                 lastNotifiedGhadhulTime = 0L
+                val extra = pendingGhadhulBasharExtra
                 uiHandler.post {
-                    bc.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to pkg))
+                    bc.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to pkg, "extraInfo" to extra))
                 }
             }
         }
@@ -547,12 +557,14 @@ class MainActivity : FlutterActivity() {
         }
         if (intent.getBooleanExtra("triggerGhadhulBasharScreen", false)) {
             val ghadhulPackage = intent.getStringExtra("ghadhulBasharPackageName") ?: ""
+            val extraInfo = intent.getStringExtra("ghadhulBasharExtraInfo") ?: ""
             intent.removeExtra("triggerGhadhulBasharScreen")
             intent.removeExtra("ghadhulBasharPackageName")
+            intent.removeExtra("ghadhulBasharExtraInfo")
             if (ghadhulPackage.isNotEmpty()) {
                 lastNotifiedGhadhulPkg = null
                 lastNotifiedGhadhulTime = 0L
-                notifyGhadhulBashar(ghadhulPackage)
+                notifyGhadhulBashar(ghadhulPackage, extraInfo)
             }
         }
         if (intent.getBooleanExtra("triggerProhibitedScreen", false)) {

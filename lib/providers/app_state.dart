@@ -102,6 +102,7 @@ class AppState extends ChangeNotifier {
   Map<String, int> _unlockedExpirations = {};
   String? _lastAttemptedBlockedPackage;
   String? _lastAttemptedGhadhulBasharPackage;
+  String? _lastAttemptedGhadhulBasharExtra;
   bool _isAccessibilityEnabled = false;
   bool _isDefaultLauncher = false;
   bool _hasSeenAccessibilitySetup = false;
@@ -427,6 +428,7 @@ class AppState extends ChangeNotifier {
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
   String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
   String? get lastAttemptedGhadhulBasharPackage => _lastAttemptedGhadhulBasharPackage;
+  String? get lastAttemptedGhadhulBasharExtra => _lastAttemptedGhadhulBasharExtra;
   bool get isAccessibilityEnabled => _isAccessibilityEnabled;
   bool get isDefaultLauncher => _isDefaultLauncher;
   bool get hasSeenAccessibilitySetup => _hasSeenAccessibilitySetup;
@@ -675,7 +677,7 @@ class AppState extends ChangeNotifier {
           notifyListeners();
         }
       },
-      onGhadhulBasharTriggered: (pkg) {
+      onGhadhulBasharTriggered: (pkg, [extraInfo]) {
         if (isPassiveMode) return;
         final cleanPkg = pkg.trim().toLowerCase();
         if (cleanPkg.isNotEmpty) {
@@ -689,6 +691,7 @@ class AppState extends ChangeNotifier {
           _lastGhadhulEventTime = now;
 
           _lastAttemptedGhadhulBasharPackage = cleanPkg;
+          _lastAttemptedGhadhulBasharExtra = extraInfo;
           _lastAttemptedBlockedPackage = null;
           _lastAttemptedProhibitedPackage = null;
           notifyListeners();
@@ -776,6 +779,7 @@ class AppState extends ChangeNotifier {
           }
         } else if (pendingGhadhul != null && pendingGhadhul.isNotEmpty) {
           _lastAttemptedGhadhulBasharPackage = pendingGhadhul.toLowerCase();
+          _lastAttemptedGhadhulBasharExtra = initialData['ghadhulExtra'] as String?;
           _lastAttemptedProhibitedPackage = null;
           _lastAttemptedBlockedPackage = null;
         }
@@ -2058,6 +2062,25 @@ class AppState extends ChangeNotifier {
       'cd.slikdrive.com',
       'slikdrive.com',
       'slikdrive',
+      '1024terabox.com',
+      'terabox',
+      'dubox',
+      'viadey',
+      'viodey',
+      'vldeyco.id',
+      'vldey',
+      'vioranow',
+      'slicedrivenow',
+      'slicedrive',
+      'vld',
+      'vdy',
+      'vdk',
+      'chindo',
+      'anhai',
+      'doodstream',
+      'vidoy',
+      'vidply',
+      'vidy',
     ];
     for (final kw in adultCoreKeywords) {
       if (pkg.contains(kw) || name.contains(kw)) return true;
@@ -3343,6 +3366,7 @@ class AppState extends ChangeNotifier {
       _lastGhadhulBasharDismissedPackage = _lastAttemptedGhadhulBasharPackage;
       _lastGhadhulBasharDismissedTime = DateTime.now().millisecondsSinceEpoch;
       _lastAttemptedGhadhulBasharPackage = null;
+      _lastAttemptedGhadhulBasharExtra = null;
       changed = true;
     }
     if (_lastAttemptedStrictShieldReason != null) {
@@ -3492,10 +3516,11 @@ class AppState extends ChangeNotifier {
       _lastGhadhulBasharDismissedTime = DateTime.now().millisecondsSinceEpoch;
     }
     _lastAttemptedGhadhulBasharPackage = null;
+    _lastAttemptedGhadhulBasharExtra = null;
     notifyListeners();
   }
 
-  void setGhadhulBasharPackage(String pkg) {
+  void setGhadhulBasharPackage(String pkg, [String? extra]) {
     final cleanPkg = pkg.trim().toLowerCase();
     if (cleanPkg.isNotEmpty) {
       final now = DateTime.now().millisecondsSinceEpoch;
@@ -3503,6 +3528,7 @@ class AppState extends ChangeNotifier {
         return;
       }
       _lastAttemptedGhadhulBasharPackage = cleanPkg;
+      _lastAttemptedGhadhulBasharExtra = extra;
       _lastAttemptedBlockedPackage = null;
       _lastAttemptedProhibitedPackage = null;
       notifyListeners();
@@ -3567,6 +3593,8 @@ class AppState extends ChangeNotifier {
         // Facebook
         'com.facebook.katana',
         'com.facebook.lite',
+        'com.facebook.orca',
+        'com.facebook.mlite',
         // Twitter / X
         'com.twitter.android',
         'com.twitter.android.lite',
@@ -3578,6 +3606,7 @@ class AppState extends ChangeNotifier {
         'com.zhiliaoapp.musically',
         'com.zhiliaoapp.musically.go',
         'com.ss.android.ugc.trill',
+        'com.ss.android.ugc.aweme',
         // Telegram & Telegram X
         'org.telegram.messenger',
         'org.telegram.messenger.web',

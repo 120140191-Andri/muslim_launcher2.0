@@ -16,6 +16,10 @@ class Translations {
       'ghadhul_bashar_title': 'Peringatan Menjaga Pandangan',
       'ghadhul_bashar_subtitle':
           'Ingatlah Allah dan tundukkan pandangan sebelum melanjutkan.',
+      'social_group_warning_title': 'Peringatan Tautan Grup WhatsApp / Telegram',
+      'social_group_warning_subtitle':
+          'Banyak tautan grup di media sosial memuat konten terlarang & judi. Renungkan firman Allah ini sejenak.',
+      'social_group_continue_wait': 'Lanjutkan',
       'prohibited_app_title': 'Aplikasi Dilarang Dibuka',
       'prohibited_gambling_title': 'Aplikasi Perjudian Dilarang',
       'prohibited_site_tag_gambling': 'Situs / Konten Judi Dilarang',
@@ -404,6 +408,10 @@ class Translations {
       'ghadhul_bashar_title': 'Guard Your Gaze',
       'ghadhul_bashar_subtitle':
           'Remember Allah and lower your gaze before proceeding.',
+      'social_group_warning_title': 'WhatsApp / Telegram Group Link Warning',
+      'social_group_warning_subtitle':
+          'Many group links on social media contain illicit & gambling content. Ponder Allah\'s verse below.',
+      'social_group_continue_wait': 'Continue',
       'prohibited_app_title': 'Application Prohibited',
       'prohibited_gambling_title': 'Gambling Application Prohibited',
       'prohibited_site_tag_gambling': 'Prohibited Gambling Site',
@@ -784,6 +792,10 @@ class Translations {
       'ghadhul_bashar_title': 'Jaga Pandangan',
       'ghadhul_bashar_subtitle':
           'Ingatlah Allah dan tundukkan pandangan sebelum meneruskan.',
+      'social_group_warning_title': 'Amaran Pautan Kumpulan WhatsApp / Telegram',
+      'social_group_warning_subtitle':
+          'Banyak pautan kumpulan di media sosial mengandungi kandungan terlarang & judi. Fikirkan firman Allah ini sebentar.',
+      'social_group_continue_wait': 'Teruskan',
       'prohibited_app_title': 'Aplikasi Dilarang Dibuka',
       'prohibited_gambling_title': 'Aplikasi Perjudian Dilarang',
       'prohibited_site_tag_gambling': 'Laman / Kandungan Judi Dilarang',
@@ -1156,6 +1168,10 @@ class Translations {
       'ok': 'حسناً',
       'ghadhul_bashar_title': 'تذكير غض البصر',
       'ghadhul_bashar_subtitle': 'اذكر الله واغضض بصرك قبل المتابعة.',
+      'social_group_warning_title': 'تحذير: رابط مجموعة واتساب / تيليجرام',
+      'social_group_warning_subtitle':
+          'تحتوي العديد من روابط المجموعات على وسائل التواصل على محتوى محرم وقمار. تدبر آية الله التالية.',
+      'social_group_continue_wait': 'متابعة',
       'prohibited_app_title': 'التطبيق محظور تماماً',
       'prohibited_gambling_title': 'تطبيق القمار محظور تماماً',
       'prohibited_site_tag_gambling': 'موقع قمار محظور',
@@ -1514,6 +1530,10 @@ class Translations {
       'ghadhul_bashar_title': 'Bewaak Jou Oë',
       'ghadhul_bashar_subtitle':
           'Onthou Allah en slaan jou oë neer voor jy voortgaan.',
+      'social_group_warning_title': 'Waarskuwing: WhatsApp / Telegram Groepskakel',
+      'social_group_warning_subtitle':
+          'Baie groepskakels op sosiale media bevat verbode inhoud en dobbelary. Oordink Allah se vers hieronder.',
+      'social_group_continue_wait': 'Gaan voort',
       'prohibited_app_title': 'Toepassing Verbode',
       'prohibited_gambling_title': 'Dobbel-toepassing Verbode',
       'prohibited_site_tag_gambling': 'Verbode Dobbelwerf',
@@ -1839,6 +1859,10 @@ class Translations {
       'ghadhul_bashar_title': 'Ukumbusho wa Kulinda Macho',
       'ghadhul_bashar_subtitle':
           'Mkumbuke Mwenyezi Mungu na uinamishe macho yako kabla ya kuendelea.',
+      'social_group_warning_title': 'Onyo: Kiungo cha Kikundi cha WhatsApp / Telegram',
+      'social_group_warning_subtitle':
+          'Viungo vingi vya vikundi kwenye mitandao ya kijamii vina maudhui yaliyoharamishwa na kamari. Tafakari aya ya Mwenyezi Mungu hapa chini.',
+      'social_group_continue_wait': 'Endelea',
       'prohibited_app_title': 'Programu Imepigwa Marufuku',
       'prohibited_gambling_title': 'Programu ya Kamari Imepigwa Marufuku',
       'prohibited_site_tag_gambling': 'Tovuti ya Kamari Iliyopigwa Marufuku',

@@ -8,14 +8,14 @@ class AppBlockService {
   AppBlockService._internal();
 
   Function(String)? _onAppBlocked;
-  Function(String)? _onGhadhulBasharTriggered;
+  Function(String, [String?])? _onGhadhulBasharTriggered;
   Function(String)? _onProhibitedAppTriggered;
   Function(String)? _onStrictShieldTriggered;
   VoidCallback? _onStandardReflectionTriggered;
 
   void init({
     required Function(String) onAppBlocked,
-    Function(String)? onGhadhulBasharTriggered,
+    Function(String, [String?])? onGhadhulBasharTriggered,
     Function(String)? onProhibitedAppTriggered,
     Function(String)? onStrictShieldTriggered,
     VoidCallback? onStandardReflectionTriggered,
@@ -38,8 +38,9 @@ class AppBlockService {
         break;
       case 'onGhadhulBasharTriggered':
         final String? packageName = call.arguments['packageName'];
+        final String? extraInfo = call.arguments['extraInfo'];
         if (packageName != null && _onGhadhulBasharTriggered != null) {
-          _onGhadhulBasharTriggered!(packageName);
+          _onGhadhulBasharTriggered!(packageName, extraInfo);
         }
         break;
       case 'onProhibitedAppTriggered':

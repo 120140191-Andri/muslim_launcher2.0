@@ -104,4 +104,80 @@ void main() {
 
     expect(appState.lastAttemptedGhadhulBasharPackage, isNull);
   });
+
+  testWidgets('GhadhulBasharOverlay social group link activates 5s countdown, warning badge, and locks proceed button until 0s', (tester) async {
+    final appState = AppState(prefs);
+    appState.setGhadhulBasharPackage('com.whatsapp', 'social_group_link');
+    expect(appState.lastAttemptedGhadhulBasharPackage, equals('com.whatsapp'));
+    expect(appState.lastAttemptedGhadhulBasharExtra, equals('social_group_link'));
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AppState>.value(
+        value: appState,
+        child: const MaterialApp(
+          home: Scaffold(
+            body: GhadhulBasharOverlay(packageName: 'com.whatsapp'),
+          ),
+        ),
+      ),
+    );
+    // Initial pump (at start of countdown)
+    await tester.pump();
+
+    // Verify warning badge appears
+    expect(find.text(Translations.get('id', 'social_group_warning_title')), findsOneWidget);
+    expect(find.text(Translations.get('id', 'social_group_warning_subtitle')), findsOneWidget);
+
+    // Initial countdown label is 5s
+    expect(find.text('${Translations.get('id', 'ok')} (5s)'), findsOneWidget);
+
+    // Tap at 5s should NOT proceed because button is disabled
+    await tester.ensureVisible(find.text('${Translations.get('id', 'ok')} (5s)'));
+    await tester.tap(find.text('${Translations.get('id', 'ok')} (5s)'));
+    await tester.pump();
+    expect(appState.lastAttemptedGhadhulBasharPackage, equals('com.whatsapp'));
+
+    // Advance 2 seconds
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('${Translations.get('id', 'ok')} (3s)'), findsOneWidget);
+
+    // Advance remaining 3 seconds to complete countdown
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+
+    // Now button displays normal text and is enabled
+    expect(find.text(Translations.get('id', 'ok')), findsOneWidget);
+    await tester.ensureVisible(find.text(Translations.get('id', 'ok')));
+    await tester.tap(find.text(Translations.get('id', 'ok')));
+    await tester.pumpAndSettle();
+
+    expect(appState.lastAttemptedGhadhulBasharPackage, isNull);
+  });
+
+  testWidgets('GhadhulBasharOverlay social group link allows immediate Cancel during countdown', (tester) async {
+    final appState = AppState(prefs);
+    appState.setGhadhulBasharPackage('org.telegram.messenger', 'social_group_link');
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AppState>.value(
+        value: appState,
+        child: const MaterialApp(
+          home: Scaffold(
+            body: GhadhulBasharOverlay(packageName: 'org.telegram.messenger'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Verify countdown is running
+    expect(find.text('${Translations.get('id', 'ok')} (5s)'), findsOneWidget);
+
+    // Immediate Cancel button is active and dismisses safely
+    await tester.ensureVisible(find.text(Translations.get('id', 'cancel')));
+    await tester.tap(find.text(Translations.get('id', 'cancel')));
+    await tester.pumpAndSettle();
+
+    expect(appState.lastAttemptedGhadhulBasharPackage, isNull);
+  });
 }

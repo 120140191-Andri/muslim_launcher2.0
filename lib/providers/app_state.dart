@@ -89,7 +89,7 @@ class AppState extends ChangeNotifier {
   String _languageCode = getDefaultLanguageCode();
   bool _hasSelectedLanguage = false;
   bool _hasCompletedOnboarding = false;
-  int _points = 0;
+  int _points = 1000;
   Set<String> _blockedApps = {};
   static Set<String> _customProductiveApps = {};
   Set<String> get customProductiveApps => _customProductiveApps;
@@ -480,10 +480,10 @@ class AppState extends ChangeNotifier {
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
     appBlockService.setOnboardingCompleted(_hasCompletedOnboarding);
-    _points = prefs.getInt('points') ?? 0;
-    if (_points < 0) {
-      _points = 0;
-      await prefs.setInt('points', 0);
+    _points = prefs.getInt('points') ?? 1000;
+    if (_points < 1000) {
+      _points = 1000;
+      await prefs.setInt('points', 1000);
     }
     final savedUserNonProductive = prefs.getStringList('userNonProductiveApps') ?? [];
     _userNonProductiveApps = savedUserNonProductive.map((e) => e.trim().toLowerCase()).toSet();
@@ -493,6 +493,12 @@ class AppState extends ChangeNotifier {
     _blockedApps = savedBlocked
         .where((pkg) => !isProductiveApp(pkg, ''))
         .toSet();
+    // Ensure Facebook is restored to blocked apps if not productive
+    for (final fbPkg in ['com.facebook.katana', 'com.facebook.lite']) {
+      if (!isProductiveApp(fbPkg, 'Facebook')) {
+        _blockedApps.add(fbPkg);
+      }
+    }
     if (_blockedApps.length != savedBlocked.length) {
       prefs.setStringList('blockedApps', _blockedApps.toList());
     }
@@ -682,6 +688,12 @@ class AppState extends ChangeNotifier {
         final cleanPkg = pkg.trim().toLowerCase();
         if (cleanPkg.isNotEmpty) {
           final now = DateTime.now().millisecondsSinceEpoch;
+          // Priority guard: If a prohibited app or site is currently triggered or showing,
+          // NEVER let Ghadhul Bashar override it!
+          if ((_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
+              (now - _lastProhibitedEventTime) < 4000) {
+            return;
+          }
           // Guard: if recently dismissed or allowed within 4 seconds, ignore duplicate trigger
           if (cleanPkg == _lastGhadhulBasharDismissedPackage && (now - _lastGhadhulBasharDismissedTime) < 4000) {
             return;

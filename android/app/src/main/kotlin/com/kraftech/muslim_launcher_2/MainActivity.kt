@@ -79,6 +79,10 @@ class MainActivity : FlutterActivity() {
             val now = System.currentTimeMillis()
             val cleanPkg = packageName.trim().lowercase()
             if (cleanPkg.isEmpty()) return
+            if (!pendingProhibitedPackage.isNullOrEmpty() || (now - lastNotifiedProhibitedTime) < 4000L) {
+                Log.d("MainActivity", "notifyGhadhulBashar dropped because prohibited app/site is active")
+                return
+            }
             if (cleanPkg == lastNotifiedGhadhulPkg && (now - lastNotifiedGhadhulTime) < 2000L) {
                 Log.d("MainActivity", "Duplicate notifyGhadhulBashar dropped for $cleanPkg")
                 return
@@ -515,7 +519,8 @@ class MainActivity : FlutterActivity() {
             }
         }
         pendingGhadhulBasharPackage?.let { pkg ->
-            if (pkg.isNotEmpty() && pendingProhibitedPackage.isNullOrEmpty() && pendingBlockedPackage.isNullOrEmpty()) {
+            val now = System.currentTimeMillis()
+            if (pkg.isNotEmpty() && pendingProhibitedPackage.isNullOrEmpty() && pendingBlockedPackage.isNullOrEmpty() && (now - lastNotifiedProhibitedTime) >= 4000L) {
                 lastNotifiedGhadhulPkg = null
                 lastNotifiedGhadhulTime = 0L
                 val extra = pendingGhadhulBasharExtra

@@ -21,6 +21,7 @@ class AppBlockService : AccessibilityService() {
     companion object {
         private var instance: AppBlockService? = null
         private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        private val backgroundExecutor = java.util.concurrent.Executors.newFixedThreadPool(4)
         private var blockedPackages = Collections.synchronizedSet(mutableSetOf<String>())
         private var temporaryAllowedPackages = ConcurrentHashMap<String, Long>()
         
@@ -37,6 +38,10 @@ class AppBlockService : AccessibilityService() {
 
         // Prohibited bypass browsers (Permanently blocked in restricted regions)
         private var prohibitedPackages = Collections.synchronizedSet(mutableSetOf<String>())
+        @Volatile
+        private var lastProhibitedTriggerTime: Long = 0L
+        @Volatile
+        private var lastProhibitedBringToFrontTime: Long = 0L
 
         // Strict Mode state tracking
         @Volatile
@@ -1196,13 +1201,14 @@ class AppBlockService : AccessibilityService() {
         fun allowGhadhulBasharSession(packageName: String) {
             val pkg = packageName.trim().lowercase()
             activeGhadhulSessions.add(pkg)
+            facebookBrowserSessionActive[pkg] = true
             val now = System.currentTimeMillis()
             lastActiveGhadhulTimes[pkg] = now
             lastBypassPackage = pkg
             lastBypassTime = now
             lastTriggeredPackage = pkg
             lastTriggeredTime = now
-            Log.d("AppBlockService", "GHADHUL SESSION ALLOWED: $pkg (Shield & Debounce Active)")
+            Log.d("AppBlockService", "GHADHUL SESSION ALLOWED: $pkg (Shield & Debounce Active, fbSessionActive=true)")
         }
 
         fun resetGhadhulBasharSession(packageName: String) {
@@ -1272,8 +1278,11 @@ class AppBlockService : AccessibilityService() {
             if (!isSocialMediaPackage(packageName)) return false
 
             val lowerClass = className.lowercase()
-            return lowerClass.contains("browserlite") ||
+            return lowerClass.contains("webview") ||
+                   lowerClass.contains("webkit") ||
+                   lowerClass.contains("browserlite") ||
                    lowerClass.contains("browser.lite") ||
+                   lowerClass.contains("fbchromeactivity") ||
                    lowerClass.contains("inappbrowser") ||
                    lowerClass.contains("browseractivity") ||
                    lowerClass.contains("browserproxy") ||
@@ -1310,7 +1319,6 @@ class AppBlockService : AccessibilityService() {
                    lower.contains("feedactivity") ||
                    lower.contains("loginactivity") ||
                    lower.endsWith(".mainactivity") ||
-                   lower.contains("fbchromeactivity") ||
                    lower.contains("newsfeed") ||
                    lower.contains("tabactivity") ||
                    lower.contains("storyvieweractivity") ||
@@ -1321,6 +1329,28 @@ class AppBlockService : AccessibilityService() {
                    lower.contains("splashactivity") ||
                    lower.contains("detailactivity") ||
                    lower.contains("launcheractivity")
+        }
+
+        fun hasWebViewInWindow(root: android.view.accessibility.AccessibilityNodeInfo?): Boolean {
+            if (root == null) return false
+            val queue = java.util.ArrayDeque<android.view.accessibility.AccessibilityNodeInfo>()
+            queue.add(root)
+            var visited = 0
+            while (queue.isNotEmpty() && visited < 80) {
+                val current = queue.poll() ?: break
+                visited++
+                val cls = current.className?.toString()?.lowercase() ?: ""
+                if (cls.contains("webview") || cls.contains("webcontent") || cls.contains("webkit")) {
+                    return true
+                }
+                for (i in 0 until current.childCount) {
+                    try {
+                        val child = current.getChild(i) ?: continue
+                        queue.add(child)
+                    } catch (_: Exception) {}
+                }
+            }
+            return false
         }
 
         fun isFacebookMainFeedActivity(className: String): Boolean = isSocialMainFeedActivity(className)
@@ -1339,6 +1369,19 @@ class AppBlockService : AccessibilityService() {
         )
 
         private val TRUSTED_DOMAINS = listOf(
+            // Search engines & portals
+            "google.com",
+            "google.co.id",
+            "gstatic.com",
+            "googleusercontent.com",
+            "googleapis.com",
+            "bing.com",
+            "yahoo.com",
+            "duckduckgo.com",
+            "yandex.com",
+            "ecosia.org",
+            "startpage.com",
+            // Video & Streaming
             "youtube.com",
             "youtu.be",
             "vidio.com",
@@ -1346,17 +1389,26 @@ class AppBlockService : AccessibilityService() {
             "dailymotion.com",
             "twitch.tv",
             "tiktok.com",
-            "google.com",
-            "google.co.id",
-            "bing.com",
-            "yahoo.com",
+            "netflix.com",
+            "disneyplus.com",
+            "primevideo.com",
+            "hulu.com",
+            "spotify.com",
+            // Knowledge & Reference
+            "wikipedia.org",
+            "wikimedia.org",
+            "medium.com",
+            "kompasiana.com",
+            "wordpress.com",
+            "blogspot.com",
+            // Tech & Tools
             "microsoft.com",
             "apple.com",
             "nvidia.com",
             "github.com",
             "gitlab.com",
-            "wikipedia.org",
-            "wikimedia.org",
+            "play.google.com",
+            // Indonesian & Global News
             "kompas.com",
             "detik.com",
             "tribunnews.com",
@@ -1377,6 +1429,18 @@ class AppBlockService : AccessibilityService() {
             "bisnis.com",
             "kontan.co.id",
             "tirto.id",
+            "okezone.com",
+            "katadata.co.id",
+            "pikiran-rakyat.com",
+            "medcom.id",
+            "tvonenews.com",
+            "beritasatu.com",
+            "bbc.com",
+            "reuters.com",
+            "aljazeera.com",
+            "nytimes.com",
+            "theguardian.com",
+            // Social Media
             "facebook.com",
             "fb.com",
             "instagram.com",
@@ -1389,11 +1453,7 @@ class AppBlockService : AccessibilityService() {
             "linkedin.com",
             "pinterest.com",
             "reddit.com",
-            "netflix.com",
-            "disneyplus.com",
-            "primevideo.com",
-            "hulu.com",
-            "spotify.com",
+            // E-Commerce & Payments
             "tokopedia.com",
             "shopee.co.id",
             "shopee.com",
@@ -1411,6 +1471,44 @@ class AppBlockService : AccessibilityService() {
                 if (cleanHost == trusted || cleanHost.endsWith(".$trusted")) {
                     return true
                 }
+            }
+            return false
+        }
+
+        private val TRUSTED_NEWS_AND_INFO_DOMAINS = listOf(
+            "detik.com", "kompas.com", "tribunnews.com", "tempo.co", "liputan6.com",
+            "cnnindonesia.com", "cnbcindonesia.com", "kumparan.com", "idntimes.com",
+            "sindonews.com", "suara.com", "merdeka.com", "jawapos.com", "antaranews.com",
+            "republika.co.id", "viva.co.id", "inews.id", "bisnis.com", "kontan.co.id",
+            "tirto.id", "wikipedia.org", "wikimedia.org", "okezone.com", "katadata.co.id",
+            "pikiran-rakyat.com", "medcom.id", "tvonenews.com", "beritasatu.com",
+            "bbc.com", "reuters.com", "aljazeera.com", "nytimes.com", "theguardian.com"
+        )
+
+        fun isTrustedNewsOrGovDomain(text: String): Boolean {
+            val lower = text.lowercase().trim()
+            for (domain in TRUSTED_NEWS_AND_INFO_DOMAINS) {
+                if (containsDomainWithBoundaries(lower, domain)) {
+                    return true
+                }
+            }
+            if (lower.contains(".go.id") || lower.contains(".gov") ||
+                lower.contains(".ac.id") || lower.contains(".edu") || lower.contains(".sch.id")) {
+                return true
+            }
+            return false
+        }
+
+        fun isTrustedDestinationDomain(text: String): Boolean {
+            val lower = text.lowercase().trim()
+            for (domain in TRUSTED_DOMAINS) {
+                if (containsDomainWithBoundaries(lower, domain)) {
+                    return true
+                }
+            }
+            if (lower.contains(".go.id") || lower.contains(".gov") ||
+                lower.contains(".ac.id") || lower.contains(".edu") || lower.contains(".sch.id")) {
+                return true
             }
             return false
         }
@@ -1444,7 +1542,7 @@ class AppBlockService : AccessibilityService() {
             if (!hasDot || clean.contains(" ")) return false
 
             // If it is an explicitly trusted mainstream domain, allow it immediately
-            if (isTrustedSafeDomain(clean)) {
+            if (isTrustedSafeDomain(clean) || isTrustedDestinationDomain(clean)) {
                 return false
             }
 
@@ -1461,16 +1559,12 @@ class AppBlockService : AccessibilityService() {
                     clean.contains("slicedrivenow") ||
                     clean.contains("slicedrive") ||
                     clean.contains("slikdrive") ||
-                    clean.contains("terabox") ||
-                    clean.contains("dubox") ||
                     clean.contains("doodstream") ||
-                    clean.contains("dood") ||
                     clean.contains("streamtape") ||
                     clean.contains("mixdrop") ||
                     clean.contains("lulustream") ||
                     clean.contains("filelions") ||
                     clean.contains("streamsb") ||
-                    clean.contains("chindo") ||
                     clean.contains("anhai") ||
                     clean.contains("vidoy") ||
                     clean.contains("vidply") ||
@@ -1507,34 +1601,23 @@ class AppBlockService : AccessibilityService() {
 
                 // If this label is a genuine legitimate word (like david, davidtool, videomaker), skip vid-pattern detection for it
                 if (!isSafeVidWord) {
-                    // 1. 'vid' patterns (underground streaming / leak domains: vidoy, vidply, vidy, vids, streamvid, etc.)
-                    if (label.startsWith("vid")) {
-                        return true
-                    }
-                    if (label.endsWith("vid")) {
-                        return true
-                    }
-                    if (label.contains("-vid") || label.contains("vid-")) {
+                    val isLeakVid = label == "vidoy" || label == "vidply" || label == "vidhide" ||
+                            label == "vidcloud" || label == "vidstream" || label == "vidlox" ||
+                            label == "vidshare" || label == "vidplay" || label.startsWith("streamvid") ||
+                            label.startsWith("playvid")
+                    if (isLeakVid) {
                         return true
                     }
                 }
 
-                // 2. 'vld' patterns (obfuscated 'vid' leak sites using 'l': vld, vldey, vldplay, etc.)
-                if (label.contains("vld")) {
+                // 2. Obfuscated leak site prefixes: vldey, vldplay, vdyplay, vdkplay, etc.
+                if (label.startsWith("vldey") || label.startsWith("vldplay") || label == "vldey" ||
+                    label.startsWith("vdyplay") || label == "vdy" ||
+                    label.startsWith("vdkplay") || label == "vdk") {
                     return true
                 }
 
-                // 3. 'vdy' patterns (obfuscated 'vid' leak sites: vdy, vdyplay, etc.)
-                if (label.contains("vdy")) {
-                    return true
-                }
-
-                // 4. 'vdk' patterns (obfuscated 'vid' leak sites: vdk, vdkplay, etc.)
-                if (label.contains("vdk")) {
-                    return true
-                }
-
-                // 5. 'viadey' / 'viodey' variations
+                // 3. 'viadey' / 'viodey' variations
                 if (label.contains("viade") || label.contains("viode")) {
                     return true
                 }
@@ -1544,27 +1627,261 @@ class AppBlockService : AccessibilityService() {
         }
 
         private val ADULT_KEYWORDS = listOf(
-            "porn", "porno", "xxx", "bokep", "hentai", "doujin", "nekopoi", "jav", "javhd", "javsub", "dmm",
+            "porn", "porno", "xxx", "bokep", "hentai", "doujin", "nekopoi",
+            "javhd", "javsub", "jav censored", "jav uncensored", "dmm.co.jp", "dmm.com",
             "xnxx", "xvideos", "xhamster", "redtube", "youporn", "spankbang", "brazzers", "beeg", "eporner", "tube8",
             "onlyfans", "fansly", "fancentro", "stripchat", "chaturbate", "bongacams", "cam4", "livejasmin",
             "sange", "lendir", "colmek", "crot", "pemersatubangsa", ".xxx", ".porn", ".adult",
-            "cd.slikdrive.com", "slikdrive.com", "slikdrive", "1024terabox.com", "terabox", "dubox",
-            "viadey", "viodey", "vldeyco.id", "vldey", "vioranow", "slicedrivenow", "slicedrive", "vld", "vdy", "vdk",
-            "chindo", "anhai", "doodstream", "vidoy", "vidply", "vidy"
+            "cd.slikdrive.com", "slikdrive.com", "slikdrive",
+            "viadey", "viodey", "vldeyco.id", "vldey", "vioranow", "slicedrivenow", "slicedrive",
+            "anhai", "doodstream", "vidoy", "vidply",
+            "open bo", "open vcs", "vcs real", "vcs barbar"
         )
 
-        private val GAMBLING_KEYWORDS = listOf(
-            "slot", "slot88", "slot777", "slotgacor", "gacor", "maxwin", "scatter",
-            "zeus", "kakekzeus", "olympus", "mahjong", "mahjongways", "sweetbonanza",
-            "pragmatic", "pragmaticplay", "pgsoft", "habanero", "spadegaming", "joker123",
-            "judol", "judi", "taruhan", "betting", "agenjudi", "bandar",
-            "linkgacor", "situsslot", "rtpslot", "bocoranslot", "pola-slot",
-            "togel", "totomacau", "totogel", "togelonline", "singaporepools", "hongkongpools",
-            "casino", "baccarat", "roulette", "blackjack", "sicbo",
-            "poker88", "idnpoker", "domino99", "dominoqq", "qiuqiu", "ceme", "capsa",
-            "sbobet", "bet365", "1xbet", "parimatch", "m88", "w88", "fun88", "dafabet",
-            "sabungayam", "sv388", "s128", "cockfight"
+        private val SHORTENER_DOMAINS = listOf(
+            "s.id", "bit.ly", "tinyurl.com", "cutt.ly", "rb.gy", "is.gd", "v.gd", "t.co",
+            "shorturl.at", "linktr.ee", "linktree.com", "heylink.me", "heylink.id", "sl.al",
+            "snip.ly", "rebrand.ly", "bl.ink", "bitly.com", "ow.ly",
+            "buff.ly", "soo.gd", "adf.ly", "bc.vc", "sh.st", "hyperurl.co", "rotf.lol",
+            "taplink.cc", "lnk.bio", "campsite.bio", "bio.link", "beacons.ai", "mezink.com"
         )
+
+        private val LINK_IN_BIO_DOMAINS = listOf(
+            "heylink.me", "heylink.id", "linktr.ee", "linktree.com",
+            "taplink.cc", "lnk.bio", "campsite.bio", "bio.link",
+            "beacons.ai", "mezink.com"
+        )
+
+        fun isLinkInBioDomain(url: String): Boolean {
+            val lower = url.lowercase().trim()
+            return LINK_IN_BIO_DOMAINS.any { bio ->
+                lower.contains(bio)
+            }
+        }
+
+        fun isShortenerDomain(text: String): Boolean {
+            val lower = text.lowercase().trim()
+            return SHORTENER_DOMAINS.any { shortener ->
+                lower == shortener || lower.endsWith(".$shortener") || lower.contains("/$shortener/") || lower.contains("$shortener/")
+            }
+        }
+
+        fun isShortenerUrl(url: String): Boolean {
+            val lower = url.lowercase().trim()
+            return SHORTENER_DOMAINS.any { shortener ->
+                lower.contains(shortener)
+            }
+        }
+
+        fun extractCandidateUrls(text: String): List<String> {
+            val urls = mutableListOf<String>()
+            if (text.isEmpty()) return urls
+
+            // 1. If text is a Facebook/Instagram redirect wrapper (l.facebook.com/l.php?u=...)
+            if (text.contains("facebook.com/l.php") || text.contains("instagram.com/l.php")) {
+                try {
+                    val uParam = text.substringAfter("u=", "").substringBefore("&")
+                    if (uParam.isNotEmpty()) {
+                        val decoded = safelyDecodeUrl(uParam)
+                        if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
+                            urls.add(decoded)
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // Also check for redirect query params in any URL (e.g. ?url=..., ?target=..., ?link=..., ?dest=..., ?redirect=...)
+            if (text.contains("?url=") || text.contains("&url=") ||
+                text.contains("?link=") || text.contains("&link=") ||
+                text.contains("?target=") || text.contains("&target=") ||
+                text.contains("?redirect=") || text.contains("&redirect=")) {
+                try {
+                    val inner = text.substringAfter("url=", "")
+                        .ifEmpty { text.substringAfter("link=", "") }
+                        .ifEmpty { text.substringAfter("target=", "") }
+                        .ifEmpty { text.substringAfter("redirect=", "") }
+                        .substringBefore("&")
+                    if (inner.isNotEmpty()) {
+                        val decoded = safelyDecodeUrl(inner)
+                        if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
+                            urls.add(decoded)
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // 2. Extract standard URLs using regex
+            val urlRegex = Regex("""(?i)\b(?:https?://|www\.)[a-z0-9\-\._~:/?#\[\]@!$&'()*+,;=%]+""")
+            val matches = urlRegex.findAll(text)
+            for (m in matches) {
+                val u = m.value.trimEnd('.', ',', ';', '!', '?', ')', ']', '>')
+                if (u.isNotEmpty() && !urls.contains(u)) {
+                    urls.add(u)
+                }
+            }
+
+            // 3. Match naked shortener domains (e.g. "s.id/xyz", "bit.ly/123", "heylink.me/abc")
+            for (shortener in SHORTENER_DOMAINS) {
+                val shortRegex = Regex("""(?i)\b$shortener/[a-z0-9\-_./?=&%]+""")
+                for (m in shortRegex.findAll(text)) {
+                    val raw = m.value.trimEnd('.', ',', ';', '!', '?', ')', ']', '>')
+                    val full = "https://$raw"
+                    if (!urls.contains(full) && !urls.contains(raw)) {
+                        urls.add(full)
+                    }
+                }
+            }
+
+            return urls
+        }
+
+        private val redirectCache = ConcurrentHashMap<String, String>()
+
+        fun resolveShortenerRedirectAsync(rawUrl: String, onResolved: ((String) -> Unit)? = null) {
+            val cleanUrl = if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
+                "https://$rawUrl"
+            } else rawUrl
+
+            val cached = redirectCache[cleanUrl]
+            if (cached != null) {
+                onResolved?.invoke(cached)
+                return
+            }
+
+            backgroundExecutor.execute {
+                try {
+                    var currentUrl = cleanUrl
+                    var redirects = 0
+                    var violatedLabel: String? = null
+                    var violatedInfo: String? = null
+
+                    while (redirects < 4) {
+                        val urlObj = java.net.URL(currentUrl)
+                        val conn = urlObj.openConnection() as java.net.HttpURLConnection
+                        conn.instanceFollowRedirects = false
+                        conn.connectTimeout = 2500
+                        conn.readTimeout = 2500
+                        conn.requestMethod = "GET"
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36")
+                        conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                        val code = conn.responseCode
+                        if (code in 300..399) {
+                            val loc = conn.getHeaderField("Location") ?: break
+                            currentUrl = if (loc.startsWith("http")) loc else java.net.URL(urlObj, loc).toString()
+                            redirects++
+                            conn.disconnect()
+                        } else if (code == 200) {
+                            // Check link-in-bio pages (e.g. heylink.me, linktr.ee) by inspecting HTML snippet
+                            if (isLinkInBioDomain(currentUrl)) {
+                                try {
+                                    val stream = conn.inputStream
+                                    val reader = java.io.BufferedReader(java.io.InputStreamReader(stream))
+                                    val sb = StringBuilder()
+                                    var line: String? = null
+                                    var totalRead = 0
+                                    while (reader.readLine().also { line = it } != null && totalRead < 4096) {
+                                        sb.append(line).append(" ")
+                                        totalRead += (line?.length ?: 0)
+                                    }
+                                    conn.disconnect()
+                                    val htmlSnippet = sb.toString().lowercase()
+                                    for (kw in GAMBLING_KEYWORDS) {
+                                        if (textContainsKeyword(htmlSnippet, kw)) {
+                                            violatedLabel = "Judi Online"
+                                            violatedInfo = "$currentUrl [$kw]"
+                                            break
+                                        }
+                                    }
+                                    if (violatedLabel == null) {
+                                        for (kw in ADULT_KEYWORDS) {
+                                            if (textContainsKeyword(htmlSnippet, kw)) {
+                                                violatedLabel = "Konten Dewasa"
+                                                violatedInfo = "$currentUrl [$kw]"
+                                                break
+                                            }
+                                        }
+                                    }
+                                } catch (_: Exception) {}
+                            } else {
+                                conn.disconnect()
+                            }
+                            break
+                        } else {
+                            conn.disconnect()
+                            break
+                        }
+                    }
+
+                    redirectCache[cleanUrl] = currentUrl
+                    if (currentUrl != cleanUrl) {
+                        Log.d("FbBlock", "[SHORTENER-RESOLVED] $cleanUrl -> $currentUrl")
+                        onResolved?.invoke(currentUrl)
+                    }
+
+                    // Check destination URL for gambling/adult keywords
+                    val lowerDest = currentUrl.lowercase()
+                    if (violatedLabel == null) {
+                        for (kw in GAMBLING_KEYWORDS) {
+                            if (textContainsKeyword(lowerDest, kw)) {
+                                violatedLabel = "Judi Online"
+                                violatedInfo = currentUrl
+                                break
+                            }
+                        }
+                    }
+                    if (violatedLabel == null) {
+                        for (kw in ADULT_KEYWORDS) {
+                            if (textContainsKeyword(lowerDest, kw)) {
+                                violatedLabel = "Konten Dewasa"
+                                violatedInfo = currentUrl
+                                break
+                            }
+                        }
+                    }
+
+                    if (violatedLabel != null) {
+                        val label = violatedLabel
+                        val info = violatedInfo ?: currentUrl
+                        handler.post {
+                            instance?.triggerProhibitedSiteBlock(label, info)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w("FbBlock", "[SHORTENER-FAIL] Could not resolve $cleanUrl: ${e.message}")
+                }
+            }
+        }
+
+        private val GAMBLING_KEYWORDS = listOf(
+            "slot88", "slot777", "slotgacor", "slot gacor", "slot online", "slotonline", "judi slot",
+            "situs slot", "situsslot", "agen slot", "agenslot", "daftar slot", "daftarslot",
+            "link slot", "linkslot", "bocoran slot", "bocoranslot", "pola slot", "pola-slot",
+            "gacor", "maxwin", "scatter hitam", "scatter gacor",
+            "kakek zeus", "kakekzeus", "gates of olympus", "gatesofolympus",
+            "mahjong ways", "mahjongways", "sweet bonanza", "sweetbonanza",
+            "pragmatic play", "pragmaticplay", "pg soft", "pgsoft", "habanero slot", "spadegaming", "joker123",
+            "judol", "judi online", "judi bola", "taruhan bola", "taruhan online", "agenjudi", "agen judi",
+            "bandar judi", "bandar slot", "bandar togel", "bandar bola", "bandar casino", "bandar online",
+            "link gacor", "linkgacor", "rtp slot", "rtpslot", "rtp live", "rtp tertinggi", "bocoran rtp", "infomaxwin",
+            "togel", "totomacau", "toto macau", "totogel", "togel online", "togelonline", "singaporepools", "hongkongpools",
+            "casino online", "live casino", "baccarat online", "roulette online", "sicbo online",
+            "poker88", "idnpoker", "idn poker", "domino99", "dominoqq", "qiuqiu online", "ceme online", "capsa susun",
+            "sbobet", "bet365", "1xbet", "parimatch", "m88", "w88", "fun88", "dafabet",
+            "sabung ayam", "sabungayam", "sv388", "s128", "cockfight betting",
+            "jackpot slot", "freebet", "freespin", "free spin",
+            "starlight princess", "starlightprincess", "nexusengine",
+            "mpoplay", "mposlot", "pay4d", "idnplay", "idnsport",
+            "depo pulsa", "depo qris", "minimal depo", "slot depo", "depo 10k", "depo 20k", "depo 25k", "depo 50k",
+            "pulsa tanpa potongan"
+        )
+
+        fun textContainsKeyword(text: String, keyword: String): Boolean {
+            if (keyword.length <= 4 && !keyword.contains(".") && !keyword.contains("-")) {
+                val regex = Regex("\\b" + Regex.escape(keyword) + "\\b")
+                return regex.containsMatchIn(text)
+            }
+            return text.contains(keyword)
+        }
 
         fun safelyDecodeUrl(input: String): String {
             if (!input.contains("%")) return input
@@ -1646,12 +1963,8 @@ class AppBlockService : AccessibilityService() {
                 }
             }
 
-            // 2. Perform an optimal shallow search on native toolbar and address views (max depth 12, max 150 nodes)
-            // Traverses native address bar without descending into heavy WebView HTML DOM
-            fun scanShallow(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int, count: IntArray) {
-                if (node == null || depth > 12 || count[0] >= 150) return
-                count[0]++
-
+            fun extractNodeText(node: android.view.accessibility.AccessibilityNodeInfo?) {
+                if (node == null) return
                 node.text?.toString()?.trim()?.lowercase()?.let {
                     if (it.isNotEmpty() && it.length <= 400 && !gatheredTexts.contains(it)) {
                         gatheredTexts.add(it)
@@ -1669,32 +1982,84 @@ class AppBlockService : AccessibilityService() {
                         }
                     }
                 }
+            }
 
-                // CRITICAL FOR PERFORMANCE: Stop traversal at WebViews!
-                // HTML DOM can contain thousands of nodes; cutting off here guarantees 0 UI stutter.
-                val className = node.className?.toString()?.lowercase() ?: ""
-                if (className.contains("webview") || className.contains("webcontent")) return
+            // 2. Perform BFS traversal on window tree from root (max 120 nodes)
+            // BFS discovers toolbar (address/title) and WebView at levels 1-3 without getting stuck in deep feeds!
+            val root = rootNode ?: (if (event != null) getTopmostNode(event.source) ?: event.source else null)
+            val webViewNodes = mutableListOf<android.view.accessibility.AccessibilityNodeInfo>()
 
-                for (i in 0 until node.childCount) {
-                    try {
-                        val child = node.getChild(i) ?: continue
-                        scanShallow(child, depth + 1, count)
-                    } catch (_: Exception) {}
+            if (root != null) {
+                val queue = java.util.ArrayDeque<android.view.accessibility.AccessibilityNodeInfo>()
+                queue.add(root)
+                var visited = 0
+                while (queue.isNotEmpty() && visited < 120) {
+                    val current = queue.poll() ?: break
+                    visited++
+                    extractNodeText(current)
+
+                    val cls = current.className?.toString()?.lowercase() ?: ""
+                    if (cls.contains("webview") || cls.contains("webcontent") || cls.contains("webkit")) {
+                        webViewNodes.add(current)
+                        continue
+                    }
+
+                    for (i in 0 until current.childCount) {
+                        try {
+                            val child = current.getChild(i) ?: continue
+                            queue.add(child)
+                        } catch (_: Exception) {}
+                    }
                 }
             }
 
-            // ALWAYS prefer the true window root so toolbar is accessible even if event.source was a child
-            val startNode = rootNode ?: (if (event != null) getTopmostNode(event.source) ?: event.source else null)
-            if (startNode != null) {
-                val count = intArrayOf(0)
-                scanShallow(startNode, 0, count)
+            // Also include event.source if it is a WebView or inside a WebView
+            val evSource = event?.source
+            if (evSource != null) {
+                val srcCls = evSource.className?.toString()?.lowercase() ?: ""
+                if (srcCls.contains("webview") || srcCls.contains("webcontent") || srcCls.contains("webkit")) {
+                    if (!webViewNodes.contains(evSource)) {
+                        webViewNodes.add(evSource)
+                    }
+                } else {
+                    extractNodeText(evSource)
+                }
+            }
+
+            // 3. Deep-scan WebView nodes to capture HTML document text, buttons, and links (max depth 15, max 100 nodes per webview)
+            for (wv in webViewNodes) {
+                var wvCount = 0
+                fun scanWebViewChildren(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int) {
+                    if (node == null || depth > 15 || wvCount >= 100) return
+                    wvCount++
+                    extractNodeText(node)
+                    for (i in 0 until node.childCount) {
+                        try {
+                            val child = node.getChild(i) ?: continue
+                            scanWebViewChildren(child, depth + 1)
+                        } catch (_: Exception) {}
+                    }
+                }
+                scanWebViewChildren(wv, 0)
+            }
+
+            // 4. Window title scanning: Android exposes WebView document.title as window title
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                try {
+                    val windowTitle = root?.window?.title?.toString()?.trim()?.lowercase()
+                    if (!windowTitle.isNullOrEmpty() && !gatheredTexts.contains(windowTitle)) {
+                        gatheredTexts.add(windowTitle)
+                        Log.d("FbBlock", "[LOG4-TITLE] Window title captured: $windowTitle")
+                    }
+                } catch (_: Exception) {}
             }
 
             if (gatheredTexts.isEmpty()) {
+                Log.d("FbBlock", "[LOG4-SCAN] gatheredTexts EMPTY → NONE (no accessibility text found)")
                 return FacebookScanResult(BrowserViolation.NONE, "", false)
             }
 
-            // 3. Robust decoding of URL wrappers (e.g. l.facebook.com/l.php?u=..., l.instagram.com/?u=...)
+            // 5. Robust decoding of URL wrappers & candidate URL extraction
             val allTexts = mutableListOf<String>()
             allTexts.addAll(gatheredTexts)
             for (text in gatheredTexts) {
@@ -1704,28 +2069,47 @@ class AppBlockService : AccessibilityService() {
                         allTexts.add(decoded)
                     }
                 }
+                val candidateUrls = extractCandidateUrls(text)
+                for (u in candidateUrls) {
+                    if (!allTexts.contains(u)) {
+                        allTexts.add(u)
+                    }
+                    val cached = redirectCache[u] ?: redirectCache["https://$u"]
+                    if (cached != null && !allTexts.contains(cached)) {
+                        allTexts.add(cached)
+                    }
+                }
             }
 
             val combined = allTexts.joinToString(" ")
+            Log.d("FbBlock", "[LOG4-SCAN] texts(${allTexts.size}): ${allTexts.take(5).map { it.take(80) }}")
 
-            // 4. Check Gambling (Maysir - Haram Mutlak, Highest Priority)
+            // 5.5 Check if the active page is a trusted destination (search engines, news, edu, gov, e-commerce, wiki, tech, etc.)
+            // Legitimate sites (Google search results, news reporting on events, Wikipedia, etc.)
+            // must NEVER be falsely blocked as gambling/adult!
+            val isTrustedDestination = allTexts.any { isTrustedDestinationDomain(it) }
+            if (isTrustedDestination) {
+                Log.d("FbBlock", "[LOG5-TRUSTED] Trusted destination domain detected -> bypassed from adult/gambling blocking")
+                return FacebookScanResult(BrowserViolation.NONE, "", true, isSocialGroupLink = false)
+            }
+
+            // 6. Check Gambling (Maysir - Haram Mutlak, Highest Priority)
             for (kw in GAMBLING_KEYWORDS) {
-                if (combined.contains(kw)) {
-                    val matchedSnippet = allTexts.find { it.contains(kw) } ?: kw
+                if (textContainsKeyword(combined, kw)) {
+                    val matchedSnippet = allTexts.find { textContainsKeyword(it, kw) } ?: kw
                     return FacebookScanResult(BrowserViolation.GAMBLING, matchedSnippet, true)
                 }
             }
 
-            // 5. Check Core Adult Keywords
+            // 7. Check Core Adult Keywords
             for (kw in ADULT_KEYWORDS) {
-                if (combined.contains(kw)) {
-                    val matchedSnippet = allTexts.find { it.contains(kw) } ?: kw
+                if (textContainsKeyword(combined, kw)) {
+                    val matchedSnippet = allTexts.find { textContainsKeyword(it, kw) } ?: kw
                     return FacebookScanResult(BrowserViolation.ADULT, matchedSnippet, true)
                 }
             }
 
-            // 6. Pattern Matching for Disguised Adult Leak / Streaming Domains (vid, vld, vdy, vdk, viadey, viodey, etc.)
-            // Includes deep parameter tokenization to unmask redirect targets inside query strings
+            // 8. Pattern Matching for Disguised Adult Leak / Streaming Domains (vid, vld, vdy, vdk, viadey, viodey, etc.)
             for (text in allTexts) {
                 val tokens = text.split(" ", "\t", "\n", ",", "|", ";", "\"", "'", "(", ")", "[", "]", "<", ">")
                 for (token in tokens) {
@@ -1743,10 +2127,10 @@ class AppBlockService : AccessibilityService() {
                 }
             }
 
-            // 7. Check for Social Group Links with strict word boundaries to prevent false positives (e.g. about.me, start.me)
+            // 9. Check for Social Group Links with strict word boundaries
             val hasSocialGroupPattern = allTexts.any { hasSocialGroupTarget(it) }
 
-            // 8. Meaningful content check (exclude placeholders like about:blank and loading states)
+            // 10. Meaningful content check (exclude placeholders, intermediate shortener domains, and loading states)
             val hasMeaningfulContent = allTexts.any { text ->
                 val trimmed = text.trim()
                 val isPlaceholder = trimmed == "about:blank" ||
@@ -1754,8 +2138,22 @@ class AppBlockService : AccessibilityService() {
                         trimmed.startsWith("chrome://") ||
                         trimmed.startsWith("data:") ||
                         trimmed == "loading..." ||
-                        trimmed == "memuat..."
+                        trimmed == "memuat..." ||
+                        isShortenerDomain(trimmed)
                 !isPlaceholder && trimmed.length >= 4 && (trimmed.contains(".") || trimmed.contains("http") || trimmed.contains("://"))
+            }
+
+            // 11. Asynchronously resolve any shortener URLs found in texts
+            for (text in allTexts) {
+                val urls = extractCandidateUrls(text)
+                for (u in urls) {
+                    if (isShortenerUrl(u)) {
+                        resolveShortenerRedirectAsync(u)
+                    }
+                }
+                if (isShortenerUrl(text)) {
+                    resolveShortenerRedirectAsync(text)
+                }
             }
 
             return FacebookScanResult(BrowserViolation.NONE, "", hasMeaningfulContent, isSocialGroupLink = hasSocialGroupPattern)
@@ -1898,11 +2296,47 @@ class AppBlockService : AccessibilityService() {
             val type = event.eventType
             val isWindowState = type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
             val isWindowContent = type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+            val isViewClicked = type == AccessibilityEvent.TYPE_VIEW_CLICKED
 
-            if (!isWindowState && !isWindowContent) return
+            if (!isWindowState && !isWindowContent && !isViewClicked) return
 
             val packageName = event.packageName?.toString()?.trim()?.lowercase() ?: return
             val className = event.className?.toString()?.lowercase() ?: ""
+            val isWebViewCls = className.contains("webview") || className.contains("webcontent") || className.contains("webkit")
+
+            val now = System.currentTimeMillis()
+            // If prohibited screen or site block was triggered recently (< 3500ms),
+            // DROP all events immediately to prevent animation events from creating an infinite loop / ANR!
+            if ((now - lastProhibitedTriggerTime) < 3500L) {
+                return
+            }
+
+            // Proactively resolve shorteners from clicked links in Facebook
+            if (isViewClicked) {
+                if (isFacebookPackage(packageName)) {
+                    val clickedTexts = mutableListOf<String>()
+                    for (cs in event.text) {
+                        cs?.toString()?.trim()?.let { clickedTexts.add(it) }
+                    }
+                    event.contentDescription?.toString()?.trim()?.let { clickedTexts.add(it) }
+                    for (txt in clickedTexts) {
+                        val urls = extractCandidateUrls(txt)
+                        for (u in urls) {
+                            if (isShortenerUrl(u)) {
+                                resolveShortenerRedirectAsync(u) { resolved ->
+                                    Log.d("FbBlock", "[CLICK-RESOLVED] Pre-resolved shortener: $u -> $resolved")
+                                }
+                            }
+                        }
+                        if (isShortenerUrl(txt)) {
+                            resolveShortenerRedirectAsync(txt) { resolved ->
+                                Log.d("FbBlock", "[CLICK-RESOLVED] Pre-resolved shortener: $txt -> $resolved")
+                            }
+                        }
+                    }
+                }
+                return
+            }
 
             // FAST EARLY-EXIT: If it's a content change (scrolling/typing/layout updates),
             // ONLY process if it's Settings/Installer, Facebook in-app browser, or Custom Tab!
@@ -1913,19 +2347,40 @@ class AppBlockService : AccessibilityService() {
                 if (!isFb && !isSettingsOrInstallerApp(packageName) && !isCustomTab) {
                     return
                 }
-                if (isFb && !(isFbBrowserActive[packageName] == true || isFacebookInAppBrowser(packageName, className))) {
-                    return
+                if (isFb) {
+                    if (isWebViewCls && ghadhulBasharPackages.contains(packageName)) {
+                        if (isFbBrowserActive[packageName] != true) {
+                            Log.d("FbBlock", "[FIX2-AUTO] Auto-set isFbBrowserActive=true from WebView content change: pkg=$packageName")
+                        }
+                        isFbBrowserActive[packageName] = true
+                    }
+                    if (isFbBrowserActive[packageName] != true && !isWebViewCls && !isFacebookInAppBrowser(packageName, className)) {
+                        val active = rootInActiveWindow ?: getTopmostNode(event.source)
+                        if (hasWebViewInWindow(active)) {
+                            Log.d("FbBlock", "[FIX3-AUTO] Auto-set isFbBrowserActive=true from hasWebViewInWindow: pkg=$packageName")
+                            isFbBrowserActive[packageName] = true
+                        } else {
+                            Log.d("FbBlock", "[LOG1-DROP] CONTENT_CHANGED dropped: pkg=$packageName cls=$className isFbBrowserActive=${isFbBrowserActive[packageName]} isFbBrowserDetected=${isFacebookInAppBrowser(packageName, className)}")
+                            return
+                        }
+                    }
+                    Log.d("FbBlock", "[LOG2-PASS] CONTENT_CHANGED passed: pkg=$packageName cls=$className isFbBrowserActive=${isFbBrowserActive[packageName]}")
                 }
             }
 
             // Track Facebook in-app browser activity state (only on window state changes)
             if (isFacebookPackage(packageName) && isWindowState) {
-                if (isFacebookInAppBrowser(packageName, className)) {
+                val isBrowserCls = isWebViewCls || isFacebookInAppBrowser(packageName, className)
+                val isFeedCls = isFacebookMainFeedActivity(className)
+                Log.d("FbBlock", "[LOG3-STATE] WINDOW_STATE: pkg=$packageName cls=$className isBrowserCls=$isBrowserCls isFeedCls=$isFeedCls prevIsFbBrowserActive=${isFbBrowserActive[packageName]}")
+                if (isBrowserCls) {
                     isFbBrowserActive[packageName] = true
-                } else if (isFacebookMainFeedActivity(className)) {
-                    // Truly returning to main feed / profile / timeline (not a popup, dialog, or frame layout)
-                    isFbBrowserActive[packageName] = false
-                    facebookBrowserSessionActive[packageName] = false
+                } else if (isFeedCls) {
+                    val active = rootInActiveWindow ?: getTopmostNode(event.source)
+                    if (!hasWebViewInWindow(active)) {
+                        isFbBrowserActive[packageName] = false
+                        facebookBrowserSessionActive[packageName] = false
+                    }
                 }
             }
 
@@ -1952,8 +2407,7 @@ class AppBlockService : AccessibilityService() {
                 facebookBrowserSessionActive.remove(previousPackage)
             }
 
-            val now = System.currentTimeMillis()
-            if (packageName == lastTriggeredPackage && (now - lastTriggeredTime) < 800L) {
+            if (packageName == lastTriggeredPackage && (now - lastTriggeredTime) < 1200L) {
                 return
             }
 
@@ -2163,10 +2617,22 @@ class AppBlockService : AccessibilityService() {
 
             // 0.1 PRIORITAS 0.1: PROHIBITED FACEBOOK IN-APP BROWSER & CUSTOM TABS URL CHECK (Haram Mutlak - Tanpa Bypass)
             val isFb = isFacebookPackage(packageName)
-            val isFbBrowser = isFb && (isFacebookInAppBrowser(packageName, className) || (isFbBrowserActive[packageName] == true))
+            var isFbBrowser = isFb && (isWebViewCls || isFacebookInAppBrowser(packageName, className) || (isFbBrowserActive[packageName] == true))
             val isCustomTab = className.contains("customtab")
+            if (isFb && !isFbBrowser) {
+                val active = getActiveNode()
+                if (hasWebViewInWindow(active)) {
+                    isFbBrowserActive[packageName] = true
+                    isFbBrowser = true
+                }
+            }
+            Log.d("FbBlock", "[LOG5-P01] pkg=$packageName isFb=$isFb isFbBrowser=$isFbBrowser isCustomTab=$isCustomTab isFbBrowserActive=${isFbBrowserActive[packageName]} cls=$className eventType=${if (isWindowState) "STATE" else "CONTENT"}")
+            if ((now - lastProhibitedTriggerTime) < 3500L) {
+                return
+            }
             if (isFbBrowser || isCustomTab) {
                 val (violation, targetInfo) = detectFacebookBrowserViolation(event, getActiveNode())
+                Log.d("FbBlock", "[LOG6-P01-RESULT] violation=$violation targetInfo=${targetInfo.take(80)}")
                 if (violation == BrowserViolation.GAMBLING || violation == BrowserViolation.ADULT) {
                     val targetLabel = if (violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
                     Log.d("AppBlockService", "BROWSER VIOLATION ($targetLabel): $targetInfo")
@@ -2176,6 +2642,7 @@ class AppBlockService : AccessibilityService() {
                     }
                     lastTriggeredPackage = packageName
                     lastTriggeredTime = now
+                    lastProhibitedTriggerTime = now
                     try {
                         performGlobalAction(GLOBAL_ACTION_BACK)
                     } catch (_: Exception) {}
@@ -2224,6 +2691,11 @@ class AppBlockService : AccessibilityService() {
             // 3. PRIORITAS 2: GHADHUL BASHAR CHECK (Pengingat Murni)
             // Hanya dieksekusi jika aplikasi bukan aplikasi non-produktif terkunci (atau sudah dibuka kuncinya)
             if (ghadhulBasharPackages.contains(packageName)) {
+                // If a prohibited app or site was recently triggered, DO NOT trigger Ghadhul Bashar!
+                if ((now - lastProhibitedTriggerTime) < 4000L) {
+                    return
+                }
+
                 val lastActive = lastActiveGhadhulTimes[packageName]
                 val isIdleExpired = lastActive != null && (now - lastActive) > (30 * 60 * 1000)
                 
@@ -2235,13 +2707,24 @@ class AppBlockService : AccessibilityService() {
 
                 val hasActiveSession = activeGhadhulSessions.contains(packageName)
                 val isBrowser = isKnownBrowser(packageName)
-                val isFbBrowserCurrent = isFacebookInAppBrowser(packageName, className) || (isFbBrowserActive[packageName] == true)
+                var isFbBrowserCurrent = isWebViewCls || isFacebookInAppBrowser(packageName, className) || (isFbBrowserActive[packageName] == true)
+                if (isFacebookPackage(packageName) && !isFbBrowserCurrent) {
+                    val active = getActiveNode()
+                    if (hasWebViewInWindow(active)) {
+                        isFbBrowserActive[packageName] = true
+                        isFbBrowserCurrent = true
+                    }
+                }
+
+                Log.d("FbBlock", "[LOG7-P3] pkg=$packageName hasActiveSession=$hasActiveSession isBrowser=$isBrowser isFbBrowserCurrent=$isFbBrowserCurrent fbSessionActive=${facebookBrowserSessionActive[packageName]} isFbBrowserActive=${isFbBrowserActive[packageName]} cls=$className")
 
                 // Track status sesi Facebook in-app browser
                 if (isFacebookPackage(packageName) && isFacebookMainFeedActivity(className)) {
-                    // Berada di feed / aktivitas biasa Facebook (bukan in-app browser)
-                    facebookBrowserSessionActive[packageName] = false
-                    isFbBrowserActive[packageName] = false
+                    val active = rootInActiveWindow ?: getTopmostNode(event.source)
+                    if (!hasWebViewInWindow(active)) {
+                        facebookBrowserSessionActive[packageName] = false
+                        isFbBrowserActive[packageName] = false
+                    }
                 }
 
                 if (hasActiveSession) {
@@ -2256,6 +2739,7 @@ class AppBlockService : AccessibilityService() {
                             facebookBrowserSessionActive[packageName] = false
                             lastTriggeredPackage = packageName
                             lastTriggeredTime = now
+                            lastProhibitedTriggerTime = now
                             try {
                                 performGlobalAction(GLOBAL_ACTION_BACK)
                             } catch (_: Exception) {}
@@ -2267,7 +2751,6 @@ class AppBlockService : AccessibilityService() {
                         // 2. Hanya jika konten terbukti BERSIH, periksa apakah pengguna sudah berada di sesi browser
                         val isAlreadyInFbBrowser = facebookBrowserSessionActive[packageName] == true
                         if (isAlreadyInFbBrowser || isWithinBypassShield) {
-                            // Sesi browser bersih saat ini sedang aktif dibaca oleh user -> jangan loop Ghadhul Bashar
                             facebookBrowserSessionActive[packageName] = true
                             lastActiveGhadhulTimes[packageName] = now
                             return
@@ -2275,20 +2758,23 @@ class AppBlockService : AccessibilityService() {
 
                         // 3. Link baru dibuka di Facebook:
                         if (!scanRes.hasContent) {
-                            // Toolbar masih kosong / sedang memuat URL dari Intent.
-                            // Tunda pengecekan 350ms agar URL termuat sempurna dan tidak salah menampilkan Ghadhul Bashar untuk URL terlarang!
                             val capturedPkg = packageName
+                            Log.d("FbBlock", "[LOG8-DELAY] Scheduling 350ms delayed scan for $capturedPkg (hasContent=false at window state)")
                             handler.postDelayed({
-                                val active = rootInActiveWindow ?: getTopmostNode(null)
+                                val active = rootInActiveWindow ?: cachedActiveNode ?: getTopmostNode(event.source)
+                                Log.d("FbBlock", "[LOG8-DELAY-RESULT] currentFg=$currentForegroundPackage isFb=${isFacebookPackage(currentForegroundPackage)} activeNode=${active != null}")
                                 if (active != null && isFacebookPackage(currentForegroundPackage)) {
                                     val delayedRes = detectFacebookBrowserViolation(null, active)
+                                    Log.d("FbBlock", "[LOG8-DELAY-SCAN] violation=${delayedRes.violation} hasContent=${delayedRes.hasContent} targetInfo=${delayedRes.targetInfo.take(80)}")
                                     if (delayedRes.violation == BrowserViolation.GAMBLING || delayedRes.violation == BrowserViolation.ADULT) {
                                         val targetLabel = if (delayedRes.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
                                         Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION (delayed check, $targetLabel): ${delayedRes.targetInfo}")
                                         isFbBrowserActive[capturedPkg] = false
                                         facebookBrowserSessionActive[capturedPkg] = false
                                         lastTriggeredPackage = capturedPkg
-                                        lastTriggeredTime = System.currentTimeMillis()
+                                        val delayedNow = System.currentTimeMillis()
+                                        lastTriggeredTime = delayedNow
+                                        lastProhibitedTriggerTime = delayedNow
                                         try {
                                             performGlobalAction(GLOBAL_ACTION_BACK)
                                         } catch (_: Exception) {}
@@ -2304,9 +2790,8 @@ class AppBlockService : AccessibilityService() {
                                         MainActivity.notifyGhadhulBashar(capturedPkg, extraTag)
                                         bringLauncherToFront("ghadhulBasharPackageName", capturedPkg, "triggerGhadhulBasharScreen", extraTag)
                                     } else {
-                                        // Toolbar masih loading / belum terisi domain (DNS handshake / slow redirect).
-                                        // JANGAN buru-buru menampilkan Ghadhul Bashar agar URL terlarang yang lambat tidak salah diberi izin!
                                         Log.d("AppBlockService", "Facebook In-App Browser URL still loading in toolbar, waiting for content event.")
+                                        Log.d("FbBlock", "[LOG8-DELAY-STILL-LOADING] URL still loading after 350ms for $capturedPkg")
                                     }
                                 }
                             }, 350L)
@@ -2324,16 +2809,10 @@ class AppBlockService : AccessibilityService() {
                         return
                     } else if (!isBrowser) {
                         // Aplikasi non-browser (seperti TikTok, Instagram, Twitter/X, atau feed Facebook):
-                        // Selama sesi aktif (idle < 30 menit), izinkan semua aktivitas internal:
-                        // - Menonton video / scrolling
-                        // - Menonton Live streaming
-                        // - Membuka keyboard / komentar / posting ulang (repost)
-                        // - Menjelajah profil, tab, atau keranjang belanja internal
                         lastActiveGhadhulTimes[packageName] = now
                         return
                     } else {
                         // Aplikasi Browser (Chrome, Firefox, dll):
-                        // Deteksi apakah browser dibuka karena klik link dari aplikasi eksternal (WhatsApp, Telegram, dll)
                         val isLauncherOrSystem = previousPackage == null ||
                             previousPackage == this.packageName ||
                             previousPackage == "com.android.systemui" ||
@@ -2344,17 +2823,16 @@ class AppBlockService : AccessibilityService() {
                             previousPackage.contains("home") ||
                             isKeyboardOrTransientOverlay(previousPackage)
 
-                        // Chrome Custom Tab dari aplikasi luar
                         val isCustomTabFromExternal = className.contains("customtab") && previousPackage != packageName
                         val isLinkFromExternalApp = (!isLauncherOrSystem) || isCustomTabFromExternal
 
-                        // Cek apakah ada pelanggaran URL / domain terlarang di toolbar browser luar / custom tab!
                         val scanRes = detectFacebookBrowserViolation(event, getActiveNode())
                         if (scanRes.violation == BrowserViolation.GAMBLING || scanRes.violation == BrowserViolation.ADULT) {
                             val targetLabel = if (scanRes.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
                             Log.d("AppBlockService", "EXTERNAL BROWSER / CUSTOM TAB VIOLATION ($targetLabel): ${scanRes.targetInfo}")
                             lastTriggeredPackage = packageName
                             lastTriggeredTime = now
+                            lastProhibitedTriggerTime = now
                             try {
                                 performGlobalAction(GLOBAL_ACTION_BACK)
                             } catch (_: Exception) {}
@@ -2364,7 +2842,6 @@ class AppBlockService : AccessibilityService() {
                         }
 
                         if (!isLinkFromExternalApp || isWithinBypassShield) {
-                            // Pengguna hanya berpindah aplikasi dan kembali lagi (multitasking biasa) -> izinkan tanpa menampilkan overlay
                             lastActiveGhadhulTimes[packageName] = now
                             return
                         }
@@ -2406,12 +2883,15 @@ class AppBlockService : AccessibilityService() {
 
         try {
             val info = serviceInfo ?: android.accessibilityservice.AccessibilityServiceInfo()
-            info.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+            info.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
+                AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
+                AccessibilityEvent.TYPE_VIEW_CLICKED
             info.feedbackType = android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_GENERIC
             info.flags = info.flags or
                 android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
                 android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
-                android.accessibilityservice.AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+                android.accessibilityservice.AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS or
+                android.accessibilityservice.AccessibilityServiceInfo.FLAG_REQUEST_ENHANCED_WEB_ACCESSIBILITY
             serviceInfo = info
         } catch (e: Exception) {
             Log.w("AppBlockService", "Failed to update serviceInfo: ${e.message}")
@@ -2444,24 +2924,45 @@ class AppBlockService : AccessibilityService() {
         super.onDestroy()
     }
 
+    fun triggerProhibitedSiteBlock(targetLabel: String, targetInfo: String) {
+        val now = System.currentTimeMillis()
+        if ((now - lastProhibitedTriggerTime) < 3500L) {
+            return
+        }
+        Log.d("AppBlockService", "TRIGGER PROHIBITED SITE BLOCK ($targetLabel): $targetInfo")
+        val fg = currentForegroundPackage ?: "com.facebook.katana"
+        isFbBrowserActive[fg] = false
+        facebookBrowserSessionActive[fg] = false
+        lastTriggeredPackage = fg
+        lastTriggeredTime = now
+        lastProhibitedTriggerTime = now
+        try {
+            performGlobalAction(GLOBAL_ACTION_BACK)
+        } catch (_: Exception) {}
+        MainActivity.notifyAppProhibited(targetLabel)
+        bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+    }
+
     /**
      * Brings the launcher to foreground using a multi-layered approach for maximum reliability:
      * 1. performGlobalAction(HOME) — Works on ALL Android versions (API 16+), bypasses
      *    Android 10+ background activity launch restrictions. Simulates the HOME button press.
-     * 2. startActivity with intent extras — Delivers the overlay trigger data to Flutter.
-     * 3. Retry with 500ms delay if startActivity fails on first attempt.
-     *
-     * This dual approach ensures the overlay works across:
-     * - All Android versions (7.0 to 15+)
-     * - All OEM skins (Samsung, Xiaomi, Oppo, Vivo, Huawei, etc.)
-     * - All launch contexts (recent apps, notifications, widgets, shortcuts, other apps)
-     * - Aggressive battery optimization modes (Doze, App Standby)
+     * 2. Explicit Intent to MainActivity with custom action to prevent HOME categorization.
+     * 3. PendingIntent with MODE_BACKGROUND_ACTIVITY_START_ALLOWED (bypasses Android 14+ BAL restrictions).
+     * 4. Direct startActivity fallback if PendingIntent failed.
      */
     private fun bringLauncherToFront(packageNameKey: String, packageNameValue: String, triggerKey: String, sourceExtra: String? = null) {
+        val now = System.currentTimeMillis()
+        if (triggerKey == "triggerProhibitedScreen" && (now - lastProhibitedBringToFrontTime) < 3000L) {
+            return
+        }
+        if (triggerKey == "triggerProhibitedScreen") {
+            lastProhibitedBringToFrontTime = now
+        }
+
         val cleanPkg = packageNameValue.trim().lowercase()
 
         // LAYER 1: performGlobalAction(HOME) — Immediately minimizes the foreground app
-        // and bypasses Android 10+ background activity launch (BAL) restrictions across all devices
         try {
             performGlobalAction(GLOBAL_ACTION_HOME)
         } catch (e: Exception) {
@@ -2485,6 +2986,7 @@ class AppBlockService : AccessibilityService() {
         }
 
         // LAYER 3: PendingIntent with MODE_BACKGROUND_ACTIVITY_START_ALLOWED (bypasses Android 14+ BAL restrictions)
+        var startedViaPendingIntent = false
         try {
             val pendingIntent = PendingIntent.getActivity(
                 this,
@@ -2502,24 +3004,29 @@ class AppBlockService : AccessibilityService() {
             } else {
                 pendingIntent.send()
             }
+            startedViaPendingIntent = true
         } catch (e: Exception) {
             Log.w("AppBlockService", "PendingIntent.send failed: ${e.message}")
         }
 
-        // LAYER 4: Direct startActivity fallback
-        try {
-            startActivity(intent)
-        } catch (e: Exception) {
-            Log.w("AppBlockService", "startActivity failed: ${e.message}")
-        }
-
-        // LAYER 5: Retry with 400ms delay to catch any window transition delays
-        handler.postDelayed({
+        // LAYER 4: Direct startActivity fallback if PendingIntent failed
+        if (!startedViaPendingIntent) {
             try {
                 startActivity(intent)
-            } catch (retryEx: Exception) {
-                Log.e("AppBlockService", "Retry startActivity failed: ${retryEx.message}")
+            } catch (e: Exception) {
+                Log.w("AppBlockService", "startActivity failed: ${e.message}")
             }
-        }, 400L)
+        }
+
+        // LAYER 5: Retry with 400ms delay for non-prohibited screens
+        if (triggerKey != "triggerProhibitedScreen") {
+            handler.postDelayed({
+                try {
+                    startActivity(intent)
+                } catch (retryEx: Exception) {
+                    Log.e("AppBlockService", "Retry startActivity failed: ${retryEx.message}")
+                }
+            }, 400L)
+        }
     }
 }

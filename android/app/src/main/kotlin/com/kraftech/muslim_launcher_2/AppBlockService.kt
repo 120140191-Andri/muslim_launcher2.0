@@ -3017,22 +3017,11 @@ class AppBlockService : AccessibilityService() {
         lastTriggeredTime = now
         lastProhibitedTriggerTime = now
 
-        // 1. Double BACK action to dismiss any in-app browser activity / dialog immediately
-        try {
-            performGlobalAction(GLOBAL_ACTION_BACK)
-        } catch (_: Exception) {}
-
-        handler.postDelayed({
-            try {
-                performGlobalAction(GLOBAL_ACTION_BACK)
-            } catch (_: Exception) {}
-        }, 60L)
-
-        // 2. Bring launcher to front and show red ProhibitedAppOverlay (triggers HOME + singleTop overlay)
+        // 1. Bring launcher to front and show red ProhibitedAppOverlay (triggers HOME + singleTop overlay)
         MainActivity.notifyAppProhibited(targetLabel)
         bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
 
-        // 3. Terminate background processes of the offending app (e.g. Facebook)
+        // 2. Terminate background processes of the offending app (e.g. Facebook)
         // Once minimized to background via HOME, killing background processes clears the browser activity/tab
         // so the user cannot return to the prohibited link and must reopen fresh from scratch.
         handler.postDelayed({

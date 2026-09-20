@@ -1,6 +1,7 @@
 package com.kraftech.muslim_launcher_2
 
 import android.accessibilityservice.AccessibilityService
+import android.app.ActivityManager
 import android.app.ActivityOptions
 import android.app.PendingIntent
 import android.content.Context
@@ -2737,19 +2738,8 @@ class AppBlockService : AccessibilityService() {
                 Log.d("FbBlock", "[LOG6-P01-RESULT] violation=$violation targetInfo=${targetInfo.take(80)}")
                 if (violation == BrowserViolation.GAMBLING || violation == BrowserViolation.ADULT) {
                     val targetLabel = if (violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
-                    Log.d("AppBlockService", "BROWSER VIOLATION ($targetLabel): $targetInfo")
-                    if (isFb) {
-                        isFbBrowserActive[packageName] = false
-                        facebookBrowserSessionActive[packageName] = false
-                    }
-                    lastTriggeredPackage = packageName
-                    lastTriggeredTime = now
-                    lastProhibitedTriggerTime = now
-                    try {
-                        performGlobalAction(GLOBAL_ACTION_BACK)
-                    } catch (_: Exception) {}
-                    MainActivity.notifyAppProhibited(targetLabel)
-                    bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+                    Log.d("AppBlockService", "BROWSER VIOLATION ($targetLabel): $targetInfo in $packageName")
+                    forceCloseAndBlockProhibitedApp(packageName, targetLabel)
                     return // DILARANG TOTAL SAMA SEKALI!
                 }
             }
@@ -2837,18 +2827,8 @@ class AppBlockService : AccessibilityService() {
                         val scanRes = detectFacebookBrowserViolation(event, getActiveNode())
                         if (scanRes.violation == BrowserViolation.GAMBLING || scanRes.violation == BrowserViolation.ADULT) {
                             val targetLabel = if (scanRes.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
-                            Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION ($targetLabel): ${scanRes.targetInfo}")
-                            cancelPendingGhadhulVerification()
-                            isFbBrowserActive[packageName] = false
-                            facebookBrowserSessionActive[packageName] = false
-                            lastTriggeredPackage = packageName
-                            lastTriggeredTime = now
-                            lastProhibitedTriggerTime = now
-                            try {
-                                performGlobalAction(GLOBAL_ACTION_BACK)
-                            } catch (_: Exception) {}
-                            MainActivity.notifyAppProhibited(targetLabel)
-                            bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+                            Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION ($targetLabel): ${scanRes.targetInfo} in $packageName")
+                            forceCloseAndBlockProhibitedApp(packageName, targetLabel)
                             return
                         }
 
@@ -2894,18 +2874,8 @@ class AppBlockService : AccessibilityService() {
 
                                 if (secondScan.violation == BrowserViolation.GAMBLING || secondScan.violation == BrowserViolation.ADULT) {
                                     val targetLabel = if (secondScan.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
-                                    Log.d("AppBlockService", "2-STEP CHECK DETECTED VIOLATION ($targetLabel): ${secondScan.targetInfo}")
-                                    isFbBrowserActive[capturedPkg] = false
-                                    facebookBrowserSessionActive[capturedPkg] = false
-                                    lastTriggeredPackage = capturedPkg
-                                    val curNow = System.currentTimeMillis()
-                                    lastTriggeredTime = curNow
-                                    lastProhibitedTriggerTime = curNow
-                                    try {
-                                        instance?.performGlobalAction(GLOBAL_ACTION_BACK)
-                                    } catch (_: Exception) {}
-                                    MainActivity.notifyAppProhibited(targetLabel)
-                                    instance?.bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+                                    Log.d("AppBlockService", "2-STEP CHECK DETECTED VIOLATION ($targetLabel): ${secondScan.targetInfo} in $capturedPkg")
+                                    forceCloseAndBlockProhibitedApp(capturedPkg, targetLabel)
                                 } else if (secondScan.hasContent) {
                                     // Tahap 2: Link terbukti tetap BERSIH dan konten tujuan sudah termuat -> Tampilkan Ghadhul Bashar!
                                     Log.d("AppBlockService", "2-STEP CHECK CONFIRMED CLEAN LINK -> Showing Ghadhul Bashar for $capturedPkg")
@@ -2948,15 +2918,8 @@ class AppBlockService : AccessibilityService() {
                         val scanRes = detectFacebookBrowserViolation(event, getActiveNode())
                         if (scanRes.violation == BrowserViolation.GAMBLING || scanRes.violation == BrowserViolation.ADULT) {
                             val targetLabel = if (scanRes.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
-                            Log.d("AppBlockService", "EXTERNAL BROWSER / CUSTOM TAB VIOLATION ($targetLabel): ${scanRes.targetInfo}")
-                            lastTriggeredPackage = packageName
-                            lastTriggeredTime = now
-                            lastProhibitedTriggerTime = now
-                            try {
-                                performGlobalAction(GLOBAL_ACTION_BACK)
-                            } catch (_: Exception) {}
-                            MainActivity.notifyAppProhibited(targetLabel)
-                            bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+                            Log.d("AppBlockService", "EXTERNAL BROWSER / CUSTOM TAB VIOLATION ($targetLabel): ${scanRes.targetInfo} in $packageName")
+                            forceCloseAndBlockProhibitedApp(packageName, targetLabel)
                             return
                         }
 
@@ -3043,23 +3006,54 @@ class AppBlockService : AccessibilityService() {
         super.onDestroy()
     }
 
-    fun triggerProhibitedSiteBlock(targetLabel: String, targetInfo: String) {
+    fun forceCloseAndBlockProhibitedApp(targetPackage: String, targetLabel: String) {
         val now = System.currentTimeMillis()
-        if ((now - lastProhibitedTriggerTime) < 3500L) {
-            return
-        }
-        Log.d("AppBlockService", "TRIGGER PROHIBITED SITE BLOCK ($targetLabel): $targetInfo")
-        val fg = currentForegroundPackage ?: "com.facebook.katana"
-        isFbBrowserActive[fg] = false
-        facebookBrowserSessionActive[fg] = false
-        lastTriggeredPackage = fg
+        val cleanPkg = targetPackage.trim().lowercase()
+
+        cancelPendingGhadhulVerification()
+        isFbBrowserActive[cleanPkg] = false
+        facebookBrowserSessionActive[cleanPkg] = false
+        lastTriggeredPackage = cleanPkg
         lastTriggeredTime = now
         lastProhibitedTriggerTime = now
+
+        // 1. Double BACK action to dismiss any in-app browser activity / dialog immediately
         try {
             performGlobalAction(GLOBAL_ACTION_BACK)
         } catch (_: Exception) {}
+
+        handler.postDelayed({
+            try {
+                performGlobalAction(GLOBAL_ACTION_BACK)
+            } catch (_: Exception) {}
+        }, 60L)
+
+        // 2. Bring launcher to front and show red ProhibitedAppOverlay (triggers HOME + singleTop overlay)
         MainActivity.notifyAppProhibited(targetLabel)
         bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+
+        // 3. Terminate background processes of the offending app (e.g. Facebook)
+        // Once minimized to background via HOME, killing background processes clears the browser activity/tab
+        // so the user cannot return to the prohibited link and must reopen fresh from scratch.
+        handler.postDelayed({
+            try {
+                val am = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+                am?.killBackgroundProcesses(cleanPkg)
+                Log.d("AppBlockService", "Killed background processes for $cleanPkg after prohibited domain detection ($targetLabel)")
+            } catch (e: Exception) {
+                Log.w("AppBlockService", "Could not kill background processes for $cleanPkg: ${e.message}")
+            }
+        }, 300L)
+    }
+
+    fun triggerProhibitedSiteBlock(targetLabel: String, targetInfo: String) {
+        val now = System.currentTimeMillis()
+        if ((now - lastProhibitedTriggerTime) < 3000L) {
+            return
+        }
+        val fg = currentForegroundPackage ?: "com.facebook.katana"
+        Log.d("AppBlockService", "TRIGGER PROHIBITED SITE BLOCK ($targetLabel): $targetInfo in $fg")
+        forceCloseAndBlockProhibitedApp(fg, targetLabel)
     }
 
     /**

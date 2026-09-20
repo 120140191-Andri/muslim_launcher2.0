@@ -1,7 +1,6 @@
 package com.kraftech.muslim_launcher_2
 
 import android.accessibilityservice.AccessibilityService
-import android.app.ActivityManager
 import android.app.ActivityOptions
 import android.app.PendingIntent
 import android.content.Context
@@ -3017,22 +3016,9 @@ class AppBlockService : AccessibilityService() {
         lastTriggeredTime = now
         lastProhibitedTriggerTime = now
 
-        // 1. Bring launcher to front and show red ProhibitedAppOverlay (triggers HOME + singleTop overlay)
+        // Langsung bawa ke HOME (Muslim Launcher) dan tampilkan layar blokir merah
         MainActivity.notifyAppProhibited(targetLabel)
         bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
-
-        // 2. Terminate background processes of the offending app (e.g. Facebook)
-        // Once minimized to background via HOME, killing background processes clears the browser activity/tab
-        // so the user cannot return to the prohibited link and must reopen fresh from scratch.
-        handler.postDelayed({
-            try {
-                val am = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-                am?.killBackgroundProcesses(cleanPkg)
-                Log.d("AppBlockService", "Killed background processes for $cleanPkg after prohibited domain detection ($targetLabel)")
-            } catch (e: Exception) {
-                Log.w("AppBlockService", "Could not kill background processes for $cleanPkg: ${e.message}")
-            }
-        }, 300L)
     }
 
     fun triggerProhibitedSiteBlock(targetLabel: String, targetInfo: String) {

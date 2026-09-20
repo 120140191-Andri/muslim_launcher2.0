@@ -1197,9 +1197,18 @@ class AppBlockService : AccessibilityService() {
 
         private var facebookBrowserSessionActive = ConcurrentHashMap<String, Boolean>()
         private var isFbBrowserActive = ConcurrentHashMap<String, Boolean>()
+        private var pendingGhadhulRunnable: Runnable? = null
+        private var pendingGhadhulPackage: String? = null
+
+        fun cancelPendingGhadhulVerification() {
+            pendingGhadhulRunnable?.let { handler.removeCallbacks(it) }
+            pendingGhadhulRunnable = null
+            pendingGhadhulPackage = null
+        }
 
         fun allowGhadhulBasharSession(packageName: String) {
             val pkg = packageName.trim().lowercase()
+            cancelPendingGhadhulVerification()
             activeGhadhulSessions.add(pkg)
             facebookBrowserSessionActive[pkg] = true
             val now = System.currentTimeMillis()
@@ -1213,6 +1222,7 @@ class AppBlockService : AccessibilityService() {
 
         fun resetGhadhulBasharSession(packageName: String) {
             val pkg = packageName.trim().lowercase()
+            cancelPendingGhadhulVerification()
             activeGhadhulSessions.remove(pkg)
             lastActiveGhadhulTimes.remove(pkg)
             facebookBrowserSessionActive.remove(pkg)
@@ -1221,6 +1231,7 @@ class AppBlockService : AccessibilityService() {
         }
 
         fun clearAllGhadhulSessions() {
+            cancelPendingGhadhulVerification()
             activeGhadhulSessions.clear()
             lastActiveGhadhulTimes.clear()
             facebookBrowserSessionActive.clear()
@@ -1575,7 +1586,13 @@ class AppBlockService : AccessibilityService() {
                     clean.contains("vidshare") ||
                     clean.contains("vidplay") ||
                     clean.contains("vldey") ||
-                    clean.contains("vldeyco")
+                    clean.contains("vldeyco") ||
+                    clean.contains("1024tera") ||
+                    clean.contains("terabox") ||
+                    clean.contains("nephobox") ||
+                    clean.contains("mirrobox") ||
+                    clean.contains("4funbox") ||
+                    clean.contains("tibibox")
 
             if (hasExplicitLeakName) return true
 
@@ -1613,7 +1630,8 @@ class AppBlockService : AccessibilityService() {
                 // 2. Obfuscated leak site prefixes: vldey, vldplay, vdyplay, vdkplay, etc.
                 if (label.startsWith("vldey") || label.startsWith("vldplay") || label == "vldey" ||
                     label.startsWith("vdyplay") || label == "vdy" ||
-                    label.startsWith("vdkplay") || label == "vdk") {
+                    label.startsWith("vdkplay") || label == "vdk" ||
+                    label == "vld" || label.contains("vld") || label.contains("vdy") || label.contains("vdk")) {
                     return true
                 }
 
@@ -1635,8 +1653,50 @@ class AppBlockService : AccessibilityService() {
             "cd.slikdrive.com", "slikdrive.com", "slikdrive",
             "viadey", "viodey", "vldeyco.id", "vldey", "vioranow", "slicedrivenow", "slicedrive",
             "anhai", "doodstream", "vidoy", "vidply",
+            "1024tera.com", "1024tera", "1024terabox.com", "terabox.com", "terabox", "aceimg.com", "uc-share.com",
+            "vld", "vdy", "vdk",
             "open bo", "open vcs", "vcs real", "vcs barbar"
         )
+
+        // Keywords that must ONLY be checked against domain names, NEVER against page body/content/query strings
+        private val DOMAIN_ONLY_KEYWORDS = setOf("vld", "vdy", "vdk")
+
+        fun extractDomainName(raw: String): String? {
+            var clean = raw.trim().lowercase()
+            if (clean.isEmpty()) return null
+            if (clean.contains("://")) {
+                clean = clean.substringAfter("://")
+            }
+            clean = clean
+                .removePrefix("//")
+                .removePrefix("www.")
+                .removePrefix("m.")
+                .substringBefore("/")
+                .substringBefore("?")
+                .substringBefore("#")
+                .substringBefore(":")
+                .trim()
+
+            while (clean.isNotEmpty() && (clean.endsWith(".") || clean.endsWith(",") || clean.endsWith(")") || clean.endsWith("\"") || clean.endsWith("'") || clean.endsWith(";") || clean.endsWith(">") || clean.endsWith("]"))) {
+                clean = clean.dropLast(1)
+            }
+            while (clean.isNotEmpty() && (clean.startsWith("(") || clean.startsWith("\"") || clean.startsWith("'") || clean.startsWith("<") || clean.startsWith("["))) {
+                clean = clean.drop(1)
+            }
+
+            if (clean.length < 3 || clean.length > 100) return null
+
+            // Must contain at least one dot, no spaces, no @
+            if (!clean.contains(".") || clean.contains(" ") || clean.contains("@")) return null
+
+            // Ensure valid domain format (labels separated by dots)
+            val parts = clean.split(".")
+            if (parts.any { it.isEmpty() }) return null
+            val tld = parts.last()
+            if (tld.length < 2 || !tld.all { it.isLetterOrDigit() }) return null
+
+            return clean
+        }
 
         private val SHORTENER_DOMAINS = listOf(
             "s.id", "bit.ly", "tinyurl.com", "cutt.ly", "rb.gy", "is.gd", "v.gd", "t.co",
@@ -1794,6 +1854,7 @@ class AppBlockService : AccessibilityService() {
                                     }
                                     if (violatedLabel == null) {
                                         for (kw in ADULT_KEYWORDS) {
+                                            if (DOMAIN_ONLY_KEYWORDS.contains(kw)) continue
                                             if (textContainsKeyword(htmlSnippet, kw)) {
                                                 violatedLabel = "Konten Dewasa"
                                                 violatedInfo = "$currentUrl [$kw]"
@@ -1830,11 +1891,23 @@ class AppBlockService : AccessibilityService() {
                         }
                     }
                     if (violatedLabel == null) {
+                        val destDomain = extractDomainName(lowerDest)
                         for (kw in ADULT_KEYWORDS) {
-                            if (textContainsKeyword(lowerDest, kw)) {
-                                violatedLabel = "Konten Dewasa"
-                                violatedInfo = currentUrl
-                                break
+                            if (DOMAIN_ONLY_KEYWORDS.contains(kw)) {
+                                if (destDomain != null && !isTrustedSafeDomain(destDomain) && !isTrustedDestinationDomain(destDomain)) {
+                                    val labels = destDomain.split(".").dropLast(1)
+                                    if (labels.any { it.contains(kw) }) {
+                                        violatedLabel = "Konten Dewasa"
+                                        violatedInfo = "$currentUrl [$kw]"
+                                        break
+                                    }
+                                }
+                            } else {
+                                if (textContainsKeyword(lowerDest, kw)) {
+                                    violatedLabel = "Konten Dewasa"
+                                    violatedInfo = currentUrl
+                                    break
+                                }
                             }
                         }
                     }
@@ -2103,26 +2176,55 @@ class AppBlockService : AccessibilityService() {
 
             // 7. Check Core Adult Keywords
             for (kw in ADULT_KEYWORDS) {
+                // Domain-only keywords (vld, vdy, vdk) must ONLY match the domain name, never page text or query params!
+                if (DOMAIN_ONLY_KEYWORDS.contains(kw)) continue
+
                 if (textContainsKeyword(combined, kw)) {
                     val matchedSnippet = allTexts.find { textContainsKeyword(it, kw) } ?: kw
                     return FacebookScanResult(BrowserViolation.ADULT, matchedSnippet, true)
                 }
             }
 
+            // 7.5 Check Domain-Only Keywords strictly against extracted domain names
+            val candidateDomains = mutableSetOf<String>()
+            for (text in allTexts) {
+                val d = extractDomainName(text)
+                if (d != null) candidateDomains.add(d)
+                for (u in extractCandidateUrls(text)) {
+                    val du = extractDomainName(u)
+                    if (du != null) candidateDomains.add(du)
+                }
+                val tokens = text.split(" ", "\t", "\n", ",", "|", ";", "\"", "'", "(", ")", "[", "]", "<", ">")
+                for (token in tokens) {
+                    val dt = extractDomainName(token)
+                    if (dt != null) candidateDomains.add(dt)
+                }
+            }
+
+            for (domain in candidateDomains) {
+                if (isTrustedSafeDomain(domain) || isTrustedDestinationDomain(domain)) continue
+
+                for (kw in DOMAIN_ONLY_KEYWORDS) {
+                    if (domain.contains(kw)) {
+                        Log.d("FbBlock", "[ADULT-DOMAIN] Prohibited domain matched keyword '$kw': $domain")
+                        return FacebookScanResult(BrowserViolation.ADULT, domain, true)
+                    }
+                }
+            }
+
             // 8. Pattern Matching for Disguised Adult Leak / Streaming Domains (vid, vld, vdy, vdk, viadey, viodey, etc.)
+            for (domain in candidateDomains) {
+                if (isSuspiciousDisguisedDomain(domain)) {
+                    Log.d("FbBlock", "[ADULT-DISGUISED] Suspicious disguised domain detected: $domain")
+                    return FacebookScanResult(BrowserViolation.ADULT, domain, true)
+                }
+            }
             for (text in allTexts) {
                 val tokens = text.split(" ", "\t", "\n", ",", "|", ";", "\"", "'", "(", ")", "[", "]", "<", ">")
                 for (token in tokens) {
-                    if (isSuspiciousDisguisedDomain(token)) {
-                        return FacebookScanResult(BrowserViolation.ADULT, token, true)
-                    }
-                    if (token.contains("?") || token.contains("&") || token.contains("=")) {
-                        val subTokens = token.split("?", "&", "=", "/")
-                        for (sub in subTokens) {
-                            if (sub.length >= 4 && isSuspiciousDisguisedDomain(sub)) {
-                                return FacebookScanResult(BrowserViolation.ADULT, sub, true)
-                            }
-                        }
+                    val d = extractDomainName(token) ?: continue
+                    if (isSuspiciousDisguisedDomain(d)) {
+                        return FacebookScanResult(BrowserViolation.ADULT, d, true)
                     }
                 }
             }
@@ -2730,11 +2832,13 @@ class AppBlockService : AccessibilityService() {
                 if (hasActiveSession) {
                     if (isFbBrowserCurrent) {
                         // Khusus Facebook & Facebook Lite:
-                        // 1. CEK PELANGGARAN TERLEBIH DAHULU: Sesi aktif TIDAK PERNAH mem-bypass deteksi konten terlarang!
+                        // 1. CEK PERTAMA (Langsung saat domain/link muncul):
+                        // Sesi aktif TIDAK PERNAH mem-bypass deteksi konten terlarang!
                         val scanRes = detectFacebookBrowserViolation(event, getActiveNode())
                         if (scanRes.violation == BrowserViolation.GAMBLING || scanRes.violation == BrowserViolation.ADULT) {
                             val targetLabel = if (scanRes.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
                             Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION ($targetLabel): ${scanRes.targetInfo}")
+                            cancelPendingGhadhulVerification()
                             isFbBrowserActive[packageName] = false
                             facebookBrowserSessionActive[packageName] = false
                             lastTriggeredPackage = packageName
@@ -2756,56 +2860,71 @@ class AppBlockService : AccessibilityService() {
                             return
                         }
 
-                        // 3. Link baru dibuka di Facebook:
-                        if (!scanRes.hasContent) {
-                            val capturedPkg = packageName
-                            Log.d("FbBlock", "[LOG8-DELAY] Scheduling 350ms delayed scan for $capturedPkg (hasContent=false at window state)")
-                            handler.postDelayed({
-                                val active = rootInActiveWindow ?: cachedActiveNode ?: getTopmostNode(event.source)
-                                Log.d("FbBlock", "[LOG8-DELAY-RESULT] currentFg=$currentForegroundPackage isFb=${isFacebookPackage(currentForegroundPackage)} activeNode=${active != null}")
-                                if (active != null && isFacebookPackage(currentForegroundPackage)) {
-                                    val delayedRes = detectFacebookBrowserViolation(null, active)
-                                    Log.d("FbBlock", "[LOG8-DELAY-SCAN] violation=${delayedRes.violation} hasContent=${delayedRes.hasContent} targetInfo=${delayedRes.targetInfo.take(80)}")
-                                    if (delayedRes.violation == BrowserViolation.GAMBLING || delayedRes.violation == BrowserViolation.ADULT) {
-                                        val targetLabel = if (delayedRes.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
-                                        Log.d("AppBlockService", "FACEBOOK BROWSER VIOLATION (delayed check, $targetLabel): ${delayedRes.targetInfo}")
-                                        isFbBrowserActive[capturedPkg] = false
-                                        facebookBrowserSessionActive[capturedPkg] = false
-                                        lastTriggeredPackage = capturedPkg
-                                        val delayedNow = System.currentTimeMillis()
-                                        lastTriggeredTime = delayedNow
-                                        lastProhibitedTriggerTime = delayedNow
-                                        try {
-                                            performGlobalAction(GLOBAL_ACTION_BACK)
-                                        } catch (_: Exception) {}
-                                        MainActivity.notifyAppProhibited(targetLabel)
-                                        bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
-                                    } else if (delayedRes.hasContent) {
-                                        // Konten URL bersih terkonfirmasi -> tampilkan pengingat Ghadhul Bashar
-                                        Log.d("AppBlockService", "GHADHUL BASHAR: Facebook In-App Browser detected (clean link confirmed) for $capturedPkg")
-                                        facebookBrowserSessionActive[capturedPkg] = true
-                                        lastTriggeredPackage = capturedPkg
-                                        lastTriggeredTime = System.currentTimeMillis()
-                                        val extraTag = if (delayedRes.isSocialGroupLink) "social_group_link" else ""
-                                        MainActivity.notifyGhadhulBashar(capturedPkg, extraTag)
-                                        bringLauncherToFront("ghadhulBasharPackageName", capturedPkg, "triggerGhadhulBasharScreen", extraTag)
-                                    } else {
-                                        Log.d("AppBlockService", "Facebook In-App Browser URL still loading in toolbar, waiting for content event.")
-                                        Log.d("FbBlock", "[LOG8-DELAY-STILL-LOADING] URL still loading after 350ms for $capturedPkg")
-                                    }
-                                }
-                            }, 350L)
+                        // 3. Link baru dibuka di Facebook -> VERIFIKASI 2 TAHAP:
+                        // Tahap 1: Lolos cek awal (bukan situs terlarang).
+                        // Tunggu 1000ms (1 detik) agar redirect shortener dan halaman selesai dimuat sebelum memutuskan.
+                        // Tahap 2: Scan ulang setelah 1000ms:
+                        //   - Jika berubah jadi situs terlarang (hasil redirect) -> Tampilkan OVERLAY MERAH!
+                        //   - Jika tetap bersih dan konten tujuan sudah termuat -> Tampilkan GHADHUL BASHAR!
+                        //   - Jika masih loading / shortener belum selesai -> Tunggu event berikutnya, jangan terburu-buru panggil Ghadhul Bashar!
+                        if (pendingGhadhulPackage == packageName) {
+                            // Timer tahap 2 sedang berjalan, biarkan menyelesaikan pemindaian
                             return
                         }
 
-                        // Link bersih sudah terkonfirmasi di toolbar! Tampilkan pengingat Ghadhul Bashar
-                        Log.d("AppBlockService", "GHADHUL BASHAR: Facebook In-App Browser detected for $packageName ($className)")
-                        facebookBrowserSessionActive[packageName] = true
-                        lastTriggeredPackage = packageName
-                        lastTriggeredTime = now
-                        val extraTag = if (scanRes.isSocialGroupLink) "social_group_link" else ""
-                        MainActivity.notifyGhadhulBashar(packageName, extraTag)
-                        bringLauncherToFront("ghadhulBasharPackageName", packageName, "triggerGhadhulBasharScreen", extraTag)
+                        val capturedPkg = packageName
+                        pendingGhadhulPackage = capturedPkg
+                        val runnable = Runnable {
+                            pendingGhadhulRunnable = null
+                            pendingGhadhulPackage = null
+                            try {
+                                val curFg = currentForegroundPackage
+                                if (curFg == null || !isFacebookPackage(curFg)) {
+                                    Log.d("FbBlock", "[2-STEP] User exited Facebook before verification completed ($curFg)")
+                                    return@Runnable
+                                }
+                                val active = rootInActiveWindow ?: getTopmostNode(null)
+                                if (active == null) {
+                                    Log.d("FbBlock", "[2-STEP] active node null after 1000ms for $capturedPkg")
+                                    return@Runnable
+                                }
+
+                                val secondScan = detectFacebookBrowserViolation(null, active)
+                                Log.d("FbBlock", "[2-STEP-RESULT] secondScan violation=${secondScan.violation} hasContent=${secondScan.hasContent} targetInfo=${secondScan.targetInfo.take(80)}")
+
+                                if (secondScan.violation == BrowserViolation.GAMBLING || secondScan.violation == BrowserViolation.ADULT) {
+                                    val targetLabel = if (secondScan.violation == BrowserViolation.GAMBLING) "Judi Online" else "Konten Dewasa"
+                                    Log.d("AppBlockService", "2-STEP CHECK DETECTED VIOLATION ($targetLabel): ${secondScan.targetInfo}")
+                                    isFbBrowserActive[capturedPkg] = false
+                                    facebookBrowserSessionActive[capturedPkg] = false
+                                    lastTriggeredPackage = capturedPkg
+                                    val curNow = System.currentTimeMillis()
+                                    lastTriggeredTime = curNow
+                                    lastProhibitedTriggerTime = curNow
+                                    try {
+                                        instance?.performGlobalAction(GLOBAL_ACTION_BACK)
+                                    } catch (_: Exception) {}
+                                    MainActivity.notifyAppProhibited(targetLabel)
+                                    instance?.bringLauncherToFront("prohibitedPackageName", targetLabel, "triggerProhibitedScreen")
+                                } else if (secondScan.hasContent) {
+                                    // Tahap 2: Link terbukti tetap BERSIH dan konten tujuan sudah termuat -> Tampilkan Ghadhul Bashar!
+                                    Log.d("AppBlockService", "2-STEP CHECK CONFIRMED CLEAN LINK -> Showing Ghadhul Bashar for $capturedPkg")
+                                    facebookBrowserSessionActive[capturedPkg] = true
+                                    lastTriggeredPackage = capturedPkg
+                                    lastTriggeredTime = System.currentTimeMillis()
+                                    val extraTag = if (secondScan.isSocialGroupLink) "social_group_link" else ""
+                                    MainActivity.notifyGhadhulBashar(capturedPkg, extraTag)
+                                    instance?.bringLauncherToFront("ghadhulBasharPackageName", capturedPkg, "triggerGhadhulBasharScreen", extraTag)
+                                } else {
+                                    // Masih berupa domain shortener atau masih proses loading di WebView -> biarkan event berikutnya yang memverifikasi
+                                    Log.d("AppBlockService", "2-STEP CHECK: Page still loading or on shortener domain at 1s mark for $capturedPkg, waiting for content change.")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("FbBlock", "Error in 2-step verification runnable: ${e.message}")
+                            }
+                        }
+                        pendingGhadhulRunnable = runnable
+                        handler.postDelayed(runnable, 1000L)
                         return
                     } else if (!isBrowser) {
                         // Aplikasi non-browser (seperti TikTok, Instagram, Twitter/X, atau feed Facebook):

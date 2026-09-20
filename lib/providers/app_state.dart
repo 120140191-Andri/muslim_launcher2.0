@@ -89,7 +89,7 @@ class AppState extends ChangeNotifier {
   String _languageCode = getDefaultLanguageCode();
   bool _hasSelectedLanguage = false;
   bool _hasCompletedOnboarding = false;
-  int _points = 1000;
+  int _points = 0;
   Set<String> _blockedApps = {};
   static Set<String> _customProductiveApps = {};
   Set<String> get customProductiveApps => _customProductiveApps;
@@ -480,10 +480,10 @@ class AppState extends ChangeNotifier {
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
     appBlockService.setOnboardingCompleted(_hasCompletedOnboarding);
-    _points = prefs.getInt('points') ?? 1000;
-    if (_points < 1000) {
-      _points = 1000;
-      await prefs.setInt('points', 1000);
+    _points = prefs.getInt('points') ?? 0;
+    if (_points < 0) {
+      _points = 0;
+      await prefs.setInt('points', 0);
     }
     final savedUserNonProductive = prefs.getStringList('userNonProductiveApps') ?? [];
     _userNonProductiveApps = savedUserNonProductive.map((e) => e.trim().toLowerCase()).toSet();

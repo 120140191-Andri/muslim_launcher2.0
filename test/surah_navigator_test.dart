@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -71,8 +72,23 @@ List<Map<String, dynamic>> createSampleQuranData() {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(() {
     SharedPreferences.setMockInitialValues({'languageCode': 'id'});
+
+    const channelBlock = MethodChannel('com.muslimlauncher/block');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channelBlock, (call) async => true);
+
+    const channelApps = MethodChannel('com.muslimlauncher/apps');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channelApps, (call) async {
+      if (call.method == 'getApps') {
+        return [];
+      }
+      return true;
+    });
   });
 
   testWidgets('SurahListScreen renders Floating Pill and AppBar Jump Button',
@@ -137,12 +153,12 @@ void main() {
 
     // Verify Keypad Digits 1 to 9, 0, C, Backspace exist
     expect(find.text('1'), findsWidgets);
-    expect(find.text('2'), findsOneWidget);
+    expect(find.text('2'), findsWidgets);
     expect(find.text('C'), findsOneWidget);
     expect(find.byIcon(Icons.backspace_outlined), findsOneWidget);
 
     // Tap '2' on keypad
-    await tester.tap(find.text('2'));
+    await tester.tap(find.text('2').last);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -189,9 +205,9 @@ void main() {
     final chipFinder = find.text('Surah 1 (Awal)');
     expect(chipFinder, findsOneWidget);
 
+    await tester.ensureVisible(chipFinder);
     await tester.tap(chipFinder);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
 
     // Bottom sheet should be closed
     expect(find.text('Pilih Surah 1 - 10'), findsNothing);

@@ -171,9 +171,15 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
 
     // Auto-scroll to initial ayah if provided
     if (widget.initialAyahIndex != null) {
-      _currentVisibleAyah.value = widget.initialAyahIndex! + 1;
+      final totalAyahs = (widget.surah['ayahs'] as List?)?.length ?? 0;
+      final safeIndex = totalAyahs > 0
+          ? math.max(0, math.min(widget.initialAyahIndex!, totalAyahs - 1))
+          : 0;
+      _currentVisibleAyah.value = safeIndex + 1;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _itemScrollController.jumpTo(index: widget.initialAyahIndex!);
+        if (mounted && _itemScrollController.isAttached) {
+          _itemScrollController.jumpTo(index: safeIndex);
+        }
       });
     }
   }

@@ -12,7 +12,6 @@ import '../../utils/page_transitions.dart';
 import '../../services/eye_tracker_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../utils/translations.dart';
-import '../../services/analytics_service.dart';
 import '../../utils/quran_progress_helper.dart';
 import '../../utils/sunnah_mission_helper.dart';
 
@@ -162,9 +161,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
   @override
   void initState() {
     super.initState();
-    AnalyticsService.logScreenView(
-      'SurahDetailScreen_${widget.surah['surah_name']}',
-    );
     WidgetsBinding.instance.addObserver(this);
     _initSpeech();
     _itemPositionsListener.itemPositions.addListener(_onItemPositionsChanged);
@@ -937,17 +933,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen>
         dateTime: now,
       );
     }
-
-    // Log to Google Analytics
-    AnalyticsService.logQuranSuccess(
-      surahNumber: surahNumber,
-      surahName: widget.surah['surah_name'] as String? ?? '',
-      ayahNumber: index + 1,
-      pointsEarned: pointsEarned,
-      method: method,
-      isSequential: getsPoints,
-      durationSeconds: durationSeconds,
-    );
 
     _stopListening();
 

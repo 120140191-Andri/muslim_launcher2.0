@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../services/eye_tracker_service.dart';
 import '../../utils/translations.dart';
-import '../../services/analytics_service.dart';
 import '../../utils/quran_progress_helper.dart';
 
 class DzikirPreset {
@@ -256,7 +255,6 @@ class _DzikirScreenState extends State<DzikirScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   int _selectedPresetIndex = 0;
   int _count = 0;
-  DateTime? _roundStartTime;
   final int _target = 33;
   int _lastTapTime = 0;
   bool _isFacePresent = false;
@@ -292,7 +290,6 @@ class _DzikirScreenState extends State<DzikirScreen>
   @override
   void initState() {
     super.initState();
-    AnalyticsService.logScreenView('DzikirScreen');
     WidgetsBinding.instance.addObserver(this);
 
     _pulseController = AnimationController(
@@ -471,8 +468,6 @@ class _DzikirScreenState extends State<DzikirScreen>
     );
     _cooldownController.forward(from: 0.0);
 
-    _roundStartTime ??= DateTime.now();
-
     _sessionDzikirTotal++;
 
     setState(() {
@@ -515,20 +510,6 @@ class _DzikirScreenState extends State<DzikirScreen>
     final presetRound = result['presetRound'] as int? ?? 1;
     final isFirstPresetRound =
         result['isFirstPresetRound'] as bool? ?? (presetRound == 1);
-
-    final durationSeconds = _roundStartTime != null
-        ? DateTime.now().difference(_roundStartTime!).inSeconds
-        : 0;
-    _roundStartTime = null;
-
-    AnalyticsService.logDzikirCompleted(
-      dzikirTitle: currentPreset.title,
-      dzikirTransliteration: currentPreset.transliteration,
-      dzikirArabic: currentPreset.arabic,
-      targetCount: _target,
-      pointsEarned: pointsEarned,
-      durationSeconds: durationSeconds,
-    );
 
     if (!mounted) return;
 
@@ -617,7 +598,6 @@ class _DzikirScreenState extends State<DzikirScreen>
                         _cooldownController.reset();
                         setState(() {
                           _count = 0;
-                          _roundStartTime = null;
                           _isInCooldown = false;
                           _rateLimitMessage = '';
                         });
@@ -651,7 +631,6 @@ class _DzikirScreenState extends State<DzikirScreen>
                         _cooldownController.reset();
                         setState(() {
                           _count = 0;
-                          _roundStartTime = null;
                           _isInCooldown = false;
                           _rateLimitMessage = '';
                         });
@@ -774,7 +753,6 @@ class _DzikirScreenState extends State<DzikirScreen>
                             setState(() {
                               _selectedPresetIndex = idx;
                               _count = 0;
-                              _roundStartTime = null;
                               _isInCooldown = false;
                               _rateLimitMessage = '';
                             });
@@ -920,7 +898,6 @@ class _DzikirScreenState extends State<DzikirScreen>
                 _cooldownController.reset();
                 setState(() {
                   _count = 0;
-                  _roundStartTime = null;
                   _isInCooldown = false;
                   _rateLimitMessage = '';
                 });

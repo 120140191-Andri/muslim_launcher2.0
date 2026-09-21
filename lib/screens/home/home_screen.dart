@@ -22,7 +22,6 @@ import '../../utils/quran_progress_helper.dart';
 import '../../utils/sunnah_mission_helper.dart';
 import '../../widgets/language_selection_dialog.dart';
 import '../../widgets/growth_tree_widget.dart';
-import '../../services/analytics_service.dart';
 import '../../services/streak_notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -111,7 +110,6 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    AnalyticsService.logScreenView('HomeScreen');
     WidgetsBinding.instance.addObserver(this);
 
     // Background sync apps without artificial delay since disk cache is already hydrated

@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_block_service.dart';
-import '../services/analytics_service.dart';
 import '../services/streak_notification_service.dart';
 import '../screens/home/app_list_screen.dart';
 import '../utils/translations.dart';
@@ -4400,7 +4399,6 @@ class AppState extends ChangeNotifier {
       isKhatam = true;
       _khatmCount++;
       await prefs.setInt('khatmCount', _khatmCount);
-      AnalyticsService.logQuranKhatm(khatmCount: _khatmCount);
 
       // Progressive Grand Khatam Bonus for completing all 30 Juz (114 Surahs)
       // Khatam 1: +500, Khatam 2: +750, Khatam 3: +1000, Khatam 4: +1250, Khatam 5+: +1500

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/app_state.dart';
-import 'services/analytics_service.dart';
 import 'services/streak_notification_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/language_screen.dart';
@@ -19,7 +18,6 @@ import 'widgets/standard_reflection_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AnalyticsService.initialize();
 
   // Global Error Boundary - Move to main for production safety
   ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -154,7 +152,7 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
           ),
         ),
       ),
-      navigatorObservers: [AnalyticsService.observer, AppState.routeObserver],
+      navigatorObservers: [AppState.routeObserver],
       home: const _HomeScreenSwitcher(),
       builder: (context, child) {
         final rootWidget = child ?? const _HomeScreenSwitcher();

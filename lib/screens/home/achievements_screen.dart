@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/quran_progress_helper.dart';
-import '../../services/analytics_service.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 import '../quran/surah_list_screen.dart';
@@ -77,12 +76,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     String s = Translations.get(lang, key);
     vars?.forEach((k, v) => s = s.replaceAll('{$k}', v));
     return s;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    AnalyticsService.logScreenView('AchievementsScreen');
   }
 
   void _openQuran(AppState appState) {

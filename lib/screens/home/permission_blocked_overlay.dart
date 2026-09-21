@@ -16,12 +16,15 @@ class PermissionBlockedOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // In passive mode, accessibility is not required/prompted
+    if (appState.isPassiveMode) return child;
+
     // Only enforce strict checks AFTER onboarding is completed
     if (!appState.hasCompletedOnboarding) return child;
     if (appState.ignorePermissionGuard) return child;
 
     final isMissingDefault = !appState.isDefaultLauncher;
-    final isMissingAccess = !appState.isAccessibilityEnabled;
+    final isMissingAccess = appState.isAccessibilityRequired && !appState.isAccessibilityEnabled;
 
     if (!isMissingDefault && !isMissingAccess) return child;
 
@@ -85,16 +88,18 @@ class PermissionBlockedOverlay extends StatelessWidget {
                             ).then((_) => appState.setIgnorePermissionGuard(false));
                           },
                         ),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () {
-                            appState.setIgnorePermissionGuard(true);
-                          },
-                          child: Text(
-                            Translations.get(lang, 'continue_without_protection'),
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                        if (!appState.isStrictActiveNow) ...[
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: () {
+                              appState.setIgnorePermissionGuard(true);
+                            },
+                            child: Text(
+                              Translations.get(lang, 'continue_without_protection'),
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),

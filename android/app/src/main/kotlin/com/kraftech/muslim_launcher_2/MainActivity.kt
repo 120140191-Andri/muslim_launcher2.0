@@ -1,5 +1,6 @@
 package com.kraftech.muslim_launcher_2
 
+import android.app.admin.DevicePolicyManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.ContentValues
@@ -72,10 +73,16 @@ class MainActivity : FlutterActivity() {
             }
         }
 
-        fun notifyGhadhulBashar(packageName: String) {
+        var pendingGhadhulBasharExtra: String = ""
+
+        fun notifyGhadhulBashar(packageName: String, extraInfo: String? = null) {
             val now = System.currentTimeMillis()
             val cleanPkg = packageName.trim().lowercase()
             if (cleanPkg.isEmpty()) return
+            if (!pendingProhibitedPackage.isNullOrEmpty() || (now - lastNotifiedProhibitedTime) < 4000L) {
+                Log.d("MainActivity", "notifyGhadhulBashar dropped because prohibited app/site is active")
+                return
+            }
             if (cleanPkg == lastNotifiedGhadhulPkg && (now - lastNotifiedGhadhulTime) < 2000L) {
                 Log.d("MainActivity", "Duplicate notifyGhadhulBashar dropped for $cleanPkg")
                 return
@@ -83,8 +90,13 @@ class MainActivity : FlutterActivity() {
             lastNotifiedGhadhulPkg = cleanPkg
             lastNotifiedGhadhulTime = now
             pendingGhadhulBasharPackage = cleanPkg
+            val cleanExtra = extraInfo ?: ""
+            pendingGhadhulBasharExtra = cleanExtra
             uiHandler.post {
-                blockChannel?.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to cleanPkg))
+                blockChannel?.invokeMethod("onGhadhulBasharTriggered", mapOf(
+                    "packageName" to cleanPkg,
+                    "extraInfo" to cleanExtra
+                ))
             }
         }
 
@@ -101,6 +113,41 @@ class MainActivity : FlutterActivity() {
             pendingProhibitedPackage = cleanPkg
             uiHandler.post {
                 blockChannel?.invokeMethod("onProhibitedAppTriggered", mapOf("packageName" to cleanPkg))
+            }
+        }
+
+        var pendingStrictShieldReason: String? = null
+        private var lastNotifiedStrictShieldTime: Long = 0L
+
+        fun notifyStrictShieldTriggered(reason: String) {
+            val now = System.currentTimeMillis()
+            if ((now - lastNotifiedStrictShieldTime) < 2000L) {
+                return
+            }
+            lastNotifiedStrictShieldTime = now
+            pendingStrictShieldReason = reason
+            uiHandler.post {
+                blockChannel?.invokeMethod("onStrictShieldTriggered", mapOf("reason" to reason))
+            }
+        }
+
+        var pendingStandardReflection: Boolean = false
+        var lastNotifiedReflectionTime: Long = 0L
+
+        fun resetReflectionDebounce() {
+            lastNotifiedReflectionTime = 0L
+            pendingStandardReflection = false
+        }
+
+        fun notifyStandardReflectionTriggered() {
+            val now = System.currentTimeMillis()
+            if ((now - lastNotifiedReflectionTime) < 400L) {
+                return
+            }
+            lastNotifiedReflectionTime = now
+            pendingStandardReflection = true
+            uiHandler.post {
+                blockChannel?.invokeMethod("onStandardReflectionTriggered", null)
             }
         }
     }
@@ -322,15 +369,92 @@ class MainActivity : FlutterActivity() {
                     AppBlockService.updateProhibitedPackages(this, apps)
                     result.success(true)
                 }
+                "isDeviceAdminActive" -> {
+                    result.success(isDeviceAdminActive())
+                }
+                "requestDeviceAdmin" -> {
+                    requestDeviceAdmin()
+                    result.success(true)
+                }
+                "setStrictModeConfig" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: false
+                    val days = call.argument<Int>("days") ?: 30
+                    val untilMs = when (val raw = call.argument<Any>("untilMs")) {
+                        is Number -> raw.toLong()
+                        else -> 0L
+                    }
+                    AppBlockService.updateStrictModeConfig(this, enabled, days, untilMs)
+                    result.success(true)
+                }
+                "getStrictModeStatus" -> {
+                    val status = AppBlockService.getStrictModeStatus(this)
+                    result.success(status)
+                }
+                "setOnboardingCompleted" -> {
+                    val completed = call.argument<Boolean>("completed") ?: false
+                    AppBlockService.setOnboardingCompleted(this, completed)
+                    result.success(true)
+                }
+                "resetStandardReflectionDebounce" -> {
+                    AppBlockService.resetStandardSettingsBypass()
+                    result.success(true)
+                }
+                "allowStandardSettingsTemporarily" -> {
+                    val durationRaw = call.argument<Any>("durationMillis")
+                    val duration = when (durationRaw) {
+                        is Number -> durationRaw.toLong()
+                        else -> 180000L
+                    }
+                    AppBlockService.allowStandardSettingsTemporarily(duration)
+
+                    // Automatically return to Settings, Accessibility, or Device Admin as requested by "Lanjutkan"
+                    val source = AppBlockService.lastStandardReflectionSource
+                    try {
+                        Log.d("MainActivity", "allowStandardSettingsTemporarily: source=$source")
+                        if (source == "device_admin") {
+                            try {
+                                DeviceAdminRequestActivity.start(this@MainActivity)
+                            } catch (e: Exception) {
+                                Log.e("MainActivity", "DeviceAdminRequestActivity.start failed: ${e.message}")
+                                try {
+                                    startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    })
+                                } catch (_: Exception) {}
+                            }
+                        } else if (source == "accessibility") {
+                            val a11yIntent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            }
+                            startActivity(a11yIntent)
+                        } else {
+                            val settingsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", packageName, null)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            }
+                            startActivity(settingsIntent)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Failed to navigate to target: ${e.message}")
+                    }
+
+                    result.success(true)
+                }
                 "getPendingInitialBlock" -> {
                     val resultData = mapOf(
                         "blocked" to pendingBlockedPackage,
                         "ghadhul" to pendingGhadhulBasharPackage,
-                        "prohibited" to pendingProhibitedPackage
+                        "ghadhulExtra" to pendingGhadhulBasharExtra,
+                        "prohibited" to pendingProhibitedPackage,
+                        "strictShield" to pendingStrictShieldReason,
+                        "standardReflection" to pendingStandardReflection
                     )
                     pendingBlockedPackage = null
                     pendingGhadhulBasharPackage = null
+                    pendingGhadhulBasharExtra = ""
                     pendingProhibitedPackage = null
+                    pendingStrictShieldReason = null
+                    pendingStandardReflection = false
                     result.success(resultData)
                 }
                 else -> result.notImplemented()
@@ -347,14 +471,18 @@ class MainActivity : FlutterActivity() {
         
         val isOverlayIntent = intent.getBooleanExtra("triggerBlockScreen", false) ||
             intent.getBooleanExtra("triggerProhibitedScreen", false) ||
-            intent.getBooleanExtra("triggerGhadhulBasharScreen", false)
+            intent.getBooleanExtra("triggerGhadhulBasharScreen", false) ||
+            intent.getBooleanExtra("triggerStrictShieldScreen", false) ||
+            intent.getBooleanExtra("triggerStandardReflectionScreen", false)
 
         handleIntent(intent)
 
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME) && !isOverlayIntent) {
             val hasPendingBlock = !pendingBlockedPackage.isNullOrEmpty() ||
                 !pendingProhibitedPackage.isNullOrEmpty() ||
-                !pendingGhadhulBasharPackage.isNullOrEmpty()
+                !pendingGhadhulBasharPackage.isNullOrEmpty() ||
+                !pendingStrictShieldReason.isNullOrEmpty() ||
+                pendingStandardReflection
             if (!hasPendingBlock) {
                 appsChannel?.invokeMethod("onHomePressed", null)
             }
@@ -363,6 +491,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
+        AppBlockService.resetStandardSettingsBypass(force = true)
         // Replay any pending block events that arrived while the activity was paused.
         // The accessibility service may have set pendingBlockedPackage etc. while we were
         // in background — now that we're back, deliver them to Flutter.
@@ -390,12 +519,28 @@ class MainActivity : FlutterActivity() {
             }
         }
         pendingGhadhulBasharPackage?.let { pkg ->
-            if (pkg.isNotEmpty() && pendingProhibitedPackage.isNullOrEmpty() && pendingBlockedPackage.isNullOrEmpty()) {
+            val now = System.currentTimeMillis()
+            if (pkg.isNotEmpty() && pendingProhibitedPackage.isNullOrEmpty() && pendingBlockedPackage.isNullOrEmpty() && (now - lastNotifiedProhibitedTime) >= 4000L) {
                 lastNotifiedGhadhulPkg = null
                 lastNotifiedGhadhulTime = 0L
+                val extra = pendingGhadhulBasharExtra
                 uiHandler.post {
-                    bc.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to pkg))
+                    bc.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to pkg, "extraInfo" to extra))
                 }
+            }
+        }
+        pendingStrictShieldReason?.let { reason ->
+            if (reason.isNotEmpty()) {
+                lastNotifiedStrictShieldTime = 0L
+                uiHandler.post {
+                    bc.invokeMethod("onStrictShieldTriggered", mapOf("reason" to reason))
+                }
+            }
+        }
+        if (pendingStandardReflection) {
+            lastNotifiedReflectionTime = 0L
+            uiHandler.post {
+                bc.invokeMethod("onStandardReflectionTriggered", null)
             }
         }
     }
@@ -417,12 +562,14 @@ class MainActivity : FlutterActivity() {
         }
         if (intent.getBooleanExtra("triggerGhadhulBasharScreen", false)) {
             val ghadhulPackage = intent.getStringExtra("ghadhulBasharPackageName") ?: ""
+            val extraInfo = intent.getStringExtra("ghadhulBasharExtraInfo") ?: ""
             intent.removeExtra("triggerGhadhulBasharScreen")
             intent.removeExtra("ghadhulBasharPackageName")
+            intent.removeExtra("ghadhulBasharExtraInfo")
             if (ghadhulPackage.isNotEmpty()) {
                 lastNotifiedGhadhulPkg = null
                 lastNotifiedGhadhulTime = 0L
-                notifyGhadhulBashar(ghadhulPackage)
+                notifyGhadhulBashar(ghadhulPackage, extraInfo)
             }
         }
         if (intent.getBooleanExtra("triggerProhibitedScreen", false)) {
@@ -434,6 +581,23 @@ class MainActivity : FlutterActivity() {
                 lastNotifiedProhibitedTime = 0L
                 notifyAppProhibited(prohibitedPackage)
             }
+        }
+        if (intent.getBooleanExtra("triggerStrictShieldScreen", false)) {
+            val reason = intent.getStringExtra("strictShieldReason") ?: "app_details"
+            intent.removeExtra("triggerStrictShieldScreen")
+            intent.removeExtra("strictShieldReason")
+            lastNotifiedStrictShieldTime = 0L
+            notifyStrictShieldTriggered(reason)
+        }
+        if (intent.getBooleanExtra("triggerStandardReflectionScreen", false)) {
+            val src = intent.getStringExtra("standardReflectionSource")
+            if (!src.isNullOrBlank()) {
+                AppBlockService.lastStandardReflectionSource = src
+            }
+            intent.removeExtra("triggerStandardReflectionScreen")
+            intent.removeExtra("standardReflectionSource")
+            lastNotifiedReflectionTime = 0L
+            notifyStandardReflectionTriggered()
         }
     }
 
@@ -628,6 +792,23 @@ class MainActivity : FlutterActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
+    }
+
+    private fun isDeviceAdminActive(): Boolean {
+        return AppBlockService.isDeviceAdminActive(this)
+    }
+
+    private fun requestDeviceAdmin() {
+        try {
+            DeviceAdminRequestActivity.start(this)
+        } catch (e: Exception) {
+            Log.e("MainActivity", "requestDeviceAdmin failed: ${e.message}")
+            try {
+                startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+            } catch (_: Exception) {}
+        }
     }
 
 

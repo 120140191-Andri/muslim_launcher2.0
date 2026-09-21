@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
-import 'setup_hub_screen.dart';
+import 'mode_selection_screen.dart';
 import '../../utils/page_transitions.dart';
 
 class LanguageScreen extends StatefulWidget {
@@ -141,7 +141,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                             final appState = Provider.of<AppState>(context, listen: false);
                             await appState.setLanguage(_selectedLang);
                             appState.navigatorKey.currentState?.pushReplacement(
-                              AppPageRoute(child: const SetupHubScreen()),
+                              AppPageRoute(child: const ModeSelectionScreen(isOnboarding: true)),
                             );
                           },
                           style: ElevatedButton.styleFrom(

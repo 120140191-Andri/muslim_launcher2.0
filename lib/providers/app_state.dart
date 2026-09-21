@@ -102,6 +102,7 @@ class AppState extends ChangeNotifier {
   Map<String, int> _unlockedExpirations = {};
   String? _lastAttemptedBlockedPackage;
   String? _lastAttemptedGhadhulBasharPackage;
+  String? _lastAttemptedGhadhulBasharExtra;
   bool _isAccessibilityEnabled = false;
   bool _isDefaultLauncher = false;
   bool _hasSeenAccessibilitySetup = false;
@@ -112,6 +113,39 @@ class AppState extends ChangeNotifier {
   bool _ignorePermissionGuard = false;
   final AppBlockService _appBlockService = AppBlockService();
   Timer? _statusTimer;
+
+  // Strict Mode & Device Admin Fields
+  bool _isStrictMode = true;
+  String _launcherMode = 'strict'; // 'strict', 'standard', 'passive'
+  bool _hasSelectedMode = false;
+  int _strictModeDays = 30;
+  int _strictModeUntilMs = 0;
+  bool _isDeviceAdminActive = false;
+  String? _lastAttemptedStrictShieldReason;
+  bool _isStandardReflectionActive = false;
+
+  bool get isStrictMode => _isStrictMode;
+  String get launcherMode => _launcherMode;
+  bool get hasSelectedMode => _hasSelectedMode;
+  bool get isPassiveMode => _launcherMode == 'passive';
+  bool get isAccessibilityRequired => !isPassiveMode;
+  int get strictModeDays => _strictModeDays;
+  int get strictModeUntilMs => _strictModeUntilMs;
+  bool get isDeviceAdminActive => _isDeviceAdminActive;
+  String? get lastAttemptedStrictShieldReason => _lastAttemptedStrictShieldReason;
+  bool get isStandardReflectionActive => _isStandardReflectionActive;
+
+  bool get isStrictActiveNow {
+    if (!_isStrictMode) return false;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return _strictModeUntilMs > 0 && now < _strictModeUntilMs;
+  }
+
+  Duration get remainingStrictDuration {
+    if (!isStrictActiveNow) return Duration.zero;
+    final diff = _strictModeUntilMs - DateTime.now().millisecondsSinceEpoch;
+    return diff > 0 ? Duration(milliseconds: diff) : Duration.zero;
+  }
   
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -394,6 +428,7 @@ class AppState extends ChangeNotifier {
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
   String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
   String? get lastAttemptedGhadhulBasharPackage => _lastAttemptedGhadhulBasharPackage;
+  String? get lastAttemptedGhadhulBasharExtra => _lastAttemptedGhadhulBasharExtra;
   bool get isAccessibilityEnabled => _isAccessibilityEnabled;
   bool get isDefaultLauncher => _isDefaultLauncher;
   bool get hasSeenAccessibilitySetup => _hasSeenAccessibilitySetup;
@@ -444,6 +479,7 @@ class AppState extends ChangeNotifier {
     _languageCode = prefs.getString('languageCode') ?? getDefaultLanguageCode();
     _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
+    appBlockService.setOnboardingCompleted(_hasCompletedOnboarding);
     _points = prefs.getInt('points') ?? 0;
     if (_points < 0) {
       _points = 0;
@@ -457,6 +493,12 @@ class AppState extends ChangeNotifier {
     _blockedApps = savedBlocked
         .where((pkg) => !isProductiveApp(pkg, ''))
         .toSet();
+    // Ensure Facebook is restored to blocked apps if not productive
+    for (final fbPkg in ['com.facebook.katana', 'com.facebook.lite']) {
+      if (!isProductiveApp(fbPkg, 'Facebook')) {
+        _blockedApps.add(fbPkg);
+      }
+    }
     if (_blockedApps.length != savedBlocked.length) {
       prefs.setStringList('blockedApps', _blockedApps.toList());
     }
@@ -466,6 +508,22 @@ class AppState extends ChangeNotifier {
     _hasSeenAccessibilitySetup = prefs.getBool('hasSeenAccessibilitySetup') ?? false;
     _hasRequestedNotificationPermission = prefs.getBool('hasRequestedNotificationPermission') ?? false;
     _hasAcknowledgedAutostart = prefs.getBool('hasAcknowledgedAutostart') ?? false;
+    _isStrictMode = prefs.getBool('is_strict_mode') ?? true;
+    _strictModeDays = prefs.getInt('strict_mode_days') ?? 30;
+    _strictModeUntilMs = prefs.getInt('strict_mode_until_ms') ?? 0;
+    _launcherMode = prefs.getString('launcher_mode') ?? (_isStrictMode ? 'strict' : 'standard');
+    _hasSelectedMode = prefs.getBool('has_selected_mode') ?? _hasCompletedOnboarding;
+
+    // Auto-transition to Standard Mode if Strict Mode duration has expired
+    final nowInit = DateTime.now().millisecondsSinceEpoch;
+    if (_isStrictMode && _strictModeUntilMs > 0 && nowInit >= _strictModeUntilMs) {
+      _isStrictMode = false;
+      _launcherMode = 'standard';
+      _strictModeUntilMs = 0;
+      await prefs.setBool('is_strict_mode', false);
+      await prefs.setString('launcher_mode', 'standard');
+      await prefs.setInt('strict_mode_until_ms', 0);
+    }
     
     _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
     _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
@@ -601,6 +659,7 @@ class AppState extends ChangeNotifier {
     // Initialize App Block Service immediately so no platform signals are dropped
     _appBlockService.init(
       onAppBlocked: (pkg) {
+        if (isPassiveMode) return;
         final cleanPkg = pkg.trim().toLowerCase();
         if (cleanPkg.isNotEmpty) {
           final now = DateTime.now().millisecondsSinceEpoch;
@@ -624,10 +683,17 @@ class AppState extends ChangeNotifier {
           notifyListeners();
         }
       },
-      onGhadhulBasharTriggered: (pkg) {
+      onGhadhulBasharTriggered: (pkg, [extraInfo]) {
+        if (isPassiveMode) return;
         final cleanPkg = pkg.trim().toLowerCase();
         if (cleanPkg.isNotEmpty) {
           final now = DateTime.now().millisecondsSinceEpoch;
+          // Priority guard: If a prohibited app or site is currently triggered or showing,
+          // NEVER let Ghadhul Bashar override it!
+          if ((_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
+              (now - _lastProhibitedEventTime) < 4000) {
+            return;
+          }
           // Guard: if recently dismissed or allowed within 4 seconds, ignore duplicate trigger
           if (cleanPkg == _lastGhadhulBasharDismissedPackage && (now - _lastGhadhulBasharDismissedTime) < 4000) {
             return;
@@ -637,12 +703,14 @@ class AppState extends ChangeNotifier {
           _lastGhadhulEventTime = now;
 
           _lastAttemptedGhadhulBasharPackage = cleanPkg;
+          _lastAttemptedGhadhulBasharExtra = extraInfo;
           _lastAttemptedBlockedPackage = null;
           _lastAttemptedProhibitedPackage = null;
           notifyListeners();
         }
       },
       onProhibitedAppTriggered: (pkg) {
+        if (isPassiveMode) return;
         final cleanPkg = pkg.trim().toLowerCase();
         if (cleanPkg.isNotEmpty) {
           final now = DateTime.now().millisecondsSinceEpoch;
@@ -661,6 +729,18 @@ class AppState extends ChangeNotifier {
           notifyListeners();
         }
       },
+      onStrictShieldTriggered: (reason) {
+        if (isPassiveMode) return;
+        _lastStrictShieldEventTime = DateTime.now().millisecondsSinceEpoch;
+        _lastAttemptedStrictShieldReason = reason;
+        notifyListeners();
+      },
+      onStandardReflectionTriggered: () {
+        if (isPassiveMode) return;
+        _lastStandardReflectionEventTime = DateTime.now().millisecondsSinceEpoch;
+        _isStandardReflectionActive = true;
+        notifyListeners();
+      },
     );
     _appBlockService.setBlockedApps(_blockedApps.toList());
     syncGhadhulBasharPackages();
@@ -675,9 +755,11 @@ class AppState extends ChangeNotifier {
         syncAppsWithCategories(rawApps);
       } else if (call.method == 'onHomePressed') {
         final now = DateTime.now().millisecondsSinceEpoch;
-        final isRecentlyTriggered = (now - _lastBlockedEventTime < 2500) ||
-            (now - _lastGhadhulEventTime < 2500) ||
-            (now - _lastProhibitedEventTime < 2500);
+        final isRecentlyTriggered = (now - _lastBlockedEventTime < 3000) ||
+            (now - _lastGhadhulEventTime < 3000) ||
+            (now - _lastProhibitedEventTime < 3000) ||
+            (now - _lastStrictShieldEventTime < 3000) ||
+            (now - _lastStandardReflectionEventTime < 3000);
         if (hasActiveOverlay && !isRecentlyTriggered) {
           clearAllOverlays();
         } else if (!hasActiveOverlay) {
@@ -709,8 +791,13 @@ class AppState extends ChangeNotifier {
           }
         } else if (pendingGhadhul != null && pendingGhadhul.isNotEmpty) {
           _lastAttemptedGhadhulBasharPackage = pendingGhadhul.toLowerCase();
+          _lastAttemptedGhadhulBasharExtra = initialData['ghadhulExtra'] as String?;
           _lastAttemptedProhibitedPackage = null;
           _lastAttemptedBlockedPackage = null;
+        }
+        final pendingReflection = initialData['standardReflection'];
+        if (pendingReflection == true) {
+          _isStandardReflectionActive = true;
         }
       }
     } catch (_) {}
@@ -735,6 +822,14 @@ class AppState extends ChangeNotifier {
       _isAccessibilityEnabled = await _appBlockService.isAccessibilityEnabled();
       final defRes = await appsChannel.invokeMethod('isDefaultLauncher');
       _isDefaultLauncher = defRes is bool ? defRes : false;
+      _isDeviceAdminActive = await _appBlockService.isDeviceAdminActive();
+
+      // Sync strict mode state to native service on startup
+      await _appBlockService.setStrictModeConfig(
+        enabled: _isStrictMode && isStrictActiveNow,
+        days: _strictModeDays,
+        untilMs: _strictModeUntilMs,
+      );
     } catch (_) {}
 
     _isInitialized = true;
@@ -755,6 +850,7 @@ class AppState extends ChangeNotifier {
   /// This is the last safety net: even if MethodChannel, handleIntent, and debounce all fail,
   /// this will pick up the pending event.
   Future<void> checkPendingNativeBlocks() async {
+    if (isPassiveMode) return;
     try {
       const blockChannel = MethodChannel('com.muslimlauncher/block');
       final data = await blockChannel.invokeMethod('getPendingInitialBlock');
@@ -784,6 +880,18 @@ class AppState extends ChangeNotifier {
           _lastAttemptedBlockedPackage = null;
           changed = true;
         }
+        final pendingStrict = data['strictShield'] as String?;
+        if (pendingStrict != null && pendingStrict.isNotEmpty) {
+          _lastStrictShieldEventTime = DateTime.now().millisecondsSinceEpoch;
+          _lastAttemptedStrictShieldReason = pendingStrict;
+          changed = true;
+        }
+        final pendingReflection = data['standardReflection'];
+        if (pendingReflection == true) {
+          _lastStandardReflectionEventTime = DateTime.now().millisecondsSinceEpoch;
+          _isStandardReflectionActive = true;
+          changed = true;
+        }
         if (changed) notifyListeners();
       }
     } catch (_) {}
@@ -791,6 +899,25 @@ class AppState extends ChangeNotifier {
 
   void refreshStatus() async {
     bool changed = false;
+
+    // Check if strict mode duration expired during app session
+    final storedUntil = prefs.getInt('strict_mode_until_ms') ?? _strictModeUntilMs;
+    _strictModeUntilMs = storedUntil;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (_isStrictMode && _strictModeUntilMs > 0 && now >= _strictModeUntilMs) {
+      _isStrictMode = false;
+      _launcherMode = 'standard';
+      _strictModeUntilMs = 0;
+      await prefs.setBool('is_strict_mode', false);
+      await prefs.setString('launcher_mode', 'standard');
+      await prefs.setInt('strict_mode_until_ms', 0);
+      await _appBlockService.setStrictModeConfig(
+        enabled: false,
+        days: _strictModeDays,
+        untilMs: 0,
+      );
+      changed = true;
+    }
 
     // 1. Accessibility Check
     try {
@@ -810,6 +937,15 @@ class AppState extends ChangeNotifier {
           await appsChannel.invokeMethod('isDefaultLauncher');
       if (defEnabled != _isDefaultLauncher) {
         _isDefaultLauncher = defEnabled;
+        changed = true;
+      }
+    } catch (_) {}
+
+    // 3. Device Admin Check
+    try {
+      final adminActive = await _appBlockService.isDeviceAdminActive();
+      if (adminActive != _isDeviceAdminActive) {
+        _isDeviceAdminActive = adminActive;
         changed = true;
       }
     } catch (_) {}
@@ -1031,6 +1167,7 @@ class AppState extends ChangeNotifier {
     _hasSelectedLanguage = true; // Safety check
     await prefs.setBool('hasCompletedOnboarding', true);
     await prefs.setBool('hasSelectedLanguage', true); // Consistent state
+    await appBlockService.setOnboardingCompleted(true);
     notifyListeners();
   }
 
@@ -1879,11 +2016,13 @@ class AppState extends ChangeNotifier {
       return true;
     }
 
-    // 6. Adult Leaked Content & Storage Hubs (TeraBox)
+    // 6. Adult Leaked Content & Storage Hubs (TeraBox, SlikDrive)
     if (pkg.contains('terabox') ||
         name.contains('terabox') ||
         pkg.contains('dubox') ||
-        name.contains('dubox')) {
+        name.contains('dubox') ||
+        pkg.contains('slikdrive') ||
+        name.contains('slikdrive')) {
       return true;
     }
 
@@ -1896,8 +2035,118 @@ class AppState extends ChangeNotifier {
         name.contains('video dewasa') ||
         name.contains('film dewasa') ||
         pkg.contains('javhd') ||
-        name.contains('javhd')) {
+        name.contains('javhd') ||
+        pkg.startsWith('dewasa:') ||
+        name.startsWith('dewasa:')) {
       return true;
+    }
+
+    // 7. Core adult video platforms & explicit terms
+    const adultCoreKeywords = [
+      'xvideos',
+      'xvid',
+      'xvids',
+      'xvideo',
+      'xnxx',
+      'xhamster',
+      'pornhub',
+      'redtube',
+      'youporn',
+      'spankbang',
+      'brazzers',
+      'beeg',
+      'eporner',
+      'tube8',
+      'hentai',
+      'doujin',
+      'rule34',
+      'nhentai',
+      'nekopoi',
+      'sange',
+      'lendir',
+      'colmek',
+      'crot',
+      'pemersatubangsa',
+      'konten dewasa',
+      '.xxx',
+      '.porn',
+      '.adult',
+      'cd.slikdrive.com',
+      'slikdrive.com',
+      'slikdrive',
+      '1024terabox.com',
+      '1024tera.com',
+      '1024tera',
+      'terabox.com',
+      'terabox',
+      'aceimg.com',
+      'uc-share.com',
+      'dubox',
+      'viadey',
+      'viodey',
+      'vldeyco.id',
+      'vldey',
+      'vioranow',
+      'slicedrivenow',
+      'slicedrive',
+      'vld',
+      'vdy',
+      'vdk',
+      'chindo',
+      'anhai',
+      'doodstream',
+      'vidoy',
+      'vidply',
+      'vidy',
+    ];
+    for (final kw in adultCoreKeywords) {
+      if (pkg.contains(kw) || name.contains(kw)) return true;
+    }
+
+    // 8. Flexible 'vid' keyword with whitelist protection
+    if (pkg.contains('vid') || name.contains('vid')) {
+      const vidWhitelist = [
+        'vidio.com',
+        'vidio',
+        'video.google.com',
+        'video.kompas.com',
+        'video.tribunnews.com',
+        'video.detik.com',
+        'video.tempo.co',
+        'video.liputan6.com',
+        'youtube.com',
+        'youtu.be',
+        'vimeo.com',
+        'dailymotion.com',
+        'twitch.tv',
+        'tiktok.com',
+        'wikipedia',
+        'wikimedia',
+        'david',
+        'individual',
+        'provider',
+        'provide',
+        'evidence',
+        'covid',
+        'divisi',
+        'division',
+        'video',
+        'vide',
+        'video editor',
+        'video player',
+        'nvidia',
+        'vivid',
+      ];
+      bool isWhitelisted = false;
+      for (final white in vidWhitelist) {
+        if (pkg.contains(white) || name.contains(white)) {
+          isWhitelisted = true;
+          break;
+        }
+      }
+      if (!isWhitelisted) {
+        return true;
+      }
     }
 
     return false;
@@ -2010,6 +2259,7 @@ class AppState extends ChangeNotifier {
       'ceme keliling',
       'capsa susun',
       'judi',
+      'judi online',
       'judol',
       'taruhan',
       'taruhan bola',
@@ -2020,6 +2270,14 @@ class AppState extends ChangeNotifier {
       'sportsbook',
       'bookmaker',
       'betting',
+      'agenjudi',
+      'bandar',
+      'linkgacor',
+      'situsslot',
+      'rtpslot',
+      'bocoranslot',
+      'pola slot',
+      'pola-slot',
       // Indonesian Domino gambling variants
       'higgs domino',
       'domino island',
@@ -2045,7 +2303,7 @@ class AppState extends ChangeNotifier {
 
     for (final kw in gamblingKeywords) {
       if (kw.contains(' ')) {
-        if (name.contains(kw) || pkg.contains(kw.replaceAll(' ', ''))) return true;
+        if (name.contains(kw) || pkg.contains(kw.replaceAll(' ', '')) || pkg.contains(kw)) return true;
       } else {
         if (name.contains(kw) || pkg.contains(kw)) return true;
       }
@@ -2061,7 +2319,9 @@ class AppState extends ChangeNotifier {
         pkg.contains('.gamble') ||
         pkg.contains('.gambling') ||
         pkg.contains('.judol') ||
-        pkg.contains('.togel')) {
+        pkg.contains('.togel') ||
+        pkg.startsWith('judi') ||
+        name.startsWith('judi')) {
       return true;
     }
 
@@ -3086,6 +3346,8 @@ class AppState extends ChangeNotifier {
   int _lastBlockedEventTime = 0;
   int _lastGhadhulEventTime = 0;
   int _lastProhibitedEventTime = 0;
+  int _lastStrictShieldEventTime = 0;
+  int _lastStandardReflectionEventTime = 0;
 
   void setProhibitedPackage(String pkg) {
     final cleanPkg = pkg.trim().toLowerCase();
@@ -3098,9 +3360,12 @@ class AppState extends ChangeNotifier {
   }
 
   bool get hasActiveOverlay =>
-      (_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
-      (_lastAttemptedBlockedPackage?.isNotEmpty ?? false) ||
-      (_lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false);
+      !isPassiveMode &&
+      ((_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
+          (_lastAttemptedBlockedPackage?.isNotEmpty ?? false) ||
+          (_lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false) ||
+          (_lastAttemptedStrictShieldReason?.isNotEmpty ?? false) ||
+          _isStandardReflectionActive);
 
   void clearAllOverlays() {
     bool changed = false;
@@ -3118,9 +3383,110 @@ class AppState extends ChangeNotifier {
       _lastGhadhulBasharDismissedPackage = _lastAttemptedGhadhulBasharPackage;
       _lastGhadhulBasharDismissedTime = DateTime.now().millisecondsSinceEpoch;
       _lastAttemptedGhadhulBasharPackage = null;
+      _lastAttemptedGhadhulBasharExtra = null;
+      changed = true;
+    }
+    if (_lastAttemptedStrictShieldReason != null) {
+      _lastAttemptedStrictShieldReason = null;
+      changed = true;
+    }
+    if (_isStandardReflectionActive) {
+      _isStandardReflectionActive = false;
+      appBlockService.resetStandardReflectionDebounce();
       changed = true;
     }
     if (changed) {
+      notifyListeners();
+    }
+  }
+
+  Future<void> dismissStandardReflectionAndSkip({int durationMillis = 180000}) async {
+    _isStandardReflectionActive = false;
+    await _appBlockService.allowStandardSettingsTemporarily(durationMillis: durationMillis);
+    notifyListeners();
+  }
+
+  void clearStandardReflection() {
+    if (_isStandardReflectionActive) {
+      _isStandardReflectionActive = false;
+      appBlockService.resetStandardReflectionDebounce();
+      notifyListeners();
+    }
+  }
+
+  Future<void> enableStrictMode(int days) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final untilMs = now + (days * 24 * 60 * 60 * 1000);
+    _launcherMode = 'strict';
+    _isStrictMode = true;
+    _strictModeDays = days;
+    _strictModeUntilMs = untilMs;
+    _hasSelectedMode = true;
+    await prefs.setString('launcher_mode', 'strict');
+    await prefs.setBool('is_strict_mode', true);
+    await prefs.setInt('strict_mode_days', days);
+    await prefs.setInt('strict_mode_until_ms', untilMs);
+    await prefs.setBool('has_selected_mode', true);
+    await _appBlockService.setStrictModeConfig(
+      enabled: true,
+      days: days,
+      untilMs: untilMs,
+    );
+    notifyListeners();
+  }
+
+  Future<void> enableStandardMode() async {
+    _launcherMode = 'standard';
+    _isStrictMode = false;
+    _strictModeUntilMs = 0;
+    _hasSelectedMode = true;
+    await prefs.setString('launcher_mode', 'standard');
+    await prefs.setBool('is_strict_mode', false);
+    await prefs.setInt('strict_mode_until_ms', 0);
+    await prefs.setBool('has_selected_mode', true);
+    await _appBlockService.setStrictModeConfig(
+      enabled: false,
+      days: _strictModeDays,
+      untilMs: 0,
+    );
+    notifyListeners();
+  }
+
+  Future<void> enablePassiveMode() async {
+    _launcherMode = 'passive';
+    _isStrictMode = false;
+    _strictModeUntilMs = 0;
+    _hasSelectedMode = true;
+    clearAllOverlays();
+    await prefs.setString('launcher_mode', 'passive');
+    await prefs.setBool('is_strict_mode', false);
+    await prefs.setInt('strict_mode_until_ms', 0);
+    await prefs.setBool('has_selected_mode', true);
+    await _appBlockService.setStrictModeConfig(
+      enabled: false,
+      days: 0,
+      untilMs: 0,
+    );
+    notifyListeners();
+  }
+
+  Future<void> refreshDeviceAdminStatus() async {
+    try {
+      final active = await _appBlockService.isDeviceAdminActive();
+      if (active != _isDeviceAdminActive) {
+        _isDeviceAdminActive = active;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> requestDeviceAdmin() async {
+    await _appBlockService.requestDeviceAdmin();
+  }
+
+  void clearStrictShieldReason() {
+    if (_lastAttemptedStrictShieldReason != null) {
+      _lastAttemptedStrictShieldReason = null;
       notifyListeners();
     }
   }
@@ -3167,10 +3533,11 @@ class AppState extends ChangeNotifier {
       _lastGhadhulBasharDismissedTime = DateTime.now().millisecondsSinceEpoch;
     }
     _lastAttemptedGhadhulBasharPackage = null;
+    _lastAttemptedGhadhulBasharExtra = null;
     notifyListeners();
   }
 
-  void setGhadhulBasharPackage(String pkg) {
+  void setGhadhulBasharPackage(String pkg, [String? extra]) {
     final cleanPkg = pkg.trim().toLowerCase();
     if (cleanPkg.isNotEmpty) {
       final now = DateTime.now().millisecondsSinceEpoch;
@@ -3178,6 +3545,7 @@ class AppState extends ChangeNotifier {
         return;
       }
       _lastAttemptedGhadhulBasharPackage = cleanPkg;
+      _lastAttemptedGhadhulBasharExtra = extra;
       _lastAttemptedBlockedPackage = null;
       _lastAttemptedProhibitedPackage = null;
       notifyListeners();
@@ -3242,6 +3610,8 @@ class AppState extends ChangeNotifier {
         // Facebook
         'com.facebook.katana',
         'com.facebook.lite',
+        'com.facebook.orca',
+        'com.facebook.mlite',
         // Twitter / X
         'com.twitter.android',
         'com.twitter.android.lite',
@@ -3253,6 +3623,7 @@ class AppState extends ChangeNotifier {
         'com.zhiliaoapp.musically',
         'com.zhiliaoapp.musically.go',
         'com.ss.android.ugc.trill',
+        'com.ss.android.ugc.aweme',
         // Telegram & Telegram X
         'org.telegram.messenger',
         'org.telegram.messenger.web',

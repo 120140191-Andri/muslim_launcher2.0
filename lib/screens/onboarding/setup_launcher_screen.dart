@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import '../../providers/app_state.dart';
+import '../home/home_screen.dart';
 import '../home/accessibility_setup_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/device_instructions.dart';
 
 class SetupLauncherScreen extends StatefulWidget {
-  const SetupLauncherScreen({super.key});
+  final bool isSingleStep;
+  const SetupLauncherScreen({super.key, this.isSingleStep = false});
 
   @override
   State<SetupLauncherScreen> createState() => _SetupLauncherScreenState();
@@ -52,6 +54,14 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
 
   void _goToNextStep() {
     final appState = Provider.of<AppState>(context, listen: false);
+    if (widget.isSingleStep) {
+      appState.completeOnboarding();
+      appState.navigatorKey.currentState?.pushAndRemoveUntil(
+        AppPageRoute(child: const HomeScreen()),
+        (route) => false,
+      );
+      return;
+    }
     appState.navigatorKey.currentState?.push(
       AppPageRoute(child: const AccessibilitySetupScreen(isOnboarding: true)),
     );
@@ -243,7 +253,10 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 child: Text(
-                                  (isEn ? 'NEXT STEP' : 'LANGKAH SELANJUTNYA').toUpperCase(),
+                                  (widget.isSingleStep
+                                          ? (isEn ? 'START USING MUSLIM LAUNCHER' : 'MULAI GUNAKAN MUSLIM LAUNCHER')
+                                          : (isEn ? 'NEXT STEP' : 'LANGKAH SELANJUTNYA'))
+                                      .toUpperCase(),
                                   style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5),
                                 ),
                               ),
@@ -254,6 +267,20 @@ class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsB
                         ),
                       ),
                     ),
+                    if (widget.isSingleStep && !_isDefaultLauncher) ...[
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: _goToNextStep,
+                        child: Text(
+                          isEn ? 'Skip and continue to Home' : 'Lewati dan masuk ke Beranda',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 48),
                   ],
                 ),

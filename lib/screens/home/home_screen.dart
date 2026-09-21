@@ -152,6 +152,9 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _checkAccessibilityStatus() async {
     final appState = Provider.of<AppState>(context, listen: false);
     
+    // In passive mode, accessibility is not required/prompted
+    if (appState.isPassiveMode) return;
+
     // 1. If it's already enabled, do nothing.
     if (appState.isAccessibilityEnabled) return;
 
@@ -585,7 +588,8 @@ class _HomeScreenState extends State<HomeScreen>
 
                                     // Accessibility Warning
                                     if (appState.blockedApps.isNotEmpty &&
-                                        !appState.isAccessibilityEnabled)
+                                        !appState.isAccessibilityEnabled &&
+                                        !appState.isPassiveMode)
                                       Padding(
                                         padding: const EdgeInsets.only(
                                           bottom: 24,

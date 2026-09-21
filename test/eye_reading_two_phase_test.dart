@@ -174,5 +174,42 @@ void main() {
       expect(find.byIcon(Icons.remove_red_eye_rounded), findsWidgets);
       expect(find.text('Dalam Hati'), findsOneWidget);
     });
+
+    test('calculateAccurateArabicSeconds scales accurately with letters, shaddah, and madd', () {
+      // 1. Short single-word ayah (e.g. "يس") reaches baseline minimum
+      final yasinTime = SurahDetailScreen.calculateAccurateArabicSeconds('يس');
+      expect(yasinTime >= 2.5, isTrue);
+
+      // 2. Short ayah "قُلْ هُوَ اللَّهُ أَحَدٌ" (~11 letters, 1 shaddah, 4 words)
+      // ~0.8 + 2.42 + 0.25 + 0.48 = ~4.0s (not overinflated 6s or underinflated 1.5s)
+      final ikhlasTime = SurahDetailScreen.calculateAccurateArabicSeconds('قُلْ هُوَ اللَّهُ أَحَدٌ');
+      expect(ikhlasTime >= 3.5 && ikhlasTime <= 4.5, isTrue, reason: 'Ikhlas 1 time was: $ikhlasTime');
+
+      // 3. Complex compound word "فَسَيَكْفِيكَهُمُ اللَّهُ" (14 letters, shaddah, 2 words)
+      // Must give adequate time (~4.4s) instead of prematurely running out at 3s
+      final longWordTime = SurahDetailScreen.calculateAccurateArabicSeconds('فَسَيَكْفِيكَهُمُ اللَّهُ');
+      expect(longWordTime >= 4.0, isTrue, reason: 'Long word time was: $longWordTime');
+
+      // 4. Ayah with long madd "إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ"
+      final kawtharTime = SurahDetailScreen.calculateAccurateArabicSeconds('إِنَّآ أَعْطَيْنَٰكَ الْكَوْثَرَ');
+      expect(kawtharTime > ikhlasTime, isTrue);
+    });
+
+    test('calculateAccurateTranslationSeconds scales with words, commas, and periods', () {
+      // Empty or null translation
+      expect(SurahDetailScreen.calculateAccurateTranslationSeconds(null), 0.0);
+      expect(SurahDetailScreen.calculateAccurateTranslationSeconds(''), 0.0);
+
+      // Short translation with period
+      final shortTime = SurahDetailScreen.calculateAccurateTranslationSeconds('Maha Penyayang.');
+      expect(shortTime >= 1.8 && shortTime <= 2.5, isTrue);
+
+      // Moderate translation with clauses
+      final mediumTime = SurahDetailScreen.calculateAccurateTranslationSeconds(
+        'Katakanlah (Muhammad), Dialah Allah, Yang Maha Esa.',
+      );
+      expect(mediumTime >= 3.0 && mediumTime <= 4.5, isTrue);
+      expect(mediumTime > shortTime, isTrue);
+    });
   });
 }

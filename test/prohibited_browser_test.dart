@@ -302,5 +302,66 @@ void main() {
 
       expect(appState.lastAttemptedProhibitedPackage, isNull);
     });
+
+    testWidgets('Renders site-specific title, description, advice, and hides uninstall for blocked adult web targets', (tester) async {
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ProhibitedAppOverlay(packageName: 'Konten Dewasa'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Title must be site adult tag, not app title
+      expect(find.text(Translations.get('id', 'prohibited_site_tag_adult')), findsOneWidget);
+      expect(find.text(Translations.get('id', 'prohibited_app_title')), findsNothing);
+
+      // Description must be site adult desc
+      expect(find.text(Translations.get('id', 'prohibited_site_adult_desc')), findsOneWidget);
+
+      // Advice desc must be site advice desc
+      expect(find.text(Translations.get('id', 'prohibited_site_advice_desc')), findsOneWidget);
+
+      // Uninstall button must NOT exist for web links
+      expect(find.text(Translations.get('id', 'uninstall_prohibited_app')), findsNothing);
+      expect(find.text(Translations.get('id', 'go_back')), findsOneWidget);
+    });
+
+    testWidgets('Renders site-specific title, description, advice, and hides uninstall for blocked gambling web targets', (tester) async {
+      final appState = AppState(prefs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ProhibitedAppOverlay(packageName: 'Judi Online'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Title must be site gambling tag, not gambling app title
+      expect(find.text(Translations.get('id', 'prohibited_site_tag_gambling')), findsOneWidget);
+      expect(find.text(Translations.get('id', 'prohibited_gambling_title')), findsNothing);
+
+      // Description must be site gambling desc
+      expect(find.text(Translations.get('id', 'prohibited_site_gambling_desc')), findsOneWidget);
+
+      // Advice desc must be site advice desc
+      expect(find.text(Translations.get('id', 'prohibited_site_advice_desc')), findsOneWidget);
+
+      // Uninstall button must NOT exist for web links
+      expect(find.text(Translations.get('id', 'uninstall_prohibited_app')), findsNothing);
+      expect(find.text(Translations.get('id', 'go_back')), findsOneWidget);
+    });
   });
 }
+

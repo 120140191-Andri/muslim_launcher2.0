@@ -31,6 +31,29 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
     final isAdultApp = AppState.isExplicitAdultApp(widget.packageName, appName);
     final isGamblingApp = AppState.isGamblingApp(widget.packageName, appName);
 
+    final bool isWebTarget = widget.packageName.toLowerCase().contains('konten dewasa') ||
+        widget.packageName.toLowerCase().contains('judi online') ||
+        widget.packageName.toLowerCase().startsWith('judi') ||
+        widget.packageName.toLowerCase().startsWith('dewasa') ||
+        widget.packageName.contains('://') ||
+        widget.packageName.contains('/') ||
+        widget.packageName.contains(':') ||
+        widget.packageName.contains(' ');
+
+    // Sanitized display tag: NEVER expose raw domain names to the user
+    final String displayTag;
+    if (appName.isNotEmpty) {
+      displayTag = appName;
+    } else if (isWebTarget) {
+      displayTag = Translations.get(lang, 'prohibited_site_tag_generic');
+    } else if (isGamblingApp) {
+      displayTag = Translations.get(lang, 'prohibited_site_tag_gambling');
+    } else if (isAdultApp) {
+      displayTag = Translations.get(lang, 'prohibited_site_tag_adult');
+    } else {
+      displayTag = widget.packageName;
+    }
+
     final String arabicAyah = isGamblingApp
         ? 'يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوْٓا اِنَّمَا الْخَمْرُ وَالْمَيْسِرُ وَالْاَنْصَابُ وَالْاَزْلَامُ رِجْسٌ مِّنْ عَمَلِ الشَّيْطٰنِ فَاجْتَنِبُوْهُ لَعَلَّكُمْ تُفْلِحُوْنَ'
         : 'وَلَا تَقْرَبُوا الْفَوَاحِشَ مَا ظَهَرَ مِنْهَا وَمَا بَطَنَ';
@@ -115,9 +138,15 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
 
                       // Title
                       Text(
-                        isGamblingApp
-                            ? Translations.get(lang, 'prohibited_gambling_title')
-                            : Translations.get(lang, 'prohibited_app_title'),
+                        isWebTarget
+                            ? (isGamblingApp
+                                ? Translations.get(lang, 'prohibited_site_tag_gambling')
+                                : (isAdultApp
+                                    ? Translations.get(lang, 'prohibited_site_tag_adult')
+                                    : Translations.get(lang, 'prohibited_site_tag_generic')))
+                            : (isGamblingApp
+                                ? Translations.get(lang, 'prohibited_gambling_title')
+                                : Translations.get(lang, 'prohibited_app_title')),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -150,12 +179,16 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                               color: Color(0xFFFB7185),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              appName.isNotEmpty ? appName : widget.packageName,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                            Flexible(
+                              child: Text(
+                                displayTag,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -165,11 +198,17 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
 
                       // Description
                       Text(
-                        isGamblingApp
-                            ? Translations.get(lang, 'prohibited_gambling_desc')
-                            : (isAdultApp
-                                ? Translations.get(lang, 'prohibited_adult_desc')
-                                : Translations.get(lang, 'prohibited_app_desc')),
+                        isWebTarget
+                            ? (isGamblingApp
+                                ? Translations.get(lang, 'prohibited_site_gambling_desc')
+                                : (isAdultApp
+                                    ? Translations.get(lang, 'prohibited_site_adult_desc')
+                                    : Translations.get(lang, 'prohibited_site_desc')))
+                            : (isGamblingApp
+                                ? Translations.get(lang, 'prohibited_gambling_desc')
+                                : (isAdultApp
+                                    ? Translations.get(lang, 'prohibited_adult_desc')
+                                    : Translations.get(lang, 'prohibited_app_desc'))),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 14,
@@ -295,11 +334,13 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    isGamblingApp
-                                        ? Translations.get(lang, 'prohibited_gambling_suggestion_desc')
-                                        : (isAdultApp
-                                            ? Translations.get(lang, 'prohibited_adult_suggestion_desc')
-                                            : Translations.get(lang, 'prohibited_suggestion_desc')),
+                                    isWebTarget
+                                        ? Translations.get(lang, 'prohibited_site_advice_desc')
+                                        : (isGamblingApp
+                                            ? Translations.get(lang, 'prohibited_gambling_suggestion_desc')
+                                            : (isAdultApp
+                                                ? Translations.get(lang, 'prohibited_adult_suggestion_desc')
+                                                : Translations.get(lang, 'prohibited_suggestion_desc'))),
                                     style: TextStyle(
                                       color: Colors.white.withValues(alpha: 0.85),
                                       fontSize: 12.5,
@@ -316,38 +357,40 @@ class _ProhibitedAppOverlayState extends State<ProhibitedAppOverlay> {
 
                       // Action Buttons
                       if (isAdultApp || isGamblingApp) ...[
-                        // Uninstall App Button for Adult Content & Gambling Apps
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              const channel = MethodChannel('com.muslimlauncher/apps');
-                              try {
-                                await channel.invokeMethod('uninstallApp', {'packageName': widget.packageName});
-                              } catch (_) {}
-                              appState.clearProhibitedPackage();
-                            },
-                            icon: const Icon(Icons.delete_forever_rounded, size: 20),
-                            label: Text(
-                              Translations.get(lang, 'uninstall_prohibited_app'),
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
+                        // Uninstall App Button only for real installed Android APK packages
+                        if (!isWebTarget && (appName.isNotEmpty || (widget.packageName.contains('.') && !widget.packageName.contains('://') && !widget.packageName.contains('/') && !widget.packageName.contains(' ') && !widget.packageName.contains(':')))) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                const channel = MethodChannel('com.muslimlauncher/apps');
+                                try {
+                                  await channel.invokeMethod('uninstallApp', {'packageName': widget.packageName});
+                                } catch (_) {}
+                                appState.clearProhibitedPackage();
+                              },
+                              icon: const Icon(Icons.delete_forever_rounded, size: 20),
+                              label: Text(
+                                Translations.get(lang, 'uninstall_prohibited_app'),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.3,
+                                ),
                               ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFBE123C),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFBE123C),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 4,
                               ),
-                              elevation: 4,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
+                        ],
                         // Back to Home Button
                         SizedBox(
                           width: double.infinity,

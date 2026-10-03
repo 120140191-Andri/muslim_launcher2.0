@@ -10,8 +10,13 @@ import '../../utils/quran_progress_helper.dart';
 
 class BlockedAppScreen extends StatefulWidget {
   final String packageName;
+  final bool isRoute;
 
-  const BlockedAppScreen({super.key, required this.packageName});
+  const BlockedAppScreen({
+    super.key,
+    required this.packageName,
+    this.isRoute = false,
+  });
 
   @override
   State<BlockedAppScreen> createState() => _BlockedAppScreenState();
@@ -28,6 +33,9 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
       return;
     }
     appState.clearBlockedApp();
+    if (widget.isRoute && mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -240,6 +248,10 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                   appState.languageCode,
                                 );
                                 appState.clearBlockedApp();
+                                if (!context.mounted) return;
+                                if (widget.isRoute && Navigator.of(context).canPop()) {
+                                  Navigator.of(context).pop();
+                                }
                                 if (isGhadhulTarget) {
                                   appState.setGhadhulBasharPackage(widget.packageName);
                                 } else {
@@ -328,6 +340,9 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                         child: ElevatedButton.icon(
                           onPressed: () {
                             appState.clearBlockedApp();
+                            if (widget.isRoute && mounted && Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            }
                             appState.navigatorKey.currentState?.push(
                               AppPageRoute(child: const SurahListScreen()),
                             );
@@ -426,6 +441,9 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                             borderRadius: BorderRadius.circular(16),
                             onTap: () {
                               appState.clearBlockedApp();
+                              if (widget.isRoute && mounted && Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              }
                               appState.navigatorKey.currentState?.push(
                                 AppPageRoute(child: const DzikirScreen()),
                               );
@@ -527,6 +545,9 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                             borderRadius: BorderRadius.circular(16),
                             onTap: () {
                               appState.clearBlockedApp();
+                              if (widget.isRoute && mounted && Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              }
                               appState.navigatorKey.currentState?.push(
                                 AppPageRoute(child: const HadithListScreen()),
                               );
@@ -612,7 +633,7 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                       const SizedBox(height: 16),
                       Center(
                         child: TextButton.icon(
-                          onPressed: () => appState.clearBlockedApp(),
+                          onPressed: () => _safeDismiss(appState),
                           icon: const Icon(Icons.arrow_back_rounded, size: 18, color: Colors.white70),
                           label: Text(
                             Translations.get(lang, 'go_back'),
@@ -701,6 +722,10 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                                   try {
                                     await appState.markAppAsProductive(widget.packageName, appName: appName, category: category);
                                     appState.clearBlockedApp();
+                                    if (!context.mounted) return;
+                                    if (widget.isRoute && Navigator.of(context).canPop()) {
+                                      Navigator.of(context).pop();
+                                    }
                                     await appState.openApp(widget.packageName, bypassGuards: true);
                                   } finally {
                                     if (mounted) {

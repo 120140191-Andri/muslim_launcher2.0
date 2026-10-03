@@ -8,7 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/translations.dart';
+import '../../utils/page_transitions.dart';
 import '../../widgets/language_selection_dialog.dart';
+import 'blocked_app_screen.dart';
 
 // ── AppInfo model ────────────────────────────────────────────────────────────
 class AppInfo {
@@ -744,6 +746,29 @@ class _AppListScreenState extends State<AppListScreen>
     if (appState.isAppProhibited(app.packageName, app.appName)) {
       appState.setProhibitedPackage(app.packageName);
       return;
+    }
+    // Khusus mode paling rendah (Passive Mode): Tampilkan layar non-produktif di app langsung
+    // (bukan overlay), karena service aksesibilitas tidak aktif di mode ini.
+    if (appState.isPassiveMode) {
+      final isNonProductive = !appState.isAppUnlocked(app.packageName) &&
+          (appState.isAppBlocked(app.packageName) ||
+              (app.isNonProductive() &&
+                  !AppState.isProductiveApp(
+                    app.packageName,
+                    app.appName,
+                    app.category,
+                  )));
+      if (isNonProductive) {
+        Navigator.of(context).push(
+          AppPageRoute(
+            child: BlockedAppScreen(
+              packageName: app.packageName,
+              isRoute: true,
+            ),
+          ),
+        );
+        return;
+      }
     }
     if (appState.isAppBlocked(app.packageName)) {
       appState.setBlockedPackage(app.packageName);

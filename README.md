@@ -39,6 +39,9 @@ This application respects your privacy. Muslim Launcher uses Android's **Accessi
 * **Offline First:** All core features, Quran, Hadith, and Dhikr datasets operate 100% offline on your local device.
 * **Open Source Transparency:** The entire source code of this application is fully open source in this repository for complete community auditability.
 
+### Open Source & Amal Jariyah 🤲
+This codebase is completely open and free to be developed, modified, and distributed by anyone. The creator's primary mission is to spread this application, its code, or at least the core concept and idea behind it as widely as possible in the hope of gaining *amal jariyah* (continuous reward / ongoing charity) inshaAllah. Feel free to fork, enhance, and build upon this project for the benefit of the Ummah!
+
 ### Support / Request Features ☕
 If you find this app helpful in reducing smartphone addiction and increasing your Ibadah, or if you'd like to request a new feature, consider supporting the development!
 * [Support / Request Features via Ko-fi](https://ko-fi.com/andrisetiawan84153)
@@ -79,6 +82,9 @@ Aplikasi ini sangat menghargai privasi dan keamanan data Anda:
 * **Pemrosesan di Perangkat (*On-Device*):** Pemrosesan kamera untuk deteksi mata/wajah dilakukan secara lokal di RAM *real-time* dan tidak pernah disimpan sebagai file gambar atau dikirim ke internet.
 * **100% Berjalan Offline:** Seluruh sistem pemblokiran, Al-Quran, Hadits, dan Dzikir berjalan luring tanpa memerlukan koneksi internet.
 * **Transparansi Open Source:** Seluruh kode sumber aplikasi ini bersifat sumber terbuka (*open source*) di repositori ini sehingga dapat diaudit oleh siapa saja secara transparan.
+
+### Pengembangan & Amal Jariyah 🤲
+Kode sumber ini sepenuhnya bebas dan boleh dikembangkan, dimodifikasi, serta disebarluaskan oleh siapa pun. Pembuat memiliki misi utama untuk menyebarkan aplikasi ini, kode sumbernya, atau setidaknya ide dan konsep di baliknya seluas-luasnya, dengan harapan dapat mendatangkan **amal jariyah** yang terus mengalir insyaAllah. Silakan fork, kembangkan lebih lanjut, atau adaptasi proyek ini untuk kebaikan dan kemaslahatan bersama!
 
 ### Dukung / Usulkan Fitur ☕
 Jika Anda merasa aplikasi ini bermanfaat dalam mengurangi kecanduan smartphone dan meningkatkan ibadah Anda, atau Anda ingin mengusulkan fitur baru, mari dukung pengembangannya:

@@ -27,9 +27,11 @@ class StrictShieldOverlay extends StatelessWidget {
       descText = Translations.get(lang, 'strict_shield_desc');
     }
 
-    return Material(
-      color: Colors.black.withValues(alpha: 0.8),
-      child: SafeArea(
+    return PopScope(
+      canPop: false,
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.8),
+        child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -173,6 +175,7 @@ class StrictShieldOverlay extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

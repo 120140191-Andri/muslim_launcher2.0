@@ -42,6 +42,8 @@ class AppBlockService : AccessibilityService() {
         private var lastProhibitedTriggerTime: Long = 0L
         @Volatile
         private var lastProhibitedBringToFrontTime: Long = 0L
+        @Volatile
+        private var lastStrictShieldBringToFrontTime: Long = 0L
 
         // Strict Mode state tracking
         @Volatile
@@ -52,6 +54,12 @@ class AppBlockService : AccessibilityService() {
         private var strictModeDays: Int = 30
         @Volatile
         private var lastKnownTimestamp: Long = 0L
+
+        // Strict Shield Watchdog: re-checks Settings for bypass attempts via Recent Apps
+        @Volatile
+        private var strictShieldWatchdogActive: Boolean = false
+        @Volatile
+        private var strictShieldWatchdogUntil: Long = 0L
 
         // Transition Shield: Prevent loop during the first 10 seconds of unlock
         private var lastBypassPackage: String? = null
@@ -762,6 +770,36 @@ class AppBlockService : AccessibilityService() {
                 } catch (_: Exception) {}
             }
 
+            // Check if screen is an App List by title/header or presence of other apps on screen
+            val isAppListHeader = cleanEventText.contains("kelola aplikasi") ||
+                    cleanEventText.contains("manage apps") ||
+                    cleanEventText.contains("daftar aplikasi") ||
+                    cleanEventText.contains("app list") ||
+                    cleanEventText.contains("semua aplikasi") ||
+                    cleanEventText.contains("all apps") ||
+                    cleanEventText.contains("aplikasi terinstal") ||
+                    cleanEventText.contains("installed apps") ||
+                    cleanEventText.contains("manajemen aplikasi") ||
+                    cleanEventText.contains("app management")
+
+            val hasOtherAppsOnScreen = if (searchNode != null) {
+                val sampleApps = listOf(
+                    "google", "whatsapp", "youtube", "chrome", "android", "kamera", "camera",
+                    "galeri", "gallery", "telepon", "phone", "pesan", "messages", "drive",
+                    "gmail", "maps", "play store", "files", "kontak", "contacts", "bluetooth",
+                    "calculator", "kalkulator", "clock", "jam", "system", "sistem"
+                )
+                sampleApps.any { appName ->
+                    try {
+                        searchNode.findAccessibilityNodeInfosByText(appName).isNotEmpty()
+                    } catch (_: Exception) { false }
+                }
+            } else false
+
+            if (isAppListHeader || hasOtherAppsOnScreen) {
+                return false
+            }
+
             // On Settings / App Managers / Installers across all OEMs:
             // 1. If activity class explicitly represents Single App Info / Details or Uninstaller, trigger immediately!
             val isExplicitAppDetailsClass = cleanClass.contains("installedappdetails") ||
@@ -1031,8 +1069,8 @@ class AppBlockService : AccessibilityService() {
                 val breadcrumbKeywords = listOf(
                     "aksesibilitas", "accessibility",
                     "layanan yang didownload", "downloaded apps", "downloaded services",
-                    "layanan terinstal", "installed services", "installed apps",
-                    "aplikasi terinstal", "layanan terpasang", "aplikasi yang diinstal",
+                    "layanan terinstal", "installed services",
+                    "layanan terpasang",
                     "layanan diunduh"
                 )
                 breadcrumbKeywords.any { kw ->
@@ -2413,8 +2451,26 @@ class AppBlockService : AccessibilityService() {
                 return
             }
 
-            // Proactively resolve shorteners from clicked links in Facebook
+            // Proactively handle clicks
             if (isViewClicked) {
+                // In Strict Mode, clicks inside Settings / Accessibility might be attempts to toggle or force stop.
+                // Immediately evaluate strict shield violation without waiting for window state changes!
+                if (isStrictActive() && (isSettingsOrInstallerApp(packageName) ||
+                        packageName.contains("accessibility") ||
+                        className.contains("accessibility"))) {
+                    val activeNode = rootInActiveWindow ?: getTopmostNode(event.source) ?: event.source
+                    val shieldReason = detectStrictShieldViolation(packageName, className, activeNode, event)
+                    if (shieldReason != null) {
+                        Log.d("AppBlockService", "STRICT SHIELD TRIGGERED ON CLICK: reason=$shieldReason in pkg=$packageName cls=$className")
+                        lastTriggeredPackage = packageName
+                        lastTriggeredTime = now
+                        MainActivity.notifyStrictShieldTriggered(shieldReason)
+                        bringLauncherToFront("strictShieldReason", shieldReason, "triggerStrictShieldScreen")
+                        startStrictShieldWatchdog()
+                        return
+                    }
+                }
+
                 if (isFacebookPackage(packageName)) {
                     val clickedTexts = mutableListOf<String>()
                     for (cs in event.text) {
@@ -2510,7 +2566,13 @@ class AppBlockService : AccessibilityService() {
             }
 
             if (packageName == lastTriggeredPackage && (now - lastTriggeredTime) < 1200L) {
-                return
+                // In strict mode, NEVER debounce Settings/Accessibility packages!
+                val isSettingsInStrictMode = isStrictActive() && (isSettingsOrInstallerApp(packageName) ||
+                        packageName.contains("accessibility", ignoreCase = true) ||
+                        className.lowercase().contains("accessibility"))
+                if (!isSettingsInStrictMode) {
+                    return
+                }
             }
 
             // Scan for any expired temporary unlocks and countdown alerts on every accessibility event
@@ -2586,6 +2648,10 @@ class AppBlockService : AccessibilityService() {
                         lastTriggeredTime = now
                         MainActivity.notifyStrictShieldTriggered(shieldReason)
                         bringLauncherToFront("strictShieldReason", shieldReason, "triggerStrictShieldScreen")
+
+                        // Activate Strict Shield Watchdog: re-check Settings every 300ms for 5 seconds
+                        // to catch bypass attempts via Recent Apps switching
+                        startStrictShieldWatchdog()
                         return
                     }
                 }
@@ -3039,6 +3105,55 @@ class AppBlockService : AccessibilityService() {
      * 3. PendingIntent with MODE_BACKGROUND_ACTIVITY_START_ALLOWED (bypasses Android 14+ BAL restrictions).
      * 4. Direct startActivity fallback if PendingIntent failed.
      */
+    private fun startStrictShieldWatchdog() {
+        strictShieldWatchdogActive = true
+        strictShieldWatchdogUntil = System.currentTimeMillis() + 4500L
+        handler.removeCallbacks(strictShieldWatchdogRunnable)
+        handler.postDelayed(strictShieldWatchdogRunnable, 150L)
+        Log.d("AppBlockService", "STRICT SHIELD WATCHDOG STARTED (4.5s window)")
+    }
+
+    private val strictShieldWatchdogRunnable = object : Runnable {
+        override fun run() {
+            val now = System.currentTimeMillis()
+            if (!strictShieldWatchdogActive || now > strictShieldWatchdogUntil || !isStrictActive()) {
+                strictShieldWatchdogActive = false
+                Log.d("AppBlockService", "STRICT SHIELD WATCHDOG ENDED")
+                return
+            }
+
+            try {
+                val activeNode = rootInActiveWindow
+                val activePkg = activeNode?.packageName?.toString()?.lowercase() ?: currentForegroundPackage
+                // If Muslim Launcher is already in foreground, safe! No need to block.
+                if (activePkg != null && activePkg != packageName && activePkg != "com.kraftech.muslim_launcher_2" &&
+                    (isSettingsOrInstallerApp(activePkg) || activePkg.contains("accessibility", ignoreCase = true))) {
+                    // User returned to Settings/Accessibility via Recent Apps — re-check and block!
+                    if (activeNode != null) {
+                        val shieldReason = detectStrictShieldViolation(activePkg, "", activeNode, AccessibilityEvent.obtain())
+                        if (shieldReason != null) {
+                            Log.d("AppBlockService", "STRICT SHIELD WATCHDOG CAUGHT BYPASS: reason=$shieldReason pkg=$activePkg")
+                            lastTriggeredPackage = activePkg
+                            lastTriggeredTime = now
+                            MainActivity.notifyStrictShieldTriggered(shieldReason)
+                            bringLauncherToFront("strictShieldReason", shieldReason, "triggerStrictShieldScreen")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("AppBlockService", "Strict shield watchdog error: ${e.message}")
+            }
+
+            // Re-schedule next check
+            if (strictShieldWatchdogActive && now < strictShieldWatchdogUntil) {
+                handler.postDelayed(this, 150L)
+            } else {
+                strictShieldWatchdogActive = false
+                Log.d("AppBlockService", "STRICT SHIELD WATCHDOG ENDED")
+            }
+        }
+    }
+
     private fun bringLauncherToFront(packageNameKey: String, packageNameValue: String, triggerKey: String, sourceExtra: String? = null) {
         val now = System.currentTimeMillis()
         if (triggerKey == "triggerProhibitedScreen" && (now - lastProhibitedBringToFrontTime) < 3000L) {
@@ -3047,10 +3162,43 @@ class AppBlockService : AccessibilityService() {
         if (triggerKey == "triggerProhibitedScreen") {
             lastProhibitedBringToFrontTime = now
         }
+        if (triggerKey == "triggerStrictShieldScreen" && (now - lastStrictShieldBringToFrontTime) < 250L) {
+            return
+        }
+        if (triggerKey == "triggerStrictShieldScreen") {
+            lastStrictShieldBringToFrontTime = now
+        }
 
         val cleanPkg = packageNameValue.trim().lowercase()
 
-        // LAYER 1: performGlobalAction(HOME) — Immediately minimizes the foreground app
+        // LAYER 0 (STRICT SHIELD ONLY): performGlobalAction(BACK) on Settings
+        // Kicks Settings out of the toggle / app info screen (2 levels back to root settings)
+        // ONLY call BACK if the active window is NOT our launcher (never send BACK into our app)!
+        if (triggerKey == "triggerStrictShieldScreen") {
+            val activeNode = rootInActiveWindow
+            val activePkg = activeNode?.packageName?.toString()?.lowercase() ?: currentForegroundPackage
+            if (activePkg != null && activePkg != packageName && activePkg != "com.kraftech.muslim_launcher_2") {
+                try {
+                    // Back #1: Keluar dari layar toggle / info aplikasi
+                    performGlobalAction(GLOBAL_ACTION_BACK)
+
+                    // Back #2 (setelah 60ms): Keluar satu tingkat lagi ke menu utama,
+                    // dipagari agar HANYA jalan jika layar MASIH di Settings
+                    handler.postDelayed({
+                        val currentActive = rootInActiveWindow?.packageName?.toString()?.lowercase()
+                        if (currentActive != null && currentActive != packageName && currentActive != "com.kraftech.muslim_launcher_2") {
+                            try {
+                                performGlobalAction(GLOBAL_ACTION_BACK)
+                            } catch (_: Exception) {}
+                        }
+                    }, 60L)
+                } catch (e: Exception) {
+                    Log.w("AppBlockService", "performGlobalAction(BACK) failed: ${e.message}")
+                }
+            }
+        }
+
+        // LAYER 1: performGlobalAction(HOME) — Immediately minimizes the foreground app smoothly
         try {
             performGlobalAction(GLOBAL_ACTION_HOME)
         } catch (e: Exception) {

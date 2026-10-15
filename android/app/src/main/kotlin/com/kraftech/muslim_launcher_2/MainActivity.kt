@@ -586,7 +586,6 @@ class MainActivity : FlutterActivity() {
             val reason = intent.getStringExtra("strictShieldReason") ?: "app_details"
             intent.removeExtra("triggerStrictShieldScreen")
             intent.removeExtra("strictShieldReason")
-            lastNotifiedStrictShieldTime = 0L
             notifyStrictShieldTriggered(reason)
         }
         if (intent.getBooleanExtra("triggerStandardReflectionScreen", false)) {

@@ -735,10 +735,7 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       },
       onStandardReflectionTriggered: () {
-        if (isPassiveMode) return;
-        _lastStandardReflectionEventTime = DateTime.now().millisecondsSinceEpoch;
-        _isStandardReflectionActive = true;
-        notifyListeners();
+        // Standard reflection overlay removed for standard mode
       },
     );
     _appBlockService.setBlockedApps(_blockedApps.toList());
@@ -757,8 +754,7 @@ class AppState extends ChangeNotifier {
         final isRecentlyTriggered = (now - _lastBlockedEventTime < 3000) ||
             (now - _lastGhadhulEventTime < 3000) ||
             (now - _lastProhibitedEventTime < 3000) ||
-            (now - _lastStrictShieldEventTime < 3000) ||
-            (now - _lastStandardReflectionEventTime < 3000);
+            (now - _lastStrictShieldEventTime < 3000);
         if (hasActiveOverlay && !isRecentlyTriggered) {
           clearAllOverlays();
         } else if (!hasActiveOverlay) {
@@ -794,10 +790,7 @@ class AppState extends ChangeNotifier {
           _lastAttemptedProhibitedPackage = null;
           _lastAttemptedBlockedPackage = null;
         }
-        final pendingReflection = initialData['standardReflection'];
-        if (pendingReflection == true) {
-          _isStandardReflectionActive = true;
-        }
+
       }
     } catch (_) {}
 
@@ -885,12 +878,7 @@ class AppState extends ChangeNotifier {
           _lastAttemptedStrictShieldReason = pendingStrict;
           changed = true;
         }
-        final pendingReflection = data['standardReflection'];
-        if (pendingReflection == true) {
-          _lastStandardReflectionEventTime = DateTime.now().millisecondsSinceEpoch;
-          _isStandardReflectionActive = true;
-          changed = true;
-        }
+
         if (changed) notifyListeners();
       }
     } catch (_) {}
@@ -3346,7 +3334,6 @@ class AppState extends ChangeNotifier {
   int _lastGhadhulEventTime = 0;
   int _lastProhibitedEventTime = 0;
   int _lastStrictShieldEventTime = 0;
-  int _lastStandardReflectionEventTime = 0;
 
   void setProhibitedPackage(String pkg) {
     final cleanPkg = pkg.trim().toLowerCase();

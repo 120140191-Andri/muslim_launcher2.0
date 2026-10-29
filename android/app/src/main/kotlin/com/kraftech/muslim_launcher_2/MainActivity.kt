@@ -400,44 +400,6 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "allowStandardSettingsTemporarily" -> {
-                    val durationRaw = call.argument<Any>("durationMillis")
-                    val duration = when (durationRaw) {
-                        is Number -> durationRaw.toLong()
-                        else -> 180000L
-                    }
-                    AppBlockService.allowStandardSettingsTemporarily(duration)
-
-                    // Automatically return to Settings, Accessibility, or Device Admin as requested by "Lanjutkan"
-                    val source = AppBlockService.lastStandardReflectionSource
-                    try {
-                        Log.d("MainActivity", "allowStandardSettingsTemporarily: source=$source")
-                        if (source == "device_admin") {
-                            try {
-                                DeviceAdminRequestActivity.start(this@MainActivity)
-                            } catch (e: Exception) {
-                                Log.e("MainActivity", "DeviceAdminRequestActivity.start failed: ${e.message}")
-                                try {
-                                    startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    })
-                                } catch (_: Exception) {}
-                            }
-                        } else if (source == "accessibility") {
-                            val a11yIntent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                            }
-                            startActivity(a11yIntent)
-                        } else {
-                            val settingsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", packageName, null)
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                            }
-                            startActivity(settingsIntent)
-                        }
-                    } catch (e: Exception) {
-                        Log.e("MainActivity", "Failed to navigate to target: ${e.message}")
-                    }
-
                     result.success(true)
                 }
                 "getPendingInitialBlock" -> {
@@ -589,14 +551,8 @@ class MainActivity : FlutterActivity() {
             notifyStrictShieldTriggered(reason)
         }
         if (intent.getBooleanExtra("triggerStandardReflectionScreen", false)) {
-            val src = intent.getStringExtra("standardReflectionSource")
-            if (!src.isNullOrBlank()) {
-                AppBlockService.lastStandardReflectionSource = src
-            }
             intent.removeExtra("triggerStandardReflectionScreen")
             intent.removeExtra("standardReflectionSource")
-            lastNotifiedReflectionTime = 0L
-            notifyStandardReflectionTriggered()
         }
     }
 

@@ -21,6 +21,10 @@ Write-Host "Device ditemukan:" -ForegroundColor Green
 & $ADB devices
 
 Write-Host ""
+Write-Host "Menonaktifkan paket untuk melepas proteksi Device Admin ..." -ForegroundColor Yellow
+& $ADB shell pm disable-user $PACKAGE 2>$null
+
+Write-Host ""
 Write-Host "Menguninstall $PACKAGE ..." -ForegroundColor Yellow
 & $ADB uninstall $PACKAGE
 

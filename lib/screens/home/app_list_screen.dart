@@ -11,6 +11,8 @@ import '../../utils/translations.dart';
 import '../../utils/page_transitions.dart';
 import '../../widgets/language_selection_dialog.dart';
 import 'blocked_app_screen.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;
+import '../../services/ad_service.dart';
 
 // ── AppInfo model ────────────────────────────────────────────────────────────
 class AppInfo {
@@ -665,11 +667,46 @@ class _AppListScreenState extends State<AppListScreen>
   List<AppInfo> _filtered = [];
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
+
+  void _loadBannerAd() {
+    if (!Platform.isAndroid && !Platform.isIOS) return;
+    try {
+      _bannerAd = BannerAd(
+        adUnitId: AdService.bannerAdUnitId,
+        size: AdSize.banner,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (ad) {
+            if (mounted) {
+              setState(() {
+                _isBannerAdLoaded = true;
+              });
+            }
+          },
+          onAdFailedToLoad: (ad, error) {
+            debugPrint('[AppListScreen] Banner ad failed to load: $error');
+            ad.dispose();
+            if (mounted) {
+              setState(() {
+                _bannerAd = null;
+                _isBannerAdLoaded = false;
+              });
+            }
+          },
+        ),
+      )..load();
+    } catch (e) {
+      debugPrint('[AppListScreen] Banner ad load error: $e');
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadBannerAd();
 
     if (AppListScreen._cache != null) {
       _apps = AppListScreen._cache;
@@ -682,6 +719,7 @@ class _AppListScreenState extends State<AppListScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _bannerAd?.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -1029,6 +1067,16 @@ class _AppListScreenState extends State<AppListScreen>
                 ? const Center(child: CircularProgressIndicator())
                 : _buildGrid(lang),
           ),
+          if (_isBannerAdLoaded && _bannerAd != null)
+            SafeArea(
+              top: false,
+              child: Container(
+                width: _bannerAd!.size.width.toDouble(),
+                height: _bannerAd!.size.height.toDouble(),
+                alignment: Alignment.center,
+                child: AdWidget(ad: _bannerAd!),
+              ),
+            ),
         ],
       ),
     );

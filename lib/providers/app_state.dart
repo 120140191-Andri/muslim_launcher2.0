@@ -216,6 +216,7 @@ class AppState extends ChangeNotifier {
   // Daily Scaling Unlock Count (50 -> 75 -> 100 pts per day)
   int _dailyUnlocksCount = 0;
   String _dailyUnlocksDate = '';
+  DateTime? _adGracePeriodEndTime;
 
   // Persistent Streak Notification Settings
   bool _isStreakReminderEnabled = true;
@@ -424,6 +425,51 @@ class AppState extends ChangeNotifier {
     if (_dailyUnlocksCount == 1) return 75;
     return 100;
   }
+
+  /// Memeriksa apakah tiket bebas iklan 10 menit sedang aktif secara global
+  bool get isAdGracePeriodActive {
+    if (_adGracePeriodEndTime == null) return false;
+    return DateTime.now().isBefore(_adGracePeriodEndTime!);
+  }
+
+  /// Sisa waktu tiket bebas iklan dalam detik
+  int get remainingAdGracePeriodSeconds {
+    if (_adGracePeriodEndTime == null) return 0;
+    final diff = _adGracePeriodEndTime!.difference(DateTime.now()).inSeconds;
+    return diff > 0 ? diff : 0;
+  }
+
+  /// Sisa waktu tiket bebas iklan dalam menit
+  int get remainingAdGracePeriodMinutes {
+    final sec = remainingAdGracePeriodSeconds;
+    return (sec / 60).ceil();
+  }
+
+  /// Syarat memunculkan iklan sebelum buka aplikasi non-produktif:
+  /// Pengguna sudah membuka app non-produktif >= 3 kali hari ini DAN tiket bebas iklan tidak aktif
+  bool get shouldShowAdBeforeUnlock {
+    _syncDailyUnlocksState();
+    return _dailyUnlocksCount >= 3 && !isAdGracePeriodActive;
+  }
+
+  /// Mengaktifkan tiket bebas iklan 10 menit setelah menonton iklan rewarded
+  Future<void> activateAdGracePeriod({int durationMinutes = 10}) async {
+    final endTime = DateTime.now().add(Duration(minutes: durationMinutes));
+    _adGracePeriodEndTime = endTime;
+    await prefs.setInt('adGracePeriodEndTime', endTime.millisecondsSinceEpoch);
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void setAdGracePeriodForTesting(DateTime? endTime) {
+    _adGracePeriodEndTime = endTime;
+    if (endTime != null) {
+      prefs.setInt('adGracePeriodEndTime', endTime.millisecondsSinceEpoch);
+    } else {
+      prefs.remove('adGracePeriodEndTime');
+    }
+    notifyListeners();
+  }
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
   String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
   String? get lastAttemptedGhadhulBasharPackage => _lastAttemptedGhadhulBasharPackage;
@@ -610,6 +656,13 @@ class AppState extends ChangeNotifier {
       prefs.setString('dailyUnlocksDate', today);
     } else {
       _dailyUnlocksCount = prefs.getInt('dailyUnlocksCount') ?? 0;
+      final savedAdGrace = prefs.getInt('adGracePeriodEndTime');
+      if (savedAdGrace != null) {
+        final dt = DateTime.fromMillisecondsSinceEpoch(savedAdGrace);
+        if (DateTime.now().isBefore(dt)) {
+          _adGracePeriodEndTime = dt;
+        }
+      }
     }
 
     final historyJson = prefs.getString('readingHistory') ?? '[]';

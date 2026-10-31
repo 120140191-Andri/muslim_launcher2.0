@@ -7,6 +7,7 @@ import '../dzikir/dzikir_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 import '../../utils/quran_progress_helper.dart';
+import '../../services/ad_service.dart';
 
 class BlockedAppScreen extends StatefulWidget {
   final String packageName;
@@ -25,6 +26,91 @@ class BlockedAppScreen extends StatefulWidget {
 class _BlockedAppScreenState extends State<BlockedAppScreen> {
   bool _isUnlocking = false;
   bool _showConfirmProductive = false;
+  Future<bool?> _showAdConfirmationDialog({
+    required BuildContext context,
+    required String lang,
+    required int cost,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        final isId = lang == 'id';
+        final isMs = lang == 'ms';
+        final isAr = lang == 'ar';
+
+        final title = isId
+            ? 'Batas Harian Tercapai (3x)'
+            : isMs
+                ? 'Had Harian Dicapai (3x)'
+                : isAr
+                    ? 'تم الوصول إلى الحد اليومي (٣ مرات)'
+                    : 'Daily Limit Reached (3x)';
+
+        final desc = isId
+            ? 'Kamu telah membuka aplikasi non-produktif 3 kali hari ini. Tonton 1 video singkat untuk mendapatkan tiket akses selama 10 menit (tetap menggunakan $cost poin).'
+            : isMs
+                ? 'Anda telah membuka aplikasi bukan produktif 3 kali hari ini. Tonton 1 video pendek untuk mendapatkan tiket akses selama 10 minit (tetap menggunakan $cost mata).'
+                : isAr
+                    ? 'لقد فتحت تطبيقات غير منتجة ٣ مرات اليوم. شاهد مقطع فيديو قصير للحصول على تصريح وصول لمدة ١٠ دقائق (لا يزال يستهلك $cost نقطة).'
+                    : 'You have opened non-productive apps 3 times today. Watch a short video to get a 10-minute access pass (still requires $cost points).';
+
+        final btnWatch = isId
+            ? 'Tonton Iklan & Buka'
+            : isMs
+                ? 'Tonton Iklan & Buka'
+                : isAr
+                    ? 'شاهد الإعلان وافتح'
+                    : 'Watch Ad & Unlock';
+
+        final btnCancel = isId
+            ? 'Batal'
+            : isMs
+                ? 'Batal'
+                : isAr
+                    ? 'إلغاء'
+                    : 'Cancel';
+
+        return AlertDialog(
+          backgroundColor: const Color(0xFF06332E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.ondemand_video_rounded, color: Colors.amber, size: 26),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            desc,
+            style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(btnCancel, style: const TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal.shade500,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              icon: const Icon(Icons.play_arrow_rounded, size: 18),
+              label: Text(btnWatch, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   void _safeDismiss(AppState appState) {
     if (_isUnlocking) return;
@@ -226,6 +312,30 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                       const SizedBox(height: 22),
                       
                       // 1. Unlock Button (Active if points >= 50)
+                      if (appState.isAdGracePeriodActive) ...[
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.shade900.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.teal.shade300.withValues(alpha: 0.5), width: 1),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.verified_rounded, color: Colors.tealAccent, size: 16),
+                              const SizedBox(width: 8),
+                              Text(
+                                lang == 'id'
+                                    ? 'Tiket Akses 10m Aktif (${appState.remainingAdGracePeriodMinutes}m tersisa)'
+                                    : '10m Access Pass Active (${appState.remainingAdGracePeriodMinutes}m left)',
+                                style: const TextStyle(color: Colors.tealAccent, fontSize: 12.5, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       Container(
                         width: double.infinity,
                         constraints: const BoxConstraints(minHeight: 50),
@@ -233,7 +343,31 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                           onPressed: (canUnlock && !_isUnlocking)
                             ? () async {
                                 if (appState.points < unlockCost) return;
-                                setState(() => _isUnlocking = true);
+
+                                if (appState.shouldShowAdBeforeUnlock) {
+                                  final confirmed = await _showAdConfirmationDialog(
+                                    context: context,
+                                    lang: lang,
+                                    cost: unlockCost,
+                                  );
+                                  if (confirmed != true) return;
+
+                                  if (mounted) setState(() => _isUnlocking = true);
+
+                                  try {
+                                    final watched = await AdService.instance.showRewardedAd();
+                                    if (watched) {
+                                      await appState.activateAdGracePeriod(durationMinutes: 10);
+                                    } else {
+                                      debugPrint('[BlockedAppScreen] Rewarded ad offline/unavailable -> bypass ke potongan poin.');
+                                    }
+                                  } catch (e) {
+                                    debugPrint('[BlockedAppScreen] Rewarded ad error -> bypass: $e');
+                                  }
+                                } else {
+                                  setState(() => _isUnlocking = true);
+                                }
+
                                 final success = await appState.unlockAppWithPoints(widget.packageName, cost: unlockCost);
                                 if (!success) {
                                   if (mounted) {
@@ -260,11 +394,17 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                               }
                             : null,
                           icon: Icon(
-                            canUnlock ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
+                            canUnlock
+                                ? (appState.shouldShowAdBeforeUnlock
+                                    ? Icons.ondemand_video_rounded
+                                    : Icons.lock_open_rounded)
+                                : Icons.lock_outline_rounded,
                             size: 20,
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal.shade500,
+                            backgroundColor: appState.shouldShowAdBeforeUnlock
+                                ? const Color(0xFFD97706)
+                                : Colors.teal.shade500,
                             foregroundColor: Colors.white,
                             disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
                             disabledForegroundColor: Colors.white38,
@@ -273,9 +413,19 @@ class _BlockedAppScreenState extends State<BlockedAppScreen> {
                             elevation: 0,
                           ),
                           label: Text(
-                            canUnlock
-                              ? Translations.get(lang, 'unlock_cost_pts').replaceAll('{cost}', '$unlockCost')
-                              : Translations.get(lang, 'need_cost_points').replaceAll('{cost}', '$unlockCost'),
+                            _isUnlocking
+                                ? (lang == 'id' ? 'Membuka...' : 'Unlocking...')
+                                : canUnlock
+                                    ? (appState.shouldShowAdBeforeUnlock
+                                        ? (lang == 'id'
+                                            ? 'Tonton Iklan & Buka ($unlockCost Poin)'
+                                            : lang == 'ms'
+                                                ? 'Tonton Iklan & Buka ($unlockCost Mata)'
+                                                : lang == 'ar'
+                                                    ? 'شاهد الإعلان وافتح ($unlockCost نقطة)'
+                                                    : 'Watch Ad & Unlock ($unlockCost Pts)')
+                                        : Translations.get(lang, 'unlock_cost_pts').replaceAll('{cost}', '$unlockCost'))
+                                    : Translations.get(lang, 'need_cost_points').replaceAll('{cost}', '$unlockCost'),
                             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center,
                           ),

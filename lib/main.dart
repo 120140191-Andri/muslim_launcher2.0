@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/app_state.dart';
 import 'services/streak_notification_service.dart';
+import 'services/ad_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/language_screen.dart';
 import 'screens/onboarding/mode_selection_screen.dart';
@@ -82,6 +83,7 @@ class _MuslimLauncherAppState extends State<MuslimLauncherApp> with WidgetsBindi
       final state = Provider.of<AppState>(context, listen: false);
       await StreakNotificationService.initialize(navigatorKey: state.navigatorKey);
       await StreakNotificationService.checkAndSyncReminder(state);
+      await AdService.instance.initialize();
     });
   }
 
